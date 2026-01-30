@@ -14,7 +14,6 @@ import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAt
 import { PromptIcon } from '@/shared/components/Icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -36,7 +35,6 @@ const defaultPromptSuggestions = [
 
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
-  setContext?: React.Dispatch<React.SetStateAction<Context>>;
 }
 const SUGGESTION_CATEGORIES: { key: SuggestionCategory; label: string }[] = [
   { key: 'enrich', label: 'Enrich' },
@@ -90,123 +88,121 @@ const CategorizedSuggestionsSection = memo(
   }
 );
 
-export const AIAnalystEmptyChatPromptSuggestions = memo(
-  ({ submit, setContext }: AIAnalystEmptyChatPromptSuggestionsProps) => {
-    const [activeCategory, setActiveCategory] = useState<SuggestionCategory>('enrich');
-    // Initialize to undefined to avoid flash - only show import section once we know sheet is empty
-    const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
-    const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
+export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEmptyChatPromptSuggestionsProps) => {
+  const [activeCategory, setActiveCategory] = useState<SuggestionCategory>('enrich');
+  // Initialize to undefined to avoid flash - only show import section once we know sheet is empty
+  const [sheetHasData, setSheetHasData] = useState<boolean | undefined>(undefined);
+  const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
 
-    // Get suggestions from centralized state
-    const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
-    const { suggestions: categorizedSuggestions, loading } = emptyChatSuggestions;
+  // Get suggestions from centralized state
+  const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
+  const { suggestions: categorizedSuggestions, loading } = emptyChatSuggestions;
 
-    // Get the function to trigger initial fetch if needed
-    const { checkAndUpdateSuggestions } = useEmptyChatSuggestionsSync();
+  // Get the function to trigger initial fetch if needed
+  const { checkAndUpdateSuggestions } = useEmptyChatSuggestionsSync();
 
-    const handleChooseFile = useCallback(async () => {
-      trackEvent('[AIAnalyst].chooseFile');
-      const selectedFiles = await uploadFile(aiAnalystImportFileTypes);
-      if (selectedFiles.length === 0) return;
+  const handleChooseFile = useCallback(async () => {
+    trackEvent('[AIAnalyst].chooseFile');
+    const selectedFiles = await uploadFile(aiAnalystImportFileTypes);
+    if (selectedFiles.length === 0) return;
 
-      const currentSheet = sheets.sheet;
+    const currentSheet = sheets.sheet;
 
-      const aiFiles = await importFilesToSheet({
-        files: selectedFiles,
-        sheetId: currentSheet.id,
-        getBounds: () => currentSheet.bounds,
-        getCursorPosition: () => currentSheet.cursor.position.toString(),
-        setProgressState: setFilesImportProgressState,
-        importFile: quadraticCore.importFile,
-      });
+    const aiFiles = await importFilesToSheet({
+      files: selectedFiles,
+      sheetId: currentSheet.id,
+      getBounds: () => currentSheet.bounds,
+      getCursorPosition: () => currentSheet.cursor.position.toString(),
+      setProgressState: setFilesImportProgressState,
+      importFile: quadraticCore.importFile,
+    });
 
-      // Send PDFs/images to AI for processing
-      if (aiFiles.length > 0) {
-        events.emit('aiAnalystDroppedFiles', aiFiles);
+    // Send PDFs/images to AI for processing
+    if (aiFiles.length > 0) {
+      events.emit('aiAnalystDroppedFiles', aiFiles);
+    }
+  }, [setFilesImportProgressState]);
+
+  // Track whether file has data (for deciding which UI to show)
+  useEffect(() => {
+    let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    const checkSheetData = (immediate = false) => {
+      clearTimeout(debounceTimeout);
+      if (immediate) {
+        setSheetHasData(fileHasData());
+      } else {
+        debounceTimeout = setTimeout(() => {
+          const hasData = fileHasData();
+          setSheetHasData((prev) => (prev !== hasData ? hasData : prev));
+        }, 100);
       }
-    }, [setFilesImportProgressState]);
+    };
 
-    // Track whether file has data (for deciding which UI to show)
-    useEffect(() => {
-      let debounceTimeout: ReturnType<typeof setTimeout> | undefined;
+    // Initial check - immediate to avoid flash
+    checkSheetData(true);
 
-      const checkSheetData = (immediate = false) => {
-        clearTimeout(debounceTimeout);
-        if (immediate) {
-          setSheetHasData(fileHasData());
-        } else {
-          debounceTimeout = setTimeout(() => {
-            const hasData = fileHasData();
-            setSheetHasData((prev) => (prev !== hasData ? hasData : prev));
-          }, 100);
-        }
-      };
+    const onHashContentChanged = () => checkSheetData(false);
+    events.on('hashContentChanged', onHashContentChanged);
+    return () => {
+      events.off('hashContentChanged', onHashContentChanged);
+      clearTimeout(debounceTimeout);
+    };
+  }, []);
 
-      // Initial check - immediate to avoid flash
-      checkSheetData(true);
+  // Trigger initial fetch if we have data but no suggestions yet (first time / page refresh)
+  useEffect(() => {
+    if (sheetHasData && !categorizedSuggestions && !loading) {
+      checkAndUpdateSuggestions();
+    }
+  }, [sheetHasData, categorizedSuggestions, loading, checkAndUpdateSuggestions]);
 
-      const onHashContentChanged = () => checkSheetData(false);
-      events.on('hashContentChanged', onHashContentChanged);
-      return () => {
-        events.off('hashContentChanged', onHashContentChanged);
-        clearTimeout(debounceTimeout);
-      };
-    }, []);
-
-    // Trigger initial fetch if we have data but no suggestions yet (first time / page refresh)
-    useEffect(() => {
-      if (sheetHasData && !categorizedSuggestions && !loading) {
-        checkAndUpdateSuggestions();
-      }
-    }, [sheetHasData, categorizedSuggestions, loading, checkAndUpdateSuggestions]);
-
-    return (
-      <div className="absolute -left-1 -right-1 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
-        {/* Import Data Section */}
-        <div className="flex w-full max-w-lg flex-col items-center gap-3">
-          <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-10">
-            <div className="mb-3 flex items-center justify-center gap-1">
-              <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
-              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
-            </div>
-            <p className="text-sm">Excel, CSV, PDF, PQT, & images</p>
-            <p className="text-xs text-muted-foreground">
-              Drag and drop, or{' '}
-              <button
-                onClick={handleChooseFile}
-                className="h-auto p-0 text-xs font-normal text-muted-foreground underline hover:text-foreground"
-              >
-                choose a file
-              </button>
-            </p>
+  return (
+    <div className="absolute -left-1 -right-1 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
+      {/* Import Data Section */}
+      <div className="flex w-full max-w-lg flex-col items-center gap-3">
+        <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-8 py-10">
+          <div className="mb-3 flex items-center justify-center gap-1">
+            <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
+            <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
           </div>
+          <p className="text-sm">Excel, CSV, PDF, PQT, & images</p>
+          <p className="text-xs text-muted-foreground">
+            Drag and drop, or{' '}
+            <button
+              onClick={handleChooseFile}
+              className="h-auto p-0 text-xs font-normal text-muted-foreground underline hover:text-foreground"
+            >
+              choose a file
+            </button>
+          </p>
         </div>
-
-        {/* Suggestions Section */}
-        {sheetHasData && categorizedSuggestions ? (
-          <CategorizedSuggestionsSection
-            suggestions={categorizedSuggestions}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
-            loading={loading}
-            submit={submit}
-          />
-        ) : (
-          <EmptyChatSection header="Suggestions" isLoading={sheetHasData && loading}>
-            {defaultPromptSuggestions.map(({ prompt }, index) => (
-              <SuggestionButton
-                key={`${index}-${prompt}`}
-                icon={<PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />}
-                text={prompt}
-                onClick={() => {
-                  trackEvent('[AIAnalyst].submitExamplePrompt');
-                  submit(prompt);
-                }}
-              />
-            ))}
-          </EmptyChatSection>
-        )}
       </div>
-    );
-  }
-);
+
+      {/* Suggestions Section */}
+      {sheetHasData && categorizedSuggestions ? (
+        <CategorizedSuggestionsSection
+          suggestions={categorizedSuggestions}
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          loading={loading}
+          submit={submit}
+        />
+      ) : (
+        <EmptyChatSection header="Suggestions" isLoading={sheetHasData && loading}>
+          {defaultPromptSuggestions.map(({ prompt }, index) => (
+            <SuggestionButton
+              key={`${index}-${prompt}`}
+              icon={<PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />}
+              text={prompt}
+              onClick={() => {
+                trackEvent('[AIAnalyst].submitExamplePrompt');
+                submit(prompt);
+              }}
+            />
+          ))}
+        </EmptyChatSection>
+      )}
+    </div>
+  );
+});
