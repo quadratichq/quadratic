@@ -10,7 +10,7 @@ import type {
   ImageContent,
   ImportFilesToGridContent,
   InternalMessage,
-  OpenAIReasoningContent,
+  OpenAIReasoningContentType,
   PdfFileContent,
   SystemMessage,
   TextContent,
@@ -72,7 +72,7 @@ export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
         createTextContent(`NOTE: This is an internal message for context. Do not quote it in your response.\n\n
 User has selected a connection and want to focus on it:
 
-Connection Details: 
+Connection Details:
 type: ${message.context.connection.type}
 id: ${message.context.connection.id}
 name: ${message.context.connection.name}
@@ -85,7 +85,7 @@ name: ${message.context.connection.name}
       userMessage.content = [
         createTextContent(`NOTE: This is an internal message for context. Do not quote it in your response.\n\n
 User attached files with this prompt and they were imported as:
-${message.context.importFiles.prompt} 
+${message.context.importFiles.prompt}
 `),
         ...userMessage.content,
       ];
@@ -204,7 +204,7 @@ export const isContentThinking = (
 
 export const isContentOpenAIReasoning = (
   content: Content[number] | AIResponseContent[number]
-): content is OpenAIReasoningContent => {
+): content is OpenAIReasoningContentType => {
   return ['openai_reasoning_summary', 'openai_reasoning_content'].includes(content.type);
 };
 

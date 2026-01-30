@@ -3,12 +3,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { parseFullJson, parsePartialJson } from '@/app/shared/utils/SafeJsonParsing';
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
+type SetCodeCellValueResponse = AIToolsArgs[AITool.SetCodeCellValue];
 
 export const SetCodeCellValue = memo(
   ({
@@ -59,7 +59,7 @@ export const SetCodeCellValue = memo(
         return;
       }
 
-      const parsed = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
+      const parsed = AIToolsArgsSchema[AITool.SetCodeCellValue].safeParse(fullJson);
       setToolArgs(parsed);
     }, [args, loading]);
 

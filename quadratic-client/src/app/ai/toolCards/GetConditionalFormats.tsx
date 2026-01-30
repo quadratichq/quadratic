@@ -1,10 +1,10 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type GetConditionalFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetConditionalFormats]['responseSchema']>;
+type GetConditionalFormatsResponse = AIToolsArgs[AITool.GetConditionalFormats];
 
 export const GetConditionalFormats = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -19,7 +19,7 @@ export const GetConditionalFormats = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.GetConditionalFormats].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.GetConditionalFormats].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[GetConditionalFormats] Failed to parse args: ', error);

@@ -1,5 +1,3 @@
-import type { AIAnalystState } from '@/app/atoms/aiAnalystAtom';
-import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
 import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
@@ -18,7 +16,6 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -71,11 +68,6 @@ export class PixiAppSettings {
 
   contextMenu = defaultContextMenuState;
   setContextMenu?: SetterOrUpdater<ContextMenuState>;
-
-  aiAnalystState = defaultAIAnalystState;
-  setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
-
-  submitAIAnalystPrompt?: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -159,16 +151,6 @@ export class PixiAppSettings {
   updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {
     this.codeEditorState = codeEditorState;
     this.setCodeEditorState = setCodeEditorState;
-  }
-
-  updateAIAnalystState(
-    aiAnalystState: AIAnalystState,
-    setAIAnalystState: SetterOrUpdater<AIAnalystState>,
-    submitAIAnalystPrompt: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>
-  ): void {
-    this.aiAnalystState = aiAnalystState;
-    this.setAIAnalystState = setAIAnalystState;
-    this.submitAIAnalystPrompt = submitAIAnalystPrompt;
   }
 
   get showGridLines(): boolean {

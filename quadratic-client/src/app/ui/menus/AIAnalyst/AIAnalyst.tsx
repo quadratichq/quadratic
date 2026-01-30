@@ -1,8 +1,4 @@
-import {
-  aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystShowChatHistoryAtom,
-  showAIAnalystAtom,
-} from '@/app/atoms/aiAnalystAtom';
+import { currentChatMessagesCountAtom, showAIAnalystAtom, showChatHistoryAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
@@ -15,14 +11,15 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = memo(() => {
-  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const showAIAnalyst = useAtomValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
-  const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const showChatHistory = useAtomValue(showChatHistoryAtom);
+  const messagesCount = useAtomValue(currentChatMessagesCountAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();

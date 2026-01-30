@@ -1,10 +1,10 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type GetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetTextFormats]['responseSchema']>;
+type GetTextFormatsResponse = AIToolsArgs[AITool.GetTextFormats];
 
 export const GetTextFormats = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -18,7 +18,7 @@ export const GetTextFormats = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.GetTextFormats].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.GetTextFormats].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[GetTextFormats] Failed to parse args: ', error);

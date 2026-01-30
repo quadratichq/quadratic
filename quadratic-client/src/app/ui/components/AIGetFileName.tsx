@@ -1,10 +1,11 @@
+import { currentChatMessagesAtom, loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useGetFileName } from '@/app/ai/hooks/useGetFileName';
 import { countWords } from '@/app/ai/utils/wordCount';
-import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { aiAssistantLoadingAtom, aiAssistantMessagesAtom } from '@/app/atoms/codeEditorAtom';
 import { fileManuallyRenamedAtom } from '@/app/atoms/fileNamingAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { DEFAULT_FILE_NAME } from '@/shared/constants/appConstants';
+import { useAtomValue } from 'jotai';
 import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useEffect, useRef } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -12,10 +13,10 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 export const AIGetFileName = memo(() => {
   const { name, renameFile } = useFileContext();
   const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
-  const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+  const aiAnalystLoading = useAtomValue(loadingAtom);
   const fileManuallyRenamed = useRecoilValue(fileManuallyRenamedAtom);
   const aiAssistantMessages = useRecoilValue(aiAssistantMessagesAtom);
-  const aiAnalystMessages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const aiAnalystMessages = useAtomValue(currentChatMessagesAtom);
 
   const hasTriggeredRef = useRef(false);
 

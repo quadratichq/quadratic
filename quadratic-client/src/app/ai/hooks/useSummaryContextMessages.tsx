@@ -66,6 +66,7 @@ File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({
         text += `- user's current sheet\n`;
       }
       text += `- ${sheets.getAISheetBounds(sheetContext.sheet_name)}\n`;
+      text += `- default column width: ${sheetContext.default_column_width}px, default row height: ${sheetContext.default_row_height}px\n`;
 
       if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
         text += `- ${sheetContext.data_tables.length} data ${pluralize('table', sheetContext.data_tables.length)}\n`;

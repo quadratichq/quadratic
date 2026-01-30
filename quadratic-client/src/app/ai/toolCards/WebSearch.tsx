@@ -2,12 +2,12 @@
 //! the state of the grid).
 
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type z from 'zod';
 
-type WebSearchResponse = z.infer<(typeof aiToolsSpec)[AITool.WebSearch]['responseSchema']>;
+type WebSearchResponse = AIToolsArgs[AITool.WebSearch];
 
 export const WebSearch = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -21,7 +21,7 @@ export const WebSearch = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.WebSearch].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.WebSearch].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[WebSearch] Failed to parse args: ', error);

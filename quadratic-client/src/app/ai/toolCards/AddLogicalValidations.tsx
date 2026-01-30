@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type AddLogicalValidationResponse = z.infer<(typeof aiToolsSpec)[AITool.AddLogicalValidation]['responseSchema']>;
+type AddLogicalValidationResponse = AIToolsArgs[AITool.AddLogicalValidation];
 
 export const AddLogicalValidation = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -20,7 +20,7 @@ export const AddLogicalValidation = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.AddLogicalValidation].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.AddLogicalValidation].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[AddLogicalValidation] Failed to parse args: ', error);

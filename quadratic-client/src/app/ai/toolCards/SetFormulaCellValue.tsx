@@ -9,13 +9,13 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
-type SetFormulaCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetFormulaCellValue]['responseSchema']>;
+type SetFormulaCellValueResponse = AIToolsArgs[AITool.SetFormulaCellValue];
 
 export const SetFormulaCellValue = memo(
   ({
@@ -40,7 +40,7 @@ export const SetFormulaCellValue = memo(
 
       try {
         const json = JSON.parse(args);
-        const parsed = aiToolsSpec[AITool.SetFormulaCellValue].responseSchema.safeParse(json);
+        const parsed = AIToolsArgsSchema[AITool.SetFormulaCellValue].safeParse(json);
         setToolArgs(parsed);
 
         // Set code cell position to the first formula's position (for single formula actions)

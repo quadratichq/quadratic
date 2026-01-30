@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type TableColumnSettingsResponse = z.infer<(typeof aiToolsSpec)[AITool.TableColumnSettings]['responseSchema']>;
+type TableColumnSettingsResponse = AIToolsArgs[AITool.TableColumnSettings];
 
 export const TableColumnSettings = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -20,7 +20,7 @@ export const TableColumnSettings = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.TableColumnSettings].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.TableColumnSettings].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[TableColumnSettings] Failed to parse args: ', error);

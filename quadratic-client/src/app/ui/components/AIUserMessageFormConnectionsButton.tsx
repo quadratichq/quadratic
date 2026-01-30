@@ -1,4 +1,4 @@
-import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
+import { activeSchemaConnectionUuidAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import {
   editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateTeamUuidAtom,
@@ -21,10 +21,11 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
+import { useSetAtom } from 'jotai';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 const SYNCED_CONNECTION_POLL_INTERVAL_MS = 10000; // 10 seconds
 
@@ -103,7 +104,7 @@ export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, context, setContext, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
     const { connections } = useConnectionsFetcher();
     const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
-    const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
+    const setAIAnalystActiveSchemaConnectionUuid = useSetAtom(activeSchemaConnectionUuidAtom);
 
     const handleOnClickButton = useCallback(() => {
       trackEvent('[AIConnectionsPicker].show');

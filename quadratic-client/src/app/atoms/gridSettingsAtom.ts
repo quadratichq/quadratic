@@ -1,10 +1,10 @@
+import { aiStore, showAIAnalystAtom as showAIAnalystJotaiAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { AtomEffect } from 'recoil';
 import { DefaultValue, atom, selector } from 'recoil';
-import { showAIAnalystAtom } from './aiAnalystAtom';
 
 const SETTINGS_KEY = 'viewSettings';
 
@@ -122,7 +122,7 @@ export const showAIAnalystOnStartupAtom = selector<boolean>({
 
     // Also update the AI panel visibility to match the setting when user toggles it
     if (actualValue !== undefined) {
-      set(showAIAnalystAtom, actualValue);
+      aiStore.set(showAIAnalystJotaiAtom, actualValue);
     }
 
     focusGrid();

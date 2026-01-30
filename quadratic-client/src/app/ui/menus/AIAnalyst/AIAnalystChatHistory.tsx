@@ -1,19 +1,19 @@
-import { aiAnalystChatsAtom, aiAnalystCurrentChatAtom, aiAnalystShowChatHistoryAtom } from '@/app/atoms/aiAnalystAtom';
+import { chatsWithPersistenceAtom, currentChatAtom, showChatHistoryAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { DeleteIcon, FileRenameIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtom, useSetAtom } from 'jotai';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useMemo, useState } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
 
 const DEFAULT_CHAT_NAME = 'Untitled chat';
 
 export const AIAnalystChatHistory = memo(() => {
-  const [chats, setChats] = useRecoilState(aiAnalystChatsAtom);
-  const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
-  const setShowChatHistory = useSetRecoilState(aiAnalystShowChatHistoryAtom);
+  const [chats, setChats] = useAtom(chatsWithPersistenceAtom);
+  const [currentChat, setCurrentChat] = useAtom(currentChatAtom);
+  const setShowChatHistory = useSetAtom(showChatHistoryAtom);
   const [searchValue, setSearchValue] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
@@ -74,8 +74,8 @@ export const AIAnalystChatHistory = memo(() => {
                           onBlur={() => {
                             setEditingChatId(null);
                             if (editingChatName !== chat.name) {
-                              setChats((prev) =>
-                                prev.map((prevChat) =>
+                              setChats(
+                                chats.map((prevChat) =>
                                   prevChat.id === chat.id ? { ...prevChat, name: editingChatName } : prevChat
                                 )
                               );
@@ -116,7 +116,7 @@ export const AIAnalystChatHistory = memo(() => {
                               className="hover:text-foreground"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setChats((prev) => prev.filter((prevChat) => prevChat.id !== chat.id));
+                                setChats(chats.filter((prevChat) => prevChat.id !== chat.id));
                               }}
                             >
                               <DeleteIcon />
