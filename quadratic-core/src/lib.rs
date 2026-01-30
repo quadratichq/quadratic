@@ -69,5 +69,10 @@ pub mod limits {
 pub const DEFAULT_COLUMN_WIDTH: f64 = 100.0;
 pub const DEFAULT_ROW_HEIGHT: f64 = 21.0;
 
+pub const MIN_COLUMN_WIDTH: f64 = 20.0;
+pub const MAX_COLUMN_WIDTH: f64 = 2000.0;
+pub const MIN_ROW_HEIGHT: f64 = 10.0;
+pub const MAX_ROW_HEIGHT: f64 = 2000.0;
+
 const THUMBNAIL_WIDTH: f64 = 1280f64;
 const THUMBNAIL_HEIGHT: f64 = THUMBNAIL_WIDTH / (16f64 / 9f64);

@@ -62,6 +62,51 @@ impl SheetOffsets {
         self.row_height(y as i64) as f32
     }
 
+    /// Gets the default column width and row height
+    #[wasm_bindgen(js_name = "getDefaults")]
+    pub fn js_get_defaults(&self) -> String {
+        let (width, height) = self.defaults();
+        serde_json::json!({
+            "columnWidth": width,
+            "rowHeight": height
+        })
+        .to_string()
+    }
+
+    /// Gets the minimum and maximum column width bounds
+    #[wasm_bindgen(js_name = "getColumnWidthBounds")]
+    pub fn js_get_column_width_bounds() -> String {
+        let (min, max) = Self::column_width_bounds();
+        serde_json::json!({
+            "min": min,
+            "max": max
+        })
+        .to_string()
+    }
+
+    /// Gets the minimum and maximum row height bounds
+    #[wasm_bindgen(js_name = "getRowHeightBounds")]
+    pub fn js_get_row_height_bounds() -> String {
+        let (min, max) = Self::row_height_bounds();
+        serde_json::json!({
+            "min": min,
+            "max": max
+        })
+        .to_string()
+    }
+
+    /// Gets total width for a range of columns (inclusive)
+    #[wasm_bindgen(js_name = "getTotalColumnsWidth")]
+    pub fn js_get_total_columns_width(&self, from_column: i32, to_column: i32) -> f64 {
+        self.total_columns_width(from_column as i64, to_column as i64)
+    }
+
+    /// Gets total height for a range of rows (inclusive)
+    #[wasm_bindgen(js_name = "getTotalRowsHeight")]
+    pub fn js_get_total_rows_height(&self, from_row: i32, to_row: i32) -> f64 {
+        self.total_rows_height(from_row as i64, to_row as i64)
+    }
+
     /// gets the screen coordinate and size for a row. Returns a [`Placement`]
     #[wasm_bindgen(js_name = "getColumnPlacement")]
     pub fn js_column_placement(&self, column: i32) -> Placement {
