@@ -13,7 +13,7 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       code: string,
       connector_type: ConnectionKind,
-      connection_id: String
+      connection_id: string
     ) => void;
   };
 
@@ -35,7 +35,7 @@ class CoreConnection {
     sheetId: string,
     code: string,
     connector_type: ConnectionKind,
-    connection_id: String
+    connection_id: string
   ) => {
     this.lastTransactionId = transactionId;
 
@@ -108,7 +108,7 @@ class CoreConnection {
     y: number,
     sheetId: string,
     code: string,
-    paramsJson: String
+    paramsJson: string
   ) => {
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const url = `${base}/financial/stock-prices`;
@@ -122,7 +122,7 @@ class CoreConnection {
 
     try {
       // Parse the JSON params from the connection_id (contains stock request parameters)
-      const params = JSON.parse(paramsJson as string);
+      const params = JSON.parse(paramsJson);
 
       const body = {
         identifier: params.identifier,

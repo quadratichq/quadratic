@@ -393,16 +393,16 @@ fn extract_cell_value(price_data: &serde_json::Value, property: &StockProperty) 
 fn parse_string_arg(arg: &str) -> Option<String> {
     let trimmed = arg.trim();
 
-    // Handle quoted strings
-    if ((trimmed.starts_with('"') && trimmed.ends_with('"'))
-        || (trimmed.starts_with('\'') && trimmed.ends_with('\'')))
-        && trimmed.len() >= 2
-    {
-        return Some(trimmed[1..trimmed.len() - 1].to_string());
-    }
-
-    // Not a quoted string
-    None
+    // Handle quoted strings using strip_prefix/strip_suffix for clarity
+    trimmed
+        .strip_prefix('"')
+        .and_then(|s| s.strip_suffix('"'))
+        .or_else(|| {
+            trimmed
+                .strip_prefix('\'')
+                .and_then(|s| s.strip_suffix('\''))
+        })
+        .map(String::from)
 }
 
 /// Split arguments respecting quoted strings

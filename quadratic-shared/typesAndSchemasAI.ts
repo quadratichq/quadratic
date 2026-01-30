@@ -243,10 +243,13 @@ export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
 export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
+// ConnectionKind includes both user-manageable connections (ConnectionType) and internal ones (STOCKHISTORY)
+const ConnectionKindSchema = ConnectionTypeSchema.or(z.literal('STOCKHISTORY'));
+
 const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
     Connection: z.object({
-      kind: ConnectionTypeSchema,
+      kind: ConnectionKindSchema,
       id: z.string(),
     }),
   })

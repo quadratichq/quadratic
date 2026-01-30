@@ -82,6 +82,14 @@ class PythonWebWorker {
                 data: result.data,
                 error: result.error,
               });
+            })
+            .catch((error) => {
+              this.send({
+                type: 'clientPythonStockPrices',
+                id: data.id,
+                data: null,
+                error: error.message || 'Unknown error fetching stock prices',
+              });
             });
         }
         break;
