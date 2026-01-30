@@ -39,6 +39,29 @@ export interface PythonClientGetJwt {
   id: number;
 }
 
-export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit | PythonClientGetJwt;
+export interface PythonClientCaptureChartImage {
+  type: 'pythonClientCaptureChartImage';
+  id: number;
+  html: string;
+  width: number;
+  height: number;
+}
 
-export type ClientPythonMessage = ClientPythonInit | ClientPythonCoreChannel | ClientPythonGetJwt;
+export interface ClientPythonChartImage {
+  type: 'clientPythonChartImage';
+  id: number;
+  image: string | null;
+}
+
+export type PythonClientMessage =
+  | PythonClientLoadError
+  | PythonClientState
+  | PythonClientInit
+  | PythonClientGetJwt
+  | PythonClientCaptureChartImage;
+
+export type ClientPythonMessage =
+  | ClientPythonInit
+  | ClientPythonCoreChannel
+  | ClientPythonGetJwt
+  | ClientPythonChartImage;

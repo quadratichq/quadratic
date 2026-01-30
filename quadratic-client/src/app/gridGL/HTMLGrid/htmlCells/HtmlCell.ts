@@ -30,6 +30,9 @@ export class HtmlCell {
   // cache for the thumbnail image
   private thumbnailImage: Promise<string | undefined> | undefined;
 
+  // pre-generated chart image from server (base64 WebP data URL)
+  private chartImage: string | undefined;
+
   // whether the cell is active
   active = false;
 
@@ -97,6 +100,9 @@ export class HtmlCell {
     this.div.append(this.bottom);
     this.div.append(this.border);
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
+
+    // Store pre-generated chart image if available
+    this.chartImage = htmlCell.chart_image ?? undefined;
 
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
       this.afterLoad();
@@ -219,6 +225,7 @@ export class HtmlCell {
     this.border.style.height = `${this.height}px`;
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
     this.thumbnailImage = undefined;
+    this.chartImage = htmlCell.chart_image ?? undefined;
     this.abortController.abort();
     this.abortController = new AbortController();
   }
@@ -424,6 +431,11 @@ export class HtmlCell {
   };
 
   getImageDataUrl = (): Promise<string | undefined> => {
+    // Use pre-generated chart image if available
+    if (this.chartImage) {
+      return Promise.resolve(this.chartImage);
+    }
+
     if (this.thumbnailImage) {
       return this.thumbnailImage;
     }

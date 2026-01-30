@@ -12,11 +12,18 @@ import { loadPyodide } from 'pyodide';
 
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
+const DEFAULT_CHART_WIDTH = 600;
+const DEFAULT_CHART_HEIGHT = 460;
+
 // eslint-disable-next-line no-restricted-globals
 const SELF = self;
 
 function isEmpty(value: JsCellValueResult | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
+}
+
+function isHtmlString(value: unknown): value is string {
+  return typeof value === 'string' && value.includes('<html');
 }
 
 class Python {
@@ -300,6 +307,33 @@ class Python {
       pythonRun.array_output = [];
     }
 
+    // Capture chart image if output is a Plotly chart.
+    // The Python side explicitly sets output_type = "Chart" for Plotly figures,
+    // so we rely on that as the primary detection method.
+    let chartImage: string | null = null;
+    const isChart = pythonRun.output_type === 'Chart';
+
+    if (isChart && pythonRun.output) {
+      const outputTuple = pythonRun.output as unknown as [string, number | string];
+      let htmlString = outputTuple[0];
+
+      // If the first element isn't a string with HTML, try using the stringified output
+      if (!isHtmlString(htmlString)) {
+        const outputStr = String(pythonRun.output);
+        if (isHtmlString(outputStr)) {
+          htmlString = outputStr;
+        }
+      }
+
+      if (isHtmlString(htmlString)) {
+        try {
+          chartImage = await pythonClient.captureChartImage(htmlString, DEFAULT_CHART_WIDTH, DEFAULT_CHART_HEIGHT);
+        } catch (e) {
+          console.error('[python.ts] Failed to capture chart image:', e);
+        }
+      }
+    }
+
     let codeResult: JsCodeResult | undefined = {
       transaction_id: this.transactionId,
       success: pythonRun.success,
@@ -310,6 +344,7 @@ class Python {
       line_number: pythonRun.lineno ?? null,
       output_display_type: pythonRun.output_type ?? null,
       chart_pixel_output: null,
+      chart_image: chartImage,
       has_headers: !!pythonRun.has_headers,
     };
 
