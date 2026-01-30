@@ -147,6 +147,7 @@ pub trait RenderContext {
 
     /// Draw text using MSDF rendering
     /// Vertex format: [x, y, u, v, r, g, b, a, ...] (8 floats per vertex)
+    #[allow(clippy::too_many_arguments)]
     fn draw_text(
         &mut self,
         vertices: &[f32],

@@ -187,3 +187,148 @@ impl TableData {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::CodeCellLanguage;
+
+    fn create_test_code_cell() -> RenderCodeCell {
+        RenderCodeCell {
+            x: 1,
+            y: 1,
+            w: 3,
+            h: 5,
+            language: CodeCellLanguage::Python,
+            state: RenderCodeCellState::Success,
+            spill_error: None,
+            name: "TestTable".to_string(),
+            columns: vec![],
+            first_row_header: false,
+            sort: None,
+            sort_dirty: false,
+            alternating_colors: false,
+            is_code: true,
+            is_html: false,
+            is_html_image: false,
+            show_name: true,
+            show_columns: true,
+            last_modified: 0,
+        }
+    }
+
+    #[test]
+    fn test_table_data_new() {
+        let code_cell = create_test_code_cell();
+        let data = TableData::new(code_cell);
+
+        assert!(data.is_dirty());
+        assert!(!data.is_active());
+        assert_eq!(data.code_cell.name, "TestTable");
+    }
+
+    #[test]
+    fn test_set_active() {
+        let code_cell = create_test_code_cell();
+        let mut data = TableData::new(code_cell);
+        data.mark_clean();
+
+        assert!(!data.is_active());
+
+        data.set_active(true);
+        assert!(data.is_active());
+        assert!(data.is_dirty());
+
+        data.mark_clean();
+        data.set_active(false);
+        assert!(!data.is_active());
+        assert!(data.is_dirty());
+    }
+
+    #[test]
+    fn test_set_active_no_change() {
+        let code_cell = create_test_code_cell();
+        let mut data = TableData::new(code_cell);
+        data.mark_clean();
+
+        data.set_active(false); // Already false
+        assert!(!data.is_dirty());
+    }
+
+    #[test]
+    fn test_outline_color() {
+        let code_cell = create_test_code_cell();
+        let mut data = TableData::new(code_cell);
+
+        let inactive_color = data.outline_color();
+
+        data.set_active(true);
+        let active_color = data.outline_color();
+
+        assert_ne!(inactive_color, active_color);
+    }
+
+    #[test]
+    fn test_mark_dirty_clean() {
+        let code_cell = create_test_code_cell();
+        let mut data = TableData::new(code_cell);
+
+        data.mark_clean();
+        assert!(!data.is_dirty());
+
+        data.mark_dirty();
+        assert!(data.is_dirty());
+    }
+
+    #[test]
+    fn test_header_height_no_headers() {
+        let mut code_cell = create_test_code_cell();
+        code_cell.show_name = false;
+        code_cell.show_columns = false;
+        let data = TableData::new(code_cell);
+
+        assert_eq!(data.header_height(), 0.0);
+    }
+
+    #[test]
+    fn test_point_in_name_no_bounds() {
+        let mut code_cell = create_test_code_cell();
+        code_cell.show_name = false;
+        let data = TableData::new(code_cell);
+
+        assert!(!data.point_in_name(50.0, 50.0));
+    }
+
+    #[test]
+    fn test_point_in_column_headers_no_bounds() {
+        let mut code_cell = create_test_code_cell();
+        code_cell.show_columns = false;
+        let data = TableData::new(code_cell);
+
+        assert!(!data.point_in_column_headers(50.0, 50.0));
+    }
+
+    #[test]
+    fn test_column_at_x_empty() {
+        let code_cell = create_test_code_cell();
+        let data = TableData::new(code_cell);
+
+        // No column bounds set
+        assert!(data.column_at_x(50.0).is_none());
+    }
+
+    #[test]
+    fn test_update_bounds() {
+        let code_cell = create_test_code_cell();
+        let mut data = TableData::new(code_cell);
+        let offsets = SheetOffsets::default();
+
+        data.mark_clean();
+        data.update_bounds(&offsets);
+
+        assert!(data.is_dirty());
+        // Bounds should be non-zero
+        assert!(data.table_bounds.width > 0.0);
+        assert!(data.table_bounds.height > 0.0);
+    }
+}

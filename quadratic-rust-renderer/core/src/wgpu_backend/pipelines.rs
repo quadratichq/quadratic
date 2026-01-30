@@ -154,7 +154,7 @@ impl RenderPipelines {
             vertex: VertexState {
                 module: &triangle_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[vertex_layout.clone()],
+                buffers: std::slice::from_ref(&vertex_layout),
                 compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
@@ -218,7 +218,7 @@ impl RenderPipelines {
             vertex: VertexState {
                 module: &text_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[text_vertex_layout.clone()],
+                buffers: std::slice::from_ref(&text_vertex_layout),
                 compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
@@ -416,6 +416,7 @@ impl RenderPipelines {
         pass.draw_indexed(0..indices.len() as u32, 0, 0..1);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_sprites<'a>(
         &'a self,
         pass: &mut RenderPass<'a>,

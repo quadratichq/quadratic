@@ -271,3 +271,275 @@ impl Default for Viewport {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_viewport() {
+        let vp = Viewport::new();
+        assert_eq!(vp.width(), 800.0);
+        assert_eq!(vp.height(), 600.0);
+        assert_eq!(vp.scale(), 1.0);
+        assert_eq!(vp.x(), 0.0);
+        assert_eq!(vp.y(), 0.0);
+        assert!(vp.is_dirty());
+    }
+
+    #[test]
+    fn test_viewport_with_size() {
+        let vp = Viewport::with_size(1920.0, 1080.0);
+        assert_eq!(vp.width(), 1920.0);
+        assert_eq!(vp.height(), 1080.0);
+    }
+
+    #[test]
+    fn test_set_position() {
+        let mut vp = Viewport::new();
+        vp.mark_clean();
+        assert!(!vp.is_dirty());
+
+        vp.set_position(100.0, 200.0);
+        assert_eq!(vp.x(), 100.0);
+        assert_eq!(vp.y(), 200.0);
+        assert!(vp.is_dirty());
+    }
+
+    #[test]
+    fn test_set_position_no_change() {
+        let mut vp = Viewport::new();
+        vp.set_position(100.0, 200.0);
+        vp.mark_clean();
+
+        // Setting same position should not dirty
+        vp.set_position(100.0, 200.0);
+        assert!(!vp.is_dirty());
+    }
+
+    #[test]
+    fn test_set_scale() {
+        let mut vp = Viewport::new();
+        vp.mark_clean();
+
+        vp.set_scale(2.0);
+        assert_eq!(vp.scale(), 2.0);
+        assert!(vp.is_dirty());
+    }
+
+    #[test]
+    fn test_scale_clamping_min() {
+        let mut vp = Viewport::new();
+        vp.set_scale(0.001); // Below min_scale of 0.01
+        assert_eq!(vp.scale(), 0.01);
+    }
+
+    #[test]
+    fn test_scale_clamping_max() {
+        let mut vp = Viewport::new();
+        vp.set_scale(100.0); // Above max_scale of 10.0
+        assert_eq!(vp.scale(), 10.0);
+    }
+
+    #[test]
+    fn test_resize() {
+        let mut vp = Viewport::new();
+        vp.mark_clean();
+
+        vp.resize(1024.0, 768.0, 2.0);
+        assert_eq!(vp.width(), 1024.0);
+        assert_eq!(vp.height(), 768.0);
+        assert_eq!(vp.dpr(), 2.0);
+        assert!(vp.is_dirty());
+    }
+
+    #[test]
+    fn test_resize_no_change() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.mark_clean();
+
+        // Resizing to same dimensions should not dirty
+        vp.resize(800.0, 600.0, 1.0);
+        assert!(!vp.is_dirty());
+    }
+
+    #[test]
+    fn test_effective_scale() {
+        let mut vp = Viewport::new();
+        vp.set_scale(2.0);
+        vp.resize(800.0, 600.0, 2.0); // dpr = 2.0
+
+        assert_eq!(vp.effective_scale(), 4.0); // 2.0 * 2.0
+    }
+
+    #[test]
+    fn test_screen_to_world_identity() {
+        let vp = Viewport::with_size(800.0, 600.0);
+        // At scale=1, dpr=1, position=0: screen coords = world coords
+        let world = vp.screen_to_world(100.0, 200.0);
+        assert_eq!(world, Vec2::new(100.0, 200.0));
+    }
+
+    #[test]
+    fn test_screen_to_world_with_offset() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.set_position(50.0, 100.0);
+
+        let world = vp.screen_to_world(100.0, 100.0);
+        assert_eq!(world, Vec2::new(150.0, 200.0));
+    }
+
+    #[test]
+    fn test_screen_to_world_with_scale() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.set_scale(2.0);
+
+        // At scale=2: screen 100px = 50 world units
+        let world = vp.screen_to_world(100.0, 100.0);
+        assert_eq!(world, Vec2::new(50.0, 50.0));
+    }
+
+    #[test]
+    fn test_screen_to_world_with_dpr() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.resize(800.0, 600.0, 2.0);
+
+        // At dpr=2: screen 100px (device pixels) = 50 world units
+        let world = vp.screen_to_world(100.0, 100.0);
+        assert_eq!(world, Vec2::new(50.0, 50.0));
+    }
+
+    #[test]
+    fn test_world_to_screen_identity() {
+        let vp = Viewport::with_size(800.0, 600.0);
+        let screen = vp.world_to_screen(100.0, 200.0);
+        assert_eq!(screen, Vec2::new(100.0, 200.0));
+    }
+
+    #[test]
+    fn test_world_to_screen_with_offset() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.set_position(50.0, 100.0);
+
+        let screen = vp.world_to_screen(150.0, 200.0);
+        assert_eq!(screen, Vec2::new(100.0, 100.0));
+    }
+
+    #[test]
+    fn test_world_to_screen_with_scale() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.set_scale(2.0);
+
+        // At scale=2: 50 world units = 100 screen px
+        let screen = vp.world_to_screen(50.0, 50.0);
+        assert_eq!(screen, Vec2::new(100.0, 100.0));
+    }
+
+    #[test]
+    fn test_screen_world_roundtrip() {
+        let mut vp = Viewport::with_size(1024.0, 768.0);
+        vp.set_position(123.0, 456.0);
+        vp.set_scale(1.5);
+        vp.resize(1024.0, 768.0, 2.0);
+
+        let original = Vec2::new(500.0, 300.0);
+        let screen = vp.world_to_screen(original.x, original.y);
+        let world = vp.screen_to_world(screen.x, screen.y);
+
+        assert!((original.x - world.x).abs() < 0.001);
+        assert!((original.y - world.y).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_visible_bounds() {
+        let vp = Viewport::with_size(800.0, 600.0);
+        let bounds = vp.visible_bounds();
+
+        assert_eq!(bounds.left, 0.0);
+        assert_eq!(bounds.top, 0.0);
+        assert_eq!(bounds.right, 800.0);
+        assert_eq!(bounds.bottom, 600.0);
+        assert_eq!(bounds.width, 800.0);
+        assert_eq!(bounds.height, 600.0);
+    }
+
+    #[test]
+    fn test_visible_bounds_with_offset() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.set_position(100.0, 50.0);
+        let bounds = vp.visible_bounds();
+
+        assert_eq!(bounds.left, 100.0);
+        assert_eq!(bounds.top, 50.0);
+        assert_eq!(bounds.right, 900.0);
+        assert_eq!(bounds.bottom, 650.0);
+    }
+
+    #[test]
+    fn test_visible_bounds_with_scale() {
+        let mut vp = Viewport::with_size(800.0, 600.0);
+        vp.set_scale(2.0);
+        let bounds = vp.visible_bounds();
+
+        // At scale=2: viewport shows half the world distance
+        assert_eq!(bounds.width, 400.0);
+        assert_eq!(bounds.height, 300.0);
+    }
+
+    #[test]
+    fn test_set_viewport() {
+        let mut vp = Viewport::new();
+        vp.mark_clean();
+
+        vp.set_viewport(10.0, 20.0, 1.5);
+        assert_eq!(vp.x(), 10.0);
+        assert_eq!(vp.y(), 20.0);
+        assert_eq!(vp.scale(), 1.5);
+        assert!(vp.is_dirty());
+    }
+
+    #[test]
+    fn test_mark_dirty() {
+        let mut vp = Viewport::new();
+        vp.mark_clean();
+        assert!(!vp.is_dirty());
+
+        vp.mark_dirty();
+        assert!(vp.is_dirty());
+    }
+
+    #[test]
+    fn test_view_projection_matrix_not_zero() {
+        let vp = Viewport::with_size(800.0, 600.0);
+        let matrix = vp.view_projection_matrix();
+
+        // Matrix should not be all zeros
+        let cols: [[f32; 4]; 4] = matrix.to_cols_array_2d();
+        let has_nonzero = cols.iter().flatten().any(|&v| v != 0.0);
+        assert!(has_nonzero, "Matrix should have non-zero elements");
+    }
+
+    #[test]
+    fn test_view_projection_matrix_with_offset() {
+        let vp = Viewport::with_size(800.0, 600.0);
+        let matrix_no_offset = vp.view_projection_matrix();
+        let matrix_with_offset = vp.view_projection_matrix_with_offset(50.0, 30.0);
+
+        // Matrices should be different when offset is applied
+        assert_ne!(
+            matrix_no_offset.to_cols_array(),
+            matrix_with_offset.to_cols_array()
+        );
+    }
+
+    #[test]
+    fn test_visible_hash_bounds() {
+        let vp = Viewport::with_size(800.0, 600.0);
+        let offsets = quadratic_core::sheet_offsets::SheetOffsets::default();
+        let hash_bounds = vp.visible_hash_bounds(&offsets);
+
+        // With default viewport at origin, we should have some valid hash bounds
+        assert!(hash_bounds.min_hash_x <= hash_bounds.max_hash_x);
+        assert!(hash_bounds.min_hash_y <= hash_bounds.max_hash_y);
+    }
+}

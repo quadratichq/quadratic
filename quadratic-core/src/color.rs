@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow, bail};
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
@@ -33,9 +33,10 @@ impl Rgba {
         }
     }
 
-    pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
-        // TODO(jrice): serde
-        assert_eq!(&color_str[0..=0], "#");
+    pub fn color_from_str(color_str: &str) -> Result<Self> {
+        if !color_str.starts_with('#') {
+            bail!("Color string must start with '#'");
+        }
 
         // Check length of the string
         let len = color_str.len();
@@ -181,8 +182,8 @@ impl TryFrom<&str> for Rgba {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self> {
-        if value.starts_with("#") {
-            Self::color_from_str(value).map_err(|e| anyhow!("Invalid color string: {}", e))
+        if value.starts_with('#') {
+            Self::color_from_str(value)
         } else if value.starts_with("rgb(") {
             Self::from_css_str(value)
         } else {

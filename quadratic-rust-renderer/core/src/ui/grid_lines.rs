@@ -114,3 +114,133 @@ impl Default for GridLines {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::viewport::Viewport;
+
+    #[test]
+    fn test_grid_lines_new() {
+        let grid_lines = GridLines::new();
+        assert!(grid_lines.is_dirty());
+        assert!(grid_lines.get_buffer().is_none());
+    }
+
+    #[test]
+    fn test_grid_lines_default() {
+        let grid_lines = GridLines::default();
+        assert!(grid_lines.is_dirty());
+    }
+
+    #[test]
+    fn test_mark_clean_dirty() {
+        let mut grid_lines = GridLines::new();
+
+        grid_lines.mark_clean();
+        assert!(!grid_lines.is_dirty());
+
+        grid_lines.mark_dirty();
+        assert!(grid_lines.is_dirty());
+    }
+
+    #[test]
+    fn test_update_clears_dirty() {
+        let mut grid_lines = GridLines::new();
+        let viewport = Viewport::new();
+        let offsets = SheetOffsets::default();
+
+        assert!(grid_lines.is_dirty());
+
+        grid_lines.update(&viewport, &offsets);
+        assert!(!grid_lines.is_dirty());
+    }
+
+    #[test]
+    fn test_update_generates_buffer() {
+        let mut grid_lines = GridLines::new();
+        let viewport = Viewport::new();
+        let offsets = SheetOffsets::default();
+
+        assert!(grid_lines.get_buffer().is_none());
+
+        grid_lines.update(&viewport, &offsets);
+
+        assert!(grid_lines.get_buffer().is_some());
+    }
+
+    #[test]
+    fn test_update_skipped_when_clean() {
+        let mut grid_lines = GridLines::new();
+        let viewport = Viewport::new();
+        let offsets = SheetOffsets::default();
+
+        grid_lines.update(&viewport, &offsets);
+        grid_lines.mark_clean();
+
+        // This update should be skipped
+        grid_lines.update(&viewport, &offsets);
+        assert!(!grid_lines.is_dirty());
+    }
+
+    #[test]
+    fn test_generate_for_bounds() {
+        let offsets = SheetOffsets::default();
+        let buffer = GridLines::generate_for_bounds(0.0, 0.0, 200.0, 100.0, &offsets);
+
+        // Should have vertices for grid lines
+        assert!(!buffer.vertices.is_empty());
+    }
+
+    #[test]
+    fn test_generate_for_bounds_larger() {
+        let offsets = SheetOffsets::default();
+        let buffer = GridLines::generate_for_bounds(0.0, 0.0, 1000.0, 500.0, &offsets);
+
+        // Larger area should have more vertices
+        assert!(!buffer.vertices.is_empty());
+    }
+
+    #[test]
+    fn test_generate_for_bounds_offset() {
+        let offsets = SheetOffsets::default();
+        let buffer = GridLines::generate_for_bounds(100.0, 50.0, 300.0, 200.0, &offsets);
+
+        // Should still generate lines for offset viewport
+        assert!(!buffer.vertices.is_empty());
+    }
+
+    #[test]
+    fn test_generate_for_bounds_negative_clipped() {
+        let offsets = SheetOffsets::default();
+        // Negative coordinates should be clipped to 0
+        let buffer = GridLines::generate_for_bounds(-100.0, -50.0, 200.0, 100.0, &offsets);
+
+        // Should still work
+        assert!(!buffer.vertices.is_empty());
+    }
+
+    #[test]
+    fn test_get_vertices() {
+        let mut grid_lines = GridLines::new();
+        let viewport = Viewport::new();
+        let offsets = SheetOffsets::default();
+
+        // Before update, no vertices
+        assert!(grid_lines.get_vertices().is_none());
+
+        grid_lines.update(&viewport, &offsets);
+
+        // After update, should have vertices
+        let vertices = grid_lines.get_vertices();
+        assert!(vertices.is_some());
+        assert!(!vertices.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_grid_line_color() {
+        // Verify the color constant is valid
+        assert_eq!(GRID_LINE_COLOR.len(), 4);
+        assert_eq!(GRID_LINE_COLOR[3], 1.0); // Fully opaque
+    }
+}
