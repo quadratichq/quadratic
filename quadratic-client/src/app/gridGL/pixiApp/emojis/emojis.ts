@@ -1,124 +1,191 @@
 import { debugFlags } from '@/app/debugFlags/debugFlags';
+import { events } from '@/app/events/events';
 import { BaseTexture, Rectangle, Texture } from 'pixi.js';
 
-const PAGE_SIZE = 1024;
-const CHARACTER_SIZE = 125;
-const FONT_NAME = 'OpenSans';
+export { EMOJI_ADVANCE_RATIO, EMOJI_X_OFFSET_RATIO, EMOJI_Y_OFFSET_RATIO, SCALE_EMOJI } from './emojiConstants';
 
-// this scales the emoji to ensure it fits in the cell
-export const SCALE_EMOJI = 0.81;
+// Strip variation selectors (U+FE0F, U+FE0E) from emoji
+function stripVariationSelectors(emoji: string): string {
+  return emoji.replace(/[\uFE0E\uFE0F]/g, '');
+}
 
-// This holds the location to place the next requested emoji
-interface CurrentLocation {
-  baseTexture: number;
+interface EmojiLocation {
+  page: number;
   x: number;
   y: number;
+  width: number;
+  height: number;
+}
+
+interface EmojiMapping {
+  pageSize: number;
+  characterSize: number;
+  scaleEmoji: number;
+  pages: { filename: string; emojiCount: number }[];
+  emojis: Record<string, EmojiLocation>;
 }
 
 class Emojis {
-  // we keep pages of base textures using the PAGE_SIZE x PAGE_SIZE canvas(es)
-  private baseTextures: BaseTexture[] = [];
+  // Base textures for each spritesheet page (loaded on-demand)
+  private baseTextures: Map<number, BaseTexture> = new Map();
 
-  // this holds individual character textures (keyed by full emoji string)
+  // Track which pages are currently loading
+  private loadingPages: Set<number> = new Set();
+
+  // Cached textures for individual emojis (from spritesheets)
   private emojiTextures: Map<string, Texture> = new Map();
 
-  // this tracks the current location in the base textures
-  private currentLocation: CurrentLocation = { baseTexture: -1, x: 0, y: 0 };
+  // Mapping from emoji string to location in spritesheet
+  private mapping: EmojiMapping | null = null;
 
-  // this needs to be called the first time to ensure the emoji font is loaded
-  // (this is called before every ensureCharacter because we don't want to load
-  // the emoji font unless the user has emojis in their document)
-  private initialize() {
-    if (this.baseTextures.length > 0) return;
-    this.newBaseTexture();
+  // Loading state for the mapping JSON
+  private mappingPromise: Promise<void> | null = null;
+  private mappingLoaded = false;
+
+  /**
+   * Load the emoji mapping JSON. This is called lazily when emojis are first requested.
+   * The mapping is small; actual spritesheet pages are loaded on-demand.
+   */
+  private async loadMapping(): Promise<void> {
+    if (this.mappingLoaded) return;
+    if (this.mappingPromise) return this.mappingPromise;
+
+    this.mappingPromise = this.fetchMapping();
+    await this.mappingPromise;
   }
 
-  private newBaseTexture(): number {
-    const page = document.createElement('canvas');
-    page.width = PAGE_SIZE;
-    page.height = PAGE_SIZE;
+  private async fetchMapping(): Promise<void> {
+    try {
+      const response = await fetch('/emojis/emoji-mapping.json');
+      if (!response.ok) {
+        throw new Error(`Failed to load emoji mapping: ${response.status}`);
+      }
+      this.mapping = await response.json();
 
-    // Create the BaseTexture from the canvas
-    const baseTexture = BaseTexture.from(page);
-    this.currentLocation = { baseTexture: this.currentLocation.baseTexture + 1, x: 0, y: 0 };
-    this.baseTextures.push(baseTexture);
-    return this.baseTextures.length - 1;
+      if (!this.mapping) {
+        throw new Error('Emoji mapping is empty');
+      }
+
+      this.mappingLoaded = true;
+
+      if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+        console.log(
+          `[Emojis] Loaded mapping with ${this.mapping.pages.length} pages, ${Object.keys(this.mapping.emojis).length} emojis`
+        );
+      }
+
+      // Trigger re-render now that mapping is available
+      events.emit('setDirty', { viewport: true });
+    } catch (error) {
+      console.error('[Emojis] Failed to load emoji mapping:', error);
+      this.mappingLoaded = true;
+    }
   }
 
-  ensureCharacter(emoji: string): Texture | undefined {
-    this.initialize();
+  /**
+   * Load a specific spritesheet page on-demand.
+   */
+  private loadPage(pageIndex: number): void {
+    if (this.baseTextures.has(pageIndex) || this.loadingPages.has(pageIndex)) {
+      return;
+    }
+    if (!this.mapping) return;
 
-    let texture = this.emojiTextures.get(emoji);
-    if (texture) {
-      return texture;
+    const page = this.mapping.pages[pageIndex];
+    if (!page) return;
+
+    this.loadingPages.add(pageIndex);
+    const texture = BaseTexture.from(`/emojis/${page.filename}`);
+    this.baseTextures.set(pageIndex, texture);
+
+    const onLoaded = () => {
+      this.loadingPages.delete(pageIndex);
+      if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+        console.log(`[Emojis] Loaded page ${pageIndex}: ${page.filename}`);
+      }
+      events.emit('setDirty', { viewport: true });
+    };
+
+    if (texture.valid) {
+      onLoaded();
+    } else {
+      texture.once('loaded', onLoaded);
+    }
+  }
+
+  /**
+   * Get or create a texture for an emoji.
+   * Returns Texture.EMPTY if the mapping hasn't loaded yet.
+   * Returns undefined if the emoji is not in the spritesheet.
+   * If the page is still loading, returns a Texture that will auto-fill when ready.
+   */
+  getCharacter(emoji: string): Texture | undefined {
+    // Start loading mapping if not already started
+    if (!this.mappingLoaded && !this.mappingPromise) {
+      this.loadMapping();
     }
 
-    // The canvas for a PixiJS Texture created from a <canvas> element can be accessed via .baseTexture.resource.source
-    const { x, y, baseTexture } = this.currentLocation;
-    const resource = this.baseTextures[baseTexture].resource as any;
-    const canvas = resource.source as HTMLCanvasElement;
-    const context = canvas?.getContext('2d');
-    if (!canvas || !context) throw new Error('Expected canvas and context in ensureCharacter');
+    // Check cache first
+    const cached = this.emojiTextures.get(emoji);
+    if (cached) {
+      return cached;
+    }
 
-    // Set up font and alignment for drawing emoji
-    // Use slightly smaller font size to prevent clipping
-    const fontSize = CHARACTER_SIZE * SCALE_EMOJI;
-    context.font = `${fontSize}px ${FONT_NAME}`;
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
+    // If mapping still loading, return empty texture
+    if (!this.mappingLoaded) {
+      return Texture.EMPTY;
+    }
 
-    // Draw the emoji character centered in the cell
-    context.clearRect(x, y, CHARACTER_SIZE, CHARACTER_SIZE);
-    context.fillText(emoji, x + CHARACTER_SIZE / 2, y + CHARACTER_SIZE / 2);
-
-    this.baseTextures[baseTexture].update();
-
-    // Create a new Texture from the baseTexture at the specific location
-    texture = new Texture(this.baseTextures[baseTexture], new Rectangle(x, y, CHARACTER_SIZE, CHARACTER_SIZE));
-    this.emojiTextures.set(emoji, texture);
-
-    let newBaseTexture = baseTexture;
-    let nextX = x + CHARACTER_SIZE;
-    let nextY = y;
-    if (nextX + CHARACTER_SIZE > PAGE_SIZE) {
-      nextX = 0;
-      nextY += CHARACTER_SIZE;
-      if (nextY + CHARACTER_SIZE > PAGE_SIZE) {
-        newBaseTexture = this.newBaseTexture();
-        nextX = 0;
-        nextY = 0;
+    // Look up in mapping - try original first, then without variation selectors.
+    // The render worker may send emojis with variation selectors (e.g., ❤️) but the
+    // spritesheet stores them without (e.g., ❤), so we need to try both.
+    let location = this.mapping?.emojis[emoji];
+    if (!location) {
+      const stripped = stripVariationSelectors(emoji);
+      if (stripped !== emoji) {
+        location = this.mapping?.emojis[stripped];
       }
     }
-    this.currentLocation = { baseTexture: newBaseTexture, x: nextX, y: nextY };
-
-    if (debugFlags.getFlag('debugShowCellHashesInfo')) {
-      console.log(
-        `[Emojis] texture pages: ${this.baseTextures.length}, current location: ${x}/${PAGE_SIZE}, ${y}/${PAGE_SIZE}`
-      );
+    if (!location) {
+      // Emoji not in spritesheet
+      if (debugFlags.getFlag('debugShowCellHashesInfo')) {
+        console.log(`[Emojis] Not in spritesheet: ${emoji}`);
+      }
+      return undefined;
     }
+
+    // Get or create the base texture for this page
+    let baseTexture = this.baseTextures.get(location.page);
+    if (!baseTexture) {
+      // Start loading this page
+      this.loadPage(location.page);
+      baseTexture = this.baseTextures.get(location.page);
+      if (!baseTexture) {
+        return Texture.EMPTY;
+      }
+    }
+
+    // Create and cache the texture - it will auto-fill when BaseTexture loads
+    const texture = new Texture(baseTexture, new Rectangle(location.x, location.y, location.width, location.height));
+    this.emojiTextures.set(emoji, texture);
     return texture;
   }
 
-  getCharacter(emoji: string): Texture | undefined {
-    this.initialize();
-    return this.ensureCharacter(emoji);
+  /**
+   * Preload the emoji mapping. Call this early to avoid delays.
+   * Spritesheet pages are loaded on-demand when specific emojis are requested.
+   */
+  async preload(): Promise<void> {
+    await this.loadMapping();
   }
 
-  // call this to see the base textures in the browser
-  test() {
-    this.initialize();
-
-    const GAP = 10;
-    for (let index = 0; index < this.baseTextures.length; index++) {
-      const baseTexture = this.baseTextures[index];
-      const canvas = (baseTexture.resource as any).source as HTMLCanvasElement;
-      canvas.style.position = 'absolute';
-      canvas.style.top = `${index * GAP}px`;
-      canvas.style.left = `${index * GAP}px`;
-      canvas.style.border = '1px solid red';
-      canvas.style.background = 'white';
-      document.body.appendChild(canvas);
-    }
+  /**
+   * Check if an emoji is available in the spritesheet.
+   */
+  hasEmoji(emoji: string): boolean {
+    if (this.mapping?.emojis[emoji] !== undefined) return true;
+    const stripped = stripVariationSelectors(emoji);
+    return stripped !== emoji && this.mapping?.emojis[stripped] !== undefined;
   }
 }
 

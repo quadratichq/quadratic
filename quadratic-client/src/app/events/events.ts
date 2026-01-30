@@ -42,6 +42,7 @@ export interface DirtyObject {
   boxCells?: boolean;
   cellMoving?: boolean;
   cellImages?: boolean;
+  viewport?: boolean;
 }
 
 interface EventTypes {
