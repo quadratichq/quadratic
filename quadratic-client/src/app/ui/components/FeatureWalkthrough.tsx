@@ -7,6 +7,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ZoomInIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useMatches } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
@@ -90,8 +91,9 @@ export function FeatureWalkthrough() {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Only show walkthrough for authenticated users who haven't completed it
+  // Disabled on mobile devices
   // For testing: reset via resetFeatureWalkthrough() or API
-  const shouldShow = isAuthenticated && !completed;
+  const shouldShow = isAuthenticated && !completed && !isMobile;
 
   // Determine which steps are available based on visible elements
   useEffect(() => {
