@@ -1,7 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { AgentModeDropdownMenu } from '@/app/ui/menus/TopBar/AgentModeDropdownMenu';
 import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/EditMenubarMenu';
@@ -27,7 +26,6 @@ export const TopBarMenus = () => {
   const canEdit = useMemo(() => permissions.includes('FILE_EDIT'), [permissions]);
   const label = feedbackAction.label();
   const [agentMode, setAgentMode] = useRecoilState(agentModeAtom);
-  const aiLoading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <div className="flex items-center">
@@ -51,7 +49,6 @@ export const TopBarMenus = () => {
           }
           setAgentMode((prev) => !prev);
         }}
-        disabled={aiLoading}
       >
         <AgentModeIcon className={cn(agentMode ? 'mr-1' : '')} />
         {agentMode ? 'Agent mode' : ''}

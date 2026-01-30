@@ -1,4 +1,3 @@
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { atom } from 'recoil';
 
@@ -30,11 +29,6 @@ export const agentModeAtom = atom<boolean>({
         } else {
           localStorage.setItem(AGENT_MODE_KEY, String(newValue));
           registerEventAnalyticsData({ agentMode: newValue });
-
-          // Close AI Analyst when exiting agent mode
-          if (oldValue === true && newValue === false) {
-            pixiAppSettings.setAIAnalystState?.((prev) => ({ ...prev, showAIAnalyst: false }));
-          }
         }
       });
     },
