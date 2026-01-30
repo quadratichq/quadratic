@@ -372,6 +372,7 @@ export const AIUserMessageForm = memo(
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
         onDragEnter={handleDrag}
+        {...(isAnalyst && { 'data-ai-analyst-input': true })}
       />
     );
 
