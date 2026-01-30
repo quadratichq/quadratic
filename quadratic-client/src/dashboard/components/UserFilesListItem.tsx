@@ -29,7 +29,7 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import type { SubmitOptions } from 'react-router';
 import { Link, useFetcher, useSubmit } from 'react-router';
@@ -46,6 +46,7 @@ export function UserFilesListItem({
   viewPreferences: ViewPreferences;
 }) {
   const filters = useAtomValue(userFilesListFiltersAtom);
+  const setFilters = useSetAtom(userFilesListFiltersAtom);
   const submit = useSubmit();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -179,6 +180,17 @@ export function UserFilesListItem({
             isShared={publicLinkAccess !== 'NOT_SHARED'}
             children={<FileTypeBadge type={fileType} />}
             viewPreferences={viewPreferences}
+            onCreatorClick={(creator) => {
+              if (creator.email) {
+                setFilters((prev) => ({
+                  ...prev,
+                  fileCreatorEmails:
+                    prev.fileCreatorEmails.length === 1 && prev.fileCreatorEmails[0] === creator.email
+                      ? []
+                      : [creator.email!],
+                }));
+              }
+            }}
             actions={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

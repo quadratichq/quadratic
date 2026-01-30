@@ -987,14 +987,17 @@ impl GridController {
         let mut borders = BordersUpdates::default();
         let source_columns = clipboard.cells.columns;
 
-        // remove code tables if their anchor cell overlap the paste area
+        // Remove code tables if their anchor cell is within the paste area.
+        // This applies to both pasting code tables and regular cell values.
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            let paste_rect = Rect::new_span(insert_at, end_pos);
             sheet
-                .data_tables_pos_intersect_rect(Rect::new_span(insert_at, end_pos), false)
+                .data_tables_pos_intersect_rect(paste_rect, false)
                 .filter(|pos| {
-                    sheet
-                        .data_table_at(pos)
-                        .is_some_and(|data_table| data_table.is_code())
+                    paste_rect.contains(*pos)
+                        && sheet
+                            .data_table_at(pos)
+                            .is_some_and(|data_table| data_table.is_code())
                 })
                 .for_each(|pos| {
                     ops.push(Operation::DeleteDataTable {

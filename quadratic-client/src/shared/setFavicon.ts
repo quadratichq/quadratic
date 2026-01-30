@@ -16,16 +16,19 @@ export function setFavicon() {
   // Localhost
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     link.href = '/favicon-local.ico';
+    return;
   }
 
   // QA
   if (hostname.includes('qa.quadratic-preview.com')) {
     link.href = '/favicon-qa.ico';
+    return;
   }
 
   // Previews
   if (hostname.includes('quadratic-preview.com')) {
     link.href = '/favicon-preview.ico';
+    return;
   }
 
   // Don't do anything if you don't know what it is
