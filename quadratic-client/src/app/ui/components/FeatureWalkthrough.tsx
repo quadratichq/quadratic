@@ -6,9 +6,9 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ZoomInIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMatches } from 'react-router';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 interface WalkthroughStep {
   target: string; // data-walkthrough attribute value
@@ -86,7 +86,8 @@ export function FeatureWalkthrough() {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [availableSteps, setAvailableSteps] = useState<WalkthroughStep[]>([]);
-  const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
+  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Only show walkthrough for authenticated users who haven't completed it
   // For testing: reset via resetFeatureWalkthrough() or API
@@ -133,10 +134,10 @@ export function FeatureWalkthrough() {
   useEffect(() => {
     if (!shouldShow || !currentStep) return;
 
-    if (currentStep.target === 'ai-chat-input' && !showAIAnalyst) {
+    if (currentStep.target === 'ai-chat-input') {
       setShowAIAnalyst(true);
     }
-  }, [currentStep, shouldShow, showAIAnalyst, setShowAIAnalyst]);
+  }, [currentStep, shouldShow, setShowAIAnalyst]);
 
   useEffect(() => {
     if (!shouldShow || availableSteps.length === 0) return;
@@ -168,21 +169,51 @@ export function FeatureWalkthrough() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStepIndex < availableSteps.length - 1) {
-      trackEvent('[FeatureWalkthrough].next', { step: currentStep.target, stepIndex: currentStepIndex });
+      trackEvent('[FeatureWalkthrough].next', { step: currentStep?.target, stepIndex: currentStepIndex });
       setCurrentStepIndex((prev) => prev + 1);
     } else {
       // Complete the walkthrough
       trackEvent('[FeatureWalkthrough].completed', { totalSteps: availableSteps.length });
       markAsCompleted();
     }
-  };
+  }, [currentStepIndex, availableSteps.length, currentStep?.target]);
 
-  const handleSkip = () => {
-    trackEvent('[FeatureWalkthrough].skipped', { atStep: currentStep.target, stepIndex: currentStepIndex });
+  const handleSkip = useCallback(() => {
+    trackEvent('[FeatureWalkthrough].skipped', { atStep: currentStep?.target, stepIndex: currentStepIndex });
     markAsCompleted();
-  };
+  }, [currentStep?.target, currentStepIndex]);
+
+  // Keyboard accessibility: Escape to skip, Enter to advance
+  useEffect(() => {
+    if (!shouldShow || !isVisible || availableSteps.length === 0) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleSkip();
+      } else if (event.key === 'Enter') {
+        // Only advance if not focused on a button (to avoid double-triggering)
+        const activeElement = document.activeElement;
+        const isButtonFocused = activeElement?.tagName === 'BUTTON';
+        if (!isButtonFocused) {
+          event.preventDefault();
+          handleNext();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [shouldShow, isVisible, availableSteps.length, currentStepIndex, handleNext, handleSkip]);
+
+  // Focus management: focus the dialog when it becomes visible for screen readers
+  useEffect(() => {
+    if (shouldShow && isVisible && dialogRef.current) {
+      dialogRef.current.focus();
+    }
+  }, [shouldShow, isVisible]);
 
   if (!shouldShow || !isVisible || availableSteps.length === 0 || !currentStep) {
     return null;
@@ -287,7 +318,15 @@ export function FeatureWalkthrough() {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999]" aria-modal="true" role="dialog">
+    <div
+      ref={dialogRef}
+      className="fixed inset-0 z-[9999]"
+      aria-modal="true"
+      role="dialog"
+      aria-label="Feature walkthrough"
+      tabIndex={-1}
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Spotlight cutout with box-shadow overlay */}
       {targetRect ? (
         <div className="pointer-events-none transition-all duration-300" style={getSpotlightStyle()} />
@@ -314,7 +353,7 @@ export function FeatureWalkthrough() {
 
       {/* Tooltip/Content card */}
       <div
-        className="z-10 rounded-lg border border-border bg-background p-6 shadow-2xl transition-all duration-300"
+        className="pointer-events-auto z-10 rounded-lg border border-border bg-background p-6 shadow-2xl transition-all duration-300"
         style={getTooltipStyle()}
       >
         {/* Step indicator */}
