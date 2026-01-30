@@ -1,13 +1,13 @@
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
-import { cn } from '@/shared/shadcn/utils';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { AIIcon, DatabaseIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
-import { AIIcon, DatabaseIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
+import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ZoomInIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 interface WalkthroughStep {
   target: string; // data-walkthrough attribute value
@@ -30,7 +30,7 @@ const ALL_WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: 'connections',
     title: 'Directly connect external data',
     description:
-      'Connect to databases like Postgres, MySQL, and Snowflake, or pull data from APIs. Your spreadsheet becomes a live dashboard.',
+      'Connect to external data sources like Google Analytics, Databases, bank accounts, and more. Your spreadsheet becomes a live dashboard.',
     icon: <DatabaseIcon className="h-8 w-8" />,
     position: 'right',
   },
