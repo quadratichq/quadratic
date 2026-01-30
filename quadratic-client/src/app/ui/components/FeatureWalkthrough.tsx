@@ -1,14 +1,14 @@
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { AIIcon, DatabaseIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
-import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ZoomInIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useMatches } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
 interface WalkthroughStep {
@@ -32,7 +32,7 @@ const ALL_WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: 'connections',
     title: 'Directly connect external data',
     description:
-      'Connect to external data sources like Google Analytics, Databases, bank accounts, and more. Your spreadsheet becomes a live dashboard.',
+      'Connect to external data sources like Google Analytics, databases, bank accounts, and more. Your spreadsheet becomes a live dashboard.',
     icon: <DatabaseIcon className="h-8 w-8" />,
     position: 'right',
   },
@@ -54,34 +54,16 @@ const ALL_WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
 ];
 
-type RouteDataWithClientDataKv =
-  | {
-      userMakingRequest?: { clientDataKv?: { featureWalkthroughCompleted?: boolean } };
-    }
-  | null
-  | undefined;
-
 export function FeatureWalkthrough() {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const matches = useMatches();
+  const {
+    userMakingRequest: { clientDataKv },
+  } = useFileRouteLoaderData();
 
   // Optimistic state - when user completes/skips, immediately hide the walkthrough
   const [optimisticCompleted, setOptimisticCompleted] = useState(false);
 
-  // Get clientDataKv from route loaders using useMatches to safely access data
-  const fileMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.FILE);
-  const dashboardMatch = matches.find((match) => match.id === ROUTE_LOADER_IDS.DASHBOARD);
-
-  const fileRouteData = fileMatch?.data as RouteDataWithClientDataKv | undefined;
-  const dashboardRouteData = dashboardMatch?.data as RouteDataWithClientDataKv | undefined;
-
-  // Get completed status from route loader data (prefer file route, fallback to dashboard)
-  const serverCompleted =
-    fileRouteData?.userMakingRequest?.clientDataKv?.featureWalkthroughCompleted ??
-    dashboardRouteData?.userMakingRequest?.clientDataKv?.featureWalkthroughCompleted ??
-    false;
-
-  const completed = optimisticCompleted || serverCompleted;
+  const completed = optimisticCompleted || clientDataKv?.featureWalkthroughCompleted || false;
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -173,14 +155,16 @@ export function FeatureWalkthrough() {
 
   const handleNext = useCallback(() => {
     if (currentStepIndex < availableSteps.length - 1) {
-      trackEvent('[FeatureWalkthrough].next', { step: currentStep?.target, stepIndex: currentStepIndex });
       setCurrentStepIndex((prev) => prev + 1);
     } else {
       // Complete the walkthrough
       trackEvent('[FeatureWalkthrough].completed', { totalSteps: availableSteps.length });
       markAsCompleted();
+
+      // Focus the AI chat input after completion
+      setTimeout(focusAIAnalyst, 100);
     }
-  }, [currentStepIndex, availableSteps.length, currentStep?.target]);
+  }, [currentStepIndex, availableSteps.length]);
 
   const handleSkip = useCallback(() => {
     trackEvent('[FeatureWalkthrough].skipped', { atStep: currentStep?.target, stepIndex: currentStepIndex });
@@ -216,6 +200,29 @@ export function FeatureWalkthrough() {
       dialogRef.current.focus();
     }
   }, [shouldShow, isVisible]);
+
+  // Track when walkthrough starts (first becomes visible)
+  const hasTrackedStart = useRef(false);
+  useEffect(() => {
+    if (shouldShow && isVisible && availableSteps.length > 0 && !hasTrackedStart.current) {
+      hasTrackedStart.current = true;
+      trackEvent('[FeatureWalkthrough].started', { totalSteps: availableSteps.length });
+    }
+  }, [shouldShow, isVisible, availableSteps.length]);
+
+  // Track when each step is viewed
+  const lastTrackedStep = useRef<number | null>(null);
+  useEffect(() => {
+    if (shouldShow && isVisible && currentStep && lastTrackedStep.current !== currentStepIndex) {
+      lastTrackedStep.current = currentStepIndex;
+      trackEvent('[FeatureWalkthrough].stepViewed', {
+        step: currentStep.target,
+        stepIndex: currentStepIndex,
+        stepTitle: currentStep.title,
+        totalSteps: availableSteps.length,
+      });
+    }
+  }, [shouldShow, isVisible, currentStep, currentStepIndex, availableSteps.length]);
 
   if (!shouldShow || !isVisible || availableSteps.length === 0 || !currentStep) {
     return null;
