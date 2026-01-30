@@ -1,4 +1,3 @@
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -49,9 +48,6 @@ export class ToolExecutor {
     }
 
     try {
-      // Close inline editor before executing tools
-      inlineEditorHandler.close({ skipFocusGrid: true });
-
       const aiTool = toolCall.name as AITool;
       const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
       const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);

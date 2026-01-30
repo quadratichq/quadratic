@@ -7,6 +7,7 @@ import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs
 import type {
   AIMessagePrompt,
   AIModelKey,
+  AIToolCall,
   ChatMessage,
   Context,
   ToolResultContent,
@@ -31,17 +32,57 @@ import type { MessageManager } from './MessageManager';
 import { messageManager } from './MessageManager';
 import type { ToolExecutor } from './ToolExecutor';
 import { toolExecutor } from './ToolExecutor';
-import { type AISessionRequest, type AISessionResult, type Connection, type ImportFile } from './types';
+import {
+  type AIAPIResponse,
+  type AISessionRequest,
+  type AISessionResult,
+  type Connection,
+  type ImportFile,
+} from './types';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
+
+interface ExecuteOptions {
+  modelKey: AIModelKey;
+  fileUuid: string;
+  teamUuid: string;
+  importFilesToGrid?: (args: { importFiles: ImportFile[]; userMessage: UserMessagePrompt }) => Promise<void>;
+  importPDF?: (args: {
+    pdfImportArgs: AIToolsArgs[AITool.PDFImport];
+    chatMessages: ChatMessage[];
+  }) => Promise<ToolResultContent>;
+  search?: (args: {
+    searchArgs: AIToolsArgs[AITool.WebSearch];
+  }) => Promise<{ toolResultContent: ToolResultContent; internal?: ChatMessage }>;
+  getUserPromptSuggestions?: () => void;
+}
+
+interface ToolCallLoopState {
+  chatMessages: ChatMessage[];
+  currentMessageSource: string;
+  lastMessageIndex: number;
+}
+
+interface ToolCallLoopContext {
+  chatId: string;
+  modelKey: AIModelKey;
+  fileUuid: string;
+  teamUuid: string;
+  connections: Connection[];
+  resolvedContext: Context;
+  abortController: AbortController;
+  onExceededBillingLimit: (exceededBillingLimit: boolean) => void;
+  importPDF?: ExecuteOptions['importPDF'];
+  search?: ExecuteOptions['search'];
+  getUserPromptSuggestions?: () => void;
+}
 
 /**
  * AISession manages the lifecycle of an AI request.
  * This is the central coordinator that replaces useSubmitAIAnalystPrompt.
  */
 export class AISession {
-  private store = aiStore;
   private contextBuilder: ContextBuilder;
   private toolExecutor: ToolExecutor;
   private messageManager: MessageManager;
@@ -59,41 +100,95 @@ export class AISession {
    * Note: This class uses a singleton pattern and is not intended for concurrent
    * executions. The loadingAtom check prevents concurrent calls.
    */
-  async execute(
-    request: AISessionRequest,
-    options: {
-      modelKey: AIModelKey;
-      fileUuid: string;
-      teamUuid: string;
-      importFilesToGrid?: (args: { importFiles: ImportFile[]; userMessage: UserMessagePrompt }) => Promise<void>;
-      importPDF?: (args: {
-        pdfImportArgs: AIToolsArgs[AITool.PDFImport];
-        chatMessages: ChatMessage[];
-      }) => Promise<ToolResultContent>;
-      search?: (args: {
-        searchArgs: AIToolsArgs[AITool.WebSearch];
-      }) => Promise<{ toolResultContent: ToolResultContent; internal?: ChatMessage }>;
-      getUserPromptSuggestions?: () => void;
-    }
-  ): Promise<AISessionResult> {
+  async execute(request: AISessionRequest, options: ExecuteOptions): Promise<AISessionResult> {
     const { messageSource, content, context, messageIndex, importFiles, connections } = request;
     const { modelKey, fileUuid, teamUuid, importFilesToGrid, importPDF, search, getUserPromptSuggestions } = options;
 
+    // Prepare session state
+    const prepareResult = this.prepareSession(messageIndex);
+    if (!prepareResult.success) {
+      return { success: false, error: prepareResult.error, chatId: '' };
+    }
+
+    // Build resolved context
+    const resolvedContext = this.buildResolvedContext(context, connections, importFiles);
+
+    // Set up billing limit callback
+    const onExceededBillingLimit = this.createBillingLimitCallback();
+
+    // Set up abort controller
+    const abortController = this.setupAbortController(modelKey);
+
+    // Create and add user message
+    const userMessage = this.createUserMessage(content, resolvedContext);
+
+    // Initialize AI cursor
+    this.initializeAICursor();
+
+    // Import files to grid if needed
+    if (importFilesToGrid && importFiles.length > 0) {
+      await importFilesToGrid({ importFiles, userMessage });
+    }
+
+    // Get chat ID
+    const chatId = this.messageManager.ensureChatId();
+
+    try {
+      const loopResult = await this.executeToolCallLoop(
+        {
+          chatMessages: this.messageManager.getMessages(),
+          currentMessageSource: messageSource,
+          lastMessageIndex: -1,
+        },
+        {
+          chatId,
+          modelKey,
+          fileUuid,
+          teamUuid,
+          connections,
+          resolvedContext,
+          abortController,
+          onExceededBillingLimit,
+          importPDF,
+          search,
+          getUserPromptSuggestions,
+        }
+      );
+
+      if (loopResult.reachedMaxIterations) {
+        this.handleMaxIterations(modelKey);
+      }
+
+      return { success: true, chatId };
+    } catch (error) {
+      this.messageManager.handleError(modelKey);
+      console.error(error);
+      return { success: false, error: String(error), chatId };
+    } finally {
+      aiStore.set(abortControllerAtom, undefined);
+      aiStore.set(loadingAtom, false);
+    }
+  }
+
+  /**
+   * Prepare the session by setting up UI state and initializing/forking chat
+   */
+  private prepareSession(messageIndex: number): { success: true } | { success: false; error: string } {
     // Show AI panel and hide chat history
-    this.store.set(showAIAnalystAtom, true);
-    this.store.set(showChatHistoryAtom, false);
+    aiStore.set(showAIAnalystAtom, true);
+    aiStore.set(showChatHistoryAtom, false);
 
     // Clear prompt suggestions
     this.messageManager.clearPromptSuggestions();
 
     // Check if already loading
-    const previousLoading = this.store.get(loadingAtom);
+    const previousLoading = aiStore.get(loadingAtom);
     if (previousLoading) {
-      return { success: false, error: 'Already loading', chatId: '' };
+      return { success: false, error: 'Already loading' };
     }
 
     // Set loading state immediately to prevent concurrent calls
-    this.store.set(loadingAtom, true);
+    aiStore.set(loadingAtom, true);
 
     // Get current message count
     const currentChat = this.messageManager.getCurrentChat();
@@ -106,11 +201,22 @@ export class AISession {
       this.messageManager.forkChat(messageIndex);
     }
 
-    // Build context with connection info
+    return { success: true };
+  }
+
+  /**
+   * Build the resolved context with connection and import file info
+   */
+  private buildResolvedContext(
+    context: AISessionRequest['context'],
+    connections: Connection[],
+    importFiles: ImportFile[]
+  ): Context {
     const connectionInContext = connections.find(
       (connection: Connection) => connection.uuid === context.connection?.id
     );
-    const resolvedContext: Context = {
+
+    return {
       codeCell: context.codeCell,
       connection: connectionInContext
         ? {
@@ -127,48 +233,62 @@ export class AISession {
             }
           : undefined,
     };
+  }
 
-    // Set up billing limit callback
-    const onExceededBillingLimit = (exceededBillingLimit: boolean) => {
+  /**
+   * Create the billing limit exceeded callback
+   */
+  private createBillingLimitCallback(): (exceededBillingLimit: boolean) => void {
+    return (exceededBillingLimit: boolean) => {
       if (!exceededBillingLimit) return;
 
       const messages = [...this.messageManager.getMessages()];
       messages.pop();
       const currentMessageIndex = messages.length - 1;
       this.messageManager.setMessages(messages);
-      this.store.set(waitingOnMessageIndexAtom, currentMessageIndex);
+      aiStore.set(waitingOnMessageIndexAtom, currentMessageIndex);
 
       trackEvent('[Billing].ai.exceededBillingLimit', {
         exceededBillingLimit,
         location: 'AIAnalyst',
       });
     };
+  }
 
-    // Set up abort controller
+  /**
+   * Set up the abort controller with event listener for cleanup
+   */
+  private setupAbortController(modelKey: AIModelKey): AbortController {
     const abortController = new AbortController();
     abortController.signal.addEventListener(
       'abort',
       () => {
-        const prevWaitingOnMessageIndex = this.store.get(waitingOnMessageIndexAtom);
-        this.store.set(waitingOnMessageIndexAtom, undefined);
+        const prevWaitingOnMessageIndex = aiStore.get(waitingOnMessageIndexAtom);
+        aiStore.set(waitingOnMessageIndexAtom, undefined);
 
         // Abort sub-operations
-        const pdfImport = this.store.get(pdfImportAtom);
+        const pdfImport = aiStore.get(pdfImportAtom);
         pdfImport.abortController?.abort();
-        this.store.set(pdfImportAtom, { abortController: undefined, loading: false });
+        aiStore.set(pdfImportAtom, { abortController: undefined, loading: false });
 
-        const webSearchState = this.store.get(webSearchAtom);
+        const webSearchState = aiStore.get(webSearchAtom);
         webSearchState.abortController?.abort();
-        this.store.set(webSearchAtom, { abortController: undefined, loading: false });
+        aiStore.set(webSearchAtom, { abortController: undefined, loading: false });
 
         // Handle abort in message manager
         this.messageManager.handleAbort(modelKey, prevWaitingOnMessageIndex);
       },
       { once: true }
     );
-    this.store.set(abortControllerAtom, abortController);
+    aiStore.set(abortControllerAtom, abortController);
 
-    // Create and add user message
+    return abortController;
+  }
+
+  /**
+   * Create and add the user message
+   */
+  private createUserMessage(content: AISessionRequest['content'], resolvedContext: Context): UserMessagePrompt {
     const userMessage: UserMessagePrompt = {
       role: 'user',
       content: [...content],
@@ -176,8 +296,13 @@ export class AISession {
       context: { ...resolvedContext },
     };
     this.messageManager.addUserMessage(userMessage);
+    return userMessage;
+  }
 
-    // Initialize AI cursor
+  /**
+   * Initialize the AI cursor position
+   */
+  private initializeAICursor(): void {
     try {
       multiplayer.setAIUser(true);
       const sheetId = sheets.current;
@@ -187,189 +312,264 @@ export class AISession {
     } catch (e) {
       console.warn('Failed to initialize AI cursor:', e);
     }
+  }
 
-    // Import files to grid if needed
-    if (importFilesToGrid && importFiles.length > 0) {
-      await importFilesToGrid({ importFiles, userMessage });
-    }
+  /**
+   * Execute the main tool call loop
+   */
+  private async executeToolCallLoop(
+    state: ToolCallLoopState,
+    context: ToolCallLoopContext
+  ): Promise<{ reachedMaxIterations: boolean }> {
+    const { chatId, modelKey, fileUuid, teamUuid, connections, resolvedContext, abortController } = context;
+    const { onExceededBillingLimit, importPDF, search, getUserPromptSuggestions } = context;
 
-    // Get chat ID
-    const chatId = this.messageManager.ensureChatId();
-    let chatMessages = this.messageManager.getMessages();
-    let lastMessageIndex = -1;
-    let currentMessageSource = messageSource;
+    let { chatMessages, currentMessageSource, lastMessageIndex } = state;
+    let toolCallIterations = 0;
 
-    try {
-      // Main tool call loop
-      let toolCallIterations = 0;
-      while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
-        toolCallIterations++;
+    while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+      toolCallIterations++;
 
-        // Build context
-        chatMessages = await this.contextBuilder.buildContext({
-          connections,
-          context: resolvedContext,
-          chatMessages,
-          teamUuid,
-        });
-        this.messageManager.setMessages(chatMessages);
+      // Build context
+      chatMessages = await this.contextBuilder.buildContext({
+        connections,
+        context: resolvedContext,
+        chatMessages,
+        teamUuid,
+      });
+      this.messageManager.setMessages(chatMessages);
 
-        const messagesForAI = getMessagesForAI(chatMessages);
-        lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
+      const messagesForAI = getMessagesForAI(chatMessages);
+      lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
 
-        // Send request to API
-        const response = await this.apiClient.sendRequest(
-          {
-            chatId,
-            source: 'AIAnalyst',
-            messageSource: currentMessageSource,
-            modelKey,
-            messages: messagesForAI,
-            useStream: USE_STREAM,
-            toolName: undefined,
-            useToolsPrompt: true,
-            language: undefined,
-            useQuadraticContext: true,
-            fileUuid,
-          },
-          {
-            signal: abortController.signal,
-            onMessage: (msg) => {
-              const messages = this.messageManager.getMessages();
-              const lastMessage = messages.at(-1);
-              // If last message is user, add new assistant message; otherwise update existing assistant message
-              if (lastMessage?.role === 'user') {
-                this.messageManager.setMessages([...messages, msg]);
-              } else {
-                this.messageManager.setMessages([...messages.slice(0, -1), msg]);
-              }
-            },
-            onExceededBillingLimit,
-          }
-        );
+      // Send request to API
+      const response = await this.sendAPIRequest({
+        chatId,
+        modelKey,
+        fileUuid,
+        currentMessageSource,
+        messagesForAI,
+        abortController,
+        onExceededBillingLimit,
+      });
 
-        // Check if waiting on user input
-        const waitingOnMsgIndex = this.store.get(waitingOnMessageIndexAtom);
-        if (waitingOnMsgIndex !== undefined) {
-          break;
-        }
-
-        if (response.error) {
-          break;
-        }
-
-        // Replace old tool call results
-        chatMessages = this.messageManager.replaceOldToolCallResults();
-
-        if (abortController.signal.aborted) {
-          break;
-        }
-
-        if (response.toolCalls.length === 0) {
-          getUserPromptSuggestions?.();
-          break;
-        }
-
-        currentMessageSource = response.toolCalls.map((tc) => tc.name).join(', ');
-
-        // Execute tool calls
-        const toolResultMessage: ToolResultMessage = await this.toolExecutor.executeToolCalls(response.toolCalls, {
-          source: 'AIAnalyst',
-          chatId,
-          messageIndex: lastMessageIndex + 1,
-        });
-
-        // Check for prompt suggestions
-        let promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'] = [];
-        for (const toolCall of response.toolCalls) {
-          if (this.toolExecutor.isPromptSuggestionsTool(toolCall)) {
-            const parsed = this.toolExecutor.parsePromptSuggestions(toolCall);
-            if (parsed) {
-              promptSuggestions = parsed.prompt_suggestions;
-            }
-          }
-        }
-
-        // Handle PDF import tool calls
-        if (importPDF) {
-          const pdfToolCalls = this.toolExecutor.filterToolCalls(response.toolCalls, AITool.PDFImport);
-          for (const toolCall of pdfToolCalls) {
-            const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
-            const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
-            const toolResultContent = await importPDF({ pdfImportArgs, chatMessages });
-            toolResultMessage.content.push({
-              id: toolCall.id,
-              content: toolResultContent,
-            });
-          }
-        }
-
-        // Handle web search tool calls
-        if (search) {
-          const searchToolCalls = this.toolExecutor.filterToolCalls(response.toolCalls, AITool.WebSearch);
-          for (const toolCall of searchToolCalls) {
-            const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
-            const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
-            const { toolResultContent, internal } = await search({ searchArgs });
-            toolResultMessage.content.push({
-              id: toolCall.id,
-              content: toolResultContent,
-            });
-
-            if (internal) {
-              chatMessages = [...this.messageManager.getMessages(), internal];
-              this.messageManager.setMessages(chatMessages);
-            }
-          }
-        }
-
-        // Add tool result message
-        this.messageManager.addToolResultMessage(toolResultMessage);
-        chatMessages = this.messageManager.getMessages();
-
-        // If prompt suggestions, set them and break
-        if (promptSuggestions.length > 0) {
-          this.messageManager.setPromptSuggestions(promptSuggestions);
-          break;
-        }
+      // Check if we should break the loop
+      const shouldBreak = this.checkLoopBreakConditions(response, abortController, getUserPromptSuggestions);
+      if (shouldBreak) {
+        break;
       }
 
-      // Check if we hit the max iterations limit
-      if (toolCallIterations >= MAX_TOOL_CALL_ITERATIONS) {
-        console.warn(`[AISession] Max tool call iterations (${MAX_TOOL_CALL_ITERATIONS}) reached`);
-        // Add an assistant message to inform the user
-        const messages = this.messageManager.getMessages();
-        const warningMessage: AIMessagePrompt = {
-          role: 'assistant',
-          content: [
-            {
-              type: 'text',
-              text: 'I reached the maximum number of operations for a single request. You can continue by sending another message.',
-            },
-          ],
-          contextType: 'userPrompt',
-          modelKey,
-          toolCalls: [],
-        };
-        this.messageManager.setMessages([...messages, warningMessage]);
-      }
+      // Replace old tool call results
+      chatMessages = this.messageManager.replaceOldToolCallResults();
 
-      return { success: true, chatId };
-    } catch (error) {
-      this.messageManager.handleError(modelKey);
-      console.error(error);
-      return { success: false, error: String(error), chatId };
-    } finally {
-      this.store.set(abortControllerAtom, undefined);
-      this.store.set(loadingAtom, false);
+      currentMessageSource = response.toolCalls.map((tc) => tc.name).join(', ');
+
+      // Process tool calls and get results
+      const { toolResultMessage, promptSuggestions, updatedChatMessages } = await this.processToolCalls({
+        toolCalls: response.toolCalls,
+        chatId,
+        lastMessageIndex,
+        chatMessages,
+        importPDF,
+        search,
+      });
+
+      chatMessages = updatedChatMessages;
+
+      // Add tool result message
+      this.messageManager.addToolResultMessage(toolResultMessage);
+      chatMessages = this.messageManager.getMessages();
+
+      // If prompt suggestions, set them and break
+      if (promptSuggestions.length > 0) {
+        this.messageManager.setPromptSuggestions(promptSuggestions);
+        break;
+      }
     }
+
+    return { reachedMaxIterations: toolCallIterations >= MAX_TOOL_CALL_ITERATIONS };
+  }
+
+  /**
+   * Send request to the AI API
+   */
+  private async sendAPIRequest(params: {
+    chatId: string;
+    modelKey: AIModelKey;
+    fileUuid: string;
+    currentMessageSource: string;
+    messagesForAI: ChatMessage[];
+    abortController: AbortController;
+    onExceededBillingLimit: (exceededBillingLimit: boolean) => void;
+  }) {
+    const { chatId, modelKey, fileUuid, currentMessageSource, messagesForAI, abortController, onExceededBillingLimit } =
+      params;
+
+    return this.apiClient.sendRequest(
+      {
+        chatId,
+        source: 'AIAnalyst',
+        messageSource: currentMessageSource,
+        modelKey,
+        messages: messagesForAI,
+        useStream: USE_STREAM,
+        toolName: undefined,
+        useToolsPrompt: true,
+        language: undefined,
+        useQuadraticContext: true,
+        fileUuid,
+      },
+      {
+        signal: abortController.signal,
+        onMessage: (msg) => {
+          const messages = this.messageManager.getMessages();
+          const lastMessage = messages.at(-1);
+          // If last message is user, add new assistant message; otherwise update existing assistant message
+          if (lastMessage?.role === 'user') {
+            this.messageManager.setMessages([...messages, msg]);
+          } else {
+            this.messageManager.setMessages([...messages.slice(0, -1), msg]);
+          }
+        },
+        onExceededBillingLimit,
+      }
+    );
+  }
+
+  /**
+   * Check if the tool call loop should break
+   */
+  private checkLoopBreakConditions(
+    response: AIAPIResponse,
+    abortController: AbortController,
+    getUserPromptSuggestions?: () => void
+  ): boolean {
+    // Check if waiting on user input
+    const waitingOnMsgIndex = aiStore.get(waitingOnMessageIndexAtom);
+    if (waitingOnMsgIndex !== undefined) {
+      return true;
+    }
+
+    if (response.error) {
+      return true;
+    }
+
+    if (abortController.signal.aborted) {
+      return true;
+    }
+
+    if (response.toolCalls.length === 0) {
+      getUserPromptSuggestions?.();
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Process tool calls and return results
+   */
+  private async processToolCalls(params: {
+    toolCalls: AIToolCall[];
+    chatId: string;
+    lastMessageIndex: number;
+    chatMessages: ChatMessage[];
+    importPDF?: ExecuteOptions['importPDF'];
+    search?: ExecuteOptions['search'];
+  }): Promise<{
+    toolResultMessage: ToolResultMessage;
+    promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'];
+    updatedChatMessages: ChatMessage[];
+  }> {
+    const { toolCalls, chatId, lastMessageIndex, importPDF, search } = params;
+    let chatMessages = params.chatMessages;
+
+    // Execute tool calls
+    const toolResultMessage: ToolResultMessage = await this.toolExecutor.executeToolCalls(toolCalls, {
+      source: 'AIAnalyst',
+      chatId,
+      messageIndex: lastMessageIndex + 1,
+    });
+
+    // Check for prompt suggestions
+    let promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'] = [];
+    for (const toolCall of toolCalls) {
+      if (this.toolExecutor.isPromptSuggestionsTool(toolCall)) {
+        const parsed = this.toolExecutor.parsePromptSuggestions(toolCall);
+        if (parsed) {
+          promptSuggestions = parsed.prompt_suggestions;
+        }
+      }
+    }
+
+    // Handle PDF import tool calls
+    if (importPDF) {
+      const pdfToolCalls = this.toolExecutor.filterToolCalls(toolCalls, AITool.PDFImport);
+      for (const toolCall of pdfToolCalls) {
+        const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
+        const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
+        const toolResultContent = await importPDF({ pdfImportArgs, chatMessages });
+        toolResultMessage.content.push({
+          id: toolCall.id,
+          content: toolResultContent,
+        });
+      }
+    }
+
+    // Handle web search tool calls
+    if (search) {
+      const searchToolCalls = this.toolExecutor.filterToolCalls(toolCalls, AITool.WebSearch);
+      for (const toolCall of searchToolCalls) {
+        const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
+        const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
+        const { toolResultContent, internal } = await search({ searchArgs });
+        toolResultMessage.content.push({
+          id: toolCall.id,
+          content: toolResultContent,
+        });
+
+        if (internal) {
+          chatMessages = [...this.messageManager.getMessages(), internal];
+          this.messageManager.setMessages(chatMessages);
+        }
+      }
+    }
+
+    return { toolResultMessage, promptSuggestions, updatedChatMessages: chatMessages };
+  }
+
+  /**
+   * Handle max iterations reached by adding a warning message
+   */
+  private handleMaxIterations(modelKey: AIModelKey): void {
+    console.warn(`[AISession] Max tool call iterations (${MAX_TOOL_CALL_ITERATIONS}) reached`);
+    trackEvent('[AI].maxToolCallIterationsReached', {
+      iterations: MAX_TOOL_CALL_ITERATIONS,
+      modelKey,
+      location: 'AIAnalyst',
+    });
+
+    const messages = this.messageManager.getMessages();
+    const warningMessage: AIMessagePrompt = {
+      role: 'assistant',
+      content: [
+        {
+          type: 'text',
+          text: 'I reached the maximum number of operations for a single request. You can continue by sending another message.',
+        },
+      ],
+      contextType: 'userPrompt',
+      modelKey,
+      toolCalls: [],
+    };
+    this.messageManager.setMessages([...messages, warningMessage]);
   }
 
   /**
    * Abort the current session
    */
   abort(): void {
-    const controller = this.store.get(abortControllerAtom);
+    const controller = aiStore.get(abortControllerAtom);
     controller?.abort();
   }
 }

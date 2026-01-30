@@ -162,7 +162,7 @@ export class AIAPIClient {
     };
     onMessage?.(errorMessage);
 
-    console.error(`Error retrieving data from AI API. Error: ${data}`);
+    console.error(`Error retrieving data from AI API. Error: ${JSON.stringify(data)}`);
     return { error: true, content: [createTextContent(text)], toolCalls: [] };
   }
 

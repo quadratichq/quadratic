@@ -59,12 +59,27 @@ export const connectionToolsActions: ConnectionToolActions = {
     }
 
     try {
-      // Get info for each connection
-      const connectionsInfo = await Promise.all(
+      // Get info for each connection, using Promise.allSettled to handle partial failures
+      // It's better for the AI to receive schema information for connections that worked
+      // rather than nothing at all when one connection has a transient failure
+      const results = await Promise.allSettled(
         connections.map((connection) => getConnectionTableInfo(connection, teamUuid))
       );
 
-      // Filter out null results
+      // Extract successful results and log failures
+      const connectionsInfo = results
+        .map((result, index) => {
+          if (result.status === 'fulfilled') {
+            return result.value;
+          }
+          console.warn(
+            `[GetDatabaseSchemas] Failed to get schema for connection ${connections[index].uuid}:`,
+            result.reason
+          );
+          return null;
+        })
+        .filter((info): info is NonNullable<typeof info> => info !== null);
+
       if (connectionsInfo.length === 0) {
         return [
           createTextContent(

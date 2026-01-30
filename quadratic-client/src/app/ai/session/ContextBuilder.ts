@@ -31,21 +31,31 @@ const MAX_TRANSACTIONS = 20;
  * This is a pure class with no React dependencies.
  */
 export class ContextBuilder {
-  private store = aiStore;
-
   /**
-   * Build complete context for an AI request
+   * Build complete context for an AI request.
+   * Uses Promise.allSettled to handle partial failures gracefully - it's better
+   * for the AI to have some context than none if individual operations fail.
    */
   async buildContext(options: ContextOptions): Promise<ChatMessage[]> {
-    const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext, aiTransactions] =
-      await Promise.all([
-        this.getSqlContext(options.connections, options.context, options.teamUuid),
-        this.getFilesContext(options.chatMessages),
-        this.getVisibleContext(),
-        this.getSummaryContext(),
-        this.getCodeErrorContext(),
-        this.getAITransactions(),
-      ]);
+    const results = await Promise.allSettled([
+      this.getSqlContext(options.connections, options.context, options.teamUuid),
+      this.getFilesContext(options.chatMessages),
+      this.getVisibleContext(),
+      this.getSummaryContext(),
+      this.getCodeErrorContext(),
+      this.getAITransactions(),
+    ]);
+
+    const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext, aiTransactions] = results.map(
+      (result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        }
+        const contextNames = ['SQL', 'files', 'visible', 'summary', 'codeError', 'transactions'];
+        console.warn(`[ContextBuilder] Failed to get ${contextNames[index]} context:`, result.reason);
+        return [];
+      }
+    );
 
     const messagesWithContext: ChatMessage[] = [
       ...sqlContext,
@@ -70,12 +80,12 @@ export class ContextBuilder {
         return [];
       }
 
-      let failingSqlConnections = this.store.get(failingSqlConnectionsAtom);
+      let failingSqlConnections = aiStore.get(failingSqlConnectionsAtom);
       const currentTime = Date.now();
 
       if (currentTime - failingSqlConnections.lastResetTimestamp > FAILING_SQL_CONNECTIONS_EXPIRATION_TIME) {
         failingSqlConnections = { uuids: [], lastResetTimestamp: currentTime };
-        this.store.set(failingSqlConnectionsAtom, failingSqlConnections);
+        aiStore.set(failingSqlConnectionsAtom, failingSqlConnections);
       }
 
       const results = await Promise.all(
@@ -90,9 +100,9 @@ export class ContextBuilder {
               const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
               return getConnectionMarkdown(connectionTableInfo);
             } catch (error) {
-              const prev = this.store.get(failingSqlConnectionsAtom);
+              const prev = aiStore.get(failingSqlConnectionsAtom);
               if (!prev.uuids.includes(connection.uuid)) {
-                this.store.set(failingSqlConnectionsAtom, {
+                aiStore.set(failingSqlConnectionsAtom, {
                   ...prev,
                   uuids: [...prev.uuids, connection.uuid],
                 });
