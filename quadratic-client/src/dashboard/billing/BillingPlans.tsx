@@ -48,7 +48,7 @@ export const FreePlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>Files</span>
-          <span className="font-medium">{VITE_MAX_EDITABLE_FILES} files editable</span>
+          <span className="font-medium">{VITE_MAX_EDITABLE_FILES} editable files</span>
         </div>
       </div>
 
