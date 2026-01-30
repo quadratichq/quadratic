@@ -6,7 +6,7 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
-import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { ArrowDropDownIcon, CheckIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
   DropdownMenu,
@@ -27,10 +27,13 @@ import { memo, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type UIModels = 'max' | 'others';
-const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
-  max: { label: 'Auto', description: 'Claude Opus 4.5' },
-  others: { label: 'Others', description: 'Experimental models' },
+const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; provider: string }> = {
+  max: { label: 'Auto', provider: 'Claude Opus 4.5' },
+  others: { label: 'Others', provider: 'Experimental models' },
 };
+
+// Get the max model config for the Auto option details
+const maxModelConfig = Object.values(MODELS_CONFIGURATION).find((config) => config.mode === 'max');
 
 interface SelectAIModelMenuProps {
   loading: boolean;
@@ -38,6 +41,7 @@ interface SelectAIModelMenuProps {
 }
 export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [hoveredModel, setHoveredModel] = useState<{ key: string; config: AIModelConfig } | null>(null);
   const {
     userMakingRequest,
     team: { uuid: teamUuid },
@@ -134,8 +138,12 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>
 
-        <PopoverContent className="flex w-80 flex-col gap-2 p-0" id="ai-model-popover-content">
-          <form>
+        <PopoverContent
+          className="flex w-auto gap-0 p-0"
+          id="ai-model-popover-content"
+          onMouseLeave={() => setHoveredModel(null)}
+        >
+          <form className="w-72">
             <RadioGroup
               value={radioGroupValue}
               className="flex flex-col gap-0"
@@ -156,7 +164,9 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                 <RadioGroupLineItem
                   value="max"
                   label={MODEL_MODES_LABELS_DESCRIPTIONS.max.label}
-                  description={MODEL_MODES_LABELS_DESCRIPTIONS.max.description}
+                  provider={MODEL_MODES_LABELS_DESCRIPTIONS.max.provider}
+                  isSelected={modelType === 'max'}
+                  onHover={() => maxModelConfig && setHoveredModel({ key: 'max', config: maxModelConfig })}
                 />
               </div>
 
@@ -184,13 +194,53 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                     key={modelKey}
                     value={modelKey}
                     label={modelConfig.displayName}
-                    description={modelConfig.displayProvider ?? 'C'}
+                    provider={modelConfig.displayProvider}
+                    isSelected={othersModelKey === modelKey}
                     disabled={!isOnPaidPlan}
+                    onHover={() => setHoveredModel({ key: modelKey, config: modelConfig })}
                   />
                 ))}
               </div>
             </RadioGroup>
           </form>
+
+          {/* Model Details Panel */}
+          {hoveredModel && (
+            <div className="w-64 border-l border-border bg-muted/30 p-4">
+              <div className="mb-3">
+                <h4 className="font-medium">{hoveredModel.config.displayName}</h4>
+                <span className="text-xs text-muted-foreground">{hoveredModel.config.displayProvider}</span>
+              </div>
+
+              {hoveredModel.config.displayDescription && (
+                <p className="mb-4 text-sm text-muted-foreground">{hoveredModel.config.displayDescription}</p>
+              )}
+
+              <div className="space-y-1.5 text-xs">
+                <div className="font-medium text-muted-foreground">Pricing per 1M tokens</div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Input</span>
+                  <span>${hoveredModel.config.rate_per_million_input_tokens.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Output</span>
+                  <span>${hoveredModel.config.rate_per_million_output_tokens.toFixed(2)}</span>
+                </div>
+                {hoveredModel.config.rate_per_million_cache_write_tokens > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cache write</span>
+                    <span>${hoveredModel.config.rate_per_million_cache_write_tokens.toFixed(2)}</span>
+                  </div>
+                )}
+                {hoveredModel.config.rate_per_million_cache_read_tokens > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cache read</span>
+                    <span>${hoveredModel.config.rate_per_million_cache_read_tokens.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     </DidYouKnowPopover>
@@ -204,25 +254,31 @@ function RadioGroupHeader({ children }: { children: React.ReactNode }) {
 function RadioGroupLineItem({
   value,
   label,
-  description,
+  provider,
+  isSelected,
   disabled,
+  onHover,
 }: {
   value: string;
   label: string;
-  description: string;
+  provider: string;
+  isSelected: boolean;
   disabled?: boolean;
+  onHover?: () => void;
 }) {
   return (
     <Label
-      className={
-        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground'
-      }
+      className={cn(
+        'flex cursor-pointer items-center px-4 py-3 hover:bg-accent/50 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground'
+      )}
       key={value}
       htmlFor={`radio-${value}`}
+      onMouseEnter={onHover}
     >
-      <RadioGroupItem disabled={disabled} value={value} className="mr-2" id={`radio-${value}`} />
+      <RadioGroupItem disabled={disabled} value={value} className="sr-only" id={`radio-${value}`} />
       <strong className="font-medium">{label}</strong>
-      <span className="ml-auto font-normal text-muted-foreground">{description}</span>
+      <span className="ml-1.5 text-xs font-normal text-muted-foreground">· {provider}</span>
+      <span className="ml-auto">{isSelected && <CheckIcon className="text-primary" />}</span>
     </Label>
   );
 }
