@@ -23,12 +23,6 @@ describe('MessageManager', () => {
   let messageManager: MessageManager;
   let mockStore: ReturnType<typeof createMockStore>;
 
-  // Mock atom keys
-  const currentChatMessagesAtom = { key: 'currentChatMessagesAtom' };
-  const currentChatAtom = { key: 'currentChatAtom' };
-  const promptSuggestionsAtom = { key: 'promptSuggestionsAtom' };
-  const showChatHistoryAtom = { key: 'showChatHistoryAtom' };
-
   const createUserMessage = (text: string): UserMessagePrompt => ({
     role: 'user',
     content: [createTextContent(text)],
@@ -318,13 +312,8 @@ describe('MessageManager', () => {
       messageManager.handleAbort('anthropic:claude-sonnet-4-20250514', 0);
 
       // Should not add abort message when prevWaitingOnMessageIndex is defined
-      const setCalls = mockStore.set.mock.calls;
-      const lastSetCall = setCalls[setCalls.length - 1];
-      if (lastSetCall) {
-        const setMessages = lastSetCall[1] as ChatMessage[];
-        // Should not have added an abort message
-        expect(setMessages).toEqual(messages);
-      }
+      // handleAbort returns early, so set should not be called
+      expect(mockStore.set).not.toHaveBeenCalled();
     });
   });
 

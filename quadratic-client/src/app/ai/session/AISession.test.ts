@@ -1,7 +1,13 @@
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_BACKUP_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIToolCall, ChatMessage, Context, ToolResultMessage, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIToolCall,
+  ChatMessage,
+  Context,
+  ToolResultMessage,
+  UserMessagePrompt,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIAPIResponse, AISessionRequest, Connection, ImportFile } from './types';
 
@@ -147,13 +153,10 @@ vi.mock('./AIAPIClient', () => ({
 }));
 
 // Now import the module under test (after all mocks are set up)
+// eslint-disable-next-line import/first
 import { aiSession } from './AISession';
-import {
-  abortControllerAtom,
-  loadingAtom,
-  pdfImportAtom,
-  webSearchAtom,
-} from '../atoms/aiAnalystAtoms';
+// eslint-disable-next-line import/first
+import { abortControllerAtom, loadingAtom, pdfImportAtom, webSearchAtom } from '../atoms/aiAnalystAtoms';
 
 // ============================================================================
 // Test Helpers
@@ -371,9 +374,7 @@ describe('AISession', () => {
 
   describe('tool call loop', () => {
     it('processes tool calls and adds results', async () => {
-      const toolCalls: AIToolCall[] = [
-        { id: 'call-1', name: AITool.SetCellValues, arguments: '{}', loading: false },
-      ];
+      const toolCalls: AIToolCall[] = [{ id: 'call-1', name: AITool.SetCellValues, arguments: '{}', loading: false }];
 
       mockAPIClientSendRequest
         .mockResolvedValueOnce({
@@ -438,9 +439,7 @@ describe('AISession', () => {
 
       await aiSession.execute(createDefaultRequest(), createDefaultOptions());
 
-      expect(mockMessageManagerSetPromptSuggestions).toHaveBeenCalledWith([
-        { label: 'Test', prompt: 'Test prompt' },
-      ]);
+      expect(mockMessageManagerSetPromptSuggestions).toHaveBeenCalledWith([{ label: 'Test', prompt: 'Test prompt' }]);
     });
   });
 

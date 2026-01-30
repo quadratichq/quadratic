@@ -9,8 +9,8 @@ import type { ToolExecutionOptions } from './types';
 vi.mock('../tools/aiToolsActions', () => ({
   aiToolsActions: {
     [AITool.SetCellValues]: vi.fn().mockResolvedValue([{ type: 'text', text: 'Cell values set' }]),
-    [AITool.MoveCursor]: vi.fn().mockResolvedValue([{ type: 'text', text: 'Cursor moved' }]),
-    [AITool.GetCodeCellContents]: vi.fn().mockResolvedValue([{ type: 'text', text: 'Code contents' }]),
+    [AITool.MoveCells]: vi.fn().mockResolvedValue([{ type: 'text', text: 'Cells moved' }]),
+    [AITool.GetCodeCellValue]: vi.fn().mockResolvedValue([{ type: 'text', text: 'Code contents' }]),
     [AITool.UserPromptSuggestions]: vi.fn().mockResolvedValue([{ type: 'text', text: 'Suggestions' }]),
   },
 }));
@@ -44,7 +44,7 @@ describe('ToolExecutor', () => {
     it('executes multiple tool calls and returns results', async () => {
       const toolCalls: AIToolCall[] = [
         createToolCall(AITool.SetCellValues, { values: [] }, 'call-1'),
-        createToolCall(AITool.MoveCursor, { cursor: 'A1' }, 'call-2'),
+        createToolCall(AITool.MoveCells, { from: 'A1', to: 'B1' }, 'call-2'),
       ];
 
       const result = await toolExecutor.executeToolCalls(toolCalls, defaultOptions);
@@ -72,12 +72,12 @@ describe('ToolExecutor', () => {
     it('skips web search tool calls', async () => {
       const toolCalls: AIToolCall[] = [
         createToolCall(AITool.WebSearch, { query: 'test' }, 'search-1'),
-        createToolCall(AITool.MoveCursor, { cursor: 'A1' }, 'move-1'),
+        createToolCall(AITool.MoveCells, { from: 'A1', to: 'B1' }, 'move-1'),
       ];
 
       const result = await toolExecutor.executeToolCalls(toolCalls, defaultOptions);
 
-      // Should only have result for MoveCursor, not WebSearch
+      // Should only have result for MoveCells, not WebSearch
       expect(result.content).toHaveLength(1);
       expect(result.content[0].id).toBe('move-1');
     });
@@ -161,7 +161,7 @@ describe('ToolExecutor', () => {
     it('filters tool calls by name', () => {
       const toolCalls: AIToolCall[] = [
         createToolCall(AITool.SetCellValues, {}, 'set-1'),
-        createToolCall(AITool.MoveCursor, {}, 'move-1'),
+        createToolCall(AITool.MoveCells, {}, 'move-1'),
         createToolCall(AITool.SetCellValues, {}, 'set-2'),
       ];
 
@@ -173,10 +173,7 @@ describe('ToolExecutor', () => {
     });
 
     it('returns empty array when no matches', () => {
-      const toolCalls: AIToolCall[] = [
-        createToolCall(AITool.SetCellValues),
-        createToolCall(AITool.MoveCursor),
-      ];
+      const toolCalls: AIToolCall[] = [createToolCall(AITool.SetCellValues), createToolCall(AITool.MoveCells)];
 
       const result = toolExecutor.filterToolCalls(toolCalls, AITool.PDFImport);
 
@@ -298,8 +295,8 @@ describe('ToolExecutor edge cases', () => {
   it('preserves tool call order in results', async () => {
     const toolCalls: AIToolCall[] = [
       { id: 'first', name: AITool.SetCellValues, arguments: '{}', loading: false },
-      { id: 'second', name: AITool.MoveCursor, arguments: '{}', loading: false },
-      { id: 'third', name: AITool.GetCodeCellContents, arguments: '{}', loading: false },
+      { id: 'second', name: AITool.MoveCells, arguments: '{}', loading: false },
+      { id: 'third', name: AITool.GetCodeCellValue, arguments: '{}', loading: false },
     ];
 
     const result = await toolExecutor.executeToolCalls(toolCalls, defaultOptions);
