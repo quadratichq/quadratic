@@ -202,6 +202,13 @@ export async function importFilesToSheet({
         });
       } catch (error) {
         console.error('[AIAnalyst] Error importing file:', file.name, error);
+        // Update progress state to reflect the error
+        if (setProgressState) {
+          setProgressState((prev) => ({
+            ...prev,
+            files: prev.files.map((f, idx) => (idx === i ? { ...f, step: 'error' } : f)),
+          }));
+        }
       }
     }
 
