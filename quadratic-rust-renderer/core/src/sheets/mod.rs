@@ -7,6 +7,7 @@
 //! - Font management
 //! - Platform-agnostic rendering via RenderContext
 
+#[allow(clippy::module_inception)]
 mod sheet;
 #[allow(clippy::module_inception)]
 mod sheets;

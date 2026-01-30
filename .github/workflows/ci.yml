@@ -429,6 +429,64 @@ jobs:
         run: |
           npm run lint:clippy
 
+  lint_rust_renderer:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        run: |
+          cd quadratic-rust-renderer
+          rustup toolchain install
+
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
+        with:
+          workspaces: |
+            quadratic-rust-renderer/core
+            quadratic-rust-renderer/native
+
+      - name: Run cargo clippy on rust-renderer
+        run: |
+          cd quadratic-rust-renderer
+          npm run lint
+
+  test_rust_renderer:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        run: |
+          cd quadratic-rust-renderer
+          rustup toolchain install
+
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
+        with:
+          workspaces: |
+            quadratic-rust-renderer/core
+            quadratic-rust-renderer/native
+
+      - name: Run cargo test on rust-renderer
+        run: |
+          cd quadratic-rust-renderer
+          npm run test
+
   lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30

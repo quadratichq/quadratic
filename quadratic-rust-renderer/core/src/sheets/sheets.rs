@@ -120,3 +120,212 @@ impl Sheets {
         self.sheets.len()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sheets_new() {
+        let sheets = Sheets::new();
+        assert!(sheets.is_empty());
+        assert_eq!(sheets.len(), 0);
+        assert!(sheets.current_sheet_id().is_none());
+    }
+
+    #[test]
+    fn test_sheets_default() {
+        let sheets = Sheets::default();
+        assert!(sheets.is_empty());
+    }
+
+    #[test]
+    fn test_set_sheet() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        assert_eq!(sheets.len(), 1);
+        assert!(!sheets.is_empty());
+        assert!(sheets.get(&id).is_some());
+    }
+
+    #[test]
+    fn test_set_sheet_auto_selects_current() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        assert!(sheets.current_sheet_id().is_none());
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        // First sheet should become current automatically
+        assert_eq!(sheets.current_sheet_id(), Some(id));
+    }
+
+    #[test]
+    fn test_set_sheet_update_existing() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        // Should still have just one sheet
+        assert_eq!(sheets.len(), 1);
+    }
+
+    #[test]
+    fn test_set_current_sheet() {
+        let mut sheets = Sheets::new();
+        let id1 = SheetId::new();
+        let id2 = SheetId::new();
+
+        sheets.set_sheet(id1, SheetOffsets::default(), GridBounds::Empty);
+        sheets.set_sheet(id2, SheetOffsets::default(), GridBounds::Empty);
+
+        assert!(sheets.set_current_sheet(id2));
+        assert_eq!(sheets.current_sheet_id(), Some(id2));
+
+        assert!(sheets.set_current_sheet(id1));
+        assert_eq!(sheets.current_sheet_id(), Some(id1));
+    }
+
+    #[test]
+    fn test_set_current_sheet_no_change() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+        assert!(sheets.current_sheet_id().is_some());
+
+        // Setting same sheet should return false
+        assert!(!sheets.set_current_sheet(id));
+    }
+
+    #[test]
+    fn test_set_current_sheet_creates_placeholder() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        // Setting current to non-existent sheet should create placeholder
+        assert!(sheets.set_current_sheet(id));
+        assert_eq!(sheets.len(), 1);
+        assert!(sheets.get(&id).is_some());
+    }
+
+    #[test]
+    fn test_current_sheet() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        assert!(sheets.current_sheet().is_none());
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        assert!(sheets.current_sheet().is_some());
+        assert_eq!(sheets.current_sheet().unwrap().id(), id);
+    }
+
+    #[test]
+    fn test_current_sheet_mut() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        let sheet = sheets.current_sheet_mut().unwrap();
+        sheet.add_content(1, 1);
+
+        assert!(sheets.current_sheet().unwrap().has_content(1, 1));
+    }
+
+    #[test]
+    fn test_get_and_get_mut() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        assert!(sheets.get(&id).is_some());
+        assert!(sheets.get_mut(&id).is_some());
+
+        let other_id = SheetId::new();
+        assert!(sheets.get(&other_id).is_none());
+    }
+
+    #[test]
+    fn test_get_or_create() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        assert!(sheets.is_empty());
+
+        let sheet = sheets.get_or_create(id);
+        assert_eq!(sheet.id(), id);
+        assert_eq!(sheets.len(), 1);
+
+        // Getting again should return same sheet
+        let _sheet2 = sheets.get_or_create(id);
+        assert_eq!(sheets.len(), 1);
+    }
+
+    #[test]
+    fn test_current_offsets() {
+        let mut sheets = Sheets::new();
+
+        // With no current sheet, should return default offsets
+        let offsets = sheets.current_offsets();
+        assert!(offsets.column_width(1) > 0.0);
+
+        // With a sheet
+        let id = SheetId::TEST;
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+
+        let offsets = sheets.current_offsets();
+        assert!(offsets.column_width(1) > 0.0);
+    }
+
+    #[test]
+    fn test_remove_sheet() {
+        let mut sheets = Sheets::new();
+        let id1 = SheetId::new();
+        let id2 = SheetId::new();
+
+        sheets.set_sheet(id1, SheetOffsets::default(), GridBounds::Empty);
+        sheets.set_sheet(id2, SheetOffsets::default(), GridBounds::Empty);
+        sheets.set_current_sheet(id1);
+
+        sheets.remove_sheet(id1);
+
+        assert_eq!(sheets.len(), 1);
+        assert!(sheets.get(&id1).is_none());
+        // Current should switch to remaining sheet
+        assert_eq!(sheets.current_sheet_id(), Some(id2));
+    }
+
+    #[test]
+    fn test_remove_sheet_only_one() {
+        let mut sheets = Sheets::new();
+        let id = SheetId::TEST;
+
+        sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+        sheets.remove_sheet(id);
+
+        assert!(sheets.is_empty());
+        assert!(sheets.current_sheet_id().is_none());
+    }
+
+    #[test]
+    fn test_multiple_sheets() {
+        let mut sheets = Sheets::new();
+
+        for _ in 0..5 {
+            let id = SheetId::new();
+            sheets.set_sheet(id, SheetOffsets::default(), GridBounds::Empty);
+        }
+
+        assert_eq!(sheets.len(), 5);
+    }
+}
