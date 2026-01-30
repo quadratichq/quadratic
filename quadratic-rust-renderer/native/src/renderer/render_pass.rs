@@ -144,11 +144,13 @@ impl NativeRenderer {
                     let (vertices, indices) =
                         self.create_chart_sprite_from_info(chart_info, request);
                     log::debug!(
-                        "Drawing chart image at ({}, {}): {}x{} pixels",
+                        "Drawing chart image at ({}, {}): spans {}x{} cells, texture {}x{} pixels",
                         chart_info.x,
                         chart_info.y,
-                        chart_info.width,
-                        chart_info.height
+                        chart_info.cell_width,
+                        chart_info.cell_height,
+                        chart_info.texture_width,
+                        chart_info.texture_height
                     );
                     self.wgpu.draw_sprites(
                         &mut pass,

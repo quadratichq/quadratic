@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn test_sheet_borders_to_fill_buffer() {
-        let mut borders = SheetBorders::new();
+        let mut borders = SheetBorders::default();
 
         // Add a horizontal border at row 2, spanning columns 1-3
         borders.add_horizontal(1, 2, Some(3), [0.0, 0.0, 0.0, 1.0], BorderLineStyle::Line1);
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_thick_borders() {
-        let mut borders = SheetBorders::new();
+        let mut borders = SheetBorders::default();
 
         // Add a thick horizontal border (line3 = 3 pixels)
         borders.add_horizontal(1, 2, Some(3), [1.0, 0.0, 0.0, 1.0], BorderLineStyle::Line3);

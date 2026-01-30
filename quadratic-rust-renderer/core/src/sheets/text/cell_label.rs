@@ -111,22 +111,39 @@ pub fn is_potential_emoji(c: char) -> bool {
 
     matches!(
         code,
-        0x1F300..=0x1F5FF  // Misc Symbols & Pictographs (includes skin tones)
-            | 0x1F600..=0x1F64F  // Emoticons
-            | 0x1F680..=0x1F6FF  // Transport & Map
-            | 0x1F900..=0x1F9FF  // Supplemental Symbols
-            | 0x1FA00..=0x1FAFF  // Extended-A
-            | 0x2600..=0x27BF    // Misc Symbols + Dingbats
-            | 0x1F1E0..=0x1F1FF  // Regional Indicators (flags)
-            | 0x2190..=0x21FF    // Arrows
-            | 0x2200..=0x22FF    // Math operators
-            | 0x25A0..=0x25FF    // Geometric shapes
+        // Supplemental Arrows-B, Misc Symbols and Pictographs, Emoticons (SMP)
+        0x1F300..=0x1F5FF  // Misc Symbols & Pictographs
+            | 0x1F600..=0x1F6FF  // Emoticons + Transport & Map Symbols
+            | 0x1F700..=0x1F7FF  // Alchemical Symbols (colored circles/squares 🟠🟡🟢🟣🟤🟥🟧🟨🟩🟦🟪🟫)
+            | 0x1F900..=0x1F9FF  // Supplemental Symbols and Pictographs
+            | 0x1FA00..=0x1FAFF  // Chess Symbols, Extended-A
+            | 0x1F000..=0x1F0FF  // Mahjong Tiles, Domino Tiles (🀄🃏)
+            | 0x1F100..=0x1F1FF  // Enclosed Alphanumeric Supplement (🅰🅱🅾🅿, flags)
+            | 0x1F200..=0x1F2FF  // Enclosed Ideographic Supplement (🈁🈂🈚🈯🈲-🈺🉐🉑)
+            // BMP emoji ranges
+            | 0x2600..=0x27BF    // Misc Symbols + Dingbats (☀☁☂☃☄★☆☎☏✂✈✉✌✏✒✓✔✕✖✗✘)
+            | 0x2B00..=0x2BFF    // Misc Symbols and Arrows (⬛⬜⭐⭕➕➖➗➡⬅⬆⬇)
+            | 0x2300..=0x23FF    // Misc Technical (⌚⌛⌨⏏⏩⏪⏫⏬⏭⏮⏯⏰⏱⏲⏳⏸⏹⏺)
+            | 0x2190..=0x21FF    // Arrows (↔↕↖↗↘↙↩↪)
+            | 0x2200..=0x22FF    // Mathematical Operators
+            | 0x2400..=0x24FF    // Enclosed Alphanumerics (Ⓜ)
+            | 0x25A0..=0x25FF    // Geometric Shapes (▪▫▬▭▮▯▰▱▲△▴▵▶▷▸▹►▻▼▽▾▿◀◁◂◃◄◅)
+            | 0x2900..=0x29FF    // Supplemental Arrows-B (⤴⤵)
+            | 0x3000..=0x303F    // CJK Symbols (〰〽)
+            | 0x3200..=0x32FF    // Enclosed CJK Letters (㊗㊙)
+            // Single character emojis
+            | 0x0023            // # (keycap base)
+            | 0x002A            // * (keycap base)
+            | 0x0030..=0x0039   // 0-9 (keycap base)
             | 0x00A9            // ©
             | 0x00AE            // ®
-            | 0x2122            // ™
             | 0x203C            // ‼
             | 0x2049            // ⁉
-            | 0xFE0F            // Variation selector (emoji presentation)
+            | 0x2122            // ™
+            | 0x2139            // ℹ
+            // Emoji modifiers
+            | 0xFE0F            // Variation selector-16 (emoji presentation)
+            | 0xFE0E            // Variation selector-15 (text presentation)
             | 0x200D            // Zero-width joiner (for ZWJ sequences)
     )
 }
@@ -1425,12 +1442,37 @@ mod tests {
 
     #[test]
     fn test_is_potential_emoji() {
+        // Common emoticons (1F600-1F64F)
         assert!(is_potential_emoji('😀'));
         assert!(is_potential_emoji('🎉'));
+        // Misc symbols (2600-27BF)
         assert!(is_potential_emoji('❤'));
+        assert!(is_potential_emoji('☀'));
+        assert!(is_potential_emoji('✂'));
+        // Misc Symbols and Arrows (2B00-2BFF) - black/white squares, stars
+        assert!(is_potential_emoji('⬛'));
+        assert!(is_potential_emoji('⬜'));
+        assert!(is_potential_emoji('⭐'));
+        // Colored circles/squares (1F7E0-1F7FF)
+        assert!(is_potential_emoji('🟠'));
+        assert!(is_potential_emoji('🟥'));
+        // Misc Technical (2300-23FF) - watch, hourglass
+        assert!(is_potential_emoji('⌚'));
+        assert!(is_potential_emoji('⏰'));
+        // Enclosed CJK (3200-32FF)
+        assert!(is_potential_emoji('㊗'));
+        // Mahjong/Domino (1F000-1F0FF)
+        assert!(is_potential_emoji('🀄'));
+        // Enclosed alphanumeric (1F100-1F1FF)
+        assert!(is_potential_emoji('🅰'));
+        // Keycap bases
+        assert!(is_potential_emoji('#'));
+        assert!(is_potential_emoji('*'));
+        assert!(is_potential_emoji('0'));
+        // Non-emojis
         assert!(!is_potential_emoji('A'));
-        assert!(!is_potential_emoji('1'));
         assert!(!is_potential_emoji(' '));
+        assert!(!is_potential_emoji('中'));
     }
 
     #[test]

@@ -56,6 +56,8 @@ class CoreConnection {
       transactionId,
       sheetPos: { x, y, sheetId },
       code,
+      chartPixelWidth: 0,
+      chartPixelHeight: 0,
     };
     let signal = this.controller.signal;
 

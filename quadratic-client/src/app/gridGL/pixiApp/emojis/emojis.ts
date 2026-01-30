@@ -38,23 +38,11 @@ class Emojis {
   // Mapping from emoji string to location in spritesheet
   private mapping: EmojiMapping | null = null;
 
-  // Loading state for the mapping JSON
-  private mappingPromise: Promise<void> | null = null;
-  private mappingLoaded = false;
-
   /**
-   * Load the emoji mapping JSON. This is called lazily when emojis are first requested.
+   * Preload the emoji mapping JSON. Called by loadAssets.
    * The mapping is small; actual spritesheet pages are loaded on-demand.
    */
-  private async loadMapping(): Promise<void> {
-    if (this.mappingLoaded) return;
-    if (this.mappingPromise) return this.mappingPromise;
-
-    this.mappingPromise = this.fetchMapping();
-    await this.mappingPromise;
-  }
-
-  private async fetchMapping(): Promise<void> {
+  async preload(): Promise<void> {
     try {
       const response = await fetch('/emojis/emoji-mapping.json');
       if (!response.ok) {
@@ -66,33 +54,31 @@ class Emojis {
         throw new Error('Emoji mapping is empty');
       }
 
-      this.mappingLoaded = true;
-
       if (debugFlags.getFlag('debugShowCellHashesInfo')) {
         console.log(
           `[Emojis] Loaded mapping with ${this.mapping.pages.length} pages, ${Object.keys(this.mapping.emojis).length} emojis`
         );
       }
-
-      // Trigger re-render now that mapping is available
-      events.emit('setDirty', { viewport: true });
     } catch (error) {
       console.error('[Emojis] Failed to load emoji mapping:', error);
-      this.mappingLoaded = true;
     }
   }
 
   /**
    * Load a specific spritesheet page on-demand.
+   * Creates the BaseTexture immediately and triggers re-render when loaded.
    */
-  private loadPage(pageIndex: number): void {
-    if (this.baseTextures.has(pageIndex) || this.loadingPages.has(pageIndex)) {
-      return;
+  private loadPage(pageIndex: number): BaseTexture | undefined {
+    if (this.baseTextures.has(pageIndex)) {
+      return this.baseTextures.get(pageIndex);
     }
-    if (!this.mapping) return;
+    if (this.loadingPages.has(pageIndex)) {
+      return undefined;
+    }
+    if (!this.mapping) return undefined;
 
     const page = this.mapping.pages[pageIndex];
-    if (!page) return;
+    if (!page) return undefined;
 
     this.loadingPages.add(pageIndex);
     const texture = BaseTexture.from(`/emojis/${page.filename}`);
@@ -103,6 +89,7 @@ class Emojis {
       if (debugFlags.getFlag('debugShowCellHashesInfo')) {
         console.log(`[Emojis] Loaded page ${pageIndex}: ${page.filename}`);
       }
+      // Trigger re-render - textures will auto-fill from the now-loaded BaseTexture
       events.emit('setDirty', { viewport: true });
     };
 
@@ -111,39 +98,35 @@ class Emojis {
     } else {
       texture.once('loaded', onLoaded);
     }
+
+    return texture;
   }
 
   /**
    * Get or create a texture for an emoji.
-   * Returns Texture.EMPTY if the mapping hasn't loaded yet.
-   * Returns undefined if the emoji is not in the spritesheet.
-   * If the page is still loading, returns a Texture that will auto-fill when ready.
+   * Returns undefined if the emoji is not in the spritesheet or mapping not loaded.
+   * Pre-creates textures immediately; they auto-fill when the page loads.
    */
   getCharacter(emoji: string): Texture | undefined {
-    // Start loading mapping if not already started
-    if (!this.mappingLoaded && !this.mappingPromise) {
-      this.loadMapping();
-    }
-
     // Check cache first
     const cached = this.emojiTextures.get(emoji);
     if (cached) {
       return cached;
     }
 
-    // If mapping still loading, return empty texture
-    if (!this.mappingLoaded) {
-      return Texture.EMPTY;
+    // If mapping not loaded, can't look up emoji
+    if (!this.mapping) {
+      return undefined;
     }
 
     // Look up in mapping - try original first, then without variation selectors.
     // The render worker may send emojis with variation selectors (e.g., ❤️) but the
     // spritesheet stores them without (e.g., ❤), so we need to try both.
-    let location = this.mapping?.emojis[emoji];
+    let location = this.mapping.emojis[emoji];
     if (!location) {
       const stripped = stripVariationSelectors(emoji);
       if (stripped !== emoji) {
-        location = this.mapping?.emojis[stripped];
+        location = this.mapping.emojis[stripped];
       }
     }
     if (!location) {
@@ -157,11 +140,10 @@ class Emojis {
     // Get or create the base texture for this page
     let baseTexture = this.baseTextures.get(location.page);
     if (!baseTexture) {
-      // Start loading this page
-      this.loadPage(location.page);
-      baseTexture = this.baseTextures.get(location.page);
+      // Start loading this page and get the BaseTexture
+      baseTexture = this.loadPage(location.page);
       if (!baseTexture) {
-        return Texture.EMPTY;
+        return undefined;
       }
     }
 
@@ -172,20 +154,13 @@ class Emojis {
   }
 
   /**
-   * Preload the emoji mapping. Call this early to avoid delays.
-   * Spritesheet pages are loaded on-demand when specific emojis are requested.
-   */
-  async preload(): Promise<void> {
-    await this.loadMapping();
-  }
-
-  /**
    * Check if an emoji is available in the spritesheet.
    */
   hasEmoji(emoji: string): boolean {
-    if (this.mapping?.emojis[emoji] !== undefined) return true;
+    if (!this.mapping) return false;
+    if (this.mapping.emojis[emoji] !== undefined) return true;
     const stripped = stripVariationSelectors(emoji);
-    return stripped !== emoji && this.mapping?.emojis[stripped] !== undefined;
+    return stripped !== emoji && this.mapping.emojis[stripped] !== undefined;
   }
 }
 

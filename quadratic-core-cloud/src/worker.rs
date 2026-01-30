@@ -597,6 +597,11 @@ impl Worker {
     pub async fn has_transaction(&self) -> bool {
         self.transaction_id.lock().await.is_some()
     }
+
+    /// Get a reference to the file (GridController) for rendering
+    pub fn file(&self) -> Arc<Mutex<GridController>> {
+        Arc::clone(&self.file)
+    }
 }
 
 impl Drop for Worker {

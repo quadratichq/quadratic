@@ -53,7 +53,7 @@ pub struct GridController {
 
     // callbacks for running python and javascript code
     #[allow(clippy::type_complexity)]
-    run_python_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,
+    run_python_callback: Option<Box<dyn FnMut(String, i32, i32, String, String, f32, f32) + Send>>,
 
     #[allow(clippy::type_complexity)]
     run_javascript_callback: Option<Box<dyn FnMut(String, i32, i32, String, String) + Send>>,
@@ -259,9 +259,19 @@ impl GridController {
 
     // apply the wasm callbacks to the grid controller
     pub fn apply_callbacks(mut self) -> Self {
-        self.with_run_python_callback(|transaction_id, x, y, sheet_id, code| {
-            crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
-        });
+        self.with_run_python_callback(
+            |transaction_id, x, y, sheet_id, code, chart_pixel_width, chart_pixel_height| {
+                crate::wasm_bindings::js::jsRunPython(
+                    transaction_id,
+                    x,
+                    y,
+                    sheet_id,
+                    code,
+                    chart_pixel_width,
+                    chart_pixel_height,
+                );
+            },
+        );
 
         self.with_run_javascript_callback(|transaction_id, x, y, sheet_id, code| {
             crate::wasm_bindings::js::jsRunJavascript(transaction_id, x, y, sheet_id, code);

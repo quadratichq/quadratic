@@ -15,7 +15,7 @@ impl FontManager {
 
     /// Add a font
     pub fn add(&mut self, font: BitmapFont) {
-        log::info!("FontManager: Adding font '{}'", font.name());
+        log::debug!("FontManager: Adding font '{}'", font.name());
         self.fonts.push(font);
     }
 

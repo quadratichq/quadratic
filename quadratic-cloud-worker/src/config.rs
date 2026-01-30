@@ -52,6 +52,11 @@ pub(crate) struct Config {
     pub(crate) tasks: Vec<(String, TaskRun)>,
     #[serde(deserialize_with = "deserialize_worker_init_data")]
     pub(crate) worker_init_data: GetWorkerInitDataResponse,
+
+    // Thumbnail rendering configuration
+    pub(crate) thumbnail_fonts_dir: Option<String>,
+    pub(crate) thumbnail_icons_dir: Option<String>,
+    pub(crate) thumbnail_emojis_dir: Option<String>,
 }
 
 impl Config {

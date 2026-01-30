@@ -44,6 +44,8 @@ async function runPython(code: string): Promise<any> {
     y: 0,
     sheetId: 'test',
     code,
+    chartPixelWidth: 600,
+    chartPixelHeight: 460,
   });
 
   // wait for the results

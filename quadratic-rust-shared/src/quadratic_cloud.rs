@@ -87,12 +87,14 @@ pub async fn worker_post_request<T: Serialize, R: DeserializeOwned>(
 
     Ok(response)
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GetWorkerInitDataResponse {
     pub team_id: Uuid,
     pub email: String,
     pub sequence_number: u32,
     pub presigned_url: String,
+    pub thumbnail_upload_url: String,
+    pub thumbnail_key: String,
     pub timezone: Option<String>,
 }
 /// Get a worker init data (no JWT required - called before worker has a token)
@@ -185,6 +187,9 @@ pub async fn ack_tasks(
 pub struct ShutdownRequest {
     pub container_id: Uuid,
     pub file_id: Uuid,
+    /// Optional thumbnail key if the worker successfully uploaded a thumbnail
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail_key: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -196,11 +201,13 @@ pub async fn worker_shutdown(
     base_url: &str,
     container_id: Uuid,
     file_id: Uuid,
+    thumbnail_key: Option<String>,
     jwt: &str,
 ) -> Result<ShutdownResponse> {
     let request = ShutdownRequest {
         container_id,
         file_id,
+        thumbnail_key,
     };
 
     worker_post_request::<ShutdownRequest, ShutdownResponse>(

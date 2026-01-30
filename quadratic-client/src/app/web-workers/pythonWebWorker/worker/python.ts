@@ -12,9 +12,6 @@ import { loadPyodide } from 'pyodide';
 
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
-const DEFAULT_CHART_WIDTH = 600;
-const DEFAULT_CHART_HEIGHT = 460;
-
 // eslint-disable-next-line no-restricted-globals
 const SELF = self;
 
@@ -167,6 +164,8 @@ class Python {
       transactionId: corePythonRun.transactionId,
       sheetPos: { x: corePythonRun.x, y: corePythonRun.y, sheetId: corePythonRun.sheetId },
       code: corePythonRun.code,
+      chartPixelWidth: corePythonRun.chartPixelWidth,
+      chartPixelHeight: corePythonRun.chartPixelHeight,
     };
   };
 
@@ -177,6 +176,8 @@ class Python {
     y: codeRun.sheetPos.y,
     sheetId: codeRun.sheetPos.sheetId,
     code: codeRun.code,
+    chartPixelWidth: codeRun.chartPixelWidth,
+    chartPixelHeight: codeRun.chartPixelHeight,
   });
 
   private next = () => {
@@ -327,7 +328,9 @@ class Python {
 
       if (isHtmlString(htmlString)) {
         try {
-          chartImage = await pythonClient.captureChartImage(htmlString, DEFAULT_CHART_WIDTH, DEFAULT_CHART_HEIGHT);
+          const width = Math.round(message.chartPixelWidth);
+          const height = Math.round(message.chartPixelHeight);
+          chartImage = await pythonClient.captureChartImage(htmlString, width, height);
         } catch (e) {
           console.error('[python.ts] Failed to capture chart image:', e);
         }
