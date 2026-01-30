@@ -43,9 +43,12 @@ router.get(
 
     // Get the synced connections
     // If no type is provided, get all synced connections
+    // Only return active synced connections with non-archived parent connections
     const syncedConnections = await dbClient.syncedConnection.findMany({
       where: {
+        status: 'ACTIVE',
         connection: {
+          archived: null,
           ...(type ? { type: type as ConnectionType } : {}),
         },
       },
