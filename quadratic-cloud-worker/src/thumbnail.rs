@@ -7,16 +7,16 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
-use quadratic_core::color::Rgba;
-use quadratic_core::controller::GridController;
 use quadratic_core::CellValue;
 use quadratic_core::Pos;
+use quadratic_core::color::Rgba;
+use quadratic_core::controller::GridController;
+use quadratic_renderer_core::RenderCell;
+use quadratic_renderer_core::RenderFill;
 use quadratic_renderer_core::emoji_loader::load_emoji_spritesheet;
 use quadratic_renderer_core::font_loader::load_fonts_from_directory;
 use quadratic_renderer_core::from_rgba;
 use quadratic_renderer_core::parse_color_to_rgba;
-use quadratic_renderer_core::RenderCell;
-use quadratic_renderer_core::RenderFill;
 use quadratic_renderer_native::{
     BorderLineStyle, ChartImage, GridExclusionZone, NativeRenderer, RenderRequest, SelectionRange,
     SheetBorders, TableNameIcon, TableOutline, TableOutlines,
@@ -61,8 +61,7 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
 
     trace!(
         "Thumbnail range: columns 0-{}, rows 0-{}",
-        thumbnail_rect.max.x,
-        thumbnail_rect.max.y
+        thumbnail_rect.max.x, thumbnail_rect.max.y
     );
 
     // Calculate render dimensions with DPR
@@ -70,7 +69,7 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
     let render_height = THUMBNAIL_HEIGHT * THUMBNAIL_DPR;
 
     // Create render request
-    let mut request = RenderRequest::new(selection.clone(), render_width, render_height);
+    let mut request = RenderRequest::new(selection, render_width, render_height);
     request.show_grid_lines = true;
     request.offsets = offsets.clone();
 
@@ -294,9 +293,7 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
     // Create renderer
     trace!(
         "Creating renderer ({}x{} pixels, {}x DPR)",
-        THUMBNAIL_WIDTH,
-        THUMBNAIL_HEIGHT,
-        THUMBNAIL_DPR
+        THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, THUMBNAIL_DPR
     );
     let mut renderer = NativeRenderer::new(render_width, render_height)?;
 
@@ -369,11 +366,10 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
 }
 
 /// Upload the thumbnail to S3 using the presigned URL
-pub async fn upload_thumbnail(
-    png_bytes: Vec<u8>,
-    thumbnail_upload_url: &str,
-) -> Result<()> {
-    let client = reqwest::Client::new();
+pub async fn upload_thumbnail(png_bytes: Vec<u8>, thumbnail_upload_url: &str) -> Result<()> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()?;
     let response = client
         .put(thumbnail_upload_url)
         .header("Content-Type", "image/png")
@@ -595,7 +591,11 @@ mod tests {
             Ok(bytes) => {
                 assert!(!bytes.is_empty(), "PNG bytes should not be empty");
                 // Verify PNG magic bytes
-                assert_eq!(&bytes[0..4], &[0x89, 0x50, 0x4E, 0x47], "Should be valid PNG");
+                assert_eq!(
+                    &bytes[0..4],
+                    &[0x89, 0x50, 0x4E, 0x47],
+                    "Should be valid PNG"
+                );
             }
             Err(e) => {
                 // Expected in environments without GPU or fonts
@@ -653,7 +653,11 @@ mod tests {
         match result {
             Ok(bytes) => {
                 assert!(!bytes.is_empty(), "PNG bytes should not be empty");
-                assert_eq!(&bytes[0..4], &[0x89, 0x50, 0x4E, 0x47], "Should be valid PNG");
+                assert_eq!(
+                    &bytes[0..4],
+                    &[0x89, 0x50, 0x4E, 0x47],
+                    "Should be valid PNG"
+                );
             }
             Err(e) => {
                 println!("Thumbnail rendering failed (expected in CI): {}", e);
@@ -666,7 +670,11 @@ mod tests {
         let png_bytes = vec![0x89, 0x50, 0x4E, 0x47]; // PNG magic bytes
 
         // Test with an invalid URL - should fail
-        let result = upload_thumbnail(png_bytes, "http://invalid-url-that-does-not-exist.local/upload").await;
+        let result = upload_thumbnail(
+            png_bytes,
+            "http://invalid-url-that-does-not-exist.local/upload",
+        )
+        .await;
         assert!(result.is_err());
     }
 
@@ -678,6 +686,9 @@ mod tests {
 
         // Verify 16:9 aspect ratio
         let ratio = THUMBNAIL_WIDTH as f64 / THUMBNAIL_HEIGHT as f64;
-        assert!((ratio - 16.0 / 9.0).abs() < 0.01, "Should be 16:9 aspect ratio");
+        assert!(
+            (ratio - 16.0 / 9.0).abs() < 0.01,
+            "Should be 16:9 aspect ratio"
+        );
     }
 }

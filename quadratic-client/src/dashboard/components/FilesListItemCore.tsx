@@ -7,6 +7,7 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 
 export function FilesListItemCore({
   name,
@@ -20,6 +21,7 @@ export function FilesListItemCore({
   viewPreferences,
   actions,
   children,
+  onCreatorClick,
 }: {
   name: string;
   nameFilter: string;
@@ -32,7 +34,9 @@ export function FilesListItemCore({
   fileUuid?: string;
   actions?: ReactNode;
   children?: ReactNode;
+  onCreatorClick?: (creator: FileCreator) => void;
 }) {
+  const navigate = useNavigate();
   const isGrid = viewPreferences.layout === Layout.Grid;
   const displayName = nameFilter ? highlightMatchingString(name, nameFilter) : name;
 
@@ -42,7 +46,7 @@ export function FilesListItemCore({
         <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
           <h2 className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}>{displayName}</h2>
 
-          <div className="flex h-5 items-center gap-1">
+          <div className="flex min-h-5 items-center gap-1">
             {children}
             {hasNetworkError ? (
               <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
@@ -55,10 +59,12 @@ export function FilesListItemCore({
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        window.location.href = ROUTES.FILE({
-                          uuid: fileUuid,
-                          searchParams: SEARCH_PARAMS.SCHEDULED_TASKS.KEY,
-                        });
+                        navigate(
+                          ROUTES.FILE({
+                            uuid: fileUuid,
+                            searchParams: SEARCH_PARAMS.SCHEDULED_TASKS.KEY,
+                          })
+                        );
                       }}
                     >
                       <ScheduledTasksIcon className="h-3 w-3" />
@@ -71,11 +77,20 @@ export function FilesListItemCore({
           </div>
         </div>
 
-        {creator?.email && (
+        {creator?.email && onCreatorClick && (
           <TooltipPopover label={`Created by ${creator.name || creator.email}`}>
-            <Avatar alt={creator.name || creator.email} src={creator.picture}>
-              {creator.name?.[0] || creator.email[0]}
-            </Avatar>
+            <button
+              className="rounded-full hover:ring-1 hover:ring-primary hover:ring-offset-2"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onCreatorClick(creator);
+              }}
+            >
+              <Avatar alt={creator.name || creator.email} src={creator.picture}>
+                {creator.name?.[0] || creator.email[0]}
+              </Avatar>
+            </button>
           </TooltipPopover>
         )}
       </div>

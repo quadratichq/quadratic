@@ -17,8 +17,8 @@ declare var self: WorkerGlobalScope &
       y: number,
       sheetId: string,
       code: string,
-      chartPixelWidth: number | null,
-      chartPixelHeight: number | null
+      chartPixelWidth: number,
+      chartPixelHeight: number
     ) => void;
   };
 
@@ -117,8 +117,8 @@ class CorePython {
     y: number,
     sheetId: string,
     code: string,
-    chartPixelWidth: number | null,
-    chartPixelHeight: number | null
+    chartPixelWidth: number,
+    chartPixelHeight: number
   ) => {
     this.lastTransactionId = transactionId;
     this.send({

@@ -56,7 +56,7 @@ pub fn render_selection_to_jpeg(request: &RenderRequest, quality: u8) -> anyhow:
 }
 
 /// Convenience function: render a selection to WebP bytes
-pub fn render_selection_to_webp(request: &RenderRequest, quality: u8) -> anyhow::Result<Vec<u8>> {
+pub fn render_selection_to_webp(request: &RenderRequest) -> anyhow::Result<Vec<u8>> {
     let mut renderer = NativeRenderer::new(request.width, request.height)?;
-    renderer.render_to_webp(request, quality)
+    renderer.render_to_webp(request)
 }

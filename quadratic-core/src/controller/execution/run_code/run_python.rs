@@ -45,8 +45,8 @@ impl GridController {
                     sheet_pos.y as i32,
                     sheet_pos.sheet_id.to_string(),
                     code,
-                    Some(chart_pixel_width),
-                    Some(chart_pixel_height),
+                    chart_pixel_width,
+                    chart_pixel_height,
                 );
             }
         }

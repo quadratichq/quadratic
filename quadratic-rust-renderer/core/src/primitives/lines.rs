@@ -232,3 +232,226 @@ impl Default for NativeLines {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WHITE: Color = [1.0, 1.0, 1.0, 1.0];
+    const RED: Color = [1.0, 0.0, 0.0, 1.0];
+
+    // =========================================================================
+    // Lines (triangulated) tests
+    // =========================================================================
+
+    #[test]
+    fn test_lines_new() {
+        let lines = Lines::new();
+        assert!(lines.is_empty());
+        assert!(lines.vertices().is_empty());
+    }
+
+    #[test]
+    fn test_lines_default() {
+        let lines = Lines::default();
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn test_lines_with_thickness() {
+        let lines = Lines::with_thickness(2.0, LineScaling::WorldUnits(2.0));
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn test_lines_add_horizontal() {
+        let mut lines = Lines::new();
+        lines.add_horizontal(0.0, 100.0, 50.0, WHITE, 1.0);
+
+        assert!(!lines.is_empty());
+        // Each line produces 2 triangles = 6 vertices, 6 floats each = 36 floats
+        assert_eq!(lines.vertices().len(), 36);
+    }
+
+    #[test]
+    fn test_lines_add_vertical() {
+        let mut lines = Lines::new();
+        lines.add_vertical(50.0, 0.0, 100.0, WHITE, 1.0);
+
+        assert!(!lines.is_empty());
+        assert_eq!(lines.vertices().len(), 36);
+    }
+
+    #[test]
+    fn test_lines_add_arbitrary() {
+        let mut lines = Lines::new();
+        lines.add(0.0, 0.0, 100.0, 100.0, WHITE, 1.0);
+
+        assert!(!lines.is_empty());
+        assert_eq!(lines.vertices().len(), 36);
+    }
+
+    #[test]
+    fn test_lines_add_degenerate() {
+        let mut lines = Lines::new();
+        // Point to same point should be ignored
+        lines.add(50.0, 50.0, 50.0, 50.0, WHITE, 1.0);
+
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn test_lines_clear() {
+        let mut lines = Lines::new();
+        lines.add_horizontal(0.0, 100.0, 50.0, WHITE, 1.0);
+        assert!(!lines.is_empty());
+
+        lines.clear();
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn test_lines_multiple() {
+        let mut lines = Lines::new();
+        lines.add_horizontal(0.0, 100.0, 50.0, WHITE, 1.0);
+        lines.add_vertical(50.0, 0.0, 100.0, RED, 1.0);
+
+        // 2 lines * 36 floats each
+        assert_eq!(lines.vertices().len(), 72);
+    }
+
+    #[test]
+    fn test_line_scaling_screen_pixel() {
+        let mut lines = Lines::with_thickness(1.0, LineScaling::ScreenPixel);
+
+        // At scale 1.0, thickness should be 1.0
+        lines.add_horizontal(0.0, 100.0, 50.0, WHITE, 1.0);
+        let len1 = lines.vertices().len();
+
+        lines.clear();
+
+        // At scale 2.0, effective thickness is 0.5 (1.0 / 2.0)
+        lines.add_horizontal(0.0, 100.0, 50.0, WHITE, 2.0);
+        let len2 = lines.vertices().len();
+
+        // Both should produce same vertex count
+        assert_eq!(len1, len2);
+    }
+
+    #[test]
+    fn test_line_scaling_world_units() {
+        let lines = Lines::with_thickness(2.0, LineScaling::WorldUnits(2.0));
+        // Just verify construction doesn't panic
+        assert!(lines.is_empty());
+    }
+
+    // =========================================================================
+    // NativeLines tests
+    // =========================================================================
+
+    #[test]
+    fn test_native_lines_new() {
+        let lines = NativeLines::new();
+        assert!(lines.is_empty());
+        assert_eq!(lines.len(), 0);
+    }
+
+    #[test]
+    fn test_native_lines_default() {
+        let lines = NativeLines::default();
+        assert!(lines.is_empty());
+    }
+
+    #[test]
+    fn test_native_lines_with_capacity() {
+        let lines = NativeLines::with_capacity(10);
+        assert!(lines.is_empty());
+        // Should have pre-allocated capacity
+    }
+
+    #[test]
+    fn test_native_lines_add() {
+        let mut lines = NativeLines::new();
+        lines.add(0.0, 0.0, 100.0, 100.0, WHITE);
+
+        assert!(!lines.is_empty());
+        assert_eq!(lines.len(), 1);
+        // 2 vertices * 6 floats = 12 floats
+        assert_eq!(lines.vertices().len(), 12);
+    }
+
+    #[test]
+    fn test_native_lines_add_horizontal() {
+        let mut lines = NativeLines::new();
+        lines.add_horizontal(0.0, 100.0, 50.0, WHITE);
+
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines.vertices().len(), 12);
+    }
+
+    #[test]
+    fn test_native_lines_add_vertical() {
+        let mut lines = NativeLines::new();
+        lines.add_vertical(50.0, 0.0, 100.0, WHITE);
+
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines.vertices().len(), 12);
+    }
+
+    #[test]
+    fn test_native_lines_clear() {
+        let mut lines = NativeLines::new();
+        lines.add(0.0, 0.0, 100.0, 100.0, WHITE);
+        assert!(!lines.is_empty());
+
+        lines.clear();
+        assert!(lines.is_empty());
+        assert_eq!(lines.len(), 0);
+    }
+
+    #[test]
+    fn test_native_lines_multiple() {
+        let mut lines = NativeLines::new();
+        lines.add(0.0, 0.0, 100.0, 0.0, WHITE);
+        lines.add(0.0, 0.0, 0.0, 100.0, RED);
+        lines.add(100.0, 0.0, 100.0, 100.0, WHITE);
+
+        assert_eq!(lines.len(), 3);
+        // 3 lines * 12 floats = 36 floats
+        assert_eq!(lines.vertices().len(), 36);
+    }
+
+    #[test]
+    fn test_native_lines_vertex_format() {
+        let mut lines = NativeLines::new();
+        let color: Color = [0.5, 0.6, 0.7, 0.8];
+        lines.add(10.0, 20.0, 30.0, 40.0, color);
+
+        let v = lines.vertices();
+        // First vertex: x, y, r, g, b, a
+        assert_eq!(v[0], 10.0);
+        assert_eq!(v[1], 20.0);
+        assert_eq!(v[2], 0.5);
+        assert_eq!(v[3], 0.6);
+        assert_eq!(v[4], 0.7);
+        assert_eq!(v[5], 0.8);
+
+        // Second vertex
+        assert_eq!(v[6], 30.0);
+        assert_eq!(v[7], 40.0);
+    }
+
+    // =========================================================================
+    // LineScaling tests
+    // =========================================================================
+
+    #[test]
+    fn test_line_scaling_equality() {
+        assert_eq!(LineScaling::ScreenPixel, LineScaling::ScreenPixel);
+        assert_eq!(
+            LineScaling::WorldUnits(2.0),
+            LineScaling::WorldUnits(2.0)
+        );
+        assert_ne!(LineScaling::ScreenPixel, LineScaling::WorldUnits(1.0));
+    }
+}

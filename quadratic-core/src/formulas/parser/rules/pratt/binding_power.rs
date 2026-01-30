@@ -8,6 +8,10 @@
 
 use crate::formulas::lexer::Token;
 
+/// The binding power for lambda invocation (expr followed by parentheses).
+/// This is a postfix operator with very high precedence.
+pub const LAMBDA_INVOKE_BP: u8 = 90;
+
 /// Returns the infix (binary) binding power for a token.
 /// Returns `Some((left_bp, right_bp))` for binary operators, `None` otherwise.
 #[inline]
@@ -62,7 +66,3 @@ pub fn postfix_binding_power(token: Token) -> Option<u8> {
         _ => return None,
     })
 }
-
-/// The binding power for lambda invocation (expr followed by parentheses).
-/// This is a postfix operator with very high precedence.
-pub const LAMBDA_INVOKE_BP: u8 = 90;

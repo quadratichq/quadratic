@@ -3,6 +3,7 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { apiClient } from '@/shared/api/apiClient';
 import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
@@ -22,7 +23,7 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import { useSetAtom } from 'jotai';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -36,14 +37,16 @@ interface ConnectionMenuItemProps {
 }
 
 const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: ConnectionMenuItemProps) => {
-  const [percentCompleted, setPercentCompleted] = useState<number | undefined>(
-    connection.syncedConnectionPercentCompleted
-  );
+  const [syncData, setSyncData] = useState({
+    percentCompleted: connection.syncedConnectionPercentCompleted,
+    latestLogStatus: connection.syncedConnectionLatestLogStatus,
+  });
 
-  // Poll for updated syncedConnectionPercentCompleted when the connection has sync data
+  const isSyncedConnection = isSyncedConnectionType(connection.type);
+
+  // Poll for updated sync data when this is a synced connection type
   useEffect(() => {
-    // Only poll if this is a synced connection
-    if (connection.syncedConnectionUpdatedDate === undefined) {
+    if (!isSyncedConnection) {
       return;
     }
 
@@ -53,9 +56,12 @@ const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: Co
           connectionUuid: connection.uuid,
           teamUuid,
         });
-        setPercentCompleted(fetchedConnection?.syncedConnectionPercentCompleted);
+        setSyncData({
+          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted,
+          latestLogStatus: fetchedConnection?.syncedConnectionLatestLogStatus,
+        });
       } catch {
-        // Silently fail - keep using existing percentCompleted value
+        // Silently fail - keep using existing sync data
       }
     };
 
@@ -66,16 +72,23 @@ const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: Co
     const interval = setInterval(fetchConnection, SYNCED_CONNECTION_POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [connection.uuid, connection.syncedConnectionUpdatedDate, teamUuid]);
+  }, [connection.uuid, isSyncedConnection, teamUuid]);
 
-  const isSyncedConnection = connection.syncedConnectionUpdatedDate !== undefined;
-  const isDisabled = isSyncedConnection && percentCompleted !== undefined && percentCompleted < 100;
+  const syncState = isSyncedConnection
+    ? deriveSyncStateFromConnectionList({
+        syncedConnectionPercentCompleted: syncData.percentCompleted,
+        syncedConnectionLatestLogStatus: syncData.latestLogStatus,
+      })
+    : null;
+
+  // Disable if syncing or not yet synced
+  const isSyncing = syncState === 'syncing' || syncState === 'not_synced';
 
   return (
-    <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isDisabled}>
+    <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isSyncing}>
       <LanguageIcon language={connection.type} className="flex-shrink-0" />
       <span className="truncate">{connection.name}</span>
-      {isDisabled && <time className="ml-2 text-xs text-muted-foreground">(syncing, {percentCompleted}%)</time>}
+      {isSyncing && <span className="ml-2 text-xs text-muted-foreground">(syncing)</span>}
       <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
     </DropdownMenuItem>
   );

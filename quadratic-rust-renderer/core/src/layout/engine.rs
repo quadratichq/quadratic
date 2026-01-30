@@ -245,3 +245,144 @@ impl Default for LayoutEngine {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_layout_engine_new() {
+        let engine = LayoutEngine::new();
+        assert!(!engine.is_running());
+        assert!(!engine.has_fonts());
+        assert!(engine.current_sheet_id().is_none());
+    }
+
+    #[test]
+    fn test_layout_engine_default() {
+        let engine = LayoutEngine::default();
+        assert!(!engine.is_running());
+    }
+
+    #[test]
+    fn test_start_stop() {
+        let mut engine = LayoutEngine::new();
+
+        assert!(!engine.is_running());
+
+        engine.start();
+        assert!(engine.is_running());
+
+        engine.stop();
+        assert!(!engine.is_running());
+    }
+
+    #[test]
+    fn test_generate_batch_requires_running() {
+        let mut engine = LayoutEngine::new();
+
+        // Not running - should return None
+        assert!(engine.generate_render_batch().is_none());
+
+        engine.start();
+        // Running but no fonts - should still return None
+        assert!(engine.generate_render_batch().is_none());
+    }
+
+    #[test]
+    fn test_set_viewport() {
+        let mut engine = LayoutEngine::new();
+        engine.set_viewport(100.0, 200.0, 2.0);
+
+        assert_eq!(engine.state().viewport.x(), 100.0);
+        assert_eq!(engine.state().viewport.y(), 200.0);
+        assert_eq!(engine.state().viewport.scale(), 2.0);
+    }
+
+    #[test]
+    fn test_resize_viewport() {
+        let mut engine = LayoutEngine::new();
+        engine.resize_viewport(1024.0, 768.0, 2.0);
+
+        assert_eq!(engine.state().viewport.width(), 1024.0);
+        assert_eq!(engine.state().viewport.height(), 768.0);
+        assert_eq!(engine.state().viewport.dpr(), 2.0);
+    }
+
+    #[test]
+    fn test_set_current_sheet() {
+        let mut engine = LayoutEngine::new();
+        let sheet_id = SheetId::TEST;
+
+        assert!(engine.current_sheet_id().is_none());
+
+        engine.set_current_sheet(sheet_id);
+        assert_eq!(engine.current_sheet_id(), Some(sheet_id));
+    }
+
+    #[test]
+    fn test_has_fonts() {
+        let engine = LayoutEngine::new();
+        assert!(!engine.has_fonts());
+    }
+
+    #[test]
+    fn test_state_access() {
+        let mut engine = LayoutEngine::new();
+
+        // Can access state
+        let _ = engine.state();
+        let _ = engine.state_mut();
+    }
+
+    #[test]
+    fn test_get_unrequested_hashes_no_sheet() {
+        let engine = LayoutEngine::new();
+        let hashes = engine.get_unrequested_hashes();
+        assert!(hashes.is_empty());
+    }
+
+    #[test]
+    fn test_get_unrequested_hashes_with_sheet() {
+        let mut engine = LayoutEngine::new();
+        let sheet_id = SheetId::TEST;
+        engine.set_current_sheet(sheet_id);
+
+        // With a sheet but no text hashes, should still work
+        let hashes = engine.get_unrequested_hashes();
+        // Result depends on viewport and offsets
+        let _ = hashes;
+    }
+
+    #[test]
+    fn test_column_max_width_no_sheet() {
+        let engine = LayoutEngine::new();
+        assert_eq!(engine.get_column_max_width(1), 0.0);
+    }
+
+    #[test]
+    fn test_row_max_height_no_sheet() {
+        let engine = LayoutEngine::new();
+        assert_eq!(engine.get_row_max_height(1), 0.0);
+    }
+
+    #[test]
+    fn test_column_max_width_with_sheet() {
+        let mut engine = LayoutEngine::new();
+        let sheet_id = SheetId::TEST;
+        engine.set_current_sheet(sheet_id);
+
+        // With sheet but no content, should be 0
+        assert_eq!(engine.get_column_max_width(1), 0.0);
+    }
+
+    #[test]
+    fn test_row_max_height_with_sheet() {
+        let mut engine = LayoutEngine::new();
+        let sheet_id = SheetId::TEST;
+        engine.set_current_sheet(sheet_id);
+
+        // With sheet but no content, should be 0
+        assert_eq!(engine.get_row_max_height(1), 0.0);
+    }
+}

@@ -44,6 +44,7 @@ export interface DirtyObject {
   boxCells?: boolean;
   cellMoving?: boolean;
   cellImages?: boolean;
+  viewport?: boolean;
 }
 
 interface EventTypes {
@@ -180,7 +181,6 @@ interface EventTypes {
   coreError: (from: string, error: Error | unknown) => void;
 
   bitmapFontsLoaded: () => void;
-  emojiSpritesheetsLoaded: () => void;
 
   dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;

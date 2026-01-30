@@ -412,7 +412,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::js_types::JsColumnWidth,
-        wasm_bindings::js::{clear_js_calls, expect_js_offsets},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_offsets},
     };
 
     use crate::test_util::*;
@@ -489,6 +489,8 @@ mod tests {
 
     #[test]
     fn test_thumbnail_dirty_resize_column_in_range() {
+        clear_js_calls();
+
         // Resizing a column within thumbnail range should mark thumbnail as dirty
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -502,13 +504,14 @@ mod tests {
 
         gc.commit_single_resize(sheet_id, Some(column as i32), None, 150.0, None, false);
 
-        // Check that the last transaction marked thumbnail as dirty
-        // We verify by checking the undo stack - if thumbnail was dirty, it should have been regenerated
-        assert!(gc.has_undo());
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
     }
 
     #[test]
     fn test_thumbnail_dirty_resize_row_in_range() {
+        clear_js_calls();
+
         // Resizing a row within thumbnail range should mark thumbnail as dirty
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -522,12 +525,14 @@ mod tests {
 
         gc.commit_single_resize(sheet_id, None, Some(row as i32), 30.0, None, false);
 
-        // Check that the operation was executed
-        assert!(gc.has_undo());
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
     }
 
     #[test]
     fn test_thumbnail_dirty_default_column_size() {
+        clear_js_calls();
+
         // Changing default column size should always mark thumbnail as dirty
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -539,12 +544,14 @@ mod tests {
         let (default_width, _) = gc.sheet(sheet_id).offsets.defaults();
         assert_eq!(default_width, 150.0);
 
-        // Operation should have been executed
-        assert!(gc.has_undo());
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
     }
 
     #[test]
     fn test_thumbnail_dirty_default_row_size() {
+        clear_js_calls();
+
         // Changing default row size should always mark thumbnail as dirty
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -556,7 +563,7 @@ mod tests {
         let (_, default_height) = gc.sheet(sheet_id).offsets.defaults();
         assert_eq!(default_height, 30.0);
 
-        // Operation should have been executed
-        assert!(gc.has_undo());
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
     }
 }

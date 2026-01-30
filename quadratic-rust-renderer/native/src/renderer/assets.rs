@@ -14,13 +14,41 @@ use crate::request::{ChartImage, RenderRequest, TableNameIcon};
 fn create_rect_vertices(x: f32, y: f32, width: f32, height: f32) -> (Vec<f32>, Vec<u32>) {
     let vertices = vec![
         // Top-left
-        x, y, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+        x,
+        y,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
         // Top-right
-        x + width, y, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+        x + width,
+        y,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
         // Bottom-right
-        x + width, y + height, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        x + width,
+        y + height,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
         // Bottom-left
-        x, y + height, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        x,
+        y + height,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
     ];
 
     // Two triangles: 0-1-2 and 0-2-3

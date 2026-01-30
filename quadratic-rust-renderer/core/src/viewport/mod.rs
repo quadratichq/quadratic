@@ -5,6 +5,7 @@
 //! wrapper is handled by the WASM crates.
 
 mod bounds;
+#[allow(clippy::module_inception)]
 mod viewport;
 
 pub use bounds::{VisibleBounds, VisibleHashBounds};

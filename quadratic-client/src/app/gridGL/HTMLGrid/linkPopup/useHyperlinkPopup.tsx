@@ -511,14 +511,16 @@ export function useHyperlinkPopup() {
   // Close popup when focus leaves the popup container
   const handleBlur = useCallback(
     (e: React.FocusEvent) => {
+      // Don't close in edit mode - user is actively editing
+      // This prevents the popup from closing when something else steals focus
+      // (e.g., focusGrid() being called when a menu closes)
+      if (mode === 'edit') {
+        return;
+      }
       // Check if the new focus target is outside the popup
       const relatedTarget = e.relatedTarget as Node | null;
       if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
         // Focus is still within the popup, don't close
-        return;
-      }
-      // Don't close if focus moved to null (e.g., window blur) while in edit mode
-      if (!relatedTarget && mode === 'edit') {
         return;
       }
       closePopup(true);

@@ -10,13 +10,11 @@
 mod borders;
 mod buffer_types;
 mod constants;
-mod hash_coords;
 mod render_batch;
 mod render_types;
 
 pub use borders::*;
 pub use buffer_types::*;
 pub use constants::*;
-pub use hash_coords::*;
 pub use render_batch::*;
 pub use render_types::*;

@@ -2,7 +2,7 @@ name: Preview Delete
 
 on:
   pull_request:
-    types: [closed, labeled]
+    types: [closed, unlabeled]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-stack
@@ -15,10 +15,15 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2404
+    # Only run when:
+    # 1. PR is closed (always clean up the stack), OR
+    # 2. The 'preview' label was specifically removed AND the PR no longer has the preview label
     if: |
       (github.head_ref != 'qa' || github.base_ref != 'main') &&
       (github.event.action == 'closed' ||
-       (github.event.action == 'labeled' && github.event.label.name == 'no-preview'))
+       (github.event.action == 'unlabeled' &&
+        github.event.label.name == 'preview' &&
+        !contains(github.event.pull_request.labels.*.name, 'preview')))
     timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
@@ -64,6 +69,6 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build, Deploy & Tests-E2E
-            🗑️ Preview deleted (${{ github.event.action == 'closed' && 'PR closed' || 'no-preview label added' }})
+            🗑️ Preview deleted (${{ github.event.action == 'closed' && 'PR closed' || 'preview label removed' }})
             📊 [Last E2E Report](https://${{ env.S3_BUCKET }}/${{ env.STACK_NAME }})
           edit-mode: replace

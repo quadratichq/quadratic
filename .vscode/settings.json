@@ -399,6 +399,7 @@
     "Pyright",
     "PYTHONUNBUFFERED",
     "qawolf",
+    "qcells",
     "quadratichq",
     "qwen",
     "RANDARRAY",
@@ -564,7 +565,9 @@
   // "rust-analyzer.checkOnSave.command": "clippy",
   "rust-analyzer.linkedProjects": [
     "Cargo.toml",
-    "dev-rust/Cargo.toml"
+    "dev-rust/Cargo.toml",
+    "quadratic-rust-renderer/core/Cargo.toml",
+    "quadratic-rust-renderer/native/Cargo.toml"
   ],
   "rust-analyzer.server.extraEnv": {
     "CARGO_TARGET_DIR": "target/rust-analyzer"

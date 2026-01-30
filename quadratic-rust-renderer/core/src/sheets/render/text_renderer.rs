@@ -4,7 +4,7 @@
 
 use crate::render_context::RenderContext;
 use crate::sheets::text::TextHash;
-use crate::sheets::text::{lines_to_vertices, HorizontalLine, TextCache};
+use crate::sheets::text::{lines_to_vertices, HorizontalLine};
 use crate::types::{FillBuffer, TextBuffer};
 
 /// Render all cached text from a TextHash
@@ -83,46 +83,6 @@ pub fn render_text_buffers(
     }
 }
 
-/// Render text from a TextCache (legacy API)
-///
-/// # Arguments
-/// * `ctx` - Render context
-/// * `cache` - TextCache with vertex/index data grouped by (texture_uid, font_size)
-/// * `matrix` - View-projection matrix
-/// * `viewport_scale` - Current viewport scale
-/// * `atlas_font_size` - Font size the atlas was generated at
-/// * `distance_range` - MSDF distance range
-pub fn render_text_cache(
-    ctx: &mut impl RenderContext,
-    cache: &TextCache,
-    matrix: &[f32; 16],
-    viewport_scale: f32,
-    atlas_font_size: f32,
-    distance_range: f32,
-) {
-    for (cache_key, entry) in cache {
-        if entry.is_empty() {
-            continue;
-        }
-        if !ctx.has_font_texture(cache_key.texture_uid) {
-            continue;
-        }
-
-        // Calculate font_scale for this group's font size
-        let font_scale = cache_key.font_size() / atlas_font_size;
-
-        ctx.draw_text(
-            &entry.vertices,
-            &entry.indices,
-            cache_key.texture_uid,
-            matrix,
-            viewport_scale,
-            font_scale,
-            distance_range,
-        );
-    }
-}
-
 /// Render a FillBuffer (triangles) directly
 pub fn render_fill_buffer(ctx: &mut impl RenderContext, buffer: &FillBuffer, matrix: &[f32; 16]) {
     if !buffer.is_empty() {
@@ -142,37 +102,4 @@ pub fn render_horizontal_lines(
 
     let vertices = lines_to_vertices(lines);
     ctx.draw_triangles(&vertices, matrix);
-}
-
-/// Render emoji sprites
-///
-/// # Arguments
-/// * `ctx` - Render context
-/// * `emojis` - Emoji sprite cache grouped by texture ID
-/// * `matrix` - View-projection matrix
-pub fn render_emoji_sprites(
-    ctx: &mut impl RenderContext,
-    emojis: &crate::sheets::text::EmojiSpriteCache,
-    matrix: &[f32; 16],
-) {
-    for (&texture_id, sprites) in emojis {
-        if sprites.is_empty() {
-            continue;
-        }
-        if !ctx.has_sprite_texture(texture_id) {
-            continue;
-        }
-
-        // Build vertex and index data
-        let mut vertices = Vec::with_capacity(sprites.len() * 32);
-        let mut indices = Vec::with_capacity(sprites.len() * 6);
-
-        for (i, sprite) in sprites.iter().enumerate() {
-            let offset = (i * 4) as u32;
-            vertices.extend_from_slice(&sprite.to_vertices());
-            indices.extend_from_slice(&crate::sheets::text::EmojiSpriteData::to_indices(offset));
-        }
-
-        ctx.draw_sprites(texture_id, &vertices, &indices, matrix);
-    }
 }

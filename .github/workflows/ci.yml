@@ -108,7 +108,7 @@ jobs:
 
       - name: Install pkg-config, OpenSSL, and CA certificates
         run: |
-          sudo apt-get update
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y pkg-config libssl-dev ca-certificates
           sudo update-ca-certificates
 
@@ -127,7 +127,7 @@ jobs:
       - name: Install Python development headers for core-cloud
         if: matrix.package == 'core-cloud'
         run: |
-          sudo apt-get update
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y python3-dev libpython3.12-dev
 
       - name: Install Python packages for core-cloud tests
@@ -270,7 +270,7 @@ jobs:
 
       - name: Install build-essential, llvm, and clang
         run: |
-          sudo apt-get update
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - name: Setup Node
@@ -429,6 +429,64 @@ jobs:
         run: |
           npm run lint:clippy
 
+  lint_rust_renderer:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        run: |
+          cd quadratic-rust-renderer
+          rustup toolchain install
+
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
+        with:
+          workspaces: |
+            quadratic-rust-renderer/core
+            quadratic-rust-renderer/native
+
+      - name: Run cargo clippy on rust-renderer
+        run: |
+          cd quadratic-rust-renderer
+          npm run lint
+
+  test_rust_renderer:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        run: |
+          cd quadratic-rust-renderer
+          rustup toolchain install
+
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
+        with:
+          workspaces: |
+            quadratic-rust-renderer/core
+            quadratic-rust-renderer/native
+
+      - name: Run cargo test on rust-renderer
+        run: |
+          cd quadratic-rust-renderer
+          npm run test
+
   lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
@@ -438,9 +496,7 @@ jobs:
 
       - name: Install build-essential, llvm, and clang
         run: |
-          sudo apt-get update
-
-
+          for i in 1 2 3; do sudo apt-get update && break || sleep 5; done
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - name: Setup Node

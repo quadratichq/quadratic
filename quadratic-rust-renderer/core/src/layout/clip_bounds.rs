@@ -6,6 +6,8 @@
 //! Used by both the native renderer (for static screenshots) and the WASM
 //! layout worker (for dynamic rendering).
 
+use std::collections::HashMap;
+
 use crate::sheets::text::CellLabel;
 
 /// Calculate and apply clip bounds for a collection of labels.
@@ -59,13 +61,12 @@ pub fn calculate_clip_bounds(labels: &mut [CellLabel]) {
         .collect();
 
     // Build a map of (row, col) -> index for fast neighbor lookup
-    let mut row_map: std::collections::HashMap<i64, Vec<(i64, usize)>> =
-        std::collections::HashMap::new();
+    let mut row_map: HashMap<i64, Vec<(i64, usize)>> = HashMap::new();
 
     for info in &label_infos {
         row_map
             .entry(info.row)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((info.col, info.index));
     }
 
@@ -104,8 +105,7 @@ pub fn calculate_clip_bounds(labels: &mut [CellLabel]) {
                     if neighbor_col < info.col {
                         // If neighbor has right overflow extending into our cell
                         if neighbor.overflow_right > 0.0 {
-                            let neighbor_text_right =
-                                neighbor.cell_right + neighbor.overflow_right;
+                            let neighbor_text_right = neighbor.cell_right + neighbor.overflow_right;
                             if neighbor_text_right > info.cell_left {
                                 // Clip the neighbor's right at our left edge
                                 updates.push(ClipUpdate {
@@ -136,8 +136,7 @@ pub fn calculate_clip_bounds(labels: &mut [CellLabel]) {
                     if neighbor_col > info.col {
                         // If neighbor has left overflow extending into our cell
                         if neighbor.overflow_left > 0.0 {
-                            let neighbor_text_left =
-                                neighbor.cell_left - neighbor.overflow_left;
+                            let neighbor_text_left = neighbor.cell_left - neighbor.overflow_left;
                             if neighbor_text_left < info.cell_right {
                                 // Clip the neighbor's left at our right edge
                                 updates.push(ClipUpdate {
