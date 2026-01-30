@@ -7,7 +7,11 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import {
+  EMOJI_FONTS,
+  inlineEditorMonaco,
+  PADDING_FOR_INLINE_EDITOR,
+} from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { inlineEditorSpans, type SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -675,7 +679,7 @@ class InlineEditorHandler {
       // When there are no spans (plain text with cell-level formatting), set the font family
       // directly so Monaco can use correct font metrics for cursor positioning.
       if (inlineEditorSpans.isActive()) {
-        inlineEditorMonaco.setFontFamily("OpenSans, NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'");
+        inlineEditorMonaco.setFontFamily(`OpenSans, ${EMOJI_FONTS}`);
         inlineEditorMonaco.setItalic(!!italic);
         inlineEditorMonaco.setBold(!!bold);
       } else {
@@ -687,7 +691,7 @@ class InlineEditorHandler {
         inlineEditorMonaco.setBold(false);
       }
     } else {
-      inlineEditorMonaco.setFontFamily("OpenSans, NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'");
+      inlineEditorMonaco.setFontFamily(`OpenSans, ${EMOJI_FONTS}`);
       inlineEditorMonaco.setItalic(false);
       inlineEditorMonaco.setBold(false);
     }
@@ -701,15 +705,14 @@ class InlineEditorHandler {
    * Get the font family name based on bold and italic formatting.
    */
   private getFontFamily = (bold: boolean, italic: boolean): string => {
-    const emojiFonts = ", NotoColorEmoji, 'Apple Color Emoji', 'Segoe UI Emoji'";
     if (bold && italic) {
-      return 'OpenSans-BoldItalic' + emojiFonts;
+      return `OpenSans-BoldItalic, ${EMOJI_FONTS}`;
     } else if (bold) {
-      return 'OpenSans-Bold' + emojiFonts;
+      return `OpenSans-Bold, ${EMOJI_FONTS}`;
     } else if (italic) {
-      return 'OpenSans-Italic' + emojiFonts;
+      return `OpenSans-Italic, ${EMOJI_FONTS}`;
     }
-    return 'OpenSans' + emojiFonts;
+    return `OpenSans, ${EMOJI_FONTS}`;
   };
 
   // Refreshes the format summary and updates the font display in the inline editor

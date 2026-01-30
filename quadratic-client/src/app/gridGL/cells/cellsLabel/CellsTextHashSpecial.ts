@@ -24,6 +24,8 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
       const emojiSprite = drawEmoji(emoji);
       if (emojiSprite) {
         this.addChild(emojiSprite);
+      } else {
+        console.error(`Failed to draw emoji: ${emoji.emoji}`);
       }
     }
   }
