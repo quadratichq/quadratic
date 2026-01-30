@@ -392,7 +392,6 @@ function InsertDropdownMenu() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setShowCellTypeMenu(true)}>From connection…</DropdownMenuItem>
           </DropdownMenuSubContent>
-          <AgentModeDropdownMenuItem action={Action.InsertDataTable} actionArgs={undefined} />
         </DropdownMenuSub>
 
         <DropdownMenuSeparator />
