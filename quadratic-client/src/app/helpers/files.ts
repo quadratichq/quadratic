@@ -1,3 +1,5 @@
+import type { ClientCoreImportFile, CoreClientImportFile } from '@/app/web-workers/quadraticCore/coreClientMessages';
+
 export function stripExtension(name: string): string {
   return name.replace(/\.[^/.]+$/, '');
 }
@@ -105,8 +107,7 @@ interface ImportFilesOptions {
   setProgressState?: (
     updater: FilesImportProgressState | ((prev: FilesImportProgressState) => FilesImportProgressState)
   ) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  importFile: (params: any) => Promise<any>;
+  importFile: (params: Omit<ClientCoreImportFile, 'type' | 'id'>) => Promise<Omit<CoreClientImportFile, 'type' | 'id'>>;
 }
 
 /**
