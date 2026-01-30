@@ -8,6 +8,7 @@ export { AISession, aiSession } from './AISession';
 export { AIAPIClient, aiAPIClient } from './AIAPIClient';
 export { ContextBuilder, contextBuilder } from './ContextBuilder';
 export { MessageManager, messageManager } from './MessageManager';
+export { SlimContextBuilder, slimContextBuilder } from './SlimContextBuilder';
 export { ToolExecutor, toolExecutor } from './ToolExecutor';
 
 // Types

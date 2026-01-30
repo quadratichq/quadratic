@@ -62,6 +62,11 @@ export const miscToolsArgsSchemas = {
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
   }),
+  [AITool.DelegateToSubagent]: z.object({
+    subagent_type: z.enum(['data_finder']),
+    task: stringSchema,
+    context_hints: stringSchema.optional(),
+  }),
 } as const;
 
 // Specs for misc tools
@@ -523,5 +528,52 @@ Optimized:\n
 - Place the result directly below the Revenue column\n
 
 Be specific, detailed, and actionable in every bullet point.\n`,
+  },
+  [AITool.DelegateToSubagent]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['fast', 'max', 'others'],
+    description: `Delegate a task to a specialized subagent. Use this to explore data, find specific cells, or summarize spreadsheet contents without loading all data into context.
+
+Available subagent types:
+- data_finder: Finds and summarizes data in the spreadsheet. Returns cell ranges and descriptions of what was found.
+
+Use this tool when you need to:
+- Find where specific data is located
+- Get a summary of data in particular ranges
+- Search across sheets for specific content
+- Explore data before performing operations on it`,
+    parameters: {
+      type: 'object',
+      properties: {
+        subagent_type: {
+          type: 'string',
+          description: 'Type of subagent to use. Currently only "data_finder" is available.',
+        },
+        task: {
+          type: 'string',
+          description: 'Description of what the subagent should do. Be specific about what data you are looking for.',
+        },
+        context_hints: {
+          type: 'string',
+          description: 'Optional hints from the conversation that might help the subagent (e.g., sheet names mentioned by user).',
+        },
+      },
+      required: ['subagent_type', 'task'],
+      additionalProperties: false,
+    },
+    responseSchema: miscToolsArgsSchemas[AITool.DelegateToSubagent],
+    prompt: `Use this tool to delegate data exploration tasks to a specialized subagent.
+
+The data_finder subagent will:
+1. Search the spreadsheet for the requested data
+2. Explore cell contents and summarize findings
+3. Return specific cell ranges where data was found
+
+Example uses:
+- "Find all sales data and return the ranges"
+- "Locate the revenue columns across all sheets"
+- "Search for any data containing 'Q4 2024'"
+
+The subagent has access to detailed cell data that you don't have in your context. Use it to find specific data before performing operations.`,
   },
 } as const;

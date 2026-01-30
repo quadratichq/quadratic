@@ -439,6 +439,9 @@ export async function parseAnthropicStream(
     });
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -506,14 +509,17 @@ export function parseAnthropicResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: result.usage.input_tokens,
     outputTokens: result.usage.output_tokens,
     cacheReadTokens: result.usage.cache_read_input_tokens ?? 0,
     cacheWriteTokens: result.usage.cache_creation_input_tokens ?? 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

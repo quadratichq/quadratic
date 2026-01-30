@@ -5,6 +5,13 @@ import { aiToolsActions } from '../tools/aiToolsActions';
 import type { ToolExecutionOptions } from './types';
 
 /**
+ * Tools that are disabled when slim context mode is enabled.
+ * These tools are replaced by the delegate_to_subagent tool which
+ * uses a specialized subagent to explore data.
+ */
+const SLIM_CONTEXT_DISABLED_TOOLS: AITool[] = [AITool.GetCellData, AITool.HasCellData, AITool.TextSearch];
+
+/**
  * ToolExecutor handles the execution of AI tool calls.
  * This is a pure class with no React dependencies.
  */
@@ -47,8 +54,18 @@ export class ToolExecutor {
       return [createTextContent('Unknown tool')];
     }
 
+    const aiTool = toolCall.name as AITool;
+
+    // Check if tool is disabled in slim context mode
+    if (options.useSlimContext && SLIM_CONTEXT_DISABLED_TOOLS.includes(aiTool)) {
+      return [
+        createTextContent(
+          `Tool "${aiTool}" is disabled in slim context mode. Use delegate_to_subagent with type "data_finder" to explore data.`
+        ),
+      ];
+    }
+
     try {
-      const aiTool = toolCall.name as AITool;
       const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
       const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
 

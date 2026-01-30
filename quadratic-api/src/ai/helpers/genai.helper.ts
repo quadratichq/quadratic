@@ -390,6 +390,9 @@ export async function parseGenAIStream(
     });
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response?.writableEnded) {
@@ -444,14 +447,17 @@ export function parseGenAIResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: (result.usageMetadata?.promptTokenCount ?? 0) - (result.usageMetadata?.cachedContentTokenCount ?? 0),
     outputTokens: result.usageMetadata?.candidatesTokenCount ?? 0,
     cacheReadTokens: result.usageMetadata?.cachedContentTokenCount ?? 0,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

@@ -3,6 +3,7 @@ import type {
   AIResponseContent,
   AISource,
   AIToolCall,
+  AIUsage,
   ChatMessage,
   Content,
   Context,
@@ -75,6 +76,8 @@ export interface ToolExecutionOptions {
   chatId: string;
   /** Message index */
   messageIndex: number;
+  /** Whether slim context mode is enabled (disables data exploration tools) */
+  useSlimContext?: boolean;
 }
 
 /**
@@ -107,6 +110,8 @@ export interface AIAPIResponse {
   content: AIResponseContent;
   /** Tool calls from the response */
   toolCalls: AIToolCall[];
+  /** Token usage from the API response */
+  usage?: AIUsage;
 }
 
 /**

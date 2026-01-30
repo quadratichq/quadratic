@@ -281,6 +281,9 @@ export async function parseBedrockStream(
     }));
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -325,14 +328,17 @@ export function parseBedrockResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: result.usage?.inputTokens ?? 0,
     outputTokens: result.usage?.outputTokens ?? 0,
     cacheReadTokens: 0,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

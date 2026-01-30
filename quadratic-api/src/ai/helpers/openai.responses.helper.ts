@@ -368,6 +368,9 @@ export async function parseOpenAIResponsesStream(
     }));
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -420,8 +423,6 @@ export function parseOpenAIResponsesResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const cacheReadTokens = result.usage?.input_tokens_details.cached_tokens ?? 0;
   const usage: AIUsage = {
     inputTokens: (result.usage?.input_tokens ?? 0) - cacheReadTokens,
@@ -429,6 +430,11 @@ export function parseOpenAIResponsesResponse(
     cacheReadTokens,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

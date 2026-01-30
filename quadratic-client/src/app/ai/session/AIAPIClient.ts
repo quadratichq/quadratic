@@ -5,6 +5,7 @@ import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIRequestBody, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { aiStore, contextUsageAtom } from '../atoms/aiAnalystAtoms';
 import type { AIAPIResponse, ExceededBillingLimitCallback, StreamingMessageCallback } from './types';
 
 const IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY = 'isOnPaidPlan';
@@ -103,10 +104,16 @@ export class AIAPIClient {
       onMessage?.({ ...responseMessage });
       onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
+      // Update context usage atom with the latest usage data
+      if (responseMessage.usage) {
+        aiStore.set(contextUsageAtom, { usage: responseMessage.usage });
+      }
+
       return {
         content: responseMessage.content,
         toolCalls: responseMessage.toolCalls,
         error: responseMessage.error,
+        usage: responseMessage.usage,
       };
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {

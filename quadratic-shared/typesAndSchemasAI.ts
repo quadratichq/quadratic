@@ -1183,7 +1183,7 @@ export const AIRequestBodySchema = z.object({
 // Usage and Response Schemas
 // ----------------------------------------------------------------------------
 
-const AIUsageSchema = z.object({
+export const AIUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   cacheReadTokens: z.number(),

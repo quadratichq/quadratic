@@ -8,6 +8,7 @@ import { AddTextValidation } from '@/app/ai/toolCards/AddTextValidation';
 import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ContactUs } from '@/app/ai/toolCards/ContactUs';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
+import { DelegateToSubagent } from '@/app/ai/toolCards/DelegateToSubagent';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
 import { DeleteColumns } from '@/app/ai/toolCards/DeleteColumns';
@@ -179,6 +180,8 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ContactUs:
       return <ContactUs toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.DelegateToSubagent:
+      return <DelegateToSubagent toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

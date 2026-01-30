@@ -27,6 +27,7 @@ import {
 import { aiAPIClient } from './AIAPIClient';
 import { contextBuilder } from './ContextBuilder';
 import { messageManager } from './MessageManager';
+import { slimContextBuilder } from './SlimContextBuilder';
 import { toolExecutor } from './ToolExecutor';
 import {
   type AIAPIResponse,
@@ -39,10 +40,21 @@ import {
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
 
+/**
+ * Enable slim context mode to reduce main agent context size.
+ * When enabled, the main agent gets minimal context (table names/bounds only)
+ * and uses delegate_to_subagent to explore data when needed.
+ *
+ * Set to true to enable, false to use full context (default).
+ */
+const USE_SLIM_CONTEXT = true;
+
 interface ExecuteOptions {
   modelKey: AIModelKey;
   fileUuid: string;
   teamUuid: string;
+  /** Use slim context (experimental) - reduces context size but requires subagent for data exploration */
+  useSlimContext?: boolean;
   importFilesToGrid?: (args: { importFiles: ImportFile[]; userMessage: UserMessagePrompt }) => Promise<void>;
   importPDF?: (args: {
     pdfImportArgs: AIToolsArgs[AITool.PDFImport];
@@ -72,6 +84,7 @@ interface ToolCallLoopContext {
   importPDF?: ExecuteOptions['importPDF'];
   search?: ExecuteOptions['search'];
   getUserPromptSuggestions?: () => void;
+  useSlimContext?: boolean;
 }
 
 /**
@@ -90,6 +103,8 @@ export class AISession {
   async execute(request: AISessionRequest, options: ExecuteOptions): Promise<AISessionResult> {
     const { messageSource, content, context, messageIndex, importFiles, connections } = request;
     const { modelKey, fileUuid, teamUuid, importFilesToGrid, importPDF, search, getUserPromptSuggestions } = options;
+    // Determine whether to use slim context (default to global flag if not specified)
+    const useSlimContext = options.useSlimContext ?? USE_SLIM_CONTEXT;
 
     // Prepare session state
     const prepareResult = this.prepareSession(messageIndex);
@@ -139,6 +154,7 @@ export class AISession {
           importPDF,
           search,
           getUserPromptSuggestions,
+          useSlimContext,
         }
       );
 
@@ -317,8 +333,9 @@ export class AISession {
     while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
       toolCallIterations++;
 
-      // Build context
-      chatMessages = await contextBuilder.buildContext({
+      // Build context - use slim context if enabled to reduce context size
+      const activeContextBuilder = context.useSlimContext ? slimContextBuilder : contextBuilder;
+      chatMessages = await activeContextBuilder.buildContext({
         connections,
         context: resolvedContext,
         chatMessages,
@@ -359,6 +376,7 @@ export class AISession {
         chatMessages,
         importPDF,
         search,
+        useSlimContext: context.useSlimContext,
       });
 
       chatMessages = updatedChatMessages;
@@ -463,12 +481,13 @@ export class AISession {
     chatMessages: ChatMessage[];
     importPDF?: ExecuteOptions['importPDF'];
     search?: ExecuteOptions['search'];
+    useSlimContext?: boolean;
   }): Promise<{
     toolResultMessage: ToolResultMessage;
     promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'];
     updatedChatMessages: ChatMessage[];
   }> {
-    const { toolCalls, chatId, lastMessageIndex, importPDF, search } = params;
+    const { toolCalls, chatId, lastMessageIndex, importPDF, search, useSlimContext } = params;
     let chatMessages = params.chatMessages;
 
     // Execute tool calls
@@ -476,6 +495,7 @@ export class AISession {
       source: 'AIAnalyst',
       chatId,
       messageIndex: lastMessageIndex + 1,
+      useSlimContext,
     });
 
     // Check for prompt suggestions

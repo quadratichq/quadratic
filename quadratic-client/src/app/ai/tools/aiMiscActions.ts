@@ -1,3 +1,4 @@
+import { subagentRunner, SubagentType } from '@/app/ai/subagent';
 import { countWords } from '@/app/ai/utils/wordCount';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsSheetPosText } from '@/app/quadratic-core-types';
@@ -6,6 +7,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolMessageMetaData } from './aiToolsHelpers';
 
 type MiscToolActions = {
   [K in
@@ -21,7 +23,11 @@ type MiscToolActions = {
     | AITool.Undo
     | AITool.Redo
     | AITool.ContactUs
-    | AITool.OptimizePrompt]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
+    | AITool.OptimizePrompt
+    | AITool.DelegateToSubagent]: (
+    args: AIToolsArgs[K],
+    metaData?: AIToolMessageMetaData
+  ) => Promise<ToolResultContent>;
 };
 
 export const miscToolsActions: MiscToolActions = {
@@ -138,5 +144,46 @@ export const miscToolsActions: MiscToolActions = {
   },
   [AITool.OptimizePrompt]: async (args) => {
     return [createTextContent(`Optimized prompt: ${args.optimized_prompt}`)];
+  },
+  [AITool.DelegateToSubagent]: async (args, metaData) => {
+    try {
+      // Map the subagent_type string to SubagentType enum
+      const subagentTypeMap: Record<string, SubagentType> = {
+        data_finder: SubagentType.DataFinder,
+      };
+
+      const subagentType = subagentTypeMap[args.subagent_type];
+      if (!subagentType) {
+        return [createTextContent(`Error: Unknown subagent type '${args.subagent_type}'`)];
+      }
+
+      // Execute the subagent
+      const result = await subagentRunner.execute({
+        subagentType,
+        task: args.task,
+        contextHints: args.context_hints,
+        fileUuid: '', // Will be populated from context if needed
+        teamUuid: '', // Will be populated from context if needed
+      });
+
+      if (!result.success) {
+        return [createTextContent(`Subagent error: ${result.error ?? 'Unknown error'}`)];
+      }
+
+      // Format the result for the main agent
+      let responseText = `## Subagent Result\n\n`;
+      responseText += `**Summary:** ${result.summary ?? 'No summary available'}\n\n`;
+
+      if (result.ranges && result.ranges.length > 0) {
+        responseText += `**Ranges Found:**\n`;
+        for (const range of result.ranges) {
+          responseText += `- ${range.sheet}!${range.range}: ${range.description}\n`;
+        }
+      }
+
+      return [createTextContent(responseText)];
+    } catch (error) {
+      return [createTextContent(`Error executing subagent: ${error}`)];
+    }
   },
 } as const;
