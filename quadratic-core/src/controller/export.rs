@@ -15,6 +15,7 @@ use crate::{
     CellValue, Pos, Value,
     a1::{A1Selection, CellRefRange},
     color::Rgba,
+    constants::FONT_SIZE_DISPLAY_ADJUSTMENT,
     controller::operations::import::{COLUMN_WIDTH_MULTIPLIER, ROW_HEIGHT_MULTIPLIER},
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
@@ -272,8 +273,11 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     }
 
     if let Some(font_size) = cell_format.font_size {
-        // font_size is stored as the Excel font size value (from import)
-        format = format.set_font_size(font_size as f64);
+        // Convert internal font size to Excel font size
+        // Excel = Internal + FONT_SIZE_DISPLAY_ADJUSTMENT (which is -4)
+        // So internal 18 becomes Excel 14pt
+        let excel_size = (font_size + FONT_SIZE_DISPLAY_ADJUSTMENT) as f64;
+        format = format.set_font_size(excel_size);
     }
 
     if let Some(fill_color) = cell_format.fill_color
@@ -709,18 +713,19 @@ mod tests {
             gc_1.sheet(sheet_id_1).formats.font_size,
             gc_2.sheet(sheet_id_2).formats.font_size
         );
-        // Verify specific font sizes from styles.xlsx are preserved
+        // Verify specific font sizes from styles.xlsx are preserved (stored as internal values)
+        // Excel 14pt → internal 18, Excel 8pt → internal 12, Excel 36pt → internal 40
         assert_eq!(
             gc_2.sheet(sheet_id_2).formats.font_size.get((1, 16).into()),
-            Some(14)
+            Some(18) // Excel 14pt
         );
         assert_eq!(
             gc_2.sheet(sheet_id_2).formats.font_size.get((1, 17).into()),
-            Some(8)
+            Some(12) // Excel 8pt
         );
         assert_eq!(
             gc_2.sheet(sheet_id_2).formats.font_size.get((1, 18).into()),
-            Some(36)
+            Some(40) // Excel 36pt
         );
     }
 
