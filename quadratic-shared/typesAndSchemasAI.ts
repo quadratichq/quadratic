@@ -1205,6 +1205,10 @@ export const AgentTypeSchema = z.enum([
   AgentType.MainAgent,
   AgentType.MainAgentSlim,
   AgentType.DataFinderSubagent,
+  AgentType.FormulaCoderSubagent,
+  AgentType.PythonCoderSubagent,
+  AgentType.JavascriptCoderSubagent,
+  AgentType.ConnectionCoderSubagent,
 ]) satisfies z.ZodType<AgentType>;
 
 export const AIRequestBodySchema = z.object({

@@ -1,18 +1,13 @@
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { SUBAGENT_CONFIGS } from './subagents';
+import { SubagentType } from './SubagentType';
 
-/**
- * Types of subagents available for delegation.
- * Each subagent type has a specific purpose and set of allowed tools.
- */
-export enum SubagentType {
-  /** Finds, explores, and summarizes data in the spreadsheet */
-  DataFinder = 'data_finder',
-  // Future subagent types:
-  // Formatter = 'formatter',
-  // Analyzer = 'analyzer',
-  // Validator = 'validator',
-}
+// Re-export SubagentType from the separate file to avoid circular dependencies
+export { SubagentType } from './SubagentType';
+
+// Re-export SUBAGENT_CONFIGS
+export { SUBAGENT_CONFIGS } from './subagents';
 
 /**
  * Configuration for a subagent type.
@@ -22,8 +17,8 @@ export interface SubagentConfig {
   type: SubagentType;
   /** Tools this subagent is allowed to use */
   allowedTools: AITool[];
-  /** Default model to use for this subagent (can be overridden) */
-  defaultModelKey: AIModelKey;
+  /** Fallback model if main agent model not provided (should rarely be used) */
+  defaultModelKey?: AIModelKey;
   /** System prompt for the subagent */
   systemPrompt: string;
   /** Maximum tool call iterations before stopping */
@@ -101,47 +96,6 @@ export interface SubagentToolCallEvent {
   /** Model key used for this tool call (for debug display) */
   modelKey?: string;
 }
-
-/**
- * Configuration for all subagent types.
- */
-export const SUBAGENT_CONFIGS: Record<SubagentType, SubagentConfig> = {
-  [SubagentType.DataFinder]: {
-    type: SubagentType.DataFinder,
-    allowedTools: [
-      AITool.GetCellData,
-      AITool.HasCellData,
-      AITool.TextSearch,
-      AITool.GetDatabaseSchemas,
-      // AITool.GetSheetData, // Will be added when we create this tool
-    ],
-    // Use a cheap/fast model by default for data exploration
-    defaultModelKey: 'vertexai:gemini-2.5-flash-lite:thinking-toggle-on',
-    systemPrompt: `You are a data exploration assistant. Your job is to find and summarize data in a spreadsheet.
-
-## Your Task
-1. Find data in the spreadsheet based on the user's request
-2. Summarize what you found concisely
-3. Return cell ranges and brief descriptions
-
-## Guidelines
-- Be efficient: use has_cell_data before get_cell_data when checking if data exists
-- Focus on the current sheet first, then explore others if needed
-- Keep summaries brief but informative
-- Always include the exact cell ranges for data you find
-
-## Response Format
-When you're done exploring, respond with a structured summary like:
-- Summary: [Brief description of what you found]
-- Ranges found:
-  - Sheet1!A1:F100: [Description]
-  - Sheet2!B5:D20: [Description]
-
-If you can't find the requested data, explain what you searched and suggest alternatives.`,
-    maxIterations: 10,
-    description: 'Searching for data',
-  },
-};
 
 /**
  * Get the configuration for a subagent type.

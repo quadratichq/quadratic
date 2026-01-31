@@ -73,6 +73,7 @@ export class ToolExecutor {
         messageIndex: options.messageIndex,
         fileUuid: options.fileUuid,
         teamUuid: options.teamUuid,
+        modelKey: options.modelKey,
       });
 
       return result;

@@ -83,6 +83,8 @@ export interface ToolExecutionOptions {
   fileUuid?: string;
   /** Team UUID for subagent requests */
   teamUuid?: string;
+  /** Model key used by the main agent (for subagents to inherit) */
+  modelKey?: AIModelKey;
 }
 
 /**

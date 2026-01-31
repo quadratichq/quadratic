@@ -63,7 +63,7 @@ export const miscToolsArgsSchemas = {
     optimized_prompt: stringSchema,
   }),
   [AITool.DelegateToSubagent]: z.object({
-    subagent_type: z.enum(['data_finder']),
+    subagent_type: z.enum(['data_finder', 'formula_coder', 'python_coder', 'javascript_coder', 'connection_coder']),
     task: stringSchema,
     context_hints: stringSchema.optional(),
     reset: booleanSchema.optional(),
@@ -533,23 +533,31 @@ Be specific, detailed, and actionable in every bullet point.\n`,
   [AITool.DelegateToSubagent]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['fast', 'max', 'others'],
-    description: `Delegate a task to a specialized subagent. Use this to explore data, find specific cells, or summarize spreadsheet contents.
+    description: `Delegate a task to a specialized subagent. You MUST use this for ALL coding tasks - you cannot write code directly.
 
 Available subagent types:
-- data_finder: Finds and summarizes data in the spreadsheet. Returns cell ranges and descriptions of what was found.
+- data_finder: Finds and summarizes data in the spreadsheet. Returns cell ranges and descriptions.
+- formula_coder: Creates, edits, and debugs formula cells. Iterates until formulas work correctly.
+- python_coder: Creates, edits, and debugs Python code cells. Uses print() for debugging, iterates until code works.
+- javascript_coder: Creates, edits, and debugs JavaScript code cells. Uses console.log() for debugging, iterates until code works.
+- connection_coder: Creates, edits, and debugs SQL connection cells. Iterates until queries work correctly.
 
-Use this tool when you need to:
-- Find where specific data is located
-- Get a summary of data in particular ranges
-- Search across sheets for specific content
+IMPORTANT: You do not have direct access to code writing tools. You MUST delegate to the appropriate subagent:
+- Formulas → formula_coder
+- Python code → python_coder
+- JavaScript code → javascript_coder
+- SQL queries → connection_coder
+- Data exploration → data_finder
 
-Subagent sessions persist between calls. Use reset=true to start fresh, or omit it to continue an existing session with follow-up questions.`,
+For coding subagents, provide data context via context_hints (cell values, table names, existing code, error messages).
+Subagent sessions persist between calls. Use reset=true to start fresh.`,
     parameters: {
       type: 'object',
       properties: {
         subagent_type: {
           type: 'string',
-          description: 'Type of subagent to use: "data_finder" for exploring and summarizing data.',
+          description:
+            'Type of subagent: "data_finder", "formula_coder", "python_coder", "javascript_coder", or "connection_coder".',
         },
         task: {
           type: 'string',
@@ -558,12 +566,12 @@ Subagent sessions persist between calls. Use reset=true to start fresh, or omit 
         context_hints: {
           type: 'string',
           description:
-            'Optional hints from the conversation that might help the subagent (e.g., sheet names mentioned by user).',
+            'Context from the conversation: data values, table names, cell references, PLACEMENT LOCATION for code output (e.g., "Place at E1" or "Place right of table at D1"), existing code, error messages, etc. Always specify where the code should be placed to avoid overlapping existing data.',
         },
         reset: {
           type: 'boolean',
           description:
-            'If true, clears the subagent session and starts fresh. If false or omitted, continues the existing session (if any) for follow-up questions.',
+            'If true, clears the subagent session and starts fresh. If false or omitted, continues the existing session.',
         },
       },
       required: ['subagent_type', 'task'],
@@ -574,14 +582,36 @@ Subagent sessions persist between calls. Use reset=true to start fresh, or omit 
 
 ## data_finder subagent
 Explores and summarizes spreadsheet data:
-1. Searches the spreadsheet for requested data
-2. Explores cell contents and summarizes findings
-3. Returns specific cell ranges where data was found
+- Searches the spreadsheet for requested data
+- Returns specific cell ranges where data was found
 
-Example uses:
-- "Find all sales data and return the ranges"
-- "Locate the revenue columns across all sheets"
-- "Search for any data containing 'Q4 2024'"
+## formula_coder subagent
+Creates and debugs formula cells:
+- Writes formulas that accomplish the task
+- Iterates until formulas run without errors
+- Provide data context (cell references, table names) via context_hints
+
+## python_coder subagent
+Creates and debugs Python code cells:
+- Writes Python code that accomplishes the task
+- Uses print() statements for debugging
+- Iterates until code runs successfully
+- IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1")
+- Provide data context, table locations, and any error messages via context_hints
+
+## javascript_coder subagent
+Creates and debugs JavaScript code cells:
+- Writes JavaScript code that accomplishes the task
+- Uses console.log() statements for debugging
+- Iterates until code runs successfully
+- IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1")
+- Provide data context, table locations, and any error messages via context_hints
+
+## connection_coder subagent
+Creates and debugs SQL connection cells:
+- Fetches database schemas and writes SQL queries
+- Iterates until queries run successfully
+- Provide connection info and any error messages via context_hints
 
 Subagents maintain sessions between calls. Use reset=true to start fresh.`,
   },

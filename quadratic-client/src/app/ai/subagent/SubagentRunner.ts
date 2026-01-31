@@ -28,6 +28,10 @@ import {
  */
 const SUBAGENT_TO_AGENT_TYPE: Record<SubagentType, AgentType> = {
   [SubagentType.DataFinder]: AgentType.DataFinderSubagent,
+  [SubagentType.FormulaCoder]: AgentType.FormulaCoderSubagent,
+  [SubagentType.PythonCoder]: AgentType.PythonCoderSubagent,
+  [SubagentType.JavascriptCoder]: AgentType.JavascriptCoderSubagent,
+  [SubagentType.ConnectionCoder]: AgentType.ConnectionCoderSubagent,
 };
 
 /**
@@ -64,6 +68,13 @@ export class SubagentRunner {
     const config = getSubagentConfig(subagentType);
     const modelKey = modelKeyOverride ?? config.defaultModelKey;
 
+    if (!modelKey) {
+      return {
+        success: false,
+        error: 'No model key provided for subagent. The main agent must provide a model key.',
+      };
+    }
+
     const hasExistingSession = subagentSessionManager.hasSession(subagentType);
     const isResumingSession = hasExistingSession && !reset;
 
@@ -96,9 +107,15 @@ export class SubagentRunner {
         }
 
         // Build context for the subagent
-        const contextMessages = await subagentContextBuilder.buildContext(task, contextHints);
+        const contextMessages = await subagentContextBuilder.buildContext(task, contextHints, subagentType);
 
         // Create initial messages with system prompt
+        const isCodingSubagent =
+          subagentType === SubagentType.FormulaCoder ||
+          subagentType === SubagentType.PythonCoder ||
+          subagentType === SubagentType.JavascriptCoder ||
+          subagentType === SubagentType.ConnectionCoder;
+
         messages = [
           {
             role: 'user',
@@ -107,7 +124,13 @@ export class SubagentRunner {
           },
           {
             role: 'assistant',
-            content: [createTextContent('I understand my role. I will explore the data and provide a summary.')],
+            content: [
+              createTextContent(
+                isCodingSubagent
+                  ? 'I understand my role. I will write and debug code until it works correctly.'
+                  : 'I understand my role. I will explore the data and provide a summary.'
+              ),
+            ],
             contextType: 'quadraticDocs',
           },
           ...contextMessages,
@@ -267,8 +290,8 @@ export class SubagentRunner {
         messages,
         useStream: true, // Anthropic requires streaming for longer requests
         useToolsPrompt: true,
-        useQuadraticContext: false, // Context is already built
-        agentType, // Pass agent type for API tool filtering
+        useQuadraticContext: true, // API provides language-specific docs based on agentType
+        agentType, // Pass agent type for API tool filtering and docs
       };
 
       const response = await fetch(endpoint, {

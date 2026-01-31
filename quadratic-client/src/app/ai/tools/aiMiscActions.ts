@@ -152,6 +152,10 @@ export const miscToolsActions: MiscToolActions = {
       // Map the subagent_type string to SubagentType enum
       const subagentTypeMap: Record<string, SubagentType> = {
         data_finder: SubagentType.DataFinder,
+        formula_coder: SubagentType.FormulaCoder,
+        python_coder: SubagentType.PythonCoder,
+        javascript_coder: SubagentType.JavascriptCoder,
+        connection_coder: SubagentType.ConnectionCoder,
       };
 
       const subagentType = subagentTypeMap[args.subagent_type];
@@ -217,6 +221,7 @@ export const miscToolsActions: MiscToolActions = {
         subagentType,
         task: args.task,
         contextHints: args.context_hints,
+        modelKeyOverride: metaData?.modelKey,
         fileUuid: metaData?.fileUuid ?? '',
         teamUuid: metaData?.teamUuid ?? '',
         reset: args.reset,
@@ -230,15 +235,23 @@ export const miscToolsActions: MiscToolActions = {
         return [createTextContent(`Subagent error: ${result.error ?? 'Unknown error'}`)];
       }
 
-      // Format the result for the main agent
-      let responseText = `## Data Exploration Result\n\n`;
-      responseText += `${result.summary ?? 'No summary available'}\n\n`;
+      // Format the result for the main agent based on subagent type
+      let responseText = '';
 
-      if (result.ranges && result.ranges.length > 0) {
-        responseText += `**Ranges Found:**\n`;
-        for (const range of result.ranges) {
-          responseText += `- ${range.sheet}!${range.range}: ${range.description}\n`;
+      if (subagentType === SubagentType.DataFinder) {
+        responseText = `## Data Exploration Result\n\n`;
+        responseText += `${result.summary ?? 'No summary available'}\n\n`;
+
+        if (result.ranges && result.ranges.length > 0) {
+          responseText += `**Ranges Found:**\n`;
+          for (const range of result.ranges) {
+            responseText += `- ${range.sheet}!${range.range}: ${range.description}\n`;
+          }
         }
+      } else {
+        // Coding subagents (FormulaCoder, PythonCoder, JavascriptCoder, ConnectionCoder)
+        responseText = `## Coding Result\n\n`;
+        responseText += `${result.summary ?? 'Task completed.'}\n`;
       }
 
       return [createTextContent(responseText)];

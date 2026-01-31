@@ -157,11 +157,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const userAiLanguagePreferences = result.success ? result.data : [];
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(
-      source,
-      args.language,
-      userAiLanguagePreferences.includes('Javascript')
-    );
+    const quadraticContext = getQuadraticContext(source, args.agentType);
     args.messages = [...quadraticContext, ...args.messages];
   }
 

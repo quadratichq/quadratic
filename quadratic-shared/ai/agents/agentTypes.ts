@@ -11,6 +11,14 @@ export enum AgentType {
   MainAgentSlim = 'main_agent_slim',
   /** Data finder subagent - read-only data exploration tools only */
   DataFinderSubagent = 'data_finder_subagent',
+  /** Formula coder subagent - creates and debugs formula cells */
+  FormulaCoderSubagent = 'formula_coder_subagent',
+  /** Python coder subagent - creates and debugs Python code cells */
+  PythonCoderSubagent = 'python_coder_subagent',
+  /** JavaScript coder subagent - creates and debugs JavaScript code cells */
+  JavascriptCoderSubagent = 'javascript_coder_subagent',
+  /** Connection coder subagent - creates and debugs SQL connection cells */
+  ConnectionCoderSubagent = 'connection_coder_subagent',
 }
 
 /**
@@ -34,15 +42,53 @@ export interface AgentToolConfig {
  */
 export const AGENT_TOOL_CONFIG: Record<AgentType, AgentToolConfig> = {
   [AgentType.MainAgent]: {
-    // All tools allowed
+    // Coding tools are disabled - use delegate_to_subagent instead
+    disabledTools: [
+      AITool.SetCodeCellValue,
+      AITool.SetFormulaCellValue,
+      AITool.SetSQLCodeCellValue,
+      AITool.GetCodeCellValue,
+      AITool.RerunCode,
+    ],
   },
   [AgentType.MainAgentSlim]: {
-    // Data exploration tools are disabled - use delegate_to_subagent instead
-    disabledTools: [AITool.GetCellData, AITool.HasCellData, AITool.TextSearch],
+    // Data exploration and coding tools are disabled - use delegate_to_subagent instead
+    disabledTools: [
+      AITool.GetCellData,
+      AITool.HasCellData,
+      AITool.TextSearch,
+      AITool.SetCodeCellValue,
+      AITool.SetFormulaCellValue,
+      AITool.SetSQLCodeCellValue,
+      AITool.GetCodeCellValue,
+      AITool.RerunCode,
+    ],
   },
   [AgentType.DataFinderSubagent]: {
     // Only read-only data exploration tools allowed
     allowedTools: [AITool.GetCellData, AITool.HasCellData, AITool.TextSearch, AITool.GetDatabaseSchemas],
+  },
+  [AgentType.FormulaCoderSubagent]: {
+    // Formula creation and debugging tools
+    allowedTools: [AITool.SetFormulaCellValue, AITool.HasCellData],
+  },
+  [AgentType.PythonCoderSubagent]: {
+    // Python code creation and debugging tools
+    allowedTools: [AITool.SetCodeCellValue, AITool.GetCodeCellValue, AITool.RerunCode, AITool.HasCellData],
+  },
+  [AgentType.JavascriptCoderSubagent]: {
+    // JavaScript code creation and debugging tools
+    allowedTools: [AITool.SetCodeCellValue, AITool.GetCodeCellValue, AITool.RerunCode, AITool.HasCellData],
+  },
+  [AgentType.ConnectionCoderSubagent]: {
+    // SQL connection code creation and debugging tools
+    allowedTools: [
+      AITool.SetSQLCodeCellValue,
+      AITool.GetDatabaseSchemas,
+      AITool.GetCodeCellValue,
+      AITool.RerunCode,
+      AITool.HasCellData,
+    ],
   },
 };
 

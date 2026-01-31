@@ -1,4 +1,5 @@
 import { MAX_ROWS } from '@/app/ai/constants/context';
+import { SubagentType } from '@/app/ai/subagent/subagentTypes';
 import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -17,9 +18,54 @@ import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
  */
 export class SubagentContextBuilder {
   /**
-   * Build context for a subagent with the task and progressive sheet data.
+   * Build context for a subagent based on its type.
+   * - DataFinder: Full sheet context with cell values
+   * - Coding subagents: Minimal context, relies on context_hints from main agent
    */
-  async buildContext(task: string, contextHints?: string): Promise<ChatMessage[]> {
+  async buildContext(task: string, contextHints?: string, subagentType?: SubagentType): Promise<ChatMessage[]> {
+    // For coding subagents, use a lighter context that relies on context_hints
+    if (this.isCodingSubagent(subagentType)) {
+      return this.buildCodingSubagentContext(task, contextHints);
+    }
+
+    // For DataFinder and other exploration subagents, use full sheet context
+    return this.buildDataExplorationContext(task, contextHints);
+  }
+
+  /**
+   * Check if a subagent type is a coding subagent.
+   */
+  private isCodingSubagent(subagentType?: SubagentType): boolean {
+    return (
+      subagentType === SubagentType.FormulaCoder ||
+      subagentType === SubagentType.PythonCoder ||
+      subagentType === SubagentType.JavascriptCoder ||
+      subagentType === SubagentType.ConnectionCoder
+    );
+  }
+
+  /**
+   * Build context for coding subagents.
+   * These subagents rely on context_hints from the main agent for data context.
+   * They only need the task and hints, not full sheet data.
+   */
+  private buildCodingSubagentContext(task: string, contextHints?: string): ChatMessage[] {
+    const messages: ChatMessage[] = [];
+
+    // Add current date
+    messages.push(...this.getCurrentDateTimeContext());
+
+    // Add the task message with context hints
+    messages.push(this.getTaskMessage(task, contextHints));
+
+    return messages;
+  }
+
+  /**
+   * Build context for data exploration subagents (DataFinder).
+   * These subagents need full sheet context to explore data.
+   */
+  private async buildDataExplorationContext(task: string, contextHints?: string): Promise<ChatMessage[]> {
     const messages: ChatMessage[] = [];
 
     // Add current date
