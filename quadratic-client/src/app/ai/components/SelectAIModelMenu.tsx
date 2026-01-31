@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { currentChatUserMessagesCountAtom } from '@/app/ai/atoms/aiAnalystAtoms';
+import { ContextSizeIndicator } from '@/app/ai/components/ContextSizeIndicator';
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
@@ -76,8 +77,12 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={loading}
-          className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+          className={cn(
+            `mr-1 flex items-center gap-1 text-xs text-muted-foreground`,
+            !loading && 'hover:text-foreground'
+          )}
         >
+          <ContextSizeIndicator />
           {selectedModelConfig.displayName}
 
           <CaretDownIcon />
@@ -123,12 +128,13 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         {/* Needs a min-width or it shifts as the popover closes */}
         <PopoverTrigger
-          className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
+          className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-1 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
           onClick={(e) => {
             setKnowsAboutModelPicker(true);
             e.stopPropagation();
           }}
         >
+          <ContextSizeIndicator />
           {isOthers ? selectedModelConfig.displayName : 'Auto'}
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>

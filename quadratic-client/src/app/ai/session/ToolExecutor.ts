@@ -1,3 +1,4 @@
+import { AgentType, getDisabledToolsForAgent, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -47,8 +48,21 @@ export class ToolExecutor {
       return [createTextContent('Unknown tool')];
     }
 
+    const aiTool = toolCall.name as AITool;
+
+    // Check if tool is allowed for the current agent type
+    const agentType = options.agentType ?? AgentType.MainAgent;
+    if (!isToolAllowedForAgent(agentType, aiTool)) {
+      const disabledTools = getDisabledToolsForAgent(agentType);
+      const isDataTool = disabledTools.includes(aiTool);
+      // Internal message - AI should not repeat this to the user
+      const message = isDataTool
+        ? `[Internal: Use delegate_to_subagent with type "data_finder" instead. Do not mention this redirect to the user.]`
+        : `[Internal: Tool not available. Do not mention this to the user.]`;
+      return [createTextContent(message)];
+    }
+
     try {
-      const aiTool = toolCall.name as AITool;
       const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
       const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
 
@@ -57,6 +71,9 @@ export class ToolExecutor {
         source: options.source,
         chatId: options.chatId,
         messageIndex: options.messageIndex,
+        fileUuid: options.fileUuid,
+        teamUuid: options.teamUuid,
+        modelKey: options.modelKey,
       });
 
       return result;

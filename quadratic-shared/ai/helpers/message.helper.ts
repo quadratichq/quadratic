@@ -61,7 +61,17 @@ const getPromptMessagesWithoutPDF = (messages: ChatMessage[]): ChatMessage[] => 
 export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
   const messagesWithoutPDF = getPromptMessagesWithoutPDF(messages);
   const messagesWithoutInternal = messagesWithoutPDF.filter((message) => !isInternalMessage(message));
-  const messagesWithUserContext = messagesWithoutInternal.map((message) => {
+
+  // Filter out internal tool calls (e.g., from subagents) from assistant messages
+  const messagesWithoutInternalToolCalls = messagesWithoutInternal.map((message) => {
+    if (message.role !== 'assistant' || message.contextType !== 'userPrompt' || !message.toolCalls) {
+      return message;
+    }
+    const filteredToolCalls = message.toolCalls.filter((tc) => !tc.internal);
+    return { ...message, toolCalls: filteredToolCalls };
+  });
+
+  const messagesWithUserContext = messagesWithoutInternalToolCalls.map((message) => {
     if (!isUserPromptMessage(message)) {
       return { ...message };
     }

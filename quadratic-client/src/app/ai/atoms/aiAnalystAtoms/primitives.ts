@@ -1,6 +1,7 @@
 import { atom } from 'jotai';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import type {
+  ContextUsageState,
   FailingSqlConnectionsState,
   ImportFilesToGridState,
   PdfImportState,
@@ -53,6 +54,15 @@ export const chatsAtom = atom<Chat[]>([]);
 export const currentChatBaseAtom = atom<Chat>(createDefaultChat());
 
 // ============================================================================
+// Subagent Session Atoms
+// ============================================================================
+
+/** Subagent sessions keyed by subagent type (e.g., 'data_finder') */
+export const subagentSessionsAtom = atom<Record<string, import('quadratic-shared/typesAndSchemasAI').SubagentSession>>(
+  {}
+);
+
+// ============================================================================
 // Feature State Atoms
 // ============================================================================
 
@@ -83,4 +93,9 @@ export const importFilesToGridAtom = atom<ImportFilesToGridState>({
 export const failingSqlConnectionsAtom = atom<FailingSqlConnectionsState>({
   uuids: [],
   lastResetTimestamp: 0,
+});
+
+/** Context usage from AI API responses */
+export const contextUsageAtom = atom<ContextUsageState>({
+  usage: undefined,
 });

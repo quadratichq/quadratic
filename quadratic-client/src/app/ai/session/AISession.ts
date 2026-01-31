@@ -2,6 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { AgentType } from 'quadratic-shared/ai/agents';
 import { getLastAIPromptMessageIndex, getMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -18,6 +19,7 @@ import {
   abortControllerAtom,
   aiStore,
   loadingAtom,
+  loadingWithPersistenceAtom,
   pdfImportAtom,
   showAIAnalystAtom,
   showChatHistoryAtom,
@@ -27,6 +29,7 @@ import {
 import { aiAPIClient } from './AIAPIClient';
 import { contextBuilder } from './ContextBuilder';
 import { messageManager } from './MessageManager';
+import { slimContextBuilder } from './SlimContextBuilder';
 import { toolExecutor } from './ToolExecutor';
 import {
   type AIAPIResponse,
@@ -39,10 +42,19 @@ import {
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
 
+/**
+ * Default agent type for the main AI agent.
+ * - MainAgent: Full context with all tools
+ * - MainAgentSlim: Minimal context (table names/bounds only), data exploration tools disabled
+ */
+const DEFAULT_AGENT_TYPE = AgentType.MainAgentSlim;
+
 interface ExecuteOptions {
   modelKey: AIModelKey;
   fileUuid: string;
   teamUuid: string;
+  /** Agent type for tool filtering (defaults to DEFAULT_AGENT_TYPE) */
+  agentType?: AgentType;
   importFilesToGrid?: (args: { importFiles: ImportFile[]; userMessage: UserMessagePrompt }) => Promise<void>;
   importPDF?: (args: {
     pdfImportArgs: AIToolsArgs[AITool.PDFImport];
@@ -72,6 +84,7 @@ interface ToolCallLoopContext {
   importPDF?: ExecuteOptions['importPDF'];
   search?: ExecuteOptions['search'];
   getUserPromptSuggestions?: () => void;
+  agentType?: AgentType;
 }
 
 /**
@@ -90,6 +103,8 @@ export class AISession {
   async execute(request: AISessionRequest, options: ExecuteOptions): Promise<AISessionResult> {
     const { messageSource, content, context, messageIndex, importFiles, connections } = request;
     const { modelKey, fileUuid, teamUuid, importFilesToGrid, importPDF, search, getUserPromptSuggestions } = options;
+    // Determine agent type (default to global setting if not specified)
+    const agentType = options.agentType ?? DEFAULT_AGENT_TYPE;
 
     // Prepare session state
     const prepareResult = this.prepareSession(messageIndex);
@@ -139,6 +154,7 @@ export class AISession {
           importPDF,
           search,
           getUserPromptSuggestions,
+          agentType,
         }
       );
 
@@ -153,7 +169,7 @@ export class AISession {
       return { success: false, error: String(error), chatId };
     } finally {
       aiStore.set(abortControllerAtom, undefined);
-      aiStore.set(loadingAtom, false);
+      aiStore.set(loadingWithPersistenceAtom, false);
     }
   }
 
@@ -317,8 +333,10 @@ export class AISession {
     while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
       toolCallIterations++;
 
-      // Build context
-      chatMessages = await contextBuilder.buildContext({
+      // Build context - use slim context for MainAgentSlim to reduce context size
+      const useSlimContext = context.agentType === AgentType.MainAgentSlim;
+      const activeContextBuilder = useSlimContext ? slimContextBuilder : contextBuilder;
+      chatMessages = await activeContextBuilder.buildContext({
         connections,
         context: resolvedContext,
         chatMessages,
@@ -338,6 +356,7 @@ export class AISession {
         messagesForAI,
         abortController,
         onExceededBillingLimit,
+        agentType: context.agentType,
       });
 
       // Check if we should break the loop
@@ -359,6 +378,10 @@ export class AISession {
         chatMessages,
         importPDF,
         search,
+        agentType: context.agentType,
+        fileUuid,
+        teamUuid,
+        modelKey,
       });
 
       chatMessages = updatedChatMessages;
@@ -388,9 +411,18 @@ export class AISession {
     messagesForAI: ChatMessage[];
     abortController: AbortController;
     onExceededBillingLimit: (exceededBillingLimit: boolean) => void;
+    agentType?: AgentType;
   }) {
-    const { chatId, modelKey, fileUuid, currentMessageSource, messagesForAI, abortController, onExceededBillingLimit } =
-      params;
+    const {
+      chatId,
+      modelKey,
+      fileUuid,
+      currentMessageSource,
+      messagesForAI,
+      abortController,
+      onExceededBillingLimit,
+      agentType,
+    } = params;
 
     return aiAPIClient.sendRequest(
       {
@@ -405,6 +437,7 @@ export class AISession {
         language: undefined,
         useQuadraticContext: true,
         fileUuid,
+        agentType,
       },
       {
         signal: abortController.signal,
@@ -463,12 +496,16 @@ export class AISession {
     chatMessages: ChatMessage[];
     importPDF?: ExecuteOptions['importPDF'];
     search?: ExecuteOptions['search'];
+    agentType?: AgentType;
+    fileUuid?: string;
+    teamUuid?: string;
+    modelKey?: AIModelKey;
   }): Promise<{
     toolResultMessage: ToolResultMessage;
     promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'];
     updatedChatMessages: ChatMessage[];
   }> {
-    const { toolCalls, chatId, lastMessageIndex, importPDF, search } = params;
+    const { toolCalls, chatId, lastMessageIndex, importPDF, search, agentType, fileUuid, teamUuid, modelKey } = params;
     let chatMessages = params.chatMessages;
 
     // Execute tool calls
@@ -476,6 +513,10 @@ export class AISession {
       source: 'AIAnalyst',
       chatId,
       messageIndex: lastMessageIndex + 1,
+      agentType,
+      fileUuid,
+      teamUuid,
+      modelKey,
     });
 
     // Check for prompt suggestions

@@ -22,7 +22,6 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIUsage,
   AzureOpenAIModelKey,
   BasetenModelKey,
@@ -37,7 +36,7 @@ import type {
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getAIToolsInOrder } from './tools';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
@@ -77,7 +76,7 @@ export function getOpenAIChatCompletionsApiArgs(
   tools: ChatCompletionTool[] | undefined;
   tool_choice: ChatCompletionToolChoiceOption | undefined;
 } {
-  const { messages: chatMessages, toolName, source } = args;
+  const { messages: chatMessages, toolName, source, agentType } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -150,27 +149,20 @@ export function getOpenAIChatCompletionsApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams, agentType);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
 function getOpenAITools(
-  source: AISource,
+  source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
-  strictParams: boolean
+  strictParams: boolean,
+  agentType?: AIRequestHelperArgs['agentType']
 ): ChatCompletionTool[] | undefined {
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
 
   if (tools.length === 0) {
     return undefined;
@@ -303,6 +295,9 @@ export async function parseOpenAIChatCompletionsStream(
     }));
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -351,8 +346,6 @@ export function parseOpenAIChatCompletionsResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
   const usage: AIUsage = {
     inputTokens: (result.usage?.prompt_tokens ?? 0) - cacheReadTokens,
@@ -360,6 +353,11 @@ export function parseOpenAIChatCompletionsResponse(
     cacheReadTokens,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

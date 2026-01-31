@@ -201,8 +201,17 @@ The get_cell_data function may return page information. Use the page parameter t
     sources: ['AIAnalyst'],
     aiModelModes: [],
     description: `
-This tool checks if the cells in the chosen selection have any data.
-Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
+This tool checks if any cells in the chosen selection have data. Returns true if ANY cell in the selection contains data.
+You MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
+
+Supported selection formats:
+- Single cell: "A1"
+- Range: "A1:B10"
+- Multiple ranges (comma-separated): "A1:B5, D1:E5, G10"
+- Full columns: "A:C"
+- Full rows: "1:5"
+- Cross-sheet: "Sheet2!A1:B10"
+- Table references: "TableName[Column]"
 `,
     parameters: {
       type: 'object',
@@ -214,8 +223,7 @@ Use MUST use this tool before creating or moving tables, code, connections, or c
         },
         selection: {
           type: 'string',
-          description: `
-The string representation (in a1 notation) of the selection of cells to check for data. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
+          description: `The selection to check for data in A1 notation. Supports: single cell ("A1"), range ("A1:B10"), multiple comma-separated ranges ("A1:B5, D1:E5"), full columns/rows ("A:C", "1:5"), and cross-sheet references ("Sheet2!A1:B10").`,
         },
       },
       required: ['sheet_name', 'selection'],
@@ -223,8 +231,19 @@ The string representation (in a1 notation) of the selection of cells to check fo
     },
     responseSchema: cellDataToolsArgsSchemas[AITool.HasCellData],
     prompt: `
-This tool checks if the cells in the chosen selection have any data.
-Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
+This tool checks if any cells in the selection have data. Returns true if ANY cell in the selection contains data.
+You MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
+
+Supported selection formats:
+- Single cell: "A1"
+- Range: "A1:B10" (checks entire range)
+- Multiple ranges (comma-separated): "A1:B5, D1:E5, G10"
+- Full columns: "A:C"
+- Full rows: "1:5"
+- Cross-sheet references: "Sheet2!A1:B10"
+- Table references: "TableName[Column]"
+
+Use this tool to check if a target area is empty before writing data to it.
 `,
   },
   [AITool.MoveCells]: {
