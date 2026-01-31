@@ -1,13 +1,13 @@
 // Subagent module exports
 
-export { subagentContextBuilder, SubagentContextBuilder } from './SubagentContextBuilder';
-export { subagentRunner, SubagentRunner } from './SubagentRunner';
+export { SubagentContextBuilder, subagentContextBuilder } from './SubagentContextBuilder';
+export { SubagentRunner, subagentRunner } from './SubagentRunner';
 export {
+  SUBAGENT_CONFIGS,
+  SubagentType,
   getAllSubagentTypes,
   getSubagentConfig,
   isToolAllowedForSubagent,
-  SUBAGENT_CONFIGS,
-  SubagentType,
   type SubagentConfig,
   type SubagentExecuteOptions,
   type SubagentRange,

@@ -111,6 +111,8 @@ export type AIToolMessageMetaData = {
   source: AISource;
   chatId: string;
   messageIndex: number;
+  fileUuid?: string;
+  teamUuid?: string;
 };
 
 export type AIToolActionsRecord = {

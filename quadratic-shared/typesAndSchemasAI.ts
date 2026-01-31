@@ -1,3 +1,4 @@
+import { AgentType } from 'quadratic-shared/ai/agents';
 import { AITool, AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ConnectionType, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
@@ -357,6 +358,10 @@ export interface AIToolCall {
   name: string;
   arguments: string;
   loading: boolean;
+  /** Model key that made this tool call (for debug display, especially subagent calls) */
+  modelKey?: string;
+  /** If true, this tool call is internal (e.g., from subagent) and should not be sent to the API */
+  internal?: boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -510,6 +515,8 @@ export interface AIRequestBody {
   useToolsPrompt: boolean;
   language?: CodeCellType;
   useQuadraticContext: boolean;
+  /** Agent type for tool filtering (defaults to MainAgent if not specified) */
+  agentType?: AgentType;
 }
 
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
@@ -1165,6 +1172,12 @@ const AISourceSchema = z.enum([
   'OptimizePrompt',
 ]) satisfies z.ZodType<AISource>;
 
+export const AgentTypeSchema = z.enum([
+  AgentType.MainAgent,
+  AgentType.MainAgentSlim,
+  AgentType.DataFinderSubagent,
+]) satisfies z.ZodType<AgentType>;
+
 export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
@@ -1177,6 +1190,7 @@ export const AIRequestBodySchema = z.object({
   useToolsPrompt: z.boolean(),
   language: CodeCellTypeSchema.optional(),
   useQuadraticContext: z.boolean(),
+  agentType: AgentTypeSchema.optional(),
 }) satisfies z.ZodType<AIRequestBody>;
 
 // ----------------------------------------------------------------------------

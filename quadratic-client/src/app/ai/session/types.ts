@@ -1,3 +1,4 @@
+import type { AgentType } from 'quadratic-shared/ai/agents';
 import type {
   AIModelKey,
   AIResponseContent,
@@ -76,8 +77,12 @@ export interface ToolExecutionOptions {
   chatId: string;
   /** Message index */
   messageIndex: number;
-  /** Whether slim context mode is enabled (disables data exploration tools) */
-  useSlimContext?: boolean;
+  /** Agent type for tool filtering */
+  agentType?: AgentType;
+  /** File UUID for subagent requests */
+  fileUuid?: string;
+  /** Team UUID for subagent requests */
+  teamUuid?: string;
 }
 
 /**

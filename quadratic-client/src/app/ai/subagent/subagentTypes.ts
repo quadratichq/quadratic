@@ -78,6 +78,26 @@ export interface SubagentExecuteOptions {
   teamUuid: string;
   /** Abort signal to cancel the subagent */
   abortSignal?: AbortSignal;
+  /** Callback when a tool call is made (for UI updates) */
+  onToolCall?: (toolCall: SubagentToolCallEvent) => void;
+  /** Callback when a tool call completes */
+  onToolCallComplete?: (toolCallId: string) => void;
+}
+
+/**
+ * Event emitted when a subagent makes a tool call.
+ */
+export interface SubagentToolCallEvent {
+  /** Unique ID for this tool call */
+  id: string;
+  /** Tool name */
+  name: string;
+  /** Tool arguments as JSON string */
+  arguments?: string;
+  /** Whether the tool is still loading */
+  loading: boolean;
+  /** Model key used for this tool call (for debug display) */
+  modelKey?: string;
 }
 
 /**

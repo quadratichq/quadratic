@@ -555,7 +555,8 @@ Use this tool when you need to:
         },
         context_hints: {
           type: 'string',
-          description: 'Optional hints from the conversation that might help the subagent (e.g., sheet names mentioned by user).',
+          description:
+            'Optional hints from the conversation that might help the subagent (e.g., sheet names mentioned by user).',
         },
       },
       required: ['subagent_type', 'task'],

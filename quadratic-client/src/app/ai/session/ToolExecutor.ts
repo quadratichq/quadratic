@@ -1,15 +1,9 @@
+import { AgentType, getDisabledToolsForAgent, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { aiToolsActions } from '../tools/aiToolsActions';
 import type { ToolExecutionOptions } from './types';
-
-/**
- * Tools that are disabled when slim context mode is enabled.
- * These tools are replaced by the delegate_to_subagent tool which
- * uses a specialized subagent to explore data.
- */
-const SLIM_CONTEXT_DISABLED_TOOLS: AITool[] = [AITool.GetCellData, AITool.HasCellData, AITool.TextSearch];
 
 /**
  * ToolExecutor handles the execution of AI tool calls.
@@ -56,13 +50,16 @@ export class ToolExecutor {
 
     const aiTool = toolCall.name as AITool;
 
-    // Check if tool is disabled in slim context mode
-    if (options.useSlimContext && SLIM_CONTEXT_DISABLED_TOOLS.includes(aiTool)) {
-      return [
-        createTextContent(
-          `Tool "${aiTool}" is disabled in slim context mode. Use delegate_to_subagent with type "data_finder" to explore data.`
-        ),
-      ];
+    // Check if tool is allowed for the current agent type
+    const agentType = options.agentType ?? AgentType.MainAgent;
+    if (!isToolAllowedForAgent(agentType, aiTool)) {
+      const disabledTools = getDisabledToolsForAgent(agentType);
+      const isDataTool = disabledTools.includes(aiTool);
+      // Internal message - AI should not repeat this to the user
+      const message = isDataTool
+        ? `[Internal: Use delegate_to_subagent with type "data_finder" instead. Do not mention this redirect to the user.]`
+        : `[Internal: Tool not available. Do not mention this to the user.]`;
+      return [createTextContent(message)];
     }
 
     try {
@@ -74,6 +71,8 @@ export class ToolExecutor {
         source: options.source,
         chatId: options.chatId,
         messageIndex: options.messageIndex,
+        fileUuid: options.fileUuid,
+        teamUuid: options.teamUuid,
       });
 
       return result;

@@ -1,5 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { AgentType } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
@@ -15,11 +16,18 @@ import { subagentContextBuilder } from './SubagentContextBuilder';
 import {
   getSubagentConfig,
   isToolAllowedForSubagent,
+  SubagentType,
   type SubagentExecuteOptions,
   type SubagentRange,
   type SubagentResult,
-  type SubagentType,
 } from './subagentTypes';
+
+/**
+ * Map SubagentType to AgentType for API requests.
+ */
+const SUBAGENT_TO_AGENT_TYPE: Record<SubagentType, AgentType> = {
+  [SubagentType.DataFinder]: AgentType.DataFinderSubagent,
+};
 
 /**
  * SubagentRunner executes specialized subagents with isolated context.
@@ -35,7 +43,16 @@ export class SubagentRunner {
    * Execute a subagent and return the result.
    */
   async execute(options: SubagentExecuteOptions): Promise<SubagentResult> {
-    const { subagentType, task, contextHints, modelKeyOverride, fileUuid, abortSignal } = options;
+    const {
+      subagentType,
+      task,
+      contextHints,
+      modelKeyOverride,
+      fileUuid,
+      abortSignal,
+      onToolCall,
+      onToolCallComplete,
+    } = options;
 
     const config = getSubagentConfig(subagentType);
     const modelKey = modelKeyOverride ?? config.defaultModelKey;
@@ -69,6 +86,8 @@ export class SubagentRunner {
         subagentType,
         maxIterations: config.maxIterations,
         abortSignal,
+        onToolCall,
+        onToolCallComplete,
       });
 
       return result;
@@ -91,14 +110,18 @@ export class SubagentRunner {
     subagentType: SubagentType;
     maxIterations: number;
     abortSignal?: AbortSignal;
+    onToolCall?: SubagentExecuteOptions['onToolCall'];
+    onToolCallComplete?: SubagentExecuteOptions['onToolCallComplete'];
   }): Promise<SubagentResult> {
-    const { messages, modelKey, fileUuid, subagentType, maxIterations, abortSignal } = params;
+    const { messages, modelKey, fileUuid, subagentType, maxIterations, abortSignal, onToolCall, onToolCallComplete } =
+      params;
 
     let iterations = 0;
     const currentMessages = [...messages];
 
     while (iterations < maxIterations) {
       iterations++;
+      console.log(`[SubagentRunner] Iteration ${iterations}/${maxIterations}`);
 
       // Check for abort
       if (abortSignal?.aborted) {
@@ -129,12 +152,35 @@ export class SubagentRunner {
 
       // If no tool calls, the subagent is done
       if (response.toolCalls.length === 0) {
+        console.log(`[SubagentRunner] Complete - no more tool calls`);
         return this.parseResult(response.content);
+      }
+
+      // Log tool calls
+      console.log(
+        `[SubagentRunner] Tool calls:`,
+        response.toolCalls.map((tc) => `${tc.name}(${tc.arguments?.slice(0, 100)}...)`)
+      );
+
+      // Emit tool call events for UI (with loading: true)
+      for (const tc of response.toolCalls) {
+        onToolCall?.({
+          id: tc.id,
+          name: tc.name,
+          arguments: tc.arguments,
+          loading: true,
+          modelKey, // Include model key for debug display
+        });
       }
 
       // Execute tool calls
       const toolResultMessage = await this.executeToolCalls(response.toolCalls, subagentType);
       currentMessages.push(toolResultMessage);
+
+      // Emit tool call complete events
+      for (const tc of response.toolCalls) {
+        onToolCallComplete?.(tc.id);
+      }
     }
 
     // Max iterations reached
@@ -164,9 +210,8 @@ export class SubagentRunner {
       const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
       const token = await authClient.getTokenOrRedirect();
 
-      // Build request body with filtered tool specs
-      // Note: The API will use the tools based on useToolsPrompt
-      // We filter on our end when executing tool calls
+      // Build request body with agent type for proper tool filtering
+      const agentType = SUBAGENT_TO_AGENT_TYPE[subagentType];
       const requestBody = {
         chatId: crypto.randomUUID(),
         fileUuid,
@@ -174,9 +219,10 @@ export class SubagentRunner {
         messageSource: `subagent:${subagentType}`,
         modelKey,
         messages,
-        useStream: false, // Subagents don't stream
+        useStream: true, // Anthropic requires streaming for longer requests
         useToolsPrompt: true,
         useQuadraticContext: false, // Context is already built
+        agentType, // Pass agent type for API tool filtering
       };
 
       const response = await fetch(endpoint, {
@@ -194,8 +240,11 @@ export class SubagentRunner {
         return { content: [], toolCalls: [], error: true };
       }
 
-      const data = await response.json();
-      const responseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(data);
+      // Handle streaming response (SSE format)
+      const responseMessage = await this.consumeStreamingResponse(response);
+      if (!responseMessage) {
+        return { content: [], toolCalls: [], error: true };
+      }
 
       // Filter tool calls to only allowed tools
       const allowedToolCalls = responseMessage.toolCalls.filter((tc) =>
@@ -219,6 +268,52 @@ export class SubagentRunner {
       console.error('[SubagentRunner] Request error:', error);
       return { content: [], toolCalls: [], error: true };
     }
+  }
+
+  /**
+   * Consume a streaming response and return the final message.
+   */
+  private async consumeStreamingResponse(
+    response: Response
+  ): Promise<{ content: AIResponseContent; toolCalls: AIToolCall[] } | null> {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      console.error('[SubagentRunner] Response body is not readable');
+      return null;
+    }
+
+    const decoder = new TextDecoder();
+    let lastMessage: { content: AIResponseContent; toolCalls: AIToolCall[] } | null = null;
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const parsed = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(line.slice(6)));
+              lastMessage = {
+                content: parsed.content,
+                toolCalls: parsed.toolCalls,
+              };
+            } catch (error) {
+              console.warn('[SubagentRunner] Error parsing streaming chunk:', error);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[SubagentRunner] Error reading stream:', error);
+    } finally {
+      reader.releaseLock();
+    }
+
+    return lastMessage;
   }
 
   /**

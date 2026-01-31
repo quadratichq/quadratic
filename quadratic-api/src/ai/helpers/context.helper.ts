@@ -1,6 +1,7 @@
+import { AgentType, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AILanguagePreferences,
   AIModelKey,
@@ -73,8 +74,18 @@ I will follow all your instructions with context of quadratic documentation, and
   },
 ];
 
-export const getToolUseContext = (source: AISource, modelKey: AIModelKey): ChatMessage[] => {
+export const getToolUseContext = (source: AISource, modelKey: AIModelKey, agentType?: AgentType): ChatMessage[] => {
   const aiModelMode = MODELS_CONFIGURATION[modelKey].mode;
+  // Default to MainAgent if no agent type specified
+  const effectiveAgentType = agentType ?? AgentType.MainAgent;
+
+  // Debug: Log which tools are being filtered
+  const allTools = Object.keys(aiToolsSpec);
+  const filteredTools = allTools.filter((toolName) => !isToolAllowedForAgent(effectiveAgentType, toolName as AITool));
+  if (filteredTools.length > 0) {
+    console.log(`[getToolUseContext] Filtering tools for ${effectiveAgentType}: ${filteredTools.join(', ')}`);
+  }
+
   return [
     {
       role: 'user',
@@ -95,7 +106,14 @@ ${
 }
 
 ${Object.entries(aiToolsSpec)
-  .filter(([_, { sources, aiModelModes }]) => sources.includes(source) && aiModelModes.includes(aiModelMode))
+  .filter(([toolName, { sources, aiModelModes }]) => {
+    // Filter by source and model mode
+    if (!sources.includes(source) || !aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
+    // Filter by agent type
+    return isToolAllowedForAgent(effectiveAgentType, toolName as AITool);
+  })
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 
@@ -167,7 +185,10 @@ ${rules.join('\n\n')}
 export const getAILanguagesContext = (enabledLanguagePreferences: AILanguagePreferences): ChatMessage[] => {
   // We guard against this in the UI, but just in case we'll handle it too.
   // If no languages are enabled or all languages are enabled, return empty context to avoid malformed messages
-  if (enabledLanguagePreferences.length === 0 || enabledLanguagePreferences.length === allAILanguagePreferences.length) {
+  if (
+    enabledLanguagePreferences.length === 0 ||
+    enabledLanguagePreferences.length === allAILanguagePreferences.length
+  ) {
     return [];
   }
 

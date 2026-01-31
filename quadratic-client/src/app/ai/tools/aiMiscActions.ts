@@ -1,4 +1,6 @@
+import { messageManager } from '@/app/ai/session/MessageManager';
 import { subagentRunner, SubagentType } from '@/app/ai/subagent';
+import type { SubagentToolCallEvent } from '@/app/ai/subagent/subagentTypes';
 import { countWords } from '@/app/ai/utils/wordCount';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsSheetPosText } from '@/app/quadratic-core-types';
@@ -6,7 +8,7 @@ import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolCall, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import type { AIToolMessageMetaData } from './aiToolsHelpers';
 
 type MiscToolActions = {
@@ -157,22 +159,79 @@ export const miscToolsActions: MiscToolActions = {
         return [createTextContent(`Error: Unknown subagent type '${args.subagent_type}'`)];
       }
 
-      // Execute the subagent
+      // Track active tool calls for this subagent execution
+      const activeToolCalls = new Map<string, AIToolCall>();
+
+      // Callback to add subagent tool calls to the current message
+      // These are marked as internal so they're shown in UI but not sent to API
+      const onToolCall = (event: SubagentToolCallEvent) => {
+        const toolCall: AIToolCall = {
+          id: event.id,
+          name: event.name,
+          arguments: event.arguments ?? '',
+          loading: event.loading,
+          modelKey: event.modelKey, // Include model key for debug display
+          internal: true, // Mark as internal - won't be sent to API
+        };
+        activeToolCalls.set(event.id, toolCall);
+
+        // Add to the current assistant message for UI display
+        const currentMessages = messageManager.getMessages();
+        const currentLastMessage = currentMessages.at(-1);
+        if (currentLastMessage?.role === 'assistant' && currentLastMessage.contextType === 'userPrompt') {
+          const existingToolCalls = currentLastMessage.toolCalls ?? [];
+          const updatedToolCalls = [...existingToolCalls.filter((tc: AIToolCall) => tc.id !== event.id), toolCall];
+          messageManager.setMessages([
+            ...currentMessages.slice(0, -1),
+            { ...currentLastMessage, toolCalls: updatedToolCalls },
+          ]);
+        }
+      };
+
+      // Callback when tool call completes
+      const onToolCallComplete = (toolCallId: string) => {
+        const toolCall = activeToolCalls.get(toolCallId);
+        if (toolCall) {
+          toolCall.loading = false;
+          // Update the message to mark tool call as complete
+          const currentMessages = messageManager.getMessages();
+          const currentLastMessage = currentMessages.at(-1);
+          if (
+            currentLastMessage?.role === 'assistant' &&
+            currentLastMessage.contextType === 'userPrompt' &&
+            currentLastMessage.toolCalls
+          ) {
+            const updatedToolCalls = currentLastMessage.toolCalls.map((tc: AIToolCall) =>
+              tc.id === toolCallId ? { ...tc, loading: false } : tc
+            );
+            messageManager.setMessages([
+              ...currentMessages.slice(0, -1),
+              { ...currentLastMessage, toolCalls: updatedToolCalls },
+            ]);
+          }
+        }
+      };
+
+      // Execute the subagent with callbacks
       const result = await subagentRunner.execute({
         subagentType,
         task: args.task,
         contextHints: args.context_hints,
-        fileUuid: '', // Will be populated from context if needed
-        teamUuid: '', // Will be populated from context if needed
+        fileUuid: metaData?.fileUuid ?? '',
+        teamUuid: metaData?.teamUuid ?? '',
+        onToolCall,
+        onToolCallComplete,
       });
+      // Note: Subagent tool calls are marked as internal and will be filtered out
+      // when messages are sent to the API (see getMessagesForAI)
 
       if (!result.success) {
         return [createTextContent(`Subagent error: ${result.error ?? 'Unknown error'}`)];
       }
 
       // Format the result for the main agent
-      let responseText = `## Subagent Result\n\n`;
-      responseText += `**Summary:** ${result.summary ?? 'No summary available'}\n\n`;
+      let responseText = `## Data Exploration Result\n\n`;
+      responseText += `${result.summary ?? 'No summary available'}\n\n`;
 
       if (result.ranges && result.ranges.length > 0) {
         responseText += `**Ranges Found:**\n`;

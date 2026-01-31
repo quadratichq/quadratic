@@ -1,5 +1,3 @@
-import { ToolCard } from '@/app/ai/toolCards/ToolCard';
-import { SearchIcon } from '@/shared/components/Icons';
 import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
@@ -7,12 +5,8 @@ import type { z } from 'zod';
 
 type DelegateToSubagentArgs = AIToolsArgs[AITool.DelegateToSubagent];
 
-const SUBAGENT_LABELS: Record<string, string> = {
-  data_finder: 'Searching for data',
-};
-
 export const DelegateToSubagent = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+  ({ toolCall: { id, arguments: args, loading } }: { toolCall: AIToolCall; className: string }) => {
     type ParseResult = z.SafeParseReturnType<DelegateToSubagentArgs, DelegateToSubagentArgs>;
     const [toolArgs, setToolArgs] = useState<ParseResult>();
 
@@ -33,21 +27,30 @@ export const DelegateToSubagent = memo(
 
     const subagentType = toolArgs?.success ? toolArgs.data.subagent_type : undefined;
     const task = toolArgs?.success ? toolArgs.data.task : undefined;
-    const label = subagentType ? (SUBAGENT_LABELS[subagentType] ?? 'Searching') : 'Searching';
-
-    // Truncate task if too long
-    const maxTaskLength = 60;
-    const truncatedTask = task && task.length > maxTaskLength ? `${task.slice(0, maxTaskLength)}...` : task;
+    const contextHints = toolArgs?.success ? toolArgs.data.context_hints : undefined;
+    const hasError = toolArgs && !toolArgs.success;
 
     return (
-      <ToolCard
-        icon={<SearchIcon />}
-        label={label}
-        description={truncatedTask}
-        isLoading={loading}
-        hasError={toolArgs && !toolArgs.success}
-        className={className}
-      />
+      <div className="my-1 rounded bg-muted/50 px-2 py-1 font-mono text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-foreground">Subagent:</span>
+          <span>{subagentType ?? (loading ? 'loading...' : 'unknown')}</span>
+          {loading && <span className="animate-pulse text-yellow-600">(running)</span>}
+          {!loading && !hasError && <span className="text-green-600">(done)</span>}
+          {hasError && <span className="text-destructive">(error)</span>}
+        </div>
+        {task && (
+          <div className="mt-0.5">
+            <span className="font-semibold text-foreground">Task:</span> {task}
+          </div>
+        )}
+        {contextHints && (
+          <div className="mt-0.5">
+            <span className="font-semibold text-foreground">Hints:</span> {contextHints}
+          </div>
+        )}
+        <div className="mt-0.5 text-[10px] opacity-60">id: {id}</div>
+      </div>
     );
   }
 );

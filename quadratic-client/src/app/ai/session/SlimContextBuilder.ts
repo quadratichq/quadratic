@@ -234,11 +234,12 @@ How can I help you?`
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const isVisibleEmpty = sheetBounds.type === 'empty' || !intersects.rectRect(sheetBounds, visibleRect);
+    // SLIM: Don't fetch cell values for visible context, only table bounds
     const visibleContext = isVisibleEmpty
       ? undefined
       : await quadraticCore.getAISelectionContexts({
           selections: [visibleRectSelection],
-          maxRows: undefined,
+          maxRows: 0,
         });
     const sheetContext = visibleContext?.length === 1 ? visibleContext[0] : undefined;
 
