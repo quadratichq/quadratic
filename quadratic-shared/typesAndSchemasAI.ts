@@ -450,6 +450,27 @@ export interface Chat {
 }
 
 // ----------------------------------------------------------------------------
+// Subagent Session Types
+// ----------------------------------------------------------------------------
+
+/**
+ * Represents a persistent subagent session with its own message history.
+ * Sessions are isolated from the main agent and only return summaries.
+ */
+export interface SubagentSession {
+  /** Unique identifier for this session */
+  id: string;
+  /** The subagent type (e.g., 'data_finder') */
+  type: string;
+  /** The subagent's isolated message history */
+  messages: ChatMessage[];
+  /** Timestamp of last activity */
+  lastUpdated: number;
+  /** The last summary returned to the main agent */
+  lastSummary?: string;
+}
+
+// ----------------------------------------------------------------------------
 // Tool Args Types (Recursive)
 // ----------------------------------------------------------------------------
 
@@ -1098,6 +1119,14 @@ export const ChatSchema = z.object({
   lastUpdated: z.number(),
   messages: ChatMessagesSchema,
 }) satisfies z.ZodType<Chat>;
+
+export const SubagentSessionSchema = z.object({
+  id: z.string().uuid(),
+  type: z.string(),
+  messages: ChatMessagesSchema,
+  lastUpdated: z.number(),
+  lastSummary: z.string().optional(),
+}) satisfies z.ZodType<SubagentSession>;
 
 // ----------------------------------------------------------------------------
 // Tool Args Schemas (Recursive)

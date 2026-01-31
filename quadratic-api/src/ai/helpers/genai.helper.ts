@@ -22,7 +22,6 @@ import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIToolArgs,
   AIToolArgsArray,
   AIToolArgsPrimitive,
@@ -36,7 +35,7 @@ import type {
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getAIToolsInOrder } from './tools';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): Part[] {
   return content
@@ -74,7 +73,7 @@ export function getGenAIApiArgs(
   tools: Tool[] | undefined;
   tool_choice: ToolConfig | undefined;
 } {
-  const { messages: chatMessages, toolName, source } = args;
+  const { messages: chatMessages, toolName, source, agentType } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -154,7 +153,7 @@ export function getGenAIApiArgs(
     }
   }, []);
 
-  const tools = getGenAITools(source, aiModelMode, toolName);
+  const tools = getGenAITools(source, aiModelMode, toolName, agentType);
   const tool_choice = tools?.length ? getGenAIToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
@@ -243,17 +242,24 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
   }
 }
 
-function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
+function getGenAITools(
+  source: AIRequestHelperArgs['source'],
+  aiModelMode: ModelMode,
+  toolName?: AITool,
+  agentType?: AIRequestHelperArgs['agentType']
+): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.sources.includes(source) || !toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
+
+  // Get filtered tools using centralized function
+  const allFilteredTools = getFilteredTools({ source, aiModelMode, toolName, agentType });
+
+  // Additional GenAI-specific filtering for WebSearchInternal
+  const tools = allFilteredTools.filter(([name]) => {
     if (name === AITool.WebSearchInternal) {
       hasWebSearchInternal = true;
       return false;
     }
-    return toolName ? name === toolName : true;
+    return true;
   });
 
   if (tools.length === 0 && !hasWebSearchInternal) {

@@ -78,6 +78,8 @@ export interface SubagentExecuteOptions {
   teamUuid: string;
   /** Abort signal to cancel the subagent */
   abortSignal?: AbortSignal;
+  /** If true, clears the subagent session and starts fresh */
+  reset?: boolean;
   /** Callback when a tool call is made (for UI updates) */
   onToolCall?: (toolCall: SubagentToolCallEvent) => void;
   /** Callback when a tool call completes */

@@ -25,7 +25,6 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIUsage,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
@@ -35,7 +34,7 @@ import type {
   ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { getAIToolsInOrder } from './tools';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
   return content
@@ -115,7 +114,7 @@ export function getAnthropicApiArgs(
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
 } {
-  const { messages: chatMessages, toolName, source } = args;
+  const { messages: chatMessages, toolName, source, agentType } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -218,22 +217,19 @@ export function getAnthropicApiArgs(
     }
   }, []);
 
-  const tools = getAnthropicTools(source, aiModelMode, toolName);
+  const tools = getAnthropicTools(source, aiModelMode, toolName, agentType);
   const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+function getAnthropicTools(
+  source: AIRequestHelperArgs['source'],
+  aiModelMode: ModelMode,
+  toolName?: AITool,
+  agentType?: AIRequestHelperArgs['agentType']
+): Tool[] | undefined {
+  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
 
   if (tools.length === 0) {
     return undefined;

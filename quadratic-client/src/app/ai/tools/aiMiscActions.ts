@@ -219,6 +219,7 @@ export const miscToolsActions: MiscToolActions = {
         contextHints: args.context_hints,
         fileUuid: metaData?.fileUuid ?? '',
         teamUuid: metaData?.teamUuid ?? '',
+        reset: args.reset,
         onToolCall,
         onToolCallComplete,
       });

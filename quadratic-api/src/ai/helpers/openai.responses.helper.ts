@@ -24,12 +24,10 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
   AIResponseThinkingContent,
-  AISource,
   AIUsage,
   AzureOpenAIModelKey,
   Content,
@@ -41,6 +39,7 @@ import type {
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getFilteredTools } from './tools';
 
 function convertInputTextContent(content: TextContent): ResponseInputContent {
   return {
@@ -83,7 +82,7 @@ export function getOpenAIResponsesApiArgs(
   tools: Array<Tool> | undefined;
   tool_choice: ToolChoiceOptions | ToolChoiceTypes | ToolChoiceFunction | undefined;
 } {
-  const { messages: chatMessages, toolName, source } = args;
+  const { messages: chatMessages, toolName, source, agentType } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -209,27 +208,20 @@ export function getOpenAIResponsesApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams, agentType);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
 function getOpenAITools(
-  source: AISource,
+  source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
-  strictParams: boolean
+  strictParams: boolean,
+  agentType?: AIRequestHelperArgs['agentType']
 ): Tool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
 
   if (tools.length === 0) {
     return undefined;

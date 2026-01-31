@@ -66,6 +66,7 @@ export const miscToolsArgsSchemas = {
     subagent_type: z.enum(['data_finder']),
     task: stringSchema,
     context_hints: stringSchema.optional(),
+    reset: booleanSchema.optional(),
   }),
 } as const;
 
@@ -541,7 +542,9 @@ Use this tool when you need to:
 - Find where specific data is located
 - Get a summary of data in particular ranges
 - Search across sheets for specific content
-- Explore data before performing operations on it`,
+- Explore data before performing operations on it
+
+Subagent sessions persist between calls. Use reset=true to start fresh, or omit it to continue an existing session with follow-up questions.`,
     parameters: {
       type: 'object',
       properties: {
@@ -557,6 +560,11 @@ Use this tool when you need to:
           type: 'string',
           description:
             'Optional hints from the conversation that might help the subagent (e.g., sheet names mentioned by user).',
+        },
+        reset: {
+          type: 'boolean',
+          description:
+            'If true, clears the subagent session and starts fresh. If false or omitted, continues the existing session (if any) for follow-up questions.',
         },
       },
       required: ['subagent_type', 'task'],
@@ -574,6 +582,8 @@ Example uses:
 - "Find all sales data and return the ranges"
 - "Locate the revenue columns across all sheets"
 - "Search for any data containing 'Q4 2024'"
+
+The subagent maintains its session between calls. If you need to ask follow-up questions about the same data, just call again without reset. If you need to explore completely different data, use reset=true to start fresh.
 
 The subagent has access to detailed cell data that you don't have in your context. Use it to find specific data before performing operations.`,
   },

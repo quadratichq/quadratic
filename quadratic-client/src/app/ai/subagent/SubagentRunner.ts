@@ -11,6 +11,7 @@ import type {
   ChatMessage,
   ToolResultMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { subagentSessionManager } from '../session/SubagentSessionManager';
 import { aiToolsActions } from '../tools/aiToolsActions';
 import { subagentContextBuilder } from './SubagentContextBuilder';
 import {
@@ -33,14 +34,19 @@ const SUBAGENT_TO_AGENT_TYPE: Record<SubagentType, AgentType> = {
  * SubagentRunner executes specialized subagents with isolated context.
  *
  * Subagents:
- * - Have their own message history (don't inherit main conversation)
+ * - Have their own persistent message history (managed by SubagentSessionManager)
  * - Are restricted to specific tools based on type
  * - Can use cheaper/faster models
  * - Return summarized results to the main agent
+ * - Sessions persist for follow-up questions
  */
 export class SubagentRunner {
   /**
    * Execute a subagent and return the result.
+   *
+   * If a session exists for this subagent type and reset is not true,
+   * the session is resumed with refreshed context. Otherwise, a new
+   * session is created.
    */
   async execute(options: SubagentExecuteOptions): Promise<SubagentResult> {
     const {
@@ -50,6 +56,7 @@ export class SubagentRunner {
       modelKeyOverride,
       fileUuid,
       abortSignal,
+      reset,
       onToolCall,
       onToolCallComplete,
     } = options;
@@ -57,26 +64,55 @@ export class SubagentRunner {
     const config = getSubagentConfig(subagentType);
     const modelKey = modelKeyOverride ?? config.defaultModelKey;
 
-    console.log(`[SubagentRunner] Starting ${subagentType} subagent with model ${modelKey}`);
+    const hasExistingSession = subagentSessionManager.hasSession(subagentType);
+    const isResumingSession = hasExistingSession && !reset;
+
+    console.log(
+      `[SubagentRunner] ${isResumingSession ? 'Resuming' : 'Starting'} ${subagentType} subagent with model ${modelKey}`
+    );
 
     try {
-      // Build context for the subagent
-      const contextMessages = await subagentContextBuilder.buildContext(task, contextHints);
+      let messages: ChatMessage[];
 
-      // Create initial messages with system prompt
-      const messages: ChatMessage[] = [
-        {
+      if (isResumingSession) {
+        // Resume existing session: refresh context and add new task
+        await subagentSessionManager.refreshContext(subagentType);
+        messages = [...subagentSessionManager.getMessages(subagentType)];
+
+        // Add the new task as a user message
+        messages.push({
           role: 'user',
-          content: [createTextContent(config.systemPrompt)],
-          contextType: 'quadraticDocs',
-        },
-        {
-          role: 'assistant',
-          content: [createTextContent('I understand my role. I will explore the data and provide a summary.')],
-          contextType: 'quadraticDocs',
-        },
-        ...contextMessages,
-      ];
+          content: [createTextContent(`New task: ${task}${contextHints ? `\n\nHints: ${contextHints}` : ''}`)],
+          contextType: 'userPrompt',
+        });
+
+        console.log(`[SubagentRunner] Resumed session with ${messages.length} existing messages`);
+      } else {
+        // Start fresh session
+        if (reset) {
+          subagentSessionManager.resetSession(subagentType);
+        } else {
+          subagentSessionManager.createSession(subagentType);
+        }
+
+        // Build context for the subagent
+        const contextMessages = await subagentContextBuilder.buildContext(task, contextHints);
+
+        // Create initial messages with system prompt
+        messages = [
+          {
+            role: 'user',
+            content: [createTextContent(config.systemPrompt)],
+            contextType: 'quadraticDocs',
+          },
+          {
+            role: 'assistant',
+            content: [createTextContent('I understand my role. I will explore the data and provide a summary.')],
+            contextType: 'quadraticDocs',
+          },
+          ...contextMessages,
+        ];
+      }
 
       // Run the tool call loop
       const result = await this.runToolCallLoop({
@@ -90,6 +126,14 @@ export class SubagentRunner {
         onToolCallComplete,
       });
 
+      // Persist the updated messages to the session
+      subagentSessionManager.setMessages(subagentType, messages);
+
+      // Save the summary if successful
+      if (result.success && result.summary) {
+        subagentSessionManager.setLastSummary(subagentType, result.summary);
+      }
+
       return result;
     } catch (error) {
       console.error('[SubagentRunner] Error executing subagent:', error);
@@ -102,6 +146,9 @@ export class SubagentRunner {
 
   /**
    * Run the main tool call loop for the subagent.
+   *
+   * Note: This modifies the messages array in-place so changes persist
+   * back to the caller for session storage.
    */
   private async runToolCallLoop(params: {
     messages: ChatMessage[];
@@ -117,7 +164,6 @@ export class SubagentRunner {
       params;
 
     let iterations = 0;
-    const currentMessages = [...messages];
 
     while (iterations < maxIterations) {
       iterations++;
@@ -130,7 +176,7 @@ export class SubagentRunner {
 
       // Send request to API
       const response = await this.sendRequest({
-        messages: currentMessages,
+        messages,
         modelKey,
         fileUuid,
         subagentType,
@@ -141,8 +187,8 @@ export class SubagentRunner {
         return { success: false, error: 'API request failed' };
       }
 
-      // Add assistant response to messages
-      currentMessages.push({
+      // Add assistant response to messages (mutate in-place for session persistence)
+      messages.push({
         role: 'assistant',
         content: response.content,
         contextType: 'userPrompt',
@@ -175,7 +221,7 @@ export class SubagentRunner {
 
       // Execute tool calls
       const toolResultMessage = await this.executeToolCalls(response.toolCalls, subagentType);
-      currentMessages.push(toolResultMessage);
+      messages.push(toolResultMessage);
 
       // Emit tool call complete events
       for (const tc of response.toolCalls) {

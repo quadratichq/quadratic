@@ -41,6 +41,7 @@ export {
   promptSuggestionsAtom,
   showAIAnalystAtom,
   showChatHistoryAtom,
+  subagentSessionsAtom,
   waitingOnMessageIndexAtom,
   webSearchAtom,
 } from './primitives';

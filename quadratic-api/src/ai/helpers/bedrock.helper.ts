@@ -28,7 +28,6 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIUsage,
   BedrockModelKey,
   Content,
@@ -37,7 +36,7 @@ import type {
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getAIToolsInOrder } from './tools';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): ContentBlock[] {
   return content
@@ -94,7 +93,7 @@ export function getBedrockApiArgs(
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
 } {
-  const { messages: chatMessages, toolName, source } = args;
+  const { messages: chatMessages, toolName, source, agentType } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
@@ -145,22 +144,19 @@ export function getBedrockApiArgs(
     }
   }, []);
 
-  const tools = getBedrockTools(source, aiModelMode, toolName);
+  const tools = getBedrockTools(source, aiModelMode, toolName, agentType);
   const tool_choice = tools?.length ? getBedrockToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+function getBedrockTools(
+  source: AIRequestHelperArgs['source'],
+  aiModelMode: ModelMode,
+  toolName?: AITool,
+  agentType?: AIRequestHelperArgs['agentType']
+): Tool[] | undefined {
+  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
 
   if (tools.length === 0) {
     return undefined;
