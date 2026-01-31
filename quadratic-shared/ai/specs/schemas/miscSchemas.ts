@@ -533,7 +533,7 @@ Be specific, detailed, and actionable in every bullet point.\n`,
   [AITool.DelegateToSubagent]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['fast', 'max', 'others'],
-    description: `Delegate a task to a specialized subagent. Use this to explore data, find specific cells, or summarize spreadsheet contents without loading all data into context.
+    description: `Delegate a task to a specialized subagent. Use this to explore data, find specific cells, or summarize spreadsheet contents.
 
 Available subagent types:
 - data_finder: Finds and summarizes data in the spreadsheet. Returns cell ranges and descriptions of what was found.
@@ -542,7 +542,6 @@ Use this tool when you need to:
 - Find where specific data is located
 - Get a summary of data in particular ranges
 - Search across sheets for specific content
-- Explore data before performing operations on it
 
 Subagent sessions persist between calls. Use reset=true to start fresh, or omit it to continue an existing session with follow-up questions.`,
     parameters: {
@@ -550,11 +549,11 @@ Subagent sessions persist between calls. Use reset=true to start fresh, or omit 
       properties: {
         subagent_type: {
           type: 'string',
-          description: 'Type of subagent to use. Currently only "data_finder" is available.',
+          description: 'Type of subagent to use: "data_finder" for exploring and summarizing data.',
         },
         task: {
           type: 'string',
-          description: 'Description of what the subagent should do. Be specific about what data you are looking for.',
+          description: 'Description of what the subagent should do.',
         },
         context_hints: {
           type: 'string',
@@ -571,20 +570,19 @@ Subagent sessions persist between calls. Use reset=true to start fresh, or omit 
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.DelegateToSubagent],
-    prompt: `Use this tool to delegate data exploration tasks to a specialized subagent.
+    prompt: `Use this tool to delegate tasks to specialized subagents.
 
-The data_finder subagent will:
-1. Search the spreadsheet for the requested data
-2. Explore cell contents and summarize findings
-3. Return specific cell ranges where data was found
+## data_finder subagent
+Explores and summarizes spreadsheet data:
+1. Searches the spreadsheet for requested data
+2. Explores cell contents and summarizes findings
+3. Returns specific cell ranges where data was found
 
 Example uses:
 - "Find all sales data and return the ranges"
 - "Locate the revenue columns across all sheets"
 - "Search for any data containing 'Q4 2024'"
 
-The subagent maintains its session between calls. If you need to ask follow-up questions about the same data, just call again without reset. If you need to explore completely different data, use reset=true to start fresh.
-
-The subagent has access to detailed cell data that you don't have in your context. Use it to find specific data before performing operations.`,
+Subagents maintain sessions between calls. Use reset=true to start fresh.`,
   },
 } as const;

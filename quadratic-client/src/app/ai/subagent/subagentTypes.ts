@@ -115,8 +115,8 @@ export const SUBAGENT_CONFIGS: Record<SubagentType, SubagentConfig> = {
       AITool.GetDatabaseSchemas,
       // AITool.GetSheetData, // Will be added when we create this tool
     ],
-    // Use a cheaper/faster model by default for data exploration
-    defaultModelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
+    // Use a cheap/fast model by default for data exploration
+    defaultModelKey: 'vertexai:gemini-2.5-flash-lite:thinking-toggle-on',
     systemPrompt: `You are a data exploration assistant. Your job is to find and summarize data in a spreadsheet.
 
 ## Your Task
