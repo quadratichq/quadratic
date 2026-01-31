@@ -136,6 +136,7 @@ export const router = createBrowserRouter(
               <Route index loader={() => redirect('./files')} />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
               <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
+              <Route path="data" lazy={() => import('./routes/teams.$teamUuid.data')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />

@@ -33,6 +33,10 @@ model User {
     aiRules     String?  @map("ai_rules") // User-specific AI rules/instructions
     aiLanguages String[] @default([]) @map("ai_languages") // Empty = no preference, non-empty = explicit preferences
 
+    // Data Center
+    ownedDataAssets   DataAsset[] @relation(name: "DataAssetOwner")
+    createdDataAssets DataAsset[] @relation(name: "DataAssetCreator")
+
     @@index([auth0Id])
     @@index([email])
 }
@@ -133,6 +137,7 @@ model Team {
     TeamInvite   TeamInvite[]
     File         File[]
     Connection   Connection[]
+    DataAsset    DataAsset[]
 
     // Onboarding
     onboardingComplete  Boolean? @default(false) @map("onboarding_complete") // null = legacy, do not gate, false = new, gate, true = completed
@@ -182,6 +187,58 @@ enum ConnectionType {
     MIXPANEL
     GOOGLE_ANALYTICS
     PLAID
+}
+
+// Data Center: Types of data assets that can be uploaded
+enum DataAssetType {
+    CSV
+    EXCEL
+    PARQUET
+    PDF
+    JSON
+    OTHER
+}
+
+// Data Center: Uploaded data files (PDFs, Excel, CSV, Parquet, etc.)
+model DataAsset {
+    id          Int           @id @default(autoincrement())
+    uuid        String        @unique @default(uuid())
+    name        String
+    description String?
+    type        DataAssetType
+    mimeType    String        @map("mime_type")
+    size        Int           // File size in bytes
+
+    // S3 storage
+    s3Bucket String @map("s3_bucket")
+    s3Key    String @map("s3_key")
+
+    // Timestamps
+    createdDate DateTime  @default(now()) @map("created_date")
+    updatedDate DateTime  @default(now()) @map("updated_date")
+    deleted     Boolean   @default(false)
+    deletedDate DateTime? @map("deleted_date")
+
+    // Creator (recorded on creation, never changes)
+    creator       User @relation(name: "DataAssetCreator", fields: [creatorUserId], references: [id])
+    creatorUserId Int  @map("creator_user_id")
+
+    // Ownership: null = team data (public to team), set = personal data (private to user)
+    ownerUser   User? @relation(name: "DataAssetOwner", fields: [ownerUserId], references: [id])
+    ownerUserId Int?  @map("owner_user_id")
+
+    // Team (always set - data always belongs to a team)
+    ownerTeam   Team @relation(fields: [ownerTeamId], references: [id])
+    ownerTeamId Int  @map("owner_team_id")
+
+    // Extracted metadata (column names for CSV, sheet names for Excel, etc.)
+    metadata Json?
+
+    @@index([uuid])
+    @@index([ownerTeamId])
+    @@index([ownerUserId])
+    @@index([type])
+    @@index([deleted])
 }
 
 model Connection {

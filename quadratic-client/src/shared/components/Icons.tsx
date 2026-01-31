@@ -664,6 +664,10 @@ export const TableRowsIcon: IconComponent = (props) => {
   return <Icon {...props}>table_rows</Icon>;
 };
 
+export const StorageIcon: IconComponent = (props) => {
+  return <Icon {...props}>folder_data</Icon>;
+};
+
 export const ThemeIcon: IconComponent = (props) => {
   return <Icon {...props}>contrast</Icon>;
 };
@@ -702,6 +706,10 @@ export const ViewGridIcon: IconComponent = (props) => {
 
 export const UndoIcon: IconComponent = (props) => {
   return <Icon {...props}>undo</Icon>;
+};
+
+export const UploadIcon: IconComponent = (props) => {
+  return <Icon {...props}>upload</Icon>;
 };
 
 export const ZoomInIcon: IconComponent = (props) => {
