@@ -1,5 +1,5 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
-import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
+import { getUserManageableConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
@@ -29,7 +29,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
-  const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
+  const connectionInfo = useMemo(() => getUserManageableConnectionInfo(language), [language]);
   const { panelPosition } = useCodeEditorPanelData();
   const { saveAndRunCell } = useSaveAndRunCell();
 

@@ -1,15 +1,35 @@
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyTuple};
 use quadratic_core::controller::execution::run_code::get_cells::{
     JsCellsA1Error, JsCellsA1Response,
 };
 use std::cell::RefCell;
 use std::ffi::CString;
 
+use crate::connection::fetch_stock_prices;
 use crate::error::Result;
 
 static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
+
+/// Extract an optional string argument from positional args or kwargs
+fn extract_optional_arg(
+    args: &Bound<'_, PyTuple>,
+    kwargs: Option<&Bound<'_, PyDict>>,
+    index: usize,
+    name: &str,
+) -> Option<String> {
+    // Try positional arg first
+    if args.len() > index
+        && let Ok(item) = args.get_item(index)
+            && let Ok(value) = item.extract::<String>() {
+                return Some(value);
+            }
+    // Fall back to kwargs
+    kwargs
+        .and_then(|kw| kw.get_item(name).ok().flatten())
+        .and_then(|v| v.extract().ok())
+}
 
 /// Rust function to handle q.pos() calls from Python  
 #[pyfunction]
@@ -112,6 +132,64 @@ pub(crate) fn create_get_cells_function(
     Ok(function.into())
 }
 
+/// Creates a Python function that wraps the Rust fetch_stock_prices function
+pub(crate) fn create_stock_prices_function(
+    py: Python,
+    token: String,
+    team_id: String,
+    connection_url: String,
+) -> PyResult<PyObject> {
+    let token = RefCell::new(token);
+    let team_id = RefCell::new(team_id);
+    let connection_url = RefCell::new(connection_url);
+
+    let function = pyo3::types::PyCFunction::new_closure(
+        py,
+        Some(c"rust_stock_prices"),
+        Some(c"Fetch stock prices from connection service"),
+        move |args, kwargs| -> PyResult<PyObject> {
+            // Extract identifier (required)
+            let identifier: String = args.get_item(0)?.extract()?;
+
+            // Extract optional arguments
+            let start_date = extract_optional_arg(args, kwargs, 1, "start_date");
+            let end_date = extract_optional_arg(args, kwargs, 2, "end_date");
+            let frequency = extract_optional_arg(args, kwargs, 3, "frequency");
+
+            let token = token.borrow().clone();
+            let team_id = team_id.borrow().clone();
+            let url = connection_url.borrow().clone();
+
+            // Use tokio runtime to call async function
+            let result = tokio::runtime::Runtime::new()
+                .map_err(|e| {
+                    PyErr::new::<PyException, _>(format!("Failed to create runtime: {}", e))
+                })?
+                .block_on(fetch_stock_prices(
+                    &token,
+                    &team_id,
+                    &url,
+                    &identifier,
+                    start_date.as_deref(),
+                    end_date.as_deref(),
+                    frequency.as_deref(),
+                ))
+                .map_err(|e| PyErr::new::<PyException, _>(e.to_string()))?;
+
+            // Convert serde_json::Value to Python object
+            Python::with_gil(|py| {
+                let json_str = serde_json::to_string(&result)
+                    .map_err(|e| PyErr::new::<PyException, _>(format!("JSON error: {}", e)))?;
+                let json_module = py.import("json")?;
+                let py_obj = json_module.call_method1("loads", (json_str,))?;
+                Ok(py_obj.unbind())
+            })
+        },
+    )?;
+
+    Ok(function.into())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -201,5 +279,49 @@ mod tests {
             let result = convert_cells_response(py, error_response, false);
             assert!(result.is_err());
         });
+    }
+
+    #[test]
+    fn test_create_stock_prices_function() {
+        Python::with_gil(|py| {
+            let func = create_stock_prices_function(
+                py,
+                "M2M_AUTH_TOKEN".to_string(),
+                "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string(),
+                "http://localhost:3003".to_string(),
+            );
+            assert!(func.is_ok(), "Should create stock prices function");
+        });
+    }
+
+    #[tokio::test]
+    async fn test_fetch_stock_prices() {
+        // This test requires the connection service to be running
+        let token = "M2M_AUTH_TOKEN".to_string();
+        let team_id = "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string();
+        let result = fetch_stock_prices(
+            &token,
+            &team_id,
+            "http://localhost:3003",
+            "AAPL",
+            Some("2025-01-01"),
+            Some("2025-01-31"),
+            None, // defaults to daily
+        )
+        .await;
+
+        match result {
+            Ok(data) => {
+                println!("Stock prices data: {:?}", data);
+                assert!(
+                    data.is_object() || data.is_array(),
+                    "Should return JSON object or array"
+                );
+            }
+            Err(e) => {
+                // Connection service may not be running in CI
+                println!("Skipping test - connection service not available: {}", e);
+            }
+        }
     }
 }

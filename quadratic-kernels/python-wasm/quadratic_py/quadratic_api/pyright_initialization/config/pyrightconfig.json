@@ -1,10 +1,7 @@
 {
-  "pythonVersion": "3.13",
-  "pythonPlatform": "Linux",
-  "typeCheckingMode": "basic",
-  "typeshedPath": "/typings/",
-  "reportMissingModuleSource": false,
-  "reportWildcardImportFromLibrary": false,
-  "verboseOutput": true,
-  "analysis": { "useLibraryCodeForTypes": false }
+  "include": ["."],
+  "extraPaths": ["../builtins"],
+  "pythonVersion": "3.11",
+  "pythonPlatform": "All",
+  "typeCheckingMode": "basic"
 }

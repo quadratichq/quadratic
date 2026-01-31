@@ -27,6 +27,19 @@ impl GridController {
         code: String,
         template: Option<&DataTableTemplate>,
     ) {
+        // Check if this is a STOCKHISTORY formula that needs async handling
+        if let Some(params) = crate::formulas::functions::financial::stock_history::parse_stock_history_formula(&code) {
+            // Use the existing connection infrastructure with StockHistory kind
+            self.run_connection(
+                transaction,
+                sheet_pos,
+                code.clone(),
+                crate::grid::ConnectionKind::StockHistory,
+                params.to_query_json(), // JSON params as the connection ID
+            );
+            return;
+        }
+
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
