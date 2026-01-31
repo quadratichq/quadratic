@@ -73,6 +73,7 @@ impl GridController {
 
         if let Some(sheet_rect) = sheet_rect_for_compute_and_spills {
             self.check_validations(transaction, sheet_rect);
+            self.check_conditional_format_fills(transaction, sheet_rect);
             self.add_compute_operations(transaction, sheet_rect, None);
         }
     }
