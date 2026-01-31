@@ -33,9 +33,7 @@ export interface FilterToolsOptions {
  *
  * This is the single source of truth for tool filtering logic.
  */
-export const getFilteredTools = (
-  options: FilterToolsOptions
-): [AITool, AIToolSpecRecord[keyof AIToolSpecRecord]][] => {
+export const getFilteredTools = (options: FilterToolsOptions): [AITool, AIToolSpecRecord[keyof AIToolSpecRecord]][] => {
   const { source, aiModelMode, toolName, agentType } = options;
 
   // Default to MainAgent if no agent type specified
