@@ -31,7 +31,7 @@ mod tests {
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
-    use crate::{Array, Pos, Rect, SheetPos, Value};
+    use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         // Note: DataTable cells don't have language set (border drawn from table struct)
@@ -199,10 +199,7 @@ mod tests {
 
         // should be B0: "1" since spill was removed
         // Note: DataTable cells don't have language set (border drawn from table struct)
-        assert_eq!(
-            render_cells,
-            output_number(1, 1, "1", None, None),
-        );
+        assert_eq!(render_cells, output_number(1, 1, "1", None, None),);
     }
 
     #[test]
@@ -231,10 +228,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_render_cells(rect![A1:A1], gc.a1_context());
         // Note: DataTable cells don't have language set (border drawn from table struct)
-        assert_eq!(
-            render_cells,
-            output_number(1, 1, "1", None, None)
-        );
+        assert_eq!(render_cells, output_number(1, 1, "1", None, None));
         let render_cells = sheet.get_render_cells(rect![A2:A2], gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
@@ -324,10 +318,7 @@ mod tests {
         let render_cells =
             sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }), gc.a1_context());
         // Note: DataTable cells don't have language set (border drawn from table struct)
-        assert_eq!(
-            render_cells,
-            output_number(12, 10, "1", None, None)
-        );
+        assert_eq!(render_cells, output_number(12, 10, "1", None, None));
     }
 
     #[test]
@@ -889,11 +880,7 @@ mod tests {
         );
 
         // Delete the spilled code table at A1
-        gc.delete_cells(
-            &A1Selection::test_a1_sheet_id("A1", sheet_id),
-            None,
-            false,
-        );
+        gc.delete_cells(&A1Selection::test_a1_sheet_id("A1", sheet_id), None, false);
 
         // The spilled table at A1 should be deleted
         let table_at_a1 = gc.sheet(sheet_id).data_table_at(&pos![A1]);
@@ -906,6 +893,70 @@ mod tests {
         assert!(
             table_at_c3.is_some(),
             "Table at C3 should still exist after deleting A1"
+        );
+    }
+
+    #[test]
+    fn test_spill_check_excludes_code_cell_own_position() {
+        // Test that a CellValue::Code at the code cell's own position doesn't cause a false spill
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a JavaScript code cell that returns a single value
+        // This should be stored as CellValue::Code (1x1 output)
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Javascript,
+            "return q.cells('B1') + 10".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Set a value in B1 that the code cell references
+        gc.set_cell_value(pos![sheet_id!B1], "5".into(), None, false);
+
+        // Wait for code execution to complete
+        // The code cell should execute and produce a result
+        // Since it's 1x1, it should be stored as CellValue::Code
+
+        // Now simulate what happens after reload: the code cell executes again
+        // The key test is that when checking for spills, the CellValue::Code at A1
+        // should not cause a false spill error
+
+        // Re-execute the code cell (simulating reload)
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Javascript,
+            "return q.cells('B1') + 10".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Check that the code cell is stored as CellValue::Code (not DataTable)
+        // This means it qualified as a single code cell
+        if let Some(CellValue::Code(_)) = sheet.cell_value_ref(pos![A1]) {
+            // Good - it's a CellValue::Code
+        } else {
+            // If it's a DataTable, check that it doesn't have a spill error
+            if let Some(data_table) = sheet.data_table_at(&pos![A1]) {
+                assert!(
+                    !data_table.has_spill(),
+                    "Code cell should not have a spill error when CellValue::Code is at its own position"
+                );
+            }
+        }
+
+        // Verify no spill error is shown
+        let render_cells = sheet.get_render_cells(Rect::single_pos(pos![A1]), gc.a1_context());
+        assert!(
+            !render_cells
+                .iter()
+                .any(|cell| matches!(cell.special, Some(JsRenderCellSpecial::SpillError))),
+            "Code cell should not show spill error after reload"
         );
     }
 }
