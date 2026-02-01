@@ -281,6 +281,13 @@ pub(crate) fn import_data_table_builder(
 
     for (pos, data_table) in data_tables.into_iter() {
         let pos = Pos { x: pos.x, y: pos.y };
+
+        // Skip this DataTable if there's already a CellValue::Code at this position.
+        // This can happen if a bug caused both to be exported, or from older file versions.
+        // CellValue::Code takes precedence since it's the correct representation for 1x1 code outputs.
+        if matches!(columns.get_value(&pos), Some(CellValue::Code(_))) {
+            continue;
+        }
         let mut data_table = DataTable {
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
@@ -351,7 +358,9 @@ pub(crate) fn import_data_table_builder(
         };
 
         let output_rect = data_table.output_rect(pos, true);
-        data_table.spill_value = columns.has_content_in_rect(output_rect);
+        // Exclude the DataTable's own position to avoid false positives when
+        // there's content at the anchor position (shouldn't happen, but be safe)
+        data_table.spill_value = columns.has_content_in_rect_except(output_rect, pos);
 
         sheet_data_tables.insert_full(pos, data_table);
     }

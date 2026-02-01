@@ -383,10 +383,14 @@ impl DataTable {
             return false;
         };
 
-        // Must not have an error. For Python/JS, errors set code_run.error.
-        // For formulas, errors only set std_err (error is always None).
-        // Both checks are needed to catch errors from all code cell types.
-        if code_run.error.is_some() || code_run.std_err.is_some() {
+        // Must not have an error. Error detection is language-specific:
+        // - Python/JS: errors set code_run.error (std_err may contain warnings, not just errors)
+        // - Formulas: errors only set std_err (error is always None)
+        if code_run.error.is_some() {
+            return false;
+        }
+        // For formulas, std_err contains error messages
+        if code_run.language == CodeCellLanguage::Formula && code_run.std_err.is_some() {
             return false;
         }
 
@@ -1566,5 +1570,66 @@ mod test {
             CellRefCoord::new_rel(2),
         );
         assert_eq!(data_table.cells_accessed(sheet_id), Some(vec![&range]));
+    }
+
+    #[test]
+    fn test_qualifies_as_single_code_cell_python_with_stderr() {
+        // Python cells with std_err but no error should still qualify as single code cells
+        // because std_err may contain warnings, not errors
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "import warnings; warnings.warn('test'); 42".to_string(),
+            formula_ast: None,
+            std_out: None,
+            std_err: Some("DeprecationWarning: test".to_string()), // Has warning but no error!
+            cells_accessed: CellsAccessed::default(),
+            error: None, // No error
+            return_type: Some("int".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Python1",
+            Value::Single(CellValue::Number(42.into())),
+            false,
+            None,
+            None,
+            None,
+        );
+
+        // Should qualify because error is None (std_err contains warning, not error)
+        assert!(data_table.qualifies_as_single_code_cell());
+    }
+
+    #[test]
+    fn test_qualifies_as_single_code_cell_formula_with_stderr() {
+        // Formula cells with std_err should NOT qualify because std_err indicates an error
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "1/0".to_string(),
+            formula_ast: None,
+            std_out: None,
+            std_err: Some("Error: DivideByZero".to_string()), // Has error in std_err!
+            cells_accessed: CellsAccessed::default(),
+            error: None, // Formulas don't use error field
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Formula1",
+            Value::Single(CellValue::Blank),
+            false,
+            None,
+            None,
+            None,
+        );
+
+        // Should NOT qualify because it's a formula and std_err is set (formula error)
+        assert!(!data_table.qualifies_as_single_code_cell());
     }
 }
