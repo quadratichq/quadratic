@@ -47,7 +47,8 @@
     "download:pyodide": "chmod +x ./download-pyodide.sh && ./download-pyodide.sh",
     "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/",
     "clean": "npx rimraf node_modules dist build target",
-    "gen:proto": "npx protoc --ts_opt use_proto_field_name --ts_out=./src/app/web-workers/multiplayerWebWorker/proto -I=./../quadratic-rust-shared/src/protobuf/proto/transaction.proto ./../quadratic-rust-shared/src/protobuf/proto/transaction.proto/*.proto"
+    "gen:proto": "npx protoc --ts_opt use_proto_field_name --ts_out=./src/app/web-workers/multiplayerWebWorker/proto -I=./../quadratic-rust-shared/src/protobuf/proto/transaction.proto ./../quadratic-rust-shared/src/protobuf/proto/transaction.proto/*.proto",
+    "test:embed": "node ../test/embed/test-embed-server.js"
   },
   "dependencies": {
     "@emotion/react": "^11.7.0",
