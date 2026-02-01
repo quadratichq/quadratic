@@ -642,7 +642,11 @@ mod tests {
         a1::A1Selection,
         controller::GridController,
         formulas::parse_formula,
-        grid::sheet::conditional_format::{ConditionalFormat, ConditionalFormatStyle},
+        grid::{
+            sheet::conditional_format::{ConditionalFormat, ConditionalFormatStyle},
+            sort::SortDirection,
+        },
+        test_util::*,
     };
     use uuid::Uuid;
 
@@ -1899,6 +1903,502 @@ mod tests {
                 .borrow()
                 .is_empty(),
             "Cache should be cleared after clearing preview"
+        );
+    }
+
+    #[test]
+    fn test_conditional_format_with_sorted_table() {
+        // Test that conditional formatting works correctly when a table is sorted.
+        // The conditional format should apply to the displayed values, not the
+        // original unsorted positions.
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create a data table with numeric values for testing (no UI elements - no name/header rows)
+        // Values: col1=numbers (100, 1000, 10000)
+        // We'll sort and apply conditional format for values > 500
+        let table_pos = pos![B2];
+
+        // Create a simple 1-column, 3-row table with values 100, 1000, 10000
+        test_create_data_table_no_ui(&mut gc, sheet_id, table_pos, 1, 3);
+
+        // Now set actual values we want to test
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y,
+                sheet_id,
+            },
+            "100".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "1000".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 2,
+                sheet_id,
+            },
+            "10000".to_string(),
+            None,
+            false,
+        );
+
+        // The table is now at B2:B4 (1 column, 3 rows, no header/name displayed)
+        // B2=100, B3=1000, B4=10000
+
+        // Create a conditional format for column B
+        // Formula: highlight if value > 500 (should match 1000 and 10000, not 100)
+        let cf = create_test_conditional_format(
+            &gc,
+            "B2:B4",
+            "=B2>500", // Anchored at B2
+            ConditionalFormatStyle {
+                bold: Some(true),
+                fill_color: Some("green".to_string()),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        let data_row_1 = pos![B2]; // Value 100
+        let data_row_2 = pos![B3]; // Value 1000
+        let data_row_3 = pos![B4]; // Value 10000
+
+        // Check values before sorting
+        let sheet = gc.sheet(sheet_id);
+        let val1 = sheet.display_value(data_row_1);
+        let val2 = sheet.display_value(data_row_2);
+        let val3 = sheet.display_value(data_row_3);
+
+        // Verify original order: 100, 1000, 10000
+        assert_eq!(
+            val1.map(|v| v.to_display()),
+            Some("100".to_string()),
+            "First data row should be 100"
+        );
+        assert_eq!(
+            val2.map(|v| v.to_display()),
+            Some("1000".to_string()),
+            "Second data row should be 1000"
+        );
+        assert_eq!(
+            val3.map(|v| v.to_display()),
+            Some("10000".to_string()),
+            "Third data row should be 10000"
+        );
+
+        // Check conditional format styles before sorting
+        let style1_before =
+            gc.get_conditional_format_style(data_row_1.to_sheet_pos(sheet_id), gc.a1_context());
+        let style2_before =
+            gc.get_conditional_format_style(data_row_2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style3_before =
+            gc.get_conditional_format_style(data_row_3.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style1_before.is_none(),
+            "Row with value 100 should NOT have conditional format (before sort)"
+        );
+        assert!(
+            style2_before.is_some(),
+            "Row with value 1000 should have conditional format (before sort)"
+        );
+        assert!(
+            style3_before.is_some(),
+            "Row with value 10000 should have conditional format (before sort)"
+        );
+
+        // Now sort by column 0 descending (10000, 1000, 100)
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&table_pos, |dt| {
+                dt.sort_column(0, SortDirection::Descending)?;
+                Ok(())
+            })
+            .unwrap();
+
+        // After sorting: display order should be 10000, 1000, 100
+        let sheet = gc.sheet(sheet_id);
+        let val1_sorted = sheet.display_value(data_row_1);
+        let val2_sorted = sheet.display_value(data_row_2);
+        let val3_sorted = sheet.display_value(data_row_3);
+
+        // Verify sorted order: 10000, 1000, 100
+        assert_eq!(
+            val1_sorted.map(|v| v.to_display()),
+            Some("10000".to_string()),
+            "First data row after sort should be 10000"
+        );
+        assert_eq!(
+            val2_sorted.map(|v| v.to_display()),
+            Some("1000".to_string()),
+            "Second data row after sort should be 1000"
+        );
+        assert_eq!(
+            val3_sorted.map(|v| v.to_display()),
+            Some("100".to_string()),
+            "Third data row after sort should be 100"
+        );
+
+        // Check conditional format styles after sorting
+        // The conditional format should follow the DISPLAYED values:
+        // - data_row_1 displays 10000, should have style
+        // - data_row_2 displays 1000, should have style
+        // - data_row_3 displays 100, should NOT have style
+        let style1_after =
+            gc.get_conditional_format_style(data_row_1.to_sheet_pos(sheet_id), gc.a1_context());
+        let style2_after =
+            gc.get_conditional_format_style(data_row_2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style3_after =
+            gc.get_conditional_format_style(data_row_3.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style1_after.is_some(),
+            "After sort: Row displaying 10000 should have conditional format"
+        );
+        assert!(
+            style2_after.is_some(),
+            "After sort: Row displaying 1000 should have conditional format"
+        );
+        assert!(
+            style3_after.is_none(),
+            "After sort: Row displaying 100 should NOT have conditional format"
+        );
+    }
+
+    #[test]
+    fn test_conditional_format_updates_on_data_table_value_change() {
+        // Test that conditional formatting is re-evaluated when a value changes within a data table.
+        // This verifies that SetDataTableAt operations trigger check_conditional_format_fills.
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create a data table with numeric values (no UI elements - no name/header rows)
+        // Values: 100, 200, 300 (all below 500 threshold)
+        let table_pos = pos![B2];
+        test_create_data_table_no_ui(&mut gc, sheet_id, table_pos, 1, 3);
+
+        // Set initial values: 100, 200, 300 (all below threshold)
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y,
+                sheet_id,
+            },
+            "100".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "200".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 2,
+                sheet_id,
+            },
+            "300".to_string(),
+            None,
+            false,
+        );
+
+        // Create a conditional format: highlight if value > 500
+        let cf = create_test_conditional_format(
+            &gc,
+            "B2:B4",
+            "=B2>500",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                fill_color: Some("green".to_string()),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        let cell_b2 = pos![B2];
+        let cell_b3 = pos![B3];
+        let cell_b4 = pos![B4];
+
+        // Verify initial state: no cells should have conditional format (all values < 500)
+        let style_b2_before =
+            gc.get_conditional_format_style(cell_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b3_before =
+            gc.get_conditional_format_style(cell_b3.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b4_before =
+            gc.get_conditional_format_style(cell_b4.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style_b2_before.is_none(),
+            "B2 (value 100) should NOT have conditional format initially"
+        );
+        assert!(
+            style_b3_before.is_none(),
+            "B3 (value 200) should NOT have conditional format initially"
+        );
+        assert!(
+            style_b4_before.is_none(),
+            "B4 (value 300) should NOT have conditional format initially"
+        );
+
+        // Change B3 from 200 to 1000 (now > 500, should trigger conditional format)
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "1000".to_string(),
+            None,
+            false,
+        );
+
+        // Verify that conditional formatting updated: B3 should now have the style
+        let style_b2_after =
+            gc.get_conditional_format_style(cell_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b3_after =
+            gc.get_conditional_format_style(cell_b3.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b4_after =
+            gc.get_conditional_format_style(cell_b4.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style_b2_after.is_none(),
+            "B2 (value 100) should still NOT have conditional format"
+        );
+        assert!(
+            style_b3_after.is_some(),
+            "B3 (value 1000) should now have conditional format after value change"
+        );
+        assert!(
+            style_b4_after.is_none(),
+            "B4 (value 300) should still NOT have conditional format"
+        );
+
+        // Change B3 back to 200 (now < 500, should remove conditional format)
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "200".to_string(),
+            None,
+            false,
+        );
+
+        // Verify that conditional formatting removed from B3
+        let style_b3_final =
+            gc.get_conditional_format_style(cell_b3.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style_b3_final.is_none(),
+            "B3 (value 200) should NOT have conditional format after changing back"
+        );
+    }
+
+    #[test]
+    fn test_conditional_format_updates_on_data_table_sort() {
+        // Test that conditional formatting is re-evaluated when a data table is sorted.
+        // This verifies that SortDataTable operations trigger check_conditional_format_fills.
+
+        use crate::grid::data_table::sort::DataTableSort;
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create a data table with numeric values (no UI elements)
+        // Values: 100, 1000, 500
+        let table_pos = pos![B2];
+        test_create_data_table_no_ui(&mut gc, sheet_id, table_pos, 1, 3);
+
+        // Set values: 100, 1000, 500
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y,
+                sheet_id,
+            },
+            "100".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "1000".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 2,
+                sheet_id,
+            },
+            "500".to_string(),
+            None,
+            false,
+        );
+
+        // Create a conditional format: highlight if value > 500
+        let cf = create_test_conditional_format(
+            &gc,
+            "B2:B4",
+            "=B2>500",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                fill_color: Some("green".to_string()),
+                ..Default::default()
+            },
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        let cell_b2 = pos![B2];
+        let cell_b3 = pos![B3];
+        let cell_b4 = pos![B4];
+
+        // Before sort: B2=100 (no style), B3=1000 (style), B4=500 (no style)
+        let style_b2_before =
+            gc.get_conditional_format_style(cell_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b3_before =
+            gc.get_conditional_format_style(cell_b3.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b4_before =
+            gc.get_conditional_format_style(cell_b4.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style_b2_before.is_none(),
+            "B2 (value 100) should NOT have conditional format before sort"
+        );
+        assert!(
+            style_b3_before.is_some(),
+            "B3 (value 1000) should have conditional format before sort"
+        );
+        assert!(
+            style_b4_before.is_none(),
+            "B4 (value 500) should NOT have conditional format before sort"
+        );
+
+        // Sort descending: display order becomes 1000, 500, 100
+        gc.sort_data_table(
+            table_pos.to_sheet_pos(sheet_id),
+            Some(vec![DataTableSort {
+                column_index: 0,
+                direction: SortDirection::Descending,
+            }]),
+            None,
+            false,
+        );
+
+        // After sort: B2 displays 1000 (style), B3 displays 500 (no style), B4 displays 100 (no style)
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(cell_b2).map(|v| v.to_display()),
+            Some("1000".to_string()),
+            "B2 should display 1000 after descending sort"
+        );
+        assert_eq!(
+            sheet.display_value(cell_b3).map(|v| v.to_display()),
+            Some("500".to_string()),
+            "B3 should display 500 after descending sort"
+        );
+        assert_eq!(
+            sheet.display_value(cell_b4).map(|v| v.to_display()),
+            Some("100".to_string()),
+            "B4 should display 100 after descending sort"
+        );
+
+        let style_b2_after =
+            gc.get_conditional_format_style(cell_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b3_after =
+            gc.get_conditional_format_style(cell_b3.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b4_after =
+            gc.get_conditional_format_style(cell_b4.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style_b2_after.is_some(),
+            "B2 (displaying 1000) should have conditional format after sort"
+        );
+        assert!(
+            style_b3_after.is_none(),
+            "B3 (displaying 500) should NOT have conditional format after sort"
+        );
+        assert!(
+            style_b4_after.is_none(),
+            "B4 (displaying 100) should NOT have conditional format after sort"
+        );
+
+        // Sort ascending: display order becomes 100, 500, 1000
+        gc.sort_data_table(
+            table_pos.to_sheet_pos(sheet_id),
+            Some(vec![DataTableSort {
+                column_index: 0,
+                direction: SortDirection::Ascending,
+            }]),
+            None,
+            false,
+        );
+
+        // After ascending sort: B2 displays 100 (no style), B3 displays 500 (no style), B4 displays 1000 (style)
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(cell_b2).map(|v| v.to_display()),
+            Some("100".to_string()),
+            "B2 should display 100 after ascending sort"
+        );
+        assert_eq!(
+            sheet.display_value(cell_b3).map(|v| v.to_display()),
+            Some("500".to_string()),
+            "B3 should display 500 after ascending sort"
+        );
+        assert_eq!(
+            sheet.display_value(cell_b4).map(|v| v.to_display()),
+            Some("1000".to_string()),
+            "B4 should display 1000 after ascending sort"
+        );
+
+        let style_b2_ascending =
+            gc.get_conditional_format_style(cell_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b3_ascending =
+            gc.get_conditional_format_style(cell_b3.to_sheet_pos(sheet_id), gc.a1_context());
+        let style_b4_ascending =
+            gc.get_conditional_format_style(cell_b4.to_sheet_pos(sheet_id), gc.a1_context());
+
+        assert!(
+            style_b2_ascending.is_none(),
+            "B2 (displaying 100) should NOT have conditional format after ascending sort"
+        );
+        assert!(
+            style_b3_ascending.is_none(),
+            "B3 (displaying 500) should NOT have conditional format after ascending sort"
+        );
+        assert!(
+            style_b4_ascending.is_some(),
+            "B4 (displaying 1000) should have conditional format after ascending sort"
         );
     }
 }
