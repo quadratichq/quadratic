@@ -13,6 +13,25 @@ use std::str::FromStr;
 #[cfg(not(test))]
 use std::sync::atomic::{AtomicI32, Ordering};
 
+#[cfg(not(test))]
+use serde::Deserialize;
+
+/// Viewport info received from JS cache (used when SAB unavailable)
+#[cfg(not(test))]
+#[derive(Deserialize)]
+struct JsViewportInfo {
+    top_left: JsPos,
+    bottom_right: JsPos,
+    sheet_id: String,
+}
+
+#[cfg(not(test))]
+#[derive(Deserialize)]
+struct JsPos {
+    x: i64,
+    y: i64,
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg(not(test))]
@@ -51,6 +70,17 @@ impl ViewportBuffer {
     }
 
     pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
+        // Try SharedArrayBuffer method first
+        if let Some(viewport) = self.get_viewport_from_sab() {
+            return Some(viewport);
+        }
+
+        // Fall back to JS cache when SAB is not available or fails
+        self.get_viewport_from_js_cache()
+    }
+
+    /// Get viewport from SharedArrayBuffer (used when SAB is available)
+    fn get_viewport_from_sab(&self) -> Option<(Pos, Pos, SheetId)> {
         let array = Int32Array::new(&self.buffer);
 
         // Determine which slice is the reader slice, and lock it
@@ -105,6 +135,27 @@ impl ViewportBuffer {
                 None
             }
         }
+    }
+
+    /// Get viewport from JS cache (fallback when SAB is not available)
+    fn get_viewport_from_js_cache(&self) -> Option<(Pos, Pos, SheetId)> {
+        use crate::wasm_bindings::js::jsGetViewport;
+
+        let json = jsGetViewport()?;
+        let info: JsViewportInfo = serde_json::from_str(&json).ok()?;
+        let sheet_id = SheetId::from_str(&info.sheet_id).ok()?;
+
+        Some((
+            Pos {
+                x: info.top_left.x,
+                y: info.top_left.y,
+            },
+            Pos {
+                x: info.bottom_right.x,
+                y: info.bottom_right.y,
+            },
+            sheet_id,
+        ))
     }
 }
 

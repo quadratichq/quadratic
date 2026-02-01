@@ -21,6 +21,13 @@ export interface RunnerJavascriptGetCellsData {
   sharedBuffer: SharedArrayBuffer;
 }
 
+/** Async cell request (used when SharedArrayBuffer is not available) */
+export interface RunnerJavascriptGetCellsA1Async {
+  type: 'getCellsA1Async';
+  requestId: number;
+  a1: string;
+}
+
 export interface RunnerJavascriptError {
   type: 'error';
   error: string;
@@ -32,4 +39,5 @@ export type RunnerJavascriptMessage =
   | RunnerJavascriptResults
   | RunnerJavascriptGetCellsA1Length
   | RunnerJavascriptGetCellsData
+  | RunnerJavascriptGetCellsA1Async
   | RunnerJavascriptError;

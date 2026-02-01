@@ -1,8 +1,9 @@
 import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/Uint8Array';
+import { fromUint8Array, toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CorePythonMessage,
+  PythonCoreGetCellsA1Async,
   PythonCoreGetCellsA1Data,
   PythonCoreGetCellsA1Length,
   PythonCoreMessage,
@@ -52,6 +53,10 @@ class CorePython {
 
       case 'pythonCoreGetCellsA1Data':
         this.sendGetCellsA1Data(e.data);
+        break;
+
+      case 'pythonCoreGetCellsA1Async':
+        this.sendGetCellsA1Async(e.data);
         break;
 
       default:
@@ -109,6 +114,30 @@ class CorePython {
 
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
+  };
+
+  /**
+   * Handle async cell request (used when SharedArrayBuffer is not available)
+   */
+  private sendGetCellsA1Async = ({ requestId, transactionId, a1 }: PythonCoreGetCellsA1Async) => {
+    let response: JsCellsA1Response;
+    try {
+      const responseUint8Array = core.getCellsA1(transactionId, a1);
+      response = fromUint8Array<JsCellsA1Response>(responseUint8Array);
+    } catch (e: any) {
+      response = {
+        values: null,
+        error: {
+          core_error: String(e),
+        },
+      };
+    }
+
+    this.send({
+      type: 'corePythonGetCellsA1Response',
+      requestId,
+      response,
+    });
   };
 
   private sendRunPython = (

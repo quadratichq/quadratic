@@ -2092,6 +2092,19 @@ class QuadraticCore {
       });
     });
   }
+
+  /**
+   * Update the viewport cache in the core worker.
+   * Used when SharedArrayBuffer is not available.
+   */
+  updateViewport(topLeft: Pos, bottomRight: Pos, sheetId: string): void {
+    this.send({
+      type: 'clientCoreViewportUpdate',
+      topLeft,
+      bottomRight,
+      sheetId,
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

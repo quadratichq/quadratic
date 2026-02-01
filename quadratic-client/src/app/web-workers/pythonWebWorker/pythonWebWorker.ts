@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { getIsEmbedMode } from '@/app/helpers/sharedArrayBufferSupport';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
   ClientPythonMessage,
@@ -230,7 +231,7 @@ class PythonWebWorker {
     this.worker.onmessage = this.handleMessage;
 
     const pythonCoreChannel = new MessageChannel();
-    this.send({ type: 'clientPythonCoreChannel' }, pythonCoreChannel.port1);
+    this.send({ type: 'clientPythonCoreChannel', isEmbedMode: getIsEmbedMode() }, pythonCoreChannel.port1);
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
   }
 

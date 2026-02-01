@@ -133,6 +133,17 @@ export interface ClientCoreExportJson {
   id: number;
 }
 
+/**
+ * Viewport update from client to core worker.
+ * Used when SharedArrayBuffer is not available.
+ */
+export interface ClientCoreViewportUpdate {
+  type: 'clientCoreViewportUpdate';
+  topLeft: Pos;
+  bottomRight: Pos;
+  sheetId: string;
+}
+
 export interface CoreClientExportJson {
   type: 'coreClientExportJson';
   json: string;
@@ -1814,7 +1825,8 @@ export type ClientCoreMessage =
   | ClientCoreRedo
   | ClientCoreSetFormula
   | ClientCoreSetFormulas
-  | ClientCoreExportJson;
+  | ClientCoreExportJson
+  | ClientCoreViewportUpdate;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

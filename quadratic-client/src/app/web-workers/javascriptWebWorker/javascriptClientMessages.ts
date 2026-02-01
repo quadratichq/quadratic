@@ -22,6 +22,7 @@ export interface JavascriptClientInit {
 export interface ClientJavascriptCoreChannel {
   type: 'clientJavascriptCoreChannel';
   env: ImportMetaEnv;
+  isEmbedMode: boolean;
 }
 
 export interface ClientJavascriptGetJwt {

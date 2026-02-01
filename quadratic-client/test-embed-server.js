@@ -14,7 +14,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 8081;
-const HTML_FILE = path.join(__dirname, 'test-embed.html');
+// HTML file is in test/embed directory (relative to repo root)
+const HTML_FILE = path.join(__dirname, '..', 'test', 'embed', 'test-embed.html');
 
 const server = http.createServer((req, res) => {
   // Set headers required for SharedArrayBuffer

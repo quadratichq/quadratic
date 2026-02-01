@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { getIsEmbedMode } from '@/app/helpers/sharedArrayBufferSupport';
 import type {
   ClientJavascriptMessage,
   JavascriptClientGetJwt,
@@ -55,7 +56,10 @@ class JavascriptWebWorker {
     this.worker.onmessage = this.handleMessage;
 
     const JavascriptCoreChannel = new MessageChannel();
-    this.send({ type: 'clientJavascriptCoreChannel', env: import.meta.env }, JavascriptCoreChannel.port1);
+    this.send(
+      { type: 'clientJavascriptCoreChannel', env: import.meta.env, isEmbedMode: getIsEmbedMode() },
+      JavascriptCoreChannel.port1
+    );
     quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
   }
 

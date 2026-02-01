@@ -1,5 +1,7 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { configureSABSupport } from '@/app/helpers/sharedArrayBufferSupport';
 import type {
+  ClientJavascriptCoreChannel,
   ClientJavascriptGetJwt,
   ClientJavascriptMessage,
   JavascriptClientMessage,
@@ -31,10 +33,14 @@ class JavascriptClient {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
-      case 'clientJavascriptCoreChannel':
-        this.env = e.data.env;
+      case 'clientJavascriptCoreChannel': {
+        const initData = e.data as ClientJavascriptCoreChannel;
+        this.env = initData.env;
+        // Configure SAB support based on embed mode from main thread
+        configureSABSupport({ isEmbed: initData.isEmbedMode });
         javascriptCore.init(e.ports[0]);
         break;
+      }
 
       default:
         if (e.data.id !== undefined) {
