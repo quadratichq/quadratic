@@ -19,6 +19,12 @@ export const ROUTES = {
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
+  EMBED: ({ fileId, importUrl }: { fileId?: string; importUrl?: string }) => {
+    const params = new URLSearchParams();
+    if (fileId) params.set('fileId', fileId);
+    if (importUrl) params.set('import', importUrl);
+    return `/embed?${params.toString()}`;
+  },
   FILES_CREATE: '/files/create',
   FILES_CREATE_AI: '/files/create/ai',
   // Team-based AI creation routes (these are the actual routes)

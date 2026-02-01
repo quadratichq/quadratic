@@ -20,6 +20,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirec
  *  - *.quadratichq.com/education
  *  - *.quadratichq.com/onboarding
  *  - *.quadratichq.com/iframe-indexeddb
+ *  - *.quadratichq.com/embed*
  *
  *  To add a new route:
  *  1. go to the respective cloudflare account (QA / Prod)
@@ -53,6 +54,13 @@ export const router = createBrowserRouter(
           <Route index element={<Navigate to="/" replace />} />
           <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE} />
         </Route>
+
+        {/**
+         * --- Embed route
+         * Public route for embedding files with AI and multiplayer disabled.
+         * Supports ?fileId=xxx to load existing files or ?import=xxx to import from URL.
+         */}
+        <Route path="embed" lazy={() => import('./routes/embed')} />
 
         {/**
          * ----------------------------------------------------------------

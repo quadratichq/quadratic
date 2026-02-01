@@ -128,7 +128,7 @@ class q:
     def __init__(self, pos):
         self._pos = pos
 
-    def cells(self, a1: str, first_row_header: bool = False):
+    async def cells(self, a1: str, first_row_header: bool = False):
         """
         Reference cells in the grid.
 
@@ -140,9 +140,19 @@ class q:
             For single returns: the value of the cell referenced. For multiple returns: A pandas DataFrame of the cells referenced.
 
         Typical usage example:
-            c = q.cells("A1:B5")
+            c = await q.cells("A1:B5")
         """
-        response = getCellsA1(a1)
+        response_result = getCellsA1(a1)
+
+        # Check if getCellsA1 returned a Promise (has 'then' method)
+        # In embed mode without SharedArrayBuffer, it returns a Promise
+        # In normal mode with SharedArrayBuffer, it returns the response directly
+        if hasattr(response_result, 'then'):
+            # It's a Promise, await it
+            response = await response_result
+        else:
+            # It's already the response object
+            response = response_result
 
         if response.error != None:
             raise Exception(response.error.core_error)
@@ -154,7 +164,7 @@ class q:
 
         if result.w == 1 and result.h == 1:
             return result_to_value(result.cells[0])
-        
+
         data = [[None] * result.w for _ in range(result.h)]
         for cell in result.cells:
             row = cell.y - result.y

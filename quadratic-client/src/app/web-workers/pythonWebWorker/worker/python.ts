@@ -149,6 +149,9 @@ class Python {
 
     this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
 
+    // Expose a flag to check if SharedArrayBuffer is available
+    this.pyodide.registerJsModule('hasSharedArrayBuffer', () => getHasSharedArrayBuffer());
+
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 

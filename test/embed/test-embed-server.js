@@ -4,8 +4,8 @@
  * Simple HTTP server for testing Quadratic embeds
  */
 
-import http from 'http';
 import fs from 'fs';
+import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -34,5 +34,9 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`\n✅ Test embed server running at http://localhost:${PORT}/test-embed.html`);
-  console.log(`\n🌐 Open http://localhost:${PORT}/test-embed.html in your browser\n`);
+  console.log(`\n🌐 Open http://localhost:${PORT}/test-embed.html in your browser`);
+  console.log(`\n📋 Embed URL formats:`);
+  console.log(`   New:    http://localhost:3000/embed?fileId=<uuid>`);
+  console.log(`   Import: http://localhost:3000/embed?import=<url>`);
+  console.log(`   Legacy: http://localhost:3000/file/<uuid>?embed\n`);
 });
