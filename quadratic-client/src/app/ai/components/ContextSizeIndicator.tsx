@@ -1,11 +1,11 @@
 import { contextUsageAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { getPercentageGradientColor } from '@/shared/utils/colors';
 import { useAtomValue } from 'jotai';
 import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useMemo } from 'react';
+import { useMemo } from 'react';
 
 // Context limits by model (input tokens)
 // Values researched from official documentation (January 2025):
@@ -82,22 +82,28 @@ interface ContextSizeIndicatorProps {
   className?: string;
 }
 
-export const ContextSizeIndicator = memo(({ className }: ContextSizeIndicatorProps) => {
+export const ContextSizeIndicator = ({ className }: ContextSizeIndicatorProps) => {
   const contextUsage = useAtomValue(contextUsageAtom);
   const { modelKey: selectedModelKey } = useAIModel();
 
+  const usage = contextUsage.usage;
+
+  // Use primitive values as dependencies for better reactivity
+  const usageInputTokens = usage?.inputTokens ?? 0;
+  const usageCacheReadTokens = usage?.cacheReadTokens ?? 0;
+  const usageModelKey = usage?.modelKey;
+
   const { percentage, inputTokens, contextLimit, isVisible } = useMemo(() => {
-    const usage = contextUsage.usage;
     if (!usage) {
       return { percentage: 0, inputTokens: 0, contextLimit: 0, isVisible: false };
     }
 
     // Use the model key from the usage response (actual model used) or fall back to selected model
-    const actualModelKey = usage.modelKey ?? selectedModelKey;
+    const actualModelKey = usageModelKey ?? selectedModelKey;
     const limit = getContextLimit(actualModelKey);
 
     // Calculate total input tokens (including cache reads)
-    const totalInput = usage.inputTokens + usage.cacheReadTokens;
+    const totalInput = usageInputTokens + usageCacheReadTokens;
     const pct = Math.min((totalInput / limit) * 100, 100);
 
     return {
@@ -106,7 +112,7 @@ export const ContextSizeIndicator = memo(({ className }: ContextSizeIndicatorPro
       contextLimit: limit,
       isVisible: true,
     };
-  }, [contextUsage.usage, selectedModelKey]);
+  }, [usage, usageInputTokens, usageCacheReadTokens, usageModelKey, selectedModelKey]);
 
   if (!isVisible) {
     return null;
@@ -154,18 +160,18 @@ export const ContextSizeIndicator = memo(({ className }: ContextSizeIndicatorPro
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className={cn('flex items-center justify-center', className)}>
-            <svg width="16" height="16" viewBox="0 0 16 16">
-              {/* Background circle */}
-              <circle cx={cx} cy={cy} r={radius} fill={gradientColor} opacity="0.2" />
-              {/* Filled pie slice */}
-              <path d={getSlicePath()} fill={gradientColor} />
-            </svg>
-          </div>
-        </TooltipTrigger>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className={cn('flex items-center justify-center', className)}>
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            {/* Background circle */}
+            <circle cx={cx} cy={cy} r={radius} fill={gradientColor} opacity="0.2" />
+            {/* Filled pie slice */}
+            <path d={getSlicePath()} fill={gradientColor} />
+          </svg>
+        </div>
+      </TooltipTrigger>
+      <TooltipPortal>
         <TooltipContent side="bottom" className="text-xs">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">Context Usage</span>
@@ -174,7 +180,7 @@ export const ContextSizeIndicator = memo(({ className }: ContextSizeIndicatorPro
             </span>
           </div>
         </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+      </TooltipPortal>
+    </Tooltip>
   );
-});
+};

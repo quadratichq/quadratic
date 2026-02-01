@@ -550,7 +550,11 @@ IMPORTANT: You do not have direct access to code writing tools. You MUST delegat
 - Data exploration → data_finder
 
 For coding subagents, provide data context via context_hints (cell values, table names, existing code, error messages).
-Subagent sessions persist between calls. Use reset=true to start fresh.`,
+
+Session management:
+- Subagent sessions persist between calls for follow-up work on the same task
+- Use reset=true when: the user asks for something NEW/UNRELATED, wants to "start over", or you're working on a DIFFERENT code cell/task
+- Use reset=false (or omit) when: continuing to debug the same code, making incremental changes, or following up on the same task`,
     parameters: {
       type: 'object',
       properties: {
@@ -571,7 +575,7 @@ Subagent sessions persist between calls. Use reset=true to start fresh.`,
         reset: {
           type: 'boolean',
           description:
-            'If true, clears the subagent session and starts fresh. If false or omitted, continues the existing session.',
+            'Set to true when starting a NEW/UNRELATED task, working on a DIFFERENT code cell, or the user wants to "start over". Set to false or omit when continuing/debugging the same task.',
         },
       },
       required: ['subagent_type', 'task'],
@@ -613,6 +617,9 @@ Creates and debugs SQL connection cells:
 - Iterates until queries run successfully
 - Provide connection info and any error messages via context_hints
 
-Subagents maintain sessions between calls. Use reset=true to start fresh.`,
+## Session management
+- Sessions persist for follow-up work on the SAME task
+- Use reset=true when: starting a NEW task, working on a DIFFERENT code cell, user says "start over" or "try something else"
+- Use reset=false/omit when: continuing to debug, making incremental changes, following up on the same task`,
   },
 } as const;

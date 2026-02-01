@@ -97,10 +97,24 @@ export function getOpenAIResponsesApiArgs(
     }
   }
 
+  // Second pass: collect all tool result IDs that exist
+  // This is needed to filter out orphaned tool calls (e.g., when chat is forked mid-tool-call)
+  const existingToolResultIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isToolResultMessage(message)) {
+      for (const toolResult of message.content) {
+        existingToolResultIds.add(toolResult.id);
+      }
+    }
+  }
+
   const messages: Array<ResponseInputItem> = promptMessages.reduce<Array<ResponseInputItem>>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Filter out tool calls that don't have corresponding tool results
+      const validToolCalls = message.toolCalls.filter((toolCall) => existingToolResultIds.has(toolCall.id));
+
       const reasoningItems: ResponseReasoningItem[] = [];
       const openaiMessages: ResponseInputItem[] = [
         {
@@ -150,7 +164,7 @@ export function getOpenAIResponsesApiArgs(
           status: 'completed',
           type: 'message',
         },
-        ...message.toolCalls.map<ResponseFunctionToolCall>((toolCall) => ({
+        ...validToolCalls.map<ResponseFunctionToolCall>((toolCall) => ({
           call_id: toolCall.id.startsWith('call_') ? toolCall.id : `call_${toolCall.id}`,
           type: 'function_call' as const,
           name: toolCall.name,

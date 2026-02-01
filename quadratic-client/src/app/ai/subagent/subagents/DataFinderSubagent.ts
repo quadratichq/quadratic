@@ -22,6 +22,7 @@ export class DataFinderSubagent extends BaseSubagent {
 
 ## Guidelines
 - Be efficient: use has_cell_data before get_cell_data when checking if data exists
+- Minimize the tool calls by using selections with multiple ranges separated by commas where possible
 - Focus on the current sheet first, then explore others if needed
 - Keep summaries brief but informative
 - Always include the exact cell ranges for data you find

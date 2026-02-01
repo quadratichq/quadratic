@@ -96,10 +96,24 @@ export function getGenAIApiArgs(
     }
   }
 
+  // Second pass: collect all tool result IDs that exist
+  // This is needed to filter out orphaned tool calls (e.g., when chat is forked mid-tool-call)
+  const existingToolResultIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isToolResultMessage(message)) {
+      for (const toolResult of message.content) {
+        existingToolResultIds.add(toolResult.id);
+      }
+    }
+  }
+
   const messages: GenAIContent[] = promptMessages.reduce<GenAIContent[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Filter out tool calls that don't have corresponding tool results
+      const validToolCalls = message.toolCalls.filter((toolCall) => existingToolResultIds.has(toolCall.id));
+
       const genaiMessage: GenAIContent = {
         role: 'model',
         parts: [
@@ -108,7 +122,7 @@ export function getGenAIApiArgs(
             .map((content) => ({
               text: content.text.trim(),
             })),
-          ...message.toolCalls.map((toolCall) => ({
+          ...validToolCalls.map((toolCall) => ({
             functionCall: {
               name: toolCall.name,
               args: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},

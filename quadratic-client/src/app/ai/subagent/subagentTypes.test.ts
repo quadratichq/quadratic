@@ -1,12 +1,6 @@
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { describe, expect, it } from 'vitest';
-import {
-  getAllSubagentTypes,
-  getSubagentConfig,
-  isToolAllowedForSubagent,
-  SUBAGENT_CONFIGS,
-  SubagentType,
-} from './subagentTypes';
+import { getAllSubagentTypes, getSubagentConfig, isToolAllowedForSubagent, SubagentType } from './subagentTypes';
 
 describe('subagentTypes', () => {
   describe('SubagentType enum', () => {
@@ -15,9 +9,9 @@ describe('subagentTypes', () => {
     });
   });
 
-  describe('SUBAGENT_CONFIGS', () => {
-    it('should have config for DataFinder', () => {
-      const config = SUBAGENT_CONFIGS[SubagentType.DataFinder];
+  describe('getSubagentConfig', () => {
+    it('should return config for DataFinder', () => {
+      const config = getSubagentConfig(SubagentType.DataFinder);
       expect(config).toBeDefined();
       expect(config.type).toBe(SubagentType.DataFinder);
       expect(config.allowedTools).toContain(AITool.GetCellData);
@@ -28,17 +22,10 @@ describe('subagentTypes', () => {
     });
 
     it('should not include write tools for DataFinder', () => {
-      const config = SUBAGENT_CONFIGS[SubagentType.DataFinder];
+      const config = getSubagentConfig(SubagentType.DataFinder);
       expect(config.allowedTools).not.toContain(AITool.SetCellValues);
       expect(config.allowedTools).not.toContain(AITool.SetCodeCellValue);
       expect(config.allowedTools).not.toContain(AITool.DeleteCells);
-    });
-  });
-
-  describe('getSubagentConfig', () => {
-    it('should return config for valid type', () => {
-      const config = getSubagentConfig(SubagentType.DataFinder);
-      expect(config.type).toBe(SubagentType.DataFinder);
     });
 
     it('should throw for invalid type', () => {

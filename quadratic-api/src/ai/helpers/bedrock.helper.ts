@@ -97,10 +97,36 @@ export function getBedrockApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
+
+  // First pass: collect all valid tool call IDs from assistant messages
+  // This is needed to filter out orphaned tool results (e.g., when user aborts mid-tool-call)
+  const validToolCallIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isAIPromptMessage(message)) {
+      for (const toolCall of message.toolCalls) {
+        validToolCallIds.add(toolCall.id);
+      }
+    }
+  }
+
+  // Second pass: collect all tool result IDs that exist
+  // This is needed to filter out orphaned tool calls (e.g., when chat is forked mid-tool-call)
+  const existingToolResultIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isToolResultMessage(message)) {
+      for (const toolResult of message.content) {
+        existingToolResultIds.add(toolResult.id);
+      }
+    }
+  }
+
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Filter out tool calls that don't have corresponding tool results
+      const validToolCalls = message.toolCalls.filter((toolCall) => existingToolResultIds.has(toolCall.id));
+
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -109,7 +135,7 @@ export function getBedrockApiArgs(
             .map((content) => ({
               text: content.text.trim(),
             })),
-          ...message.toolCalls.map((toolCall) => ({
+          ...validToolCalls.map((toolCall) => ({
             toolUse: {
               toolUseId: toolCall.id,
               name: toolCall.name,
@@ -120,10 +146,18 @@ export function getBedrockApiArgs(
       };
       return [...acc, bedrockMessage];
     } else if (isToolResultMessage(message)) {
+      // Filter out tool results that reference non-existent tool call IDs
+      const validToolResults = message.content.filter((toolResult) => validToolCallIds.has(toolResult.id));
+
+      // Skip entirely if no valid tool results remain
+      if (validToolResults.length === 0) {
+        return acc;
+      }
+
       const bedrockMessage: Message = {
         role: message.role,
         content: [
-          ...message.content.map((toolResult) => ({
+          ...validToolResults.map((toolResult) => ({
             toolResult: {
               toolUseId: toolResult.id,
               content: convertToolResultContent(toolResult.content),

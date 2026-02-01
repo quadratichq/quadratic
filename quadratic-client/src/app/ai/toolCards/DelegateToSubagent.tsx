@@ -28,6 +28,7 @@ export const DelegateToSubagent = memo(
     const subagentType = toolArgs?.success ? toolArgs.data.subagent_type : undefined;
     const task = toolArgs?.success ? toolArgs.data.task : undefined;
     const contextHints = toolArgs?.success ? toolArgs.data.context_hints : undefined;
+    const reset = toolArgs?.success ? toolArgs.data.reset : undefined;
     const hasError = toolArgs && !toolArgs.success;
 
     return (
@@ -39,6 +40,12 @@ export const DelegateToSubagent = memo(
           {!loading && !hasError && <span className="text-green-600">(done)</span>}
           {hasError && <span className="text-destructive">(error)</span>}
         </div>
+        {toolArgs?.success && (
+          <div className="mt-0.5">
+            <span className="font-semibold text-foreground">Reset:</span>{' '}
+            <span className={reset ? 'text-orange-600' : 'text-blue-600'}>{reset ? 'true' : 'false'}</span>
+          </div>
+        )}
         {task && (
           <div className="mt-0.5">
             <span className="font-semibold text-foreground">Task:</span> {task}

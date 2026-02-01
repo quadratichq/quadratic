@@ -136,6 +136,17 @@ export function getAnthropicApiArgs(
     }
   }
 
+  // Second pass: collect all tool_result IDs that exist
+  // This is needed to filter out orphaned tool_use blocks (e.g., when chat is forked mid-tool-call)
+  const existingToolResultIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isToolResultMessage(message)) {
+      for (const toolResult of message.content) {
+        existingToolResultIds.add(toolResult.id);
+      }
+    }
+  }
+
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -165,12 +176,16 @@ export function getAnthropicApiArgs(
           }
         });
 
-      const toolUseContent = message.toolCalls.map((toolCall) => ({
-        type: 'tool_use' as const,
-        id: toolCall.id,
-        name: toolCall.name,
-        input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
-      }));
+      // Filter out tool_use blocks that don't have corresponding tool_results
+      // This can happen when chat is forked mid-tool-call or abort leaves inconsistent state
+      const toolUseContent = message.toolCalls
+        .filter((toolCall) => existingToolResultIds.has(toolCall.id))
+        .map((toolCall) => ({
+          type: 'tool_use' as const,
+          id: toolCall.id,
+          name: toolCall.name,
+          input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
+        }));
 
       const combinedContent = [...filteredContent, ...toolUseContent];
 

@@ -1,13 +1,10 @@
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { SUBAGENT_CONFIGS } from './subagents';
+import { SUBAGENTS } from './subagents';
 import { SubagentType } from './SubagentType';
 
 // Re-export SubagentType from the separate file to avoid circular dependencies
 export { SubagentType } from './SubagentType';
-
-// Re-export SUBAGENT_CONFIGS
-export { SUBAGENT_CONFIGS } from './subagents';
 
 /**
  * Configuration for a subagent type.
@@ -101,19 +98,26 @@ export interface SubagentToolCallEvent {
  * Get the configuration for a subagent type.
  */
 export function getSubagentConfig(type: SubagentType): SubagentConfig {
-  const config = SUBAGENT_CONFIGS[type];
-  if (!config) {
+  const subagent = SUBAGENTS[type];
+  if (!subagent) {
     throw new Error(`Unknown subagent type: ${type}`);
   }
-  return config;
+  return {
+    type: subagent.type,
+    allowedTools: subagent.allowedTools,
+    defaultModelKey: subagent.defaultModelKey,
+    systemPrompt: subagent.systemPrompt,
+    maxIterations: subagent.maxIterations,
+    description: subagent.description,
+  };
 }
 
 /**
  * Check if a tool is allowed for a subagent type.
  */
 export function isToolAllowedForSubagent(type: SubagentType, tool: AITool): boolean {
-  const config = SUBAGENT_CONFIGS[type];
-  return config?.allowedTools.includes(tool) ?? false;
+  const subagent = SUBAGENTS[type];
+  return subagent?.allowedTools.includes(tool) ?? false;
 }
 
 /**

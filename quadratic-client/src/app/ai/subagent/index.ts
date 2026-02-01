@@ -3,7 +3,6 @@
 export { SubagentContextBuilder, subagentContextBuilder } from './SubagentContextBuilder';
 export { SubagentRunner, subagentRunner } from './SubagentRunner';
 export {
-  SUBAGENT_CONFIGS,
   SubagentType,
   getAllSubagentTypes,
   getSubagentConfig,
