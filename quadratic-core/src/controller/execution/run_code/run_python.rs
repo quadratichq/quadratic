@@ -566,4 +566,50 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
     }
+
+    #[test]
+    fn test_python_single_value_render_has_language() {
+        // Verify that Python single-value code cells render with language field set
+        // This is important for drawing the code cell border in the client
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
+
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Python,
+            "1 + 1".into(),
+            None,
+            None,
+            false,
+        );
+
+        let transaction_id = gc.async_transactions()[0].id;
+        gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(JsCellValueResult("42".into(), 2)), // Number type
+            ..Default::default()
+        })
+        .ok();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Verify it's stored as CellValue::Code
+        match sheet.cell_value_ref(pos![A1]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code_run.language, CodeCellLanguage::Python);
+            }
+            other => panic!("Expected CellValue::Code, got {:?}", other),
+        }
+
+        // Verify render cell has language set for code border drawing
+        let render_cells = sheet.get_render_cells(Rect::single_pos(pos![A1]), gc.a1_context());
+        assert_eq!(render_cells.len(), 1);
+        assert_eq!(
+            render_cells[0].language,
+            Some(CodeCellLanguage::Python),
+            "Python single-value code cell should have language set for border rendering"
+        );
+    }
 }
