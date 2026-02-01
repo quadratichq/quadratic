@@ -1,7 +1,7 @@
-use crate::SheetRect;
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
+use crate::{CellValue, Pos, SheetRect};
 
 impl GridController {
     pub(crate) fn execute_set_cell_values(
@@ -13,6 +13,22 @@ impl GridController {
             let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) else {
                 return;
             };
+
+            // CellValue::Code and DataTable are mutually exclusive at the same position.
+            // When setting a CellValue::Code, remove any DataTable at that position.
+            // This handles the case where a blank placeholder DataTable was created
+            // before async code execution, and now we're setting the final CellValue::Code.
+            for (col_x, column) in values.columns.iter().enumerate() {
+                for (&col_y, cell_value) in column.iter() {
+                    if matches!(cell_value, CellValue::Code(_)) {
+                        let pos = Pos {
+                            x: sheet_pos.x + col_x as i64,
+                            y: sheet_pos.y + col_y as i64,
+                        };
+                        sheet.data_table_shift_remove(pos);
+                    }
+                }
+            }
 
             // update individual cell values and collect old_values
             let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
