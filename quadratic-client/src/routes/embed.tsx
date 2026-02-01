@@ -19,7 +19,7 @@ import { sendAnalyticsError } from '@/shared/utils/error';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { Link, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
@@ -158,13 +158,15 @@ export const Component = memo(() => {
   const [isImporting, setIsImporting] = useState(loaderData.mode === 'import');
   const [importProgress, setImportProgress] = useState(0);
   const [importFileName, setImportFileName] = useState('');
+  const importStartedRef = useRef(false);
 
   // Remove the initial HTML loading UI only after import is complete
   useRemoveInitialLoadingUI(isImporting);
 
   // Handle import mode - fetch file from URL and import
   useEffect(() => {
-    if (loaderData.mode === 'import') {
+    if (loaderData.mode === 'import' && !importStartedRef.current) {
+      importStartedRef.current = true;
       const handleImportProgress = (message: CoreClientImportProgress) => {
         const progress = Math.round((message.current / message.total) * 100);
         setImportProgress(progress);
