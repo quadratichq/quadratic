@@ -50,6 +50,10 @@
       flex-wrap: wrap;
     }
 
+    .controls {
+      position: relative;
+    }
+
     .controls input[type="text"] {
       padding: 8px 12px;
       border: 1px solid #ddd;
@@ -57,6 +61,51 @@
       font-size: 14px;
       flex: 1;
       min-width: 200px;
+    }
+
+    .url-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .url-list.show {
+      display: block;
+    }
+
+    .url-list-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .url-list-item:hover {
+      background: #f5f5f5;
+    }
+
+    .url-list-item:last-child {
+      border-bottom: none;
+    }
+
+    .url-list-header {
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #ddd;
+      font-size: 12px;
+      font-weight: bold;
+      color: #666;
     }
 
     .controls button {
@@ -156,9 +205,13 @@
         <input
           type="text"
           id="urlInput"
+          list="urlList"
           placeholder="Enter embed URL (e.g., http://localhost:3000/embed?fileId=xxx)"
           value=""
+          autocomplete="off"
         />
+        <datalist id="urlList"></datalist>
+        <div class="url-list" id="urlListDropdown"></div>
         <button onclick="loadUrl()">Load</button>
       </div>
       <div class="preload-controls">
@@ -189,14 +242,45 @@
     const STORAGE_KEY_URL = 'test-embed-last-url';
     const STORAGE_KEY_PRELOAD_PYTHON = 'test-embed-preload-python';
     const STORAGE_KEY_PRELOAD_JS = 'test-embed-preload-js';
+    const STORAGE_KEY_URL_LIST = 'test-embed-url-list';
+    const MAX_URL_LIST_SIZE = 10;
 
     let currentBaseUrl = null;
+
+    function getUrlList() {
+      try {
+        const listJson = localStorage.getItem(STORAGE_KEY_URL_LIST);
+        return listJson ? JSON.parse(listJson) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveUrlToList(url) {
+      if (!url) return;
+
+      let urlList = getUrlList();
+      // Remove if already exists
+      urlList = urlList.filter(u => u !== url);
+      // Add to beginning
+      urlList.unshift(url);
+      // Limit size
+      urlList = urlList.slice(0, MAX_URL_LIST_SIZE);
+
+      try {
+        localStorage.setItem(STORAGE_KEY_URL_LIST, JSON.stringify(urlList));
+        updateUrlListDropdown();
+      } catch (e) {
+        console.error('Failed to save URL list:', e);
+      }
+    }
 
     function saveUrl() {
       const url = document.getElementById('urlInput').value.trim();
       if (url) {
         localStorage.setItem(STORAGE_KEY_URL, url);
         currentBaseUrl = url;
+        saveUrlToList(url);
       }
       localStorage.setItem(STORAGE_KEY_PRELOAD_PYTHON, document.getElementById('preloadPython').checked);
       localStorage.setItem(STORAGE_KEY_PRELOAD_JS, document.getElementById('preloadJS').checked);
@@ -248,6 +332,7 @@
         const finalUrl = buildUrlWithPreload(urlInput);
         loadIframe(finalUrl);
         updateInfo(`Loaded from: <code>${finalUrl}</code>`);
+        // Focus will be handled in loadIframe's onload handler
       } catch (e) {
         showError('Invalid URL. Please check and try again.');
         console.error('URL error:', e);
@@ -265,6 +350,23 @@
       iframe.onload = function() {
         console.log('Iframe loaded successfully');
         hideError();
+        // Focus the iframe after it loads
+        setTimeout(() => {
+          iframe.focus();
+          // Try to focus the canvas inside the iframe
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (iframeDoc) {
+              const canvas = iframeDoc.querySelector('.pixi_canvas');
+              if (canvas) {
+                canvas.focus();
+              }
+            }
+          } catch (e) {
+            // Cross-origin restrictions may prevent access, which is fine
+            // The iframe focus should still work
+          }
+        }, 500);
       };
 
       iframe.onerror = function() {
@@ -298,8 +400,45 @@
     }
 
     // Event listeners
-    document.getElementById('urlInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') loadUrl();
+    const urlInput = document.getElementById('urlInput');
+    const urlListDropdown = document.getElementById('urlListDropdown');
+
+    urlInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        urlListDropdown.classList.remove('show');
+        loadUrl();
+      }
+    });
+
+    urlInput.addEventListener('focus', function() {
+      const urlList = getUrlList();
+      if (urlList.length > 0) {
+        urlListDropdown.classList.add('show');
+      }
+    });
+
+    urlInput.addEventListener('blur', function() {
+      // Delay hiding to allow clicks on dropdown items
+      setTimeout(() => {
+        urlListDropdown.classList.remove('show');
+      }, 200);
+    });
+
+    urlInput.addEventListener('input', function() {
+      const value = this.value.trim();
+      if (value) {
+        const urlList = getUrlList();
+        const filtered = urlList.filter(url => url.toLowerCase().includes(value.toLowerCase()));
+        if (filtered.length > 0) {
+          updateUrlListDropdown(filtered);
+          urlListDropdown.classList.add('show');
+        } else {
+          urlListDropdown.classList.remove('show');
+        }
+      } else {
+        updateUrlListDropdown();
+        urlListDropdown.classList.add('show');
+      }
     });
 
     // Save preload flags immediately when checkboxes change and reload if embed is already loaded
@@ -321,8 +460,50 @@
       }
     });
 
+    // Initialize URL list dropdown
+    function updateUrlListDropdown(filteredList = null) {
+      const urlList = filteredList || getUrlList();
+      const dropdown = document.getElementById('urlListDropdown');
+      const datalist = document.getElementById('urlList');
+
+      // Clear existing options
+      datalist.innerHTML = '';
+      dropdown.innerHTML = '';
+
+      if (urlList.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      // Add header
+      const header = document.createElement('div');
+      header.className = 'url-list-header';
+      header.textContent = filteredList ? `Matching (${urlList.length})` : `Recently loaded (${urlList.length})`;
+      dropdown.appendChild(header);
+
+      // Add items
+      urlList.forEach(url => {
+        // Add to datalist for autocomplete
+        const option = document.createElement('option');
+        option.value = url;
+        datalist.appendChild(option);
+
+        // Add to dropdown
+        const item = document.createElement('div');
+        item.className = 'url-list-item';
+        item.textContent = url;
+        item.onclick = () => {
+          urlInput.value = url;
+          dropdown.classList.remove('show');
+          loadUrl();
+        };
+        dropdown.appendChild(item);
+      });
+    }
+
     // Load saved URL and preload flags on page load
     loadSavedPreloadFlags();
+    updateUrlListDropdown();
     const savedUrl = loadSavedUrl();
     if (savedUrl) {
       setTimeout(() => {

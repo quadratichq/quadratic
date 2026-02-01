@@ -300,7 +300,13 @@ class QuadraticCore {
       await pythonWebWorker.ensureInitialized();
       return;
     } else if (e.data.type === 'coreClientRequestInitJavascript') {
-      await javascriptWebWorker.ensureInitialized();
+      try {
+        await javascriptWebWorker.ensureInitialized();
+      } catch (error) {
+        console.error('[quadraticCore] Failed to initialize JavaScript worker:', error);
+        // Emit error event so the core can handle it gracefully
+        events.emit('coreError', 'javascriptWorker', error);
+      }
       return;
     } else if (e.data.type === 'coreClientCoreError') {
       if (debugFlag('debug')) {

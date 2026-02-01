@@ -32,8 +32,17 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
   startupTimer.start('file.loader');
 
   const url = new URL(request.url);
-  const fileId = url.searchParams.get('fileId');
-  const importUrl = url.searchParams.get('import');
+  // Make fileId and import parameters case-insensitive
+  let fileId: string | null = null;
+  let importUrl: string | null = null;
+  for (const [key, value] of url.searchParams.entries()) {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey === 'fileid') {
+      fileId = value;
+    } else if (lowerKey === 'import') {
+      importUrl = value;
+    }
+  }
 
   if (!fileId && !importUrl) {
     throw new Response('Missing fileId or import parameter', { status: 400 });

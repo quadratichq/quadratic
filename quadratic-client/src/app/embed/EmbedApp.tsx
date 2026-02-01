@@ -2,8 +2,10 @@ import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractio
 import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { EmbedUI } from '@/app/embed/EmbedUI';
 import { PixiAppEffectsEmbed } from '@/app/embed/PixiAppEffectsEmbed';
+import { WorkerLoadingIndicator } from '@/app/embed/WorkerLoadingIndicator';
 import { Events } from '@/app/gridGL/Events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { memo, useEffect, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -24,9 +26,17 @@ export const EmbedApp = memo(() => {
     if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
         setIsReady(true);
+        // Focus the grid after initialization
+        setTimeout(() => {
+          focusGrid();
+        }, 100);
       });
     } else if (fileUuid && pixiApp.initialized) {
       setIsReady(true);
+      // Focus the grid if already initialized
+      setTimeout(() => {
+        focusGrid();
+      }, 100);
     }
   }, [fileUuid]);
 
@@ -39,6 +49,7 @@ export const EmbedApp = memo(() => {
       <EmbedUI />
       <PixiAppEffectsEmbed />
       <Events />
+      <WorkerLoadingIndicator />
     </TooltipProvider>
   );
 });

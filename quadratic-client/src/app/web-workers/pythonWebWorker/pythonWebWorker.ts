@@ -249,6 +249,9 @@ class PythonWebWorker {
       return this.initPromise;
     }
 
+    // Emit loading event when initialization starts
+    events.emit('pythonLoading');
+
     this.initPromise = new Promise<void>((resolve) => {
       const onInit = () => {
         events.off('pythonInit', onInit);

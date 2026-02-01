@@ -28,9 +28,15 @@ class CoreJavascript {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
+  constructor() {
+    // Set up self.sendRunJavascript immediately so Rust can call it even before the JS worker is initialized
+    self.sendRunJavascript = this.sendRunJavascript;
+  }
+
   init = async (JavascriptPort: MessagePort) => {
     this.coreJavascriptPort = JavascriptPort;
     this.coreJavascriptPort.onmessage = this.handleMessage;
+    // Ensure self.sendRunJavascript is set (it should already be set in constructor, but ensure it's the right reference)
     self.sendRunJavascript = this.sendRunJavascript;
     if (await debugFlagWait('debugWebWorkers')) console.log('[coreJavascript] initialized');
 

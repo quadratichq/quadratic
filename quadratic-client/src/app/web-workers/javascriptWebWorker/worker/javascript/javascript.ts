@@ -47,6 +47,7 @@ export class Javascript {
     });
 
     this.state = 'ready';
+    javascriptClient.sendInit(esbuild.version);
     return this.next();
   };
 
