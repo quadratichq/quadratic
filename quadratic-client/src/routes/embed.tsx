@@ -9,10 +9,11 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { sendAnalyticsError } from '@/shared/utils/error';
-import { ExclamationTriangleIcon, ExternalLinkIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { memo, useCallback, useEffect, useState } from 'react';
@@ -38,6 +39,12 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     throw new Response('Missing fileId or import parameter', { status: 400 });
   }
 
+  // Parse preload parameter to determine which workers to preload
+  const preloadParam = url.searchParams.get('preload');
+  const preloadWorkers = preloadParam ? preloadParam.split(',').map((s) => s.trim().toLowerCase()) : [];
+  const shouldPreloadPython = preloadWorkers.includes('python');
+  const shouldPreloadJS = preloadWorkers.includes('js');
+
   const loadPixi = async () => {
     startupTimer.start('file.loader.loadPixi');
     try {
@@ -55,7 +62,11 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
   };
 
   // Initialize everything in parallel
-  await Promise.all([loadPixi(), initWorkers(), initializeCoreClient()]);
+  await Promise.all([
+    loadPixi(),
+    initWorkers({ preloadPython: shouldPreloadPython, preloadJavascript: shouldPreloadJS }),
+    initializeCoreClient(),
+  ]);
 
   if (fileId) {
     // Load existing file from API
@@ -145,7 +156,9 @@ const EditInQuadraticButton = () => {
           console.log('Edit in Quadratic - to be implemented');
         }}
       >
-        <ExternalLinkIcon />
+        <div className="flex h-2 w-2 items-center justify-center">
+          <QuadraticLogo />
+        </div>
         Edit in Quadratic
       </Button>
     </div>

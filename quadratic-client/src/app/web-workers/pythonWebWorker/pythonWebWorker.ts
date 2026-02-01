@@ -17,6 +17,7 @@ class PythonWebWorker {
   state: LanguageState = 'loading';
 
   private worker?: Worker;
+  private initPromise?: Promise<void>;
 
   private send(message: ClientPythonMessage, port?: MessagePort) {
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
@@ -233,6 +234,33 @@ class PythonWebWorker {
     const pythonCoreChannel = new MessageChannel();
     this.send({ type: 'clientPythonCoreChannel', isEmbedMode: getIsEmbedMode() }, pythonCoreChannel.port1);
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
+  }
+
+  isInitialized(): boolean {
+    return this.worker !== undefined;
+  }
+
+  async ensureInitialized(): Promise<void> {
+    if (this.worker && this.state === 'ready') {
+      return;
+    }
+
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = new Promise<void>((resolve) => {
+      const onInit = () => {
+        events.off('pythonInit', onInit);
+        this.initPromise = undefined;
+        resolve();
+      };
+
+      events.on('pythonInit', onInit);
+      this.initWorker();
+    });
+
+    return this.initPromise;
   }
 
   cancelExecution = () => {

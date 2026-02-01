@@ -162,7 +162,9 @@ impl Sheet {
     /// spill due to other data tables is managed internally by SheetDataTables
     fn check_spills_due_to_column_values(&self, pos: Pos, data_table: &DataTable) -> bool {
         let output_rect = data_table.output_rect(pos, true);
-        self.columns.has_content_in_rect(output_rect)
+        // Exclude the code cell's own position to avoid false positives when
+        // a CellValue::Code is being replaced by a DataTable (or vice versa)
+        self.columns.has_content_in_rect_except(output_rect, pos)
     }
 
     /// Checks spill due to merged cells on sheet

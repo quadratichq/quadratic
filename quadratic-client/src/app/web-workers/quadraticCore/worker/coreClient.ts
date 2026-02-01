@@ -1166,6 +1166,14 @@ class CoreClient {
   sendMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
     this.send({ type: 'coreClientMergeCells', sheetId, mergeCells }, mergeCells.buffer);
   };
+
+  requestInitPython = () => {
+    this.send({ type: 'coreClientRequestInitPython' });
+  };
+
+  requestInitJavascript = () => {
+    this.send({ type: 'coreClientRequestInitJavascript' });
+  };
 }
 
 export const coreClient = new CoreClient();

@@ -14,6 +14,7 @@ class JavascriptWebWorker {
   state: LanguageState = 'loading';
 
   private worker?: Worker;
+  private initPromise?: Promise<void>;
 
   private send(message: ClientJavascriptMessage, port?: MessagePort) {
     if (!this.worker) throw new Error('Expected worker to be defined in javascript.ts');
@@ -61,6 +62,33 @@ class JavascriptWebWorker {
       JavascriptCoreChannel.port1
     );
     quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
+  }
+
+  isInitialized(): boolean {
+    return this.worker !== undefined;
+  }
+
+  async ensureInitialized(): Promise<void> {
+    if (this.worker && this.state === 'ready') {
+      return;
+    }
+
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = new Promise<void>((resolve) => {
+      const onInit = () => {
+        events.off('javascriptInit', onInit);
+        this.initPromise = undefined;
+        resolve();
+      };
+
+      events.on('javascriptInit', onInit);
+      this.initWorker();
+    });
+
+    return this.initPromise;
   }
 
   cancelExecution = () => {

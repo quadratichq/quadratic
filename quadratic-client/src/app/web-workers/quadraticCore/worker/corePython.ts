@@ -9,6 +9,7 @@ import type {
   PythonCoreMessage,
 } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -23,10 +24,21 @@ declare var self: WorkerGlobalScope &
     ) => void;
   };
 
+interface PendingPythonRun {
+  transactionId: string;
+  x: number;
+  y: number;
+  sheetId: string;
+  code: string;
+  chartPixelWidth: number;
+  chartPixelHeight: number;
+}
+
 class CorePython {
   private corePythonPort?: MessagePort;
   private id = 0;
   private getCellsResponses: Record<number, Uint8Array> = {};
+  private pendingRun?: PendingPythonRun;
 
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
@@ -39,6 +51,21 @@ class CorePython {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
     if (await debugFlagWait('debugWebWorkers')) console.log('[corePython] initialized');
+
+    // Retry pending run if there is one
+    if (this.pendingRun) {
+      const pending = this.pendingRun;
+      this.pendingRun = undefined;
+      this.sendRunPython(
+        pending.transactionId,
+        pending.x,
+        pending.y,
+        pending.sheetId,
+        pending.code,
+        pending.chartPixelWidth,
+        pending.chartPixelHeight
+      );
+    }
   };
 
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {
@@ -70,6 +97,12 @@ class CorePython {
       return;
     }
     this.corePythonPort.postMessage(message);
+  }
+
+  private ensurePortInitialized() {
+    if (!this.corePythonPort) {
+      coreClient.requestInitPython();
+    }
   }
 
   private sendGetCellsA1Length = ({ sharedBuffer, transactionId, a1 }: PythonCoreGetCellsA1Length) => {
@@ -149,6 +182,19 @@ class CorePython {
     chartPixelWidth: number,
     chartPixelHeight: number
   ) => {
+    if (!this.corePythonPort) {
+      this.pendingRun = {
+        transactionId,
+        x,
+        y,
+        sheetId,
+        code,
+        chartPixelWidth,
+        chartPixelHeight,
+      };
+      this.ensurePortInitialized();
+      return;
+    }
     this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',

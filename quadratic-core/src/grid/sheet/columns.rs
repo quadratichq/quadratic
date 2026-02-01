@@ -276,6 +276,22 @@ impl SheetColumns {
             })
     }
 
+    /// Returns true if the given rectangle has any content, excluding a specific position.
+    pub(crate) fn has_content_in_rect_except(&self, rect: Rect, except: Pos) -> bool {
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if pos == except {
+                    continue;
+                }
+                if self.has_cell_value.get(pos) == Some(true) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     /// Returns an iterator over the content in the sheet.
     pub fn iter_content(&self) -> impl Iterator<Item = Pos> {
         self.has_cell_value

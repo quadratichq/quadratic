@@ -95,6 +95,14 @@ export interface ClientCoreInitJavascript {
   type: 'clientCoreInitJavascript';
 }
 
+export interface CoreClientRequestInitPython {
+  type: 'coreClientRequestInitPython';
+}
+
+export interface CoreClientRequestInitJavascript {
+  type: 'coreClientRequestInitJavascript';
+}
+
 export interface ClientCoreExport {
   type: 'clientCoreExport';
   id: number;
@@ -1937,4 +1945,6 @@ export type CoreClientMessage =
   | CoreClientRedoResponse
   | CoreClientStartupTimer
   | CoreClientSetFormula
-  | CoreClientSetFormulas;
+  | CoreClientSetFormulas
+  | CoreClientRequestInitPython
+  | CoreClientRequestInitJavascript;

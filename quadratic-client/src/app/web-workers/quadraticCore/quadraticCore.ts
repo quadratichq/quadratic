@@ -53,6 +53,8 @@ import type {
 import { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import type {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -293,6 +295,12 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientA1Context') {
       events.emit('a1Context', e.data.context);
+      return;
+    } else if (e.data.type === 'coreClientRequestInitPython') {
+      await pythonWebWorker.ensureInitialized();
+      return;
+    } else if (e.data.type === 'coreClientRequestInitJavascript') {
+      await javascriptWebWorker.ensureInitialized();
       return;
     } else if (e.data.type === 'coreClientCoreError') {
       if (debugFlag('debug')) {

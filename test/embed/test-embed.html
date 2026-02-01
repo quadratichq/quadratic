@@ -47,9 +47,10 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
-    .controls input {
+    .controls input[type="text"] {
       padding: 8px 12px;
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -71,6 +72,28 @@
 
     .controls button:hover {
       background: #0056b3;
+    }
+
+    .preload-controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .preload-controls label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .preload-controls input[type="checkbox"] {
+      cursor: pointer;
     }
 
     .iframe-container {
@@ -138,6 +161,16 @@
         />
         <button onclick="loadUrl()">Load</button>
       </div>
+      <div class="preload-controls">
+        <label>
+          <input type="checkbox" id="preloadPython" />
+          Preload Python
+        </label>
+        <label>
+          <input type="checkbox" id="preloadJS" />
+          Preload JavaScript
+        </label>
+      </div>
     </div>
     <div class="iframe-container" id="iframeContainer">
       <div class="loading" id="loading">Enter a URL and click "Load" to test</div>
@@ -154,12 +187,19 @@
 
   <script>
     const STORAGE_KEY_URL = 'test-embed-last-url';
+    const STORAGE_KEY_PRELOAD_PYTHON = 'test-embed-preload-python';
+    const STORAGE_KEY_PRELOAD_JS = 'test-embed-preload-js';
+
+    let currentBaseUrl = null;
 
     function saveUrl() {
       const url = document.getElementById('urlInput').value.trim();
       if (url) {
         localStorage.setItem(STORAGE_KEY_URL, url);
+        currentBaseUrl = url;
       }
+      localStorage.setItem(STORAGE_KEY_PRELOAD_PYTHON, document.getElementById('preloadPython').checked);
+      localStorage.setItem(STORAGE_KEY_PRELOAD_JS, document.getElementById('preloadJS').checked);
     }
 
     function loadSavedUrl() {
@@ -171,6 +211,31 @@
       return null;
     }
 
+    function loadSavedPreloadFlags() {
+      const preloadPython = localStorage.getItem(STORAGE_KEY_PRELOAD_PYTHON) === 'true';
+      const preloadJS = localStorage.getItem(STORAGE_KEY_PRELOAD_JS) === 'true';
+      document.getElementById('preloadPython').checked = preloadPython;
+      document.getElementById('preloadJS').checked = preloadJS;
+    }
+
+    function buildUrlWithPreload(baseUrl) {
+      const url = new URL(baseUrl);
+      const preloadPython = document.getElementById('preloadPython').checked;
+      const preloadJS = document.getElementById('preloadJS').checked;
+
+      const preloadValues = [];
+      if (preloadPython) preloadValues.push('python');
+      if (preloadJS) preloadValues.push('js');
+
+      if (preloadValues.length > 0) {
+        url.searchParams.set('preload', preloadValues.join(','));
+      } else {
+        url.searchParams.delete('preload');
+      }
+
+      return url.toString();
+    }
+
     function loadUrl() {
       const urlInput = document.getElementById('urlInput').value.trim();
       if (!urlInput) {
@@ -180,8 +245,9 @@
 
       try {
         saveUrl();
-        loadIframe(urlInput);
-        updateInfo(`Loaded from: <code>${urlInput}</code>`);
+        const finalUrl = buildUrlWithPreload(urlInput);
+        loadIframe(finalUrl);
+        updateInfo(`Loaded from: <code>${finalUrl}</code>`);
       } catch (e) {
         showError('Invalid URL. Please check and try again.');
         console.error('URL error:', e);
@@ -236,7 +302,27 @@
       if (e.key === 'Enter') loadUrl();
     });
 
-    // Load saved URL on page load
+    // Save preload flags immediately when checkboxes change and reload if embed is already loaded
+    document.getElementById('preloadPython').addEventListener('change', function() {
+      localStorage.setItem(STORAGE_KEY_PRELOAD_PYTHON, this.checked);
+      if (currentBaseUrl) {
+        const finalUrl = buildUrlWithPreload(currentBaseUrl);
+        loadIframe(finalUrl);
+        updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      }
+    });
+
+    document.getElementById('preloadJS').addEventListener('change', function() {
+      localStorage.setItem(STORAGE_KEY_PRELOAD_JS, this.checked);
+      if (currentBaseUrl) {
+        const finalUrl = buildUrlWithPreload(currentBaseUrl);
+        loadIframe(finalUrl);
+        updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      }
+    });
+
+    // Load saved URL and preload flags on page load
+    loadSavedPreloadFlags();
     const savedUrl = loadSavedUrl();
     if (savedUrl) {
       setTimeout(() => {
