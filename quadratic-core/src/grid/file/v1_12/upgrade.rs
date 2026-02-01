@@ -17,10 +17,14 @@ fn is_single_cell_code(table: &current::DataTableSchema) -> bool {
         return false;
     };
 
-    // Must not have an error. For Python/JS, errors set code_run.error.
-    // For formulas, errors only set std_err (error is always None).
-    // Both checks are needed to catch errors from all code cell types.
-    if code_run.error.is_some() || code_run.std_err.is_some() {
+    // Must not have an error. Error detection is language-specific:
+    // - Python/JS: errors set code_run.error (std_err may contain warnings, not just errors)
+    // - Formulas: errors only set std_err (error is always None)
+    if code_run.error.is_some() {
+        return false;
+    }
+    // For formulas, std_err contains error messages
+    if code_run.language == current::CodeCellLanguageSchema::Formula && code_run.std_err.is_some() {
         return false;
     }
 
@@ -438,5 +442,44 @@ mod tests {
             chart_output: None,
         };
         assert!(!is_single_cell_code(&table));
+    }
+
+    #[test]
+    fn test_is_single_cell_python_with_stderr_warning() {
+        // A Python code cell with std_err (but no error) should still qualify
+        // because std_err may contain warnings, not errors
+        let table = current::DataTableSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
+                language: current::CodeCellLanguageSchema::Python,
+                code: "import warnings; warnings.warn('test'); 42".to_string(),
+                formula_ast: None,
+                std_out: None,
+                std_err: Some("DeprecationWarning: test".to_string()), // Has warning but no error!
+                cells_accessed: vec![],
+                error: None, // No error
+                return_type: Some("int".to_string()),
+                line_number: None,
+                output_type: None,
+            })),
+            name: "Python1".to_string(),
+            value: current::OutputValueSchema::Single(current::CellValueSchema::Number(
+                "42".to_string(),
+            )),
+            last_modified: None,
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            columns: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            alternating_colors: false,
+            formats: None,
+            borders: None,
+            chart_pixel_output: None,
+            chart_output: None,
+        };
+        // Should qualify because error is None (std_err contains warning, not error)
+        assert!(is_single_cell_code(&table));
     }
 }

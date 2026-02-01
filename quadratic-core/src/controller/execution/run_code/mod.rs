@@ -233,12 +233,14 @@ impl GridController {
                 // Reverse operations: restore old state
                 if let Some((_, old_dt, _)) = old_data_table_removed {
                     // There was an existing DataTable - restore it
-                    transaction.reverse_operations.push(Operation::SetDataTable {
-                        sheet_pos,
-                        data_table: Some(old_dt),
-                        index,
-                        ignore_old_data_table: true,
-                    });
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetDataTable {
+                            sheet_pos,
+                            data_table: Some(old_dt),
+                            index,
+                            ignore_old_data_table: true,
+                        });
                 } else if let Some(old_cv) = old_cell_value {
                     // There was an existing CellValue - restore it
                     transaction
