@@ -89,6 +89,10 @@
       border-bottom: 1px solid #f0f0f0;
       font-size: 14px;
       color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     .url-list-item:hover {
@@ -97,6 +101,36 @@
 
     .url-list-item:last-child {
       border-bottom: none;
+    }
+
+    .url-list-item-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .url-list-item-delete {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+
+    .url-list-item-delete:hover {
+      background: #e0e0e0;
+      color: #666;
     }
 
     .url-list-header {
@@ -205,12 +239,10 @@
         <input
           type="text"
           id="urlInput"
-          list="urlList"
           placeholder="Enter embed URL (e.g., http://localhost:3000/embed?fileId=xxx)"
           value=""
           autocomplete="off"
         />
-        <datalist id="urlList"></datalist>
         <div class="url-list" id="urlListDropdown"></div>
         <button onclick="loadUrl()">Load</button>
       </div>
@@ -272,6 +304,18 @@
         updateUrlListDropdown();
       } catch (e) {
         console.error('Failed to save URL list:', e);
+      }
+    }
+
+    function removeUrlFromList(url) {
+      let urlList = getUrlList();
+      urlList = urlList.filter(u => u !== url);
+
+      try {
+        localStorage.setItem(STORAGE_KEY_URL_LIST, JSON.stringify(urlList));
+        updateUrlListDropdown();
+      } catch (e) {
+        console.error('Failed to remove URL from list:', e);
       }
     }
 
@@ -464,10 +508,8 @@
     function updateUrlListDropdown(filteredList = null) {
       const urlList = filteredList || getUrlList();
       const dropdown = document.getElementById('urlListDropdown');
-      const datalist = document.getElementById('urlList');
 
-      // Clear existing options
-      datalist.innerHTML = '';
+      // Clear existing items
       dropdown.innerHTML = '';
 
       if (urlList.length === 0) {
@@ -483,20 +525,29 @@
 
       // Add items
       urlList.forEach(url => {
-        // Add to datalist for autocomplete
-        const option = document.createElement('option');
-        option.value = url;
-        datalist.appendChild(option);
-
-        // Add to dropdown
         const item = document.createElement('div');
         item.className = 'url-list-item';
-        item.textContent = url;
-        item.onclick = () => {
+
+        const text = document.createElement('div');
+        text.className = 'url-list-item-text';
+        text.textContent = url;
+        text.onclick = () => {
           urlInput.value = url;
           dropdown.classList.remove('show');
           loadUrl();
         };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'url-list-item-delete';
+        deleteBtn.textContent = '×';
+        deleteBtn.setAttribute('aria-label', 'Remove URL');
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          removeUrlFromList(url);
+        };
+
+        item.appendChild(text);
+        item.appendChild(deleteBtn);
         dropdown.appendChild(item);
       });
     }

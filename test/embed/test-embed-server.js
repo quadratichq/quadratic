@@ -13,20 +13,70 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 8081;
-const HTML_FILE = path.join(__dirname, 'test-embed.html');
+
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.xls': 'application/vnd.ms-excel',
+  '.csv': 'text/csv',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+};
 
 const server = http.createServer((req, res) => {
-  // Set content type
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  // Set CORS headers to allow cross-origin access
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Read and serve the HTML file
-  fs.readFile(HTML_FILE, 'utf8', (err, data) => {
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // Parse URL and get file path
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  let filePath = url.pathname;
+
+  // Default to test-embed.html for root or /test-embed.html
+  if (filePath === '/' || filePath === '/test-embed.html') {
+    filePath = '/test-embed.html';
+  }
+
+  // Resolve to the test/embed directory
+  const fullPath = path.join(__dirname, filePath);
+
+  // Security: ensure we're serving from within the test/embed directory
+  if (!fullPath.startsWith(__dirname)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+
+  // Get file extension and content type
+  const ext = path.extname(fullPath).toLowerCase();
+  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+  // Read and serve the file
+  fs.readFile(fullPath, (err, data) => {
     if (err) {
-      res.writeHead(500);
-      res.end('Error loading test-embed.html');
+      if (err.code === 'ENOENT') {
+        res.writeHead(404);
+        res.end('File not found');
+      } else {
+        res.writeHead(500);
+        res.end('Error loading file');
+      }
       return;
     }
 
+    res.setHeader('Content-Type', contentType);
     res.writeHead(200);
     res.end(data);
   });
@@ -34,5 +84,6 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`\n✅ Test embed server running at http://localhost:${PORT}/test-embed.html`);
+  console.log(`\n📁 Serving files from: ${__dirname}`);
   console.log(`\n🌐 Open http://localhost:${PORT}/test-embed.html in your browser\n`);
 });

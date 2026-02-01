@@ -1,17 +1,20 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { EmbedApp } from '@/app/embed/EmbedApp';
+import { events } from '@/app/events/events';
 import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
+import type { CoreClientImportProgress } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
-import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { CONTACT_URL } from '@/shared/constants/urls';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Progress } from '@/shared/shadcn/ui/progress';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
@@ -149,41 +152,31 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
   throw new Response('Invalid request', { status: 400 });
 };
 
-/**
- * Placeholder button to open the file in the full Quadratic app.
- * Currently non-functional - will be implemented in a future update.
- */
-const EditInQuadraticButton = () => {
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Button
-        variant="default"
-        size="sm"
-        className="gap-2 shadow-lg"
-        onClick={() => {
-          // TODO: Implement - will open the file in the full Quadratic app
-          console.log('Edit in Quadratic - to be implemented');
-        }}
-      >
-        <div className="flex h-2 w-2 items-center justify-center">
-          <QuadraticLogo />
-        </div>
-        Edit in Quadratic
-      </Button>
-    </div>
-  );
-};
-
 export const Component = memo(() => {
   const loaderData = useLoaderData() as EmbedLoaderData;
   const [importError, setImportError] = useState<string | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(loaderData.mode === 'import');
+  const [importProgress, setImportProgress] = useState(0);
+  const [importFileName, setImportFileName] = useState('');
+
+  // Remove the initial HTML loading UI only after import is complete
+  useRemoveInitialLoadingUI(isImporting);
 
   // Handle import mode - fetch file from URL and import
   useEffect(() => {
     if (loaderData.mode === 'import') {
+      const handleImportProgress = (message: CoreClientImportProgress) => {
+        const progress = Math.round((message.current / message.total) * 100);
+        setImportProgress(progress);
+      };
+
       const importFromUrl = async () => {
         setIsImporting(true);
+        setImportProgress(0);
+
+        // Subscribe to import progress events
+        events.on('importProgress', handleImportProgress);
+
         try {
           const response = await fetch(loaderData.importUrl);
           if (!response.ok) {
@@ -216,6 +209,10 @@ export const Component = memo(() => {
           }
 
           const fileName = urlPath.split('/').pop() || 'imported_file';
+          setImportFileName(fileName);
+
+          let gridContents: ArrayBufferLike | undefined;
+          let gridVersion: string | undefined;
 
           if (fileType === 'Grid') {
             // For grid files, use upgradeGridFile
@@ -223,6 +220,8 @@ export const Component = memo(() => {
             if (result?.error) {
               throw new Error(result.error);
             }
+            gridContents = result?.contents;
+            gridVersion = result?.version;
           } else {
             // For other file types, use importFile
             const result = await quadraticCore.importFile({
@@ -234,11 +233,59 @@ export const Component = memo(() => {
             if (result?.error) {
               throw new Error(result.error);
             }
+            gridContents = result?.contents;
+            gridVersion = result?.version;
+          }
+
+          // Now load the imported contents into the grid controller
+          if (!gridContents || !gridVersion) {
+            throw new Error('Import did not return file contents');
+          }
+
+          // Create a blob URL from the imported contents
+          // Copy to a new ArrayBuffer to ensure compatibility with Blob
+          const contentsArray = new Uint8Array(gridContents);
+          const buffer = new ArrayBuffer(contentsArray.length);
+          new Uint8Array(buffer).set(contentsArray);
+          const blob = new Blob([buffer], { type: 'application/octet-stream' });
+          const blobUrl = URL.createObjectURL(blob);
+
+          // Set up listener for sheetsInfo BEFORE calling load to avoid race condition
+          const sheetsInitialized = new Promise<void>((resolve) => {
+            const handleSheetsInfo = () => {
+              events.off('sheetsInfo', handleSheetsInfo);
+              resolve();
+            };
+            events.on('sheetsInfo', handleSheetsInfo);
+          });
+
+          try {
+            // Load the file into the grid controller
+            const loadResult = await quadraticCore.load({
+              fileId: crypto.randomUUID(),
+              teamUuid: crypto.randomUUID(),
+              url: blobUrl,
+              version: gridVersion,
+              sequenceNumber: 0,
+              noMultiplayer: true,
+            });
+
+            if (loadResult.error) {
+              throw new Error(loadResult.error);
+            }
+
+            // Wait for sheets to be fully initialized before proceeding
+            await sheetsInitialized;
+          } finally {
+            // Clean up the blob URL
+            URL.revokeObjectURL(blobUrl);
           }
         } catch (error) {
           console.error('Import error:', error);
           setImportError(error instanceof Error ? error.message : 'Failed to import file');
         } finally {
+          // Unsubscribe from import progress events
+          events.off('importProgress', handleImportProgress);
           setIsImporting(false);
         }
       };
@@ -264,10 +311,13 @@ export const Component = memo(() => {
         }));
       } else {
         // For import mode, set minimal permissions (edit allowed since local only)
+        // Generate a random UUID so EmbedApp can initialize
         set(editorInteractionStateAtom, (prevState) => ({
           ...prevState,
           permissions: [FilePermissionSchema.enum.FILE_VIEW, FilePermissionSchema.enum.FILE_EDIT],
           user: undefined, // Anonymous in embed mode
+          fileUuid: crypto.randomUUID(),
+          teamUuid: crypto.randomUUID(),
         }));
       }
     },
@@ -300,10 +350,18 @@ export const Component = memo(() => {
   }
 
   if (isImporting) {
+    // Show import status below the existing HTML loading logo (which is centered)
     return (
       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-lg">Importing file...</div>
+        {/* Import status positioned below the centered loading logo */}
+        <div className="mt-56 flex w-80 flex-col items-center text-center">
+          <div className="mb-2 text-lg font-medium">Importing</div>
+          {importFileName && (
+            <div className="mb-4 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground">
+              {importFileName}
+            </div>
+          )}
+          <Progress value={importProgress} className="h-2 w-full" />
         </div>
       </div>
     );
@@ -312,7 +370,6 @@ export const Component = memo(() => {
   return (
     <RecoilRoot initializeState={initializeState}>
       <EmbedApp />
-      <EditInQuadraticButton />
     </RecoilRoot>
   );
 });
