@@ -353,12 +353,14 @@ class QuadraticCore {
     url,
     version,
     sequenceNumber,
+    noMultiplayer,
   }: {
     fileId: string;
     teamUuid: string;
     url: string;
     version: string;
     sequenceNumber: number;
+    noMultiplayer: boolean;
   }): Promise<{ version?: string; error?: string }> {
     // this is the channel between the core worker and the render worker
     const port = new MessageChannel();
@@ -386,6 +388,7 @@ class QuadraticCore {
         id,
         fileId,
         teamUuid,
+        noMultiplayer,
       };
       if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);

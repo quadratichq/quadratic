@@ -8,6 +8,7 @@ import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gr
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { isAiDisabled } from '@/app/helpers/isEmbed';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import {
   clearFormattingAndBorders,
@@ -59,7 +60,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   }
 
   // Toggle global AI chat
-  if (matchShortcut(Action.ToggleAIAnalyst, event)) {
+  if (matchShortcut(Action.ToggleAIAnalyst, event) && !isAiDisabled) {
     viewActionsSpec[Action.ToggleAIAnalyst].run();
     return true;
   }

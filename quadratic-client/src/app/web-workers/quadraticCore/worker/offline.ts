@@ -37,6 +37,9 @@ class Offline {
   private index = 0;
   fileId?: string;
 
+  // When true, skip all offline transaction saving (used in embed mode)
+  private noMultiplayer = false;
+
   // The `stats.operations` are not particularly interesting right now because
   // we send the entire operations batched together; we'll need to send partial
   // messages with separate operations to get good progress information.
@@ -47,9 +50,17 @@ class Offline {
   };
 
   // Creates a connection to the indexedDb database
-  init = async (fileId: string): Promise<undefined> => {
+  init = async (fileId: string, noMultiplayer = false): Promise<undefined> => {
     try {
       this.fileId = fileId;
+      this.noMultiplayer = noMultiplayer;
+
+      // Skip database initialization if noMultiplayer is enabled
+      if (noMultiplayer) {
+        // Set up a no-op callback for addUnsentTransaction
+        self.addUnsentTransaction = () => {};
+        return undefined;
+      }
 
       this.db = new Dexie(DB_NAME);
       this.db.version(DB_VERSION).stores({
@@ -71,6 +82,9 @@ class Offline {
 
   // Helper method to validate required properties
   private validateState = (methodName: string) => {
+    if (this.noMultiplayer) {
+      return null;
+    }
     if (!this.db || !this.transactionsTable || !this.fileId) {
       throw new Error(`Expected db, transactionsTable and fileId to be set in ${methodName} method.`);
     }
@@ -85,7 +99,9 @@ class Offline {
   // Loads the unsent transactions for this file from indexedDb
   load = async (): Promise<{ transactionId: string; transactions: string; timestamp?: number }[]> => {
     try {
-      const { transactionsTable, fileId } = this.validateState('load');
+      const state = this.validateState('load');
+      if (!state) return [];
+      const { transactionsTable, fileId } = state;
 
       const results = await transactionsTable.where('fileId').equals(fileId).toArray();
 
@@ -120,7 +136,9 @@ class Offline {
   // Adds the transaction to the unsent transactions list.
   addUnsentTransaction = async (transactionId: string, transaction: string, operations: number) => {
     try {
-      const { transactionsTable, fileId } = this.validateState('addUnsentTransaction');
+      const state = this.validateState('addUnsentTransaction');
+      if (!state) return;
+      const { transactionsTable, fileId } = state;
 
       const offlineEntry: OfflineEntry = {
         fileId,
@@ -149,7 +167,9 @@ class Offline {
   // Removes the transaction from the unsent transactions list.
   markTransactionSent = async (transactionId: string) => {
     try {
-      const { transactionsTable } = this.validateState('markTransactionSent');
+      const state = this.validateState('markTransactionSent');
+      if (!state) return;
+      const { transactionsTable } = state;
 
       const transaction = await transactionsTable.where('transactionId').equals(transactionId).toArray();
       const keys = transaction.map<OfflineEntryKey>((entry) => [entry.fileId, entry.transactionId, entry.index]);
@@ -174,7 +194,9 @@ class Offline {
   // Checks whether there are any unsent transactions in the indexedDb (ie, whether we have transactions sent to the server but not received back).
   unsentTransactionsCount = async (): Promise<number> => {
     try {
-      const { transactionsTable, fileId } = this.validateState('unsentTransactionsCount');
+      const state = this.validateState('unsentTransactionsCount');
+      if (!state) return 0;
+      const { transactionsTable, fileId } = state;
 
       return await transactionsTable.where('fileId').equals(fileId).count();
     } catch (error) {
@@ -218,7 +240,9 @@ class Offline {
 
   // Used by tests to clear all entries from the indexedDb for this fileId
   testClear = async () => {
-    const { transactionsTable } = this.validateState('testClear');
+    const state = this.validateState('testClear');
+    if (!state) return;
+    const { transactionsTable } = state;
 
     await transactionsTable.clear();
   };

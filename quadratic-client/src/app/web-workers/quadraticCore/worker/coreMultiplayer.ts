@@ -22,7 +22,9 @@ class CoreMultiplayer {
   }
 
   private send(message: CoreMultiplayerMessage, transfer?: Transferable[]) {
-    if (!this.coreMessagePort) throw new Error('Expected coreMessagePort to be defined in CoreMultiplayer');
+    // In noMultiplayer mode (e.g., embed), coreMessagePort is never initialized.
+    // Transactions stay local-only and don't need to be sent.
+    if (!this.coreMessagePort) return;
     if (transfer) {
       this.coreMessagePort.postMessage(message, transfer);
     } else {

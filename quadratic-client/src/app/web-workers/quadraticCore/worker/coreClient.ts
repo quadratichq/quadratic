@@ -140,7 +140,7 @@ class CoreClient {
     switch (e.data.type) {
       case 'clientCoreLoad':
         this.sendStartupTimer('offlineSync', { start: performance.now() });
-        await offline.init(e.data.fileId);
+        await offline.init(e.data.fileId, e.data.noMultiplayer);
 
         this.send({
           type: 'coreClientLoad',

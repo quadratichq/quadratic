@@ -13,13 +13,12 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      padding: 20px;
       background: #f5f5f5;
     }
 
     .container {
       max-width: 1400px;
-      margin: 0 auto;
+      margin: 20px auto;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -46,7 +45,20 @@
 
     .controls {
       display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .controls-row {
+      display: flex;
       gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .query-params {
+      display: flex;
+      gap: 15px;
       flex-wrap: wrap;
       align-items: center;
     }
@@ -75,11 +87,32 @@
       background: #0056b3;
     }
 
+    .controls label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .controls input[type="checkbox"] {
+      width: auto;
+      min-width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+
     .iframe-container {
       position: relative;
-      width: 100%;
-      height: 800px;
-      border: none;
+      width: calc(100% - 40px);
+      aspect-ratio: 16 / 9;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+      margin: 20px 20px 10px 20px;
     }
 
     .iframe-container iframe {
@@ -126,69 +159,139 @@
   <div class="container">
     <div class="header">
       <h1>Test Quadratic Embed</h1>
-      <p>Enter a file UUID to test embedding the Quadratic spreadsheet in an iframe.</p>
+      <p>Enter any URL to test embedding the Quadratic spreadsheet in an iframe.</p>
       <div class="controls">
-        <input 
-          type="text" 
-          id="fileUuid" 
-          placeholder="Enter file UUID (e.g., abc123-def456-ghi789)"
-          value=""
-        />
-        <button onclick="loadEmbed()">Load Embed</button>
-        <button onclick="loadLocal()">Load Local (localhost:3000)</button>
+        <div class="controls-row">
+          <input 
+            type="text" 
+            id="urlInput" 
+            placeholder="Enter URL (e.g., https://app.quadratichq.com/file/abc123-def456-ghi789)"
+            value=""
+          />
+          <button onclick="loadUrl()">Load</button>
+        </div>
+        <div class="query-params">
+          <label>
+            <input type="checkbox" id="paramNoAi" />
+            noAi
+          </label>
+          <label>
+            <input type="checkbox" id="paramNoMultiplayer" />
+            noMultiplayer
+          </label>
+        </div>
       </div>
     </div>
     <div class="iframe-container" id="iframeContainer">
-      <div class="loading" id="loading">Enter a file UUID and click "Load Embed" to test</div>
+      <div class="loading" id="loading">Enter a URL and click "Load" to test</div>
       <iframe id="quadraticIframe" style="display: none;"></iframe>
     </div>
     <div class="info" id="info">
       <strong>Instructions:</strong><br>
-      1. Get a file UUID from your Quadratic dashboard<br>
-      2. Enter it in the input field above<br>
-      3. Click "Load Embed" to test with production, or "Load Local" to test with localhost:3000<br>
-      4. The app should load with <code>?embed</code> parameter, which enables embed mode<br><br>
-      <strong>Note:</strong> This page must be served with proper headers (COOP/COEP) for SharedArrayBuffer support.<br>
-      Use <code>node test-embed-server.js</code> to serve this file with the correct headers.
+      1. Enter any Quadratic URL in the input field above<br>
+      2. Select query parameters using the checkboxes<br>
+      3. Click "Load" to test the embed<br>
+      4. Your last URL and settings will be saved and automatically loaded on next visit<br><br>
+      <strong>Note:</strong> Use <code>node test-embed-server.js</code> to serve this file.
     </div>
-    <div id="sabStatus" style="padding: 10px 20px; background: #e7f3ff; border-top: 1px solid #b3d9ff; font-size: 12px; color: #004085;"></div>
   </div>
 
   <script>
-    function getBaseUrl() {
-      // Check if we're testing locally or production
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      return isLocal ? 'http://localhost:3000' : 'https://app.quadratichq.com';
+    const STORAGE_KEY_URL = 'test-embed-last-url';
+    const STORAGE_KEY_PARAMS = 'test-embed-params';
+
+    function saveSettings() {
+      const url = document.getElementById('urlInput').value.trim();
+      const params = {
+        noAi: document.getElementById('paramNoAi').checked,
+        noMultiplayer: document.getElementById('paramNoMultiplayer').checked,
+      };
+      
+      if (url) {
+        localStorage.setItem(STORAGE_KEY_URL, url);
+      }
+      localStorage.setItem(STORAGE_KEY_PARAMS, JSON.stringify(params));
     }
 
-    function loadEmbed() {
-      const fileUuid = document.getElementById('fileUuid').value.trim();
+    function loadSettings() {
+      const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
+      const savedParams = localStorage.getItem(STORAGE_KEY_PARAMS);
       
-      if (!fileUuid) {
-        showError('Please enter a file UUID');
+      if (savedUrl) {
+        document.getElementById('urlInput').value = savedUrl;
+      }
+      
+      if (savedParams) {
+        try {
+          const params = JSON.parse(savedParams);
+          document.getElementById('paramNoAi').checked = params.noAi || false;
+          document.getElementById('paramNoMultiplayer').checked = params.noMultiplayer || false;
+        } catch (e) {
+          console.error('Failed to parse saved params:', e);
+        }
+      }
+    }
+
+    function buildUrl(baseUrl) {
+      try {
+        // Ensure URL has a protocol
+        let urlString = baseUrl;
+        if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+          urlString = 'https://' + urlString;
+        }
+        
+        const url = new URL(urlString);
+        
+        // Always add embed param (since we're testing embeds)
+        url.searchParams.set('embed', '');
+        
+        // Remove and re-add noAi if needed
+        url.searchParams.delete('noAi');
+        if (document.getElementById('paramNoAi').checked) {
+          url.searchParams.set('noAi', '');
+        }
+        
+        // Remove and re-add noMultiplayer if needed
+        url.searchParams.delete('noMultiplayer');
+        if (document.getElementById('paramNoMultiplayer').checked) {
+          url.searchParams.set('noMultiplayer', '');
+        }
+        
+        return url.toString();
+      } catch (e) {
+        // If URL parsing fails, try manual string manipulation
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        let params = ['embed'];
+        
+        if (document.getElementById('paramNoAi').checked) {
+          params.push('noAi');
+        }
+        
+        if (document.getElementById('paramNoMultiplayer').checked) {
+          params.push('noMultiplayer');
+        }
+        
+        return baseUrl + separator + params.join('&');
+      }
+    }
+
+    function loadUrl() {
+      const urlInput = document.getElementById('urlInput').value.trim();
+      
+      if (!urlInput) {
+        showError('Please enter a URL');
         return;
       }
 
-      const baseUrl = 'https://app.quadratichq.com';
-      const embedUrl = `${baseUrl}/file/${fileUuid}?embed`;
-      
-      loadIframe(embedUrl);
-      updateInfo(`Loaded from: <code>${embedUrl}</code>`);
-    }
-
-    function loadLocal() {
-      const fileUuid = document.getElementById('fileUuid').value.trim();
-      
-      if (!fileUuid) {
-        showError('Please enter a file UUID');
-        return;
+      try {
+        const finalUrl = buildUrl(urlInput);
+        saveSettings();
+        loadIframe(finalUrl);
+        updateInfo(`Loaded from: <code>${finalUrl}</code>`);
+      } catch (e) {
+        showError('Invalid URL. Please enter a valid URL.');
+        console.error('URL error:', e);
       }
-
-      const baseUrl = 'http://localhost:3000';
-      const embedUrl = `${baseUrl}/file/${fileUuid}?embed`;
-      
-      loadIframe(embedUrl);
-      updateInfo(`Loaded from: <code>${embedUrl}</code> (local development)`);
     }
 
     function loadIframe(url) {
@@ -241,30 +344,30 @@
     }
 
     // Allow Enter key to trigger load
-    document.getElementById('fileUuid').addEventListener('keypress', function(e) {
+    document.getElementById('urlInput').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        loadEmbed();
+        loadUrl();
       }
     });
 
-    // Check SharedArrayBuffer support
-    function checkSharedArrayBuffer() {
-      const statusDiv = document.getElementById('sabStatus');
-      if (typeof SharedArrayBuffer !== 'undefined') {
-        statusDiv.innerHTML = '✅ SharedArrayBuffer is available (required headers are set correctly)';
-        statusDiv.style.background = '#d4edda';
-        statusDiv.style.borderColor = '#c3e6cb';
-        statusDiv.style.color = '#155724';
-      } else {
-        statusDiv.innerHTML = '⚠️ SharedArrayBuffer is NOT available. Make sure this page is served with Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy headers. Use: <code>node test-embed-server.js</code>';
-        statusDiv.style.background = '#fff3cd';
-        statusDiv.style.borderColor = '#ffc107';
-        statusDiv.style.color = '#856404';
-      }
-    }
+    // Save settings when checkbox changes
+    document.getElementById('paramNoAi').addEventListener('change', saveSettings);
+    document.getElementById('paramNoMultiplayer').addEventListener('change', saveSettings);
 
-    // Check on load
-    checkSharedArrayBuffer();
+    // Load saved settings on page load
+    loadSettings();
+    
+    // Auto-load if we have a saved URL
+    const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
+    if (savedUrl) {
+      // Small delay to ensure everything is initialized
+      setTimeout(() => {
+        const urlInput = document.getElementById('urlInput').value.trim();
+        if (urlInput) {
+          loadUrl();
+        }
+      }, 100);
+    }
   </script>
 </body>
 </html>

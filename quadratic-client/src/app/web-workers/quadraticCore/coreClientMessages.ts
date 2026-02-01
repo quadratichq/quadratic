@@ -45,6 +45,7 @@ export interface ClientCoreLoad {
   id: number;
   fileId: string;
   teamUuid: string;
+  noMultiplayer: boolean;
 }
 
 export interface CoreClientLoad {

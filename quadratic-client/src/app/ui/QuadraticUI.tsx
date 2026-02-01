@@ -10,7 +10,7 @@ import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
-import { isEmbed } from '@/app/helpers/isEmbed';
+import { isAiDisabled, isEmbed } from '@/app/helpers/isEmbed';
 import { AIGetFileName } from '@/app/ui/components/AIGetFileName';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
@@ -132,8 +132,8 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          {canEditFile && isAuthenticated && <AIAnalyst />}
-          {canEditFile && isAuthenticated && <AIAnalystConnectionSchema />}
+          {canEditFile && isAuthenticated && !isAiDisabled && <AIAnalyst />}
+          {canEditFile && isAuthenticated && !isAiDisabled && <AIAnalystConnectionSchema />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
@@ -148,7 +148,7 @@ export default function QuadraticUI() {
         </div>
       </div>
       {/* Global overlay menus */}
-      {canEditFile && isAuthenticated && <AIGetFileName />}
+      {canEditFile && isAuthenticated && !isAiDisabled && <AIGetFileName />}
       <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
       {presentationMode && <PresentationModeHint />}
