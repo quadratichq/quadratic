@@ -1,3 +1,4 @@
+import { getActionFileMove, type Action as FileAction } from '@/routes/api.files.$uuid';
 import type { Action as FileShareAction, FilesSharingLoader } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
@@ -11,6 +12,7 @@ import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
 import {
   Select,
   SelectContent,
@@ -20,6 +22,7 @@ import {
   SelectValue,
 } from '@/shared/shadcn/ui/select';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import { Switch } from '@/shared/shadcn/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -30,7 +33,6 @@ import {
   ExclamationTriangleIcon,
   GlobeIcon,
   LockClosedIcon,
-  PersonIcon,
 } from '@radix-ui/react-icons';
 import type {
   ApiTypes,
@@ -292,10 +294,10 @@ function ShareFileDialogBody({
 }) {
   const {
     file: { publicLinkAccess },
-    team: { uuid: teamUuid },
+    team: { uuid: teamUuid, name: teamName },
     users,
     invites,
-    userMakingRequest: { filePermissions, id: loggedInUserId },
+    userMakingRequest: { filePermissions, id: loggedInUserId, teamRole },
     owner,
   } = data;
   const fetchers = useFetchers();
@@ -340,8 +342,6 @@ function ShareFileDialogBody({
     [invites, owner, pendingInvites, users]
   );
 
-  const isTeamFile = useMemo(() => owner.type === 'team', [owner]);
-
   const hasPermissionToUpgradeToTeamMember = useMemo(
     () => data.userMakingRequest.teamRole === 'OWNER' || data.userMakingRequest.teamRole === 'EDITOR',
     [data.userMakingRequest.teamRole]
@@ -359,20 +359,17 @@ function ShareFileDialogBody({
         />
       )}
 
-      {isTeamFile && (
-        <ListItem className="py-1 text-muted-foreground">
-          <div className="flex h-6 w-6 items-center justify-center">
-            <PersonIcon className="-mr-[2px]" />
-            <PersonIcon className="-ml-[2px]" />
-          </div>
-          <Type variant="body2">Everyone at {owner.name}</Type>
-          <Type variant="body2" className="pr-4">
-            Can access
-          </Type>
-        </ListItem>
-      )}
-
       <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
+
+      {teamRole && (
+        <ListItemTeamFile
+          teamName={teamName}
+          ownerId={owner.type === 'user' ? owner.id : null}
+          uuid={uuid}
+          loggedInUserId={loggedInUserId}
+          disabled={teamRole === 'VIEWER'}
+        />
+      )}
 
       {owner.type === 'user' && (
         <ListItemUser
@@ -1129,8 +1126,8 @@ function ListItemUser({
   const secondary = error ? error : name ? email : '';
   return (
     <ListItem>
-      <div>
-        <Avatar src={picture} size="small">
+      <div className="flex h-9 w-9 items-center justify-center">
+        <Avatar src={picture} size="medium">
           {label}
         </Avatar>
       </div>
@@ -1146,6 +1143,59 @@ function ListItemUser({
       </div>
 
       <div>{action}</div>
+    </ListItem>
+  );
+}
+
+function ListItemTeamFile({
+  disabled,
+  teamName,
+  ownerId,
+  uuid,
+  loggedInUserId,
+}: {
+  disabled: boolean;
+  teamName: string;
+  ownerId: number | null;
+  uuid: string;
+  loggedInUserId: number;
+}) {
+  const fetcher = useFetcher();
+  const fetcherUrl = ROUTES.API.FILE(uuid);
+
+  let isTeamFile = ownerId === null;
+
+  // If we're updating, optimistically show the next value
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    const data = fetcher.json as FileAction['request.move'];
+    isTeamFile = data.ownerUserId === null;
+  }
+
+  const onCheckedChange = useCallback(
+    (checked: boolean) => {
+      // checked = true means make it a team file (ownerUserId: null)
+      // checked = false means make it a personal file (ownerUserId: loggedInUserId)
+      const data = getActionFileMove(checked ? null : loggedInUserId);
+      fetcher.submit(data, {
+        method: 'POST',
+        action: fetcherUrl,
+        encType: 'application/json',
+      });
+    },
+    [fetcher, fetcherUrl, loggedInUserId]
+  );
+
+  return (
+    <ListItem className="py-1">
+      <div className="flex h-6 w-9 items-center justify-center">
+        <Switch disabled={disabled} id="team-file-switch" checked={isTeamFile} onCheckedChange={onCheckedChange} />
+      </div>
+      <Label htmlFor="team-file-switch" className="font-normal">
+        Everyone at {teamName}
+      </Label>
+      <Type variant="body2" className="pr-4">
+        {isTeamFile ? 'Can access (team file)' : 'No access (personal file)'}
+      </Type>
     </ListItem>
   );
 }
@@ -1196,12 +1246,21 @@ function ListItemPublicLink({
 
   return (
     <ListItem>
-      <div className="flex h-6 w-6 items-center justify-center">
+      <div className="flex h-6 w-9 items-center justify-center">
+        <Switch
+          id="public-link-access-switch"
+          checked={publicLinkAccess !== 'NOT_SHARED'}
+          onCheckedChange={(checked) => {
+            setPublicLinkAccess(checked ? 'READONLY' : 'NOT_SHARED');
+          }}
+        />
         {publicLinkAccess === 'NOT_SHARED' ? <LockClosedIcon /> : <GlobeIcon />}
       </div>
 
       <div className={`flex flex-col`}>
-        <Type variant="body2">Anyone with the link</Type>
+        <Label htmlFor="public-link-access-switch" className="font-normal">
+          Anyone with the link
+        </Label>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
           <Type variant="caption" className="text-destructive">
             Failed to update
@@ -1210,11 +1269,10 @@ function ListItemPublicLink({
       </div>
 
       <div className="flex items-center gap-1">
-        {disabled ? (
-          <Type className="pr-4">{activeOptionLabel}</Type>
+        {disabled || publicLinkAccess === 'NOT_SHARED' ? (
+          <Type className="flex h-9 items-center pr-4">{activeOptionLabel}</Type>
         ) : (
           <Select
-            disabled={disabled}
             value={publicLinkAccess}
             onValueChange={(value: PublicLinkAccess) => {
               setPublicLinkAccess(value);
@@ -1224,11 +1282,13 @@ function ListItemPublicLink({
               <SelectValue>{activeOptionLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(optionsByValue).map(([value, label]) => (
-                <SelectItem value={value} key={value}>
-                  {label}
-                </SelectItem>
-              ))}
+              {Object.entries(optionsByValue)
+                .filter(([value]) => value !== 'NOT_SHARED')
+                .map(([value, label]) => (
+                  <SelectItem value={value} key={value}>
+                    {label}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         )}
