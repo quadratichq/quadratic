@@ -1,7 +1,22 @@
 import type multer from 'multer';
 import { STORAGE_TYPE } from '../env-vars';
-import { getPresignedStorageUrl, getPresignedUploadStorageUrl, multerFileSystemStorage, upload } from './fileSystem';
-import { generatePresignedUrl, generatePresignedUploadUrl, multerS3Storage, S3Bucket, uploadStringAsFileS3 } from './s3';
+import {
+  deleteFromFileService,
+  downloadFromFileService,
+  getPresignedStorageUrl,
+  getPresignedUploadStorageUrl,
+  multerFileSystemStorage,
+  upload,
+} from './fileSystem';
+import {
+  deleteS3Object,
+  generatePresignedUploadUrl,
+  generatePresignedUrl,
+  getS3Object,
+  multerS3Storage,
+  S3Bucket,
+  uploadStringAsFileS3,
+} from './s3';
 
 export type UploadFileResponse = {
   bucket: string;
@@ -70,5 +85,41 @@ export const uploadMiddleware = (bucket: S3Bucket): multer.Multer => {
       return multerFileSystemStorage as unknown as multer.Multer;
     default:
       throw new Error(`Unsupported storage type in uploadMiddleware(): ${STORAGE_TYPE}`);
+  }
+};
+
+// Get a presigned URL for uploading an unclaimed file.
+export const getUnclaimedFileUploadUrl = async (key: string): Promise<string> => {
+  switch (STORAGE_TYPE) {
+    case 's3':
+      return await generatePresignedUploadUrl(key, S3Bucket.FILES, 'application/octet-stream');
+    case 'file-system':
+      return getPresignedUploadStorageUrl(key);
+    default:
+      throw new Error(`Unsupported storage type in getUnclaimedFileUploadUrl(): ${STORAGE_TYPE}`);
+  }
+};
+
+// Download an unclaimed file's contents.
+export const getUnclaimedFile = async (key: string): Promise<Buffer> => {
+  switch (STORAGE_TYPE) {
+    case 's3':
+      return await getS3Object(key, S3Bucket.FILES);
+    case 'file-system':
+      return await downloadFromFileService(key);
+    default:
+      throw new Error(`Unsupported storage type in getUnclaimedFile(): ${STORAGE_TYPE}`);
+  }
+};
+
+// Delete an unclaimed file.
+export const deleteUnclaimedFile = async (key: string): Promise<void> => {
+  switch (STORAGE_TYPE) {
+    case 's3':
+      return await deleteS3Object(key, S3Bucket.FILES);
+    case 'file-system':
+      return await deleteFromFileService(key);
+    default:
+      throw new Error(`Unsupported storage type in deleteUnclaimedFile(): ${STORAGE_TYPE}`);
   }
 };

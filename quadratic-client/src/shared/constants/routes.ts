@@ -140,4 +140,6 @@ export const SEARCH_PARAMS = {
   REDIRECT_TO: { KEY: 'redirectTo' },
   // Used to open the scheduled tasks panel when the file loads
   SCHEDULED_TASKS: { KEY: 'scheduled-tasks' },
+  // Used to claim a file from embed mode after authentication
+  EMBED_CLAIM: { KEY: 'embedClaim' },
 } as const;

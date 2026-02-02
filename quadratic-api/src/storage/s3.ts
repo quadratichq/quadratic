@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Request } from 'express';
 import type { StorageEngine } from 'multer';
@@ -123,4 +123,35 @@ export const generatePresignedUploadUrl = async (
   });
 
   return await getSignedUrl(getS3Client(), command, { expiresIn: 60 * 60 }); // 1 hour
+};
+
+// Delete an object from S3
+export const deleteS3Object = async (key: string, bucket: S3Bucket): Promise<void> => {
+  const command = new DeleteObjectCommand({
+    Bucket: getBucketName(bucket),
+    Key: key,
+  });
+
+  await getS3Client().send(command);
+};
+
+// Get an object from S3 and return its contents as a Buffer
+export const getS3Object = async (key: string, bucket: S3Bucket): Promise<Buffer> => {
+  const command = new GetObjectCommand({
+    Bucket: getBucketName(bucket),
+    Key: key,
+  });
+
+  const response = await getS3Client().send(command);
+
+  if (!response.Body) {
+    throw new Error('Failed to get S3 object: empty body');
+  }
+
+  // Convert the readable stream to a buffer
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 };

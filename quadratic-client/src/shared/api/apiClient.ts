@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 // This should match the current version in quadratic-core/src/grid/file/mod.rs
-const FILE_VERSION = '1.12';
+export const FILE_VERSION = '1.12';
 
 export const apiClient = {
   teams: {
@@ -551,6 +551,23 @@ export const apiClient = {
         `/v0/ai/codeRunError`,
         { method: 'PATCH', body: JSON.stringify(body) },
         ApiSchemas['/v0/ai/codeRunError.PATCH.response']
+      );
+    },
+  },
+
+  embed: {
+    uploadRequest(body: ApiTypes['/v0/embed/upload-request.POST.request']) {
+      return fetchFromApi(
+        `/v0/embed/upload-request`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/embed/upload-request.POST.response']
+      );
+    },
+    claim(body: ApiTypes['/v0/embed/claim.POST.request']) {
+      return fetchFromApi(
+        `/v0/embed/claim`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/embed/claim.POST.response']
       );
     },
   },

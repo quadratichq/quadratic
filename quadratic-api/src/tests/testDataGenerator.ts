@@ -293,5 +293,6 @@ export async function clearDb() {
     dbClient.teamInvite.deleteMany(),
     dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
+    dbClient.unclaimedFile.deleteMany(),
   ]);
 }
