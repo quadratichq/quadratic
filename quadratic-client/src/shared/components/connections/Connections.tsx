@@ -178,6 +178,7 @@ export const Connections = ({
   }, []);
   const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
     setActiveConnectionState({ view: 'create', type: connectionType });
+    trackEvent('[Connections].start-create', { type: connectionType });
   }, []);
   const handleNavigateToCreatePotentialView: NavigateToCreatePotentialView = useCallback((connectionType) => {
     setActiveConnectionState({ view: 'create-potential', type: connectionType });
