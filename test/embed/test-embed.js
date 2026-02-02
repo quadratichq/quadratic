@@ -116,7 +116,7 @@ function loadUrl() {
     saveUrl();
     const finalUrl = buildUrlWithParams(urlInput);
     loadIframe(finalUrl);
-    updateInfo(`Loaded from: <code>${finalUrl}</code>`);
+    updateInfo(finalUrl);
     // Focus will be handled in loadIframe's onload handler
   } catch (e) {
     showError('Invalid URL. Please check and try again.');
@@ -159,9 +159,14 @@ function loadIframe(url) {
   };
 }
 
-function updateInfo(html) {
-  const info = document.getElementById('info');
-  info.innerHTML = `<strong>Current embed URL:</strong><br>${html}<br><br><strong>Note:</strong> Use <code>npm run test:embed</code> to open this test.`;
+function updateInfo(url) {
+  document.getElementById('currentUrl').textContent = url;
+  document.getElementById('copyUrlBtn').style.display = url && url !== 'none' ? 'inline' : 'none';
+}
+
+function copyCurrentUrl() {
+  const url = document.getElementById('currentUrl').textContent;
+  navigator.clipboard.writeText(url);
 }
 
 function showError(message) {
@@ -282,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentBaseUrl) {
       const finalUrl = buildUrlWithParams(currentBaseUrl);
       loadIframe(finalUrl);
-      updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      updateInfo(finalUrl);
     }
   });
 
@@ -291,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentBaseUrl) {
       const finalUrl = buildUrlWithParams(currentBaseUrl);
       loadIframe(finalUrl);
-      updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      updateInfo(finalUrl);
     }
   });
 
@@ -300,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentBaseUrl) {
       const finalUrl = buildUrlWithParams(currentBaseUrl);
       loadIframe(finalUrl);
-      updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      updateInfo(finalUrl);
     }
   });
 
@@ -308,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentBaseUrl) {
       const finalUrl = buildUrlWithParams(currentBaseUrl);
       loadIframe(finalUrl);
-      updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      updateInfo(finalUrl);
     }
   });
 
@@ -318,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentBaseUrl) {
       const finalUrl = buildUrlWithParams(currentBaseUrl);
       loadIframe(finalUrl);
-      updateInfo(`Reloaded with: <code>${finalUrl}</code>`);
+      updateInfo(finalUrl);
     }
   });
 

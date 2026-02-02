@@ -17,7 +17,7 @@ body {
 }
 
 .header {
-  padding: 20px;
+  padding: 20px 20px 10px 20px;
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -242,7 +242,6 @@ body {
   background: #f8f9fa;
   border: 2px solid #e0e0e0;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-size: 12px;
   color: #666;
 }
@@ -252,6 +251,21 @@ body {
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.copy-btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  background: #e9ecef;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover {
+  background: #ddd;
 }
 
 .error {

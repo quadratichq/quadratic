@@ -50,9 +50,13 @@
       <iframe id="quadraticIframe" style="display: none;"></iframe>
     </div>
     <div class="info" id="info">
+      <strong>Current embed URL:</strong> <code id="currentUrl">none</code>
+      <button id="copyUrlBtn" class="copy-btn" style="display: none;" onclick="copyCurrentUrl()">Copy</button>
+      <br><br>
       <strong>Instructions:</strong><br>
       1. Enter an embed URL (e.g., <code>http://localhost:3000/embed?fileId=xxx</code> or <code>https://app.quadratichq.com/embed?import=https://localhost:8080/excel-formulas.xlsx</code>)<br>
       2. Click "Load" to test the embed<br>
+      3. If using <code>fileId</code>, the Quadratic file needs to be shared with the public (can be view or edit)<br>
       3. Your last URL will be saved and automatically loaded on next visit<br>
       4. Changing the flags will reload the embed with those options<br><br>
       <strong>Note:</strong> Use <code>npm run test:embed</code> to run this file.
