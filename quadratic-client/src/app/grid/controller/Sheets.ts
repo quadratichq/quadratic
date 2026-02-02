@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { embedSheetName, isEmbed } from '@/app/helpers/isEmbed';
 import type {
   A1Selection,
   CellRefRange,
@@ -72,12 +73,19 @@ export class Sheets {
     });
     this.sort();
 
-    // Look for an initial active sheet in the URL. If it's not there, use the first sheet
-    const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
-    if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
-      this._current = initialActiveSheetId;
+    // Look for an initial active sheet in the URL. If it's not there, use the first sheet.
+    // In embed mode with a sheet name, use the sheet name to find the sheet.
+    // Otherwise, use the sheet ID from the URL param.
+    if (isEmbed && embedSheetName) {
+      const sheet = this.getSheetByName(embedSheetName, true);
+      this._current = sheet ? sheet.id : this.sheets[0].id;
     } else {
-      this._current = this.sheets[0].id;
+      const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
+      if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
+        this._current = initialActiveSheetId;
+      } else {
+        this._current = this.sheets[0].id;
+      }
     }
 
     content.cellsSheets.create();

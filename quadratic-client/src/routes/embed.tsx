@@ -4,6 +4,7 @@ import { EmbedApp } from '@/app/embed/EmbedApp';
 import { events } from '@/app/events/events';
 import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
+import { isReadonly } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import type { CoreClientImportProgress } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -132,12 +133,19 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
       throw new Error('Expected quadraticCore.load to return either a version or an error');
     }
 
-    // In embed mode, always allow editing since changes are local only
-    if (!data.userMakingRequest.filePermissions.includes(FilePermissionSchema.enum.FILE_EDIT)) {
+    // In embed mode, allow editing since changes are local only (unless readonly is set)
+    const url = new URL(request.url);
+    const isReadonlyParam = url.searchParams.get('readonly') !== null;
+    if (!isReadonlyParam && !data.userMakingRequest.filePermissions.includes(FilePermissionSchema.enum.FILE_EDIT)) {
       data.userMakingRequest.filePermissions = [
         ...data.userMakingRequest.filePermissions,
         FilePermissionSchema.enum.FILE_EDIT,
       ];
+    } else if (isReadonlyParam) {
+      // Remove FILE_EDIT permission if readonly is set
+      data.userMakingRequest.filePermissions = data.userMakingRequest.filePermissions.filter(
+        (p) => p !== FilePermissionSchema.enum.FILE_EDIT
+      );
     }
 
     startupTimer.end('file.loader');
@@ -312,11 +320,14 @@ export const Component = memo(() => {
           teamUuid: fileData.team.uuid,
         }));
       } else {
-        // For import mode, set minimal permissions (edit allowed since local only)
+        // For import mode, set minimal permissions (edit allowed since local only, unless readonly)
         // Generate a random UUID so EmbedApp can initialize
+        const permissions = isReadonly
+          ? [FilePermissionSchema.enum.FILE_VIEW]
+          : [FilePermissionSchema.enum.FILE_VIEW, FilePermissionSchema.enum.FILE_EDIT];
         set(editorInteractionStateAtom, (prevState) => ({
           ...prevState,
-          permissions: [FilePermissionSchema.enum.FILE_VIEW, FilePermissionSchema.enum.FILE_EDIT],
+          permissions,
           user: undefined, // Anonymous in embed mode
           fileUuid: crypto.randomUUID(),
           teamUuid: crypto.randomUUID(),

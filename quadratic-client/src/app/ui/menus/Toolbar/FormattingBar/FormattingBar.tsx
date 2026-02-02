@@ -6,6 +6,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import {
   AlignmentFormatting,
@@ -20,6 +21,7 @@ import {
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
+import { cn } from '@/shared/shadcn/utils';
 import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useRecoilValue } from 'recoil';
@@ -64,9 +66,15 @@ export const FormattingBar = memo(() => {
     // check if any of the formatting groups are too wide to fit on the formatting bar
     const checkFit = () => {
       // ensure all refs are defined before checking fit
-      if (!menuRef.current) return;
+      if (!menuRef.current) {
+        console.log('[FormattingBar] checkFit: menuRef.current is null');
+        return;
+      }
       for (const ref in refs) {
-        if (!refs[ref as FormattingTypes].current) return;
+        if (!refs[ref as FormattingTypes].current) {
+          console.log(`[FormattingBar] checkFit: ref ${ref} is null`);
+          return;
+        }
       }
 
       const menuWidth = menuRef.current?.clientWidth;
@@ -74,12 +82,19 @@ export const FormattingBar = memo(() => {
 
       // First, calculate total width without more button
       let totalWidth = 0;
+      const itemWidths: Record<string, number> = {};
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
         if (itemWidth) {
           totalWidth += itemWidth;
+          itemWidths[key] = itemWidth;
         }
       });
+
+      console.log(
+        `[FormattingBar] checkFit: menuWidth=${menuWidth}, totalWidth=${totalWidth}, moreButtonWidth=${moreButtonWidth}, fitsWithoutMore=${totalWidth <= menuWidth}`
+      );
+      console.log('[FormattingBar] itemWidths:', JSON.stringify(itemWidths));
 
       // If everything fits without more button, show everything
       if (totalWidth <= menuWidth) {
@@ -105,13 +120,27 @@ export const FormattingBar = memo(() => {
       if (hiddenItems.length === 1) {
         hiddenItems.pop();
       }
+      console.log('[FormattingBar] hiddenItems:', hiddenItems);
       setHiddenItems(hiddenItems);
     };
 
-    checkFit();
+    // Use ResizeObserver to detect container width changes (works for initial render
+    // and when embed/container size changes without a window resize event)
+    const resizeObserver = new ResizeObserver(checkFit);
+    if (menuRef.current) {
+      resizeObserver.observe(menuRef.current);
+    }
+
+    // Also listen to window resize as a fallback
     window.addEventListener('resize', checkFit);
+
+    // Run checkFit after a frame to ensure layout is calculated
+    const rafId = requestAnimationFrame(checkFit);
+
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', checkFit);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -191,7 +220,7 @@ export const FormattingBar = memo(() => {
         document.body
       )}
 
-      <div className="flex h-full w-full flex-grow" ref={menuRef}>
+      <div className="flex h-full min-w-0 flex-1 overflow-hidden" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
           <div className="flex flex-shrink select-none">
             {!hiddenItems.includes('NumberFormatting') && (
@@ -223,7 +252,7 @@ export const FormattingBar = memo(() => {
                   <FormatMoreButton setShowMore={setShowMore} showMore={showMore} />
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="hidden w-fit p-2 md:block" align="start">
+              <PopoverContent className={cn('w-fit p-2', isEmbed ? 'block' : 'hidden md:block')} align="start">
                 <div className="flex gap-1 text-sm">
                   {hiddenItems.includes('NumberFormatting') && (
                     <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />

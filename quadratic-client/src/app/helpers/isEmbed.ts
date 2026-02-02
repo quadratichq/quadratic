@@ -16,7 +16,13 @@ function getEmbedSettings() {
   // Can also be explicitly set via query param
   const isNoMultiplayer = searchParams.get('noMultiplayer') !== null || isEmbed;
 
-  return { isEmbed, isAiDisabled, isNoMultiplayer };
+  // Sheet name to show (only in embed mode). When set, the sheet bar is hidden.
+  const embedSheetName = isEmbed ? searchParams.get('sheet') : null;
+
+  // Readonly mode (only in embed mode). When set, the user cannot edit the sheet.
+  const isReadonly = isEmbed && searchParams.get('readonly') !== null;
+
+  return { isEmbed, isAiDisabled, isNoMultiplayer, embedSheetName, isReadonly };
 }
 
 const embedSettings = getEmbedSettings();
@@ -42,3 +48,17 @@ export const isAiDisabled = embedSettings.isAiDisabled;
  * Always true when embedded (via route or query param).
  */
 export const isNoMultiplayer = embedSettings.isNoMultiplayer;
+
+/**
+ * The sheet name to show in embed mode.
+ * When set via `sheet` query param in embed mode, the specified sheet
+ * is shown and the sheet bar is hidden.
+ */
+export const embedSheetName = embedSettings.embedSheetName;
+
+/**
+ * Whether the embed is in readonly mode.
+ * When set via `readonly` query param in embed mode, the user cannot
+ * edit the sheet.
+ */
+export const isReadonly = embedSettings.isReadonly;

@@ -1,6 +1,7 @@
 import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
+import { embedSheetName } from '@/app/helpers/isEmbed';
 import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
@@ -18,9 +19,11 @@ import { useRecoilValue } from 'recoil';
  * Button to open the file in the full Quadratic app.
  * Currently non-functional - will be implemented in a future update.
  */
-const EditInQuadraticButton = () => {
+const EditInQuadraticButton = ({ showSheetBar }: { showSheetBar: boolean }) => {
   return (
-    <div className="absolute bottom-10 right-2 z-10 flex justify-end rounded-md border border-border bg-background shadow-md">
+    <div
+      className={`absolute right-2 z-10 flex justify-end rounded-md border border-border bg-background shadow-md ${showSheetBar ? 'bottom-10' : 'bottom-2'}`}
+    >
       <Button
         variant="default"
         size="sm"
@@ -81,7 +84,14 @@ export function EmbedUI() {
         flexDirection: 'column',
       }}
     >
-      <Toolbar />
+      <div className="flex items-center">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center border-b border-r border-border">
+          <QuadraticLogo />
+        </div>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <Toolbar />
+        </div>
+      </div>
       <div
         style={{
           width: '100%',
@@ -93,8 +103,8 @@ export function EmbedUI() {
       >
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <QuadraticGrid />
-          <EditInQuadraticButton />
-          <SheetBar />
+          <EditInQuadraticButton showSheetBar={!embedSheetName} />
+          {!embedSheetName && <SheetBar />}
           <FloatingFPS />
         </div>
         <CodeEditor />
