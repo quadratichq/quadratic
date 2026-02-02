@@ -445,9 +445,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     } catch (error) {
       console.error('[IndexDataSource] Error updating semantic layer:', error);
       return [
-        createTextContent(
-          `Error updating semantic layer: ${error instanceof Error ? error.message : String(error)}`
-        ),
+        createTextContent(`Error updating semantic layer: ${error instanceof Error ? error.message : String(error)}`),
       ];
     }
   },
