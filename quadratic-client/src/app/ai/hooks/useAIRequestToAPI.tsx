@@ -1,3 +1,4 @@
+import { aiAnalystContextUsageAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { authClient } from '@/auth/auth';
@@ -22,7 +23,7 @@ export function useAIRequestToAPI() {
   const { isOnPaidPlan, setIsOnPaidPlan } = useIsOnPaidPlan();
 
   const handleAIRequestToAPI = useRecoilCallback(
-    ({ snapshot }) =>
+    ({ snapshot, set }) =>
       async ({
         setMessages,
         signal,
@@ -159,6 +160,19 @@ export function useAIRequestToAPI() {
 
           setIsOnPaidPlan(responseMessage.isOnPaidPlan);
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
+
+          // TODO(context-size-merge): Remove this after merging with main branch AI refactor
+          // Update context usage from API response when available (only for AI Analyst, not Assistant or auxiliary calls)
+          const usage = (responseMessage as any).usage;
+          if (usage && source === 'AIAnalyst') {
+            set(aiAnalystContextUsageAtom, {
+              inputTokens: usage.inputTokens ?? 0,
+              outputTokens: usage.outputTokens ?? 0,
+              cacheReadTokens: usage.cacheReadTokens ?? 0,
+              cacheWriteTokens: usage.cacheWriteTokens ?? 0,
+              modelKey: responseMessage.modelKey,
+            });
+          }
 
           return {
             content: responseMessage.content,

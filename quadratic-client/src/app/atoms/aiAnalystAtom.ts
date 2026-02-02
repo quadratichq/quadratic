@@ -18,6 +18,15 @@ import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
 
+// TODO(context-size-merge): Remove this interface after merging with main branch AI refactor
+export interface AIContextUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  modelKey?: string;
+}
+
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   activeSchemaConnectionUuid: string | undefined;
@@ -43,6 +52,8 @@ export interface AIAnalystState {
   };
   waitingOnMessageIndex?: number;
   failingSqlConnections: { uuids: string[]; lastResetTimestamp: number };
+  // TODO(context-size-merge): Remove this after merging with main branch AI refactor
+  contextUsage: AIContextUsage | undefined;
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -75,6 +86,8 @@ export const defaultAIAnalystState: AIAnalystState = {
   },
   waitingOnMessageIndex: undefined,
   failingSqlConnections: { uuids: [], lastResetTimestamp: 0 },
+  // TODO(context-size-merge): Remove this after merging with main branch AI refactor
+  contextUsage: undefined,
 };
 
 export let aiAnalystInitialized = false;
@@ -445,6 +458,21 @@ export const aiAnalystFailingSqlConnectionsAtom = selector<{ uuids: string[]; la
       }
 
       return { ...prev, failingSqlConnections: newValue };
+    });
+  },
+});
+
+// TODO(context-size-merge): Remove this selector after merging with main branch AI refactor
+export const aiAnalystContextUsageAtom = selector<AIContextUsage | undefined>({
+  key: 'aiAnalystContextUsageAtom',
+  get: ({ get }) => get(aiAnalystAtom).contextUsage,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      return { ...prev, contextUsage: newValue };
     });
   },
 });

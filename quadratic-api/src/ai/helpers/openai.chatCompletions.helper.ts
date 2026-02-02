@@ -303,7 +303,9 @@ export async function parseOpenAIChatCompletionsStream(
     }));
   }
 
-  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  // TODO(context-size-merge): Remove usage from responseMessage after merging with main branch AI refactor
+  const responseMessageWithUsage = { ...responseMessage, usage };
+  response?.write(`data: ${JSON.stringify(responseMessageWithUsage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
   }
@@ -351,8 +353,6 @@ export function parseOpenAIChatCompletionsResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
   const usage: AIUsage = {
     inputTokens: (result.usage?.prompt_tokens ?? 0) - cacheReadTokens,
@@ -360,6 +360,9 @@ export function parseOpenAIChatCompletionsResponse(
     cacheReadTokens,
     cacheWriteTokens: 0,
   };
+
+  // TODO(context-size-merge): Remove usage from responseMessage after merging with main branch AI refactor
+  response?.json({ ...responseMessage, usage });
 
   return { responseMessage, usage };
 }

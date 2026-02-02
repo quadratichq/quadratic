@@ -439,7 +439,9 @@ export async function parseAnthropicStream(
     });
   }
 
-  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  // TODO(context-size-merge): Remove usage from responseMessage after merging with main branch AI refactor
+  const responseMessageWithUsage = { ...responseMessage, usage };
+  response?.write(`data: ${JSON.stringify(responseMessageWithUsage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
   }
@@ -506,14 +508,15 @@ export function parseAnthropicResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: result.usage.input_tokens,
     outputTokens: result.usage.output_tokens,
     cacheReadTokens: result.usage.cache_read_input_tokens ?? 0,
     cacheWriteTokens: result.usage.cache_creation_input_tokens ?? 0,
   };
+
+  // TODO(context-size-merge): Remove usage from responseMessage after merging with main branch AI refactor
+  response?.json({ ...responseMessage, usage });
 
   return { responseMessage, usage };
 }

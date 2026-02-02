@@ -390,7 +390,9 @@ export async function parseGenAIStream(
     });
   }
 
-  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  // TODO(context-size-merge): Remove usage from responseMessage after merging with main branch AI refactor
+  const responseMessageWithUsage = { ...responseMessage, usage };
+  response?.write(`data: ${JSON.stringify(responseMessageWithUsage)}\n\n`);
 
   if (!response?.writableEnded) {
     response?.end();
@@ -444,14 +446,15 @@ export function parseGenAIResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: (result.usageMetadata?.promptTokenCount ?? 0) - (result.usageMetadata?.cachedContentTokenCount ?? 0),
     outputTokens: result.usageMetadata?.candidatesTokenCount ?? 0,
     cacheReadTokens: result.usageMetadata?.cachedContentTokenCount ?? 0,
     cacheWriteTokens: 0,
   };
+
+  // TODO(context-size-merge): Remove usage from responseMessage after merging with main branch AI refactor
+  response?.json({ ...responseMessage, usage });
 
   return { responseMessage, usage };
 }

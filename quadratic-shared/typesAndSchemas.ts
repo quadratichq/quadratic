@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { AILanguagePreferencesSchema, AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
+// TODO(context-size-merge): Remove AIUsageSchema import after merging with main branch AI refactor
+import {
+  AILanguagePreferencesSchema,
+  AIMessagePromptSchema,
+  AIRequestBodySchema,
+  AIUsageSchema,
+} from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
@@ -596,6 +602,8 @@ export const ApiSchemas = {
       isOnPaidPlan: z.boolean(),
       exceededBillingLimit: z.boolean(),
       error: z.boolean().optional(),
+      // TODO(context-size-merge): Remove usage field after merging with main branch AI refactor
+      usage: AIUsageSchema.optional(),
     })
   ),
 

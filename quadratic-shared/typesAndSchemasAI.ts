@@ -598,7 +598,8 @@ export const AIRequestBodySchema = z.object({
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
 
-const AIUsageSchema = z.object({
+// TODO(context-size-merge): Remove export after merging with main branch AI refactor (was not exported before)
+export const AIUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   cacheReadTokens: z.number(),
