@@ -1,3 +1,4 @@
+import type { PlaidCategory } from '@/shared/components/connections/Connections';
 import * as Bigquery from '@/shared/components/connections/ConnectionFormBigquery';
 import * as Cockroachdb from '@/shared/components/connections/ConnectionFormCockroachdb';
 import * as GoogleAnalytics from '@/shared/components/connections/ConnectionFormGoogleAnalytics';
@@ -66,6 +67,7 @@ export type ConnectionFormComponent<T extends ConnectionFormValues> = (props: {
   percentCompleted?: number;
   connection?: Connection;
   teamUuid: string;
+  plaidCategory?: PlaidCategory;
 }) => ReactNode;
 
 type ConnectionTypeData<T extends ConnectionFormValues> = {

@@ -1,4 +1,8 @@
-import type { NavigateToCreatePotentialView, NavigateToCreateView } from '@/shared/components/connections/Connections';
+import type {
+  NavigateToCreatePotentialView,
+  NavigateToCreateView,
+  PlaidCategory,
+} from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { AddIcon, FeedbackIcon } from '@/shared/components/Icons';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
@@ -15,7 +19,7 @@ import RobinhoodLogo from './logo-plaid-robinhood.svg?react';
 import VanguardLogo from './logo-plaid-vanguard.svg?react';
 import PlaidLogo from './logo-plaid.svg?react';
 
-const plaidConnections = [
+const plaidConnections: Array<{ name: PlaidCategory; logos: React.ComponentType[] }> = [
   { name: 'Banks', logos: [ChaseLogo, CitiLogo, BOALogo] },
 
   {
@@ -77,7 +81,7 @@ export const ConnectionsNew = ({
           <div className="mb-2 mt-2">
             <button
               className="grid-template-columns-2 grid w-full grid-cols-2 grid-rows-2 items-center justify-items-center gap-4 rounded border border-border p-6 shadow-sm hover:bg-accent"
-              onClick={() => handleNavigateToCreateView('PLAID')}
+              onClick={() => handleNavigateToCreateView('PLAID', name)}
             >
               {logos.map((Logo) => (
                 <Logo key={Logo.name} />
