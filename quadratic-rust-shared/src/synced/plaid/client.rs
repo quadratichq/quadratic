@@ -403,6 +403,7 @@ impl PlaidClient {
             "transactions" => Some("transactions"),
             "investments" => Some("investments"),
             "liabilities" => Some("liabilities"),
+            "balance" => Some("balance"),
             _ => None,
         }
     }
@@ -435,7 +436,7 @@ impl SyncedClient for PlaidClient {
     /// Get all possible streams for Plaid.
     /// Note: Use `available_streams()` to get streams for a specific connection.
     fn streams() -> Vec<&'static str> {
-        vec!["transactions", "investments", "liabilities"]
+        vec!["transactions", "investments", "liabilities", "balance"]
     }
 
     /// Test the connection to the Plaid API.
@@ -465,6 +466,11 @@ impl SyncedClient for PlaidClient {
             },
             "liabilities" => match self.get_liabilities().await {
                 Ok(data) => process_snapshot(data, stream, end_date).map(Some),
+                Err(e) if is_stream_not_supported(&e) => Ok(None),
+                Err(e) => Err(e),
+            },
+            "balance" => match self.get_balances().await {
+                Ok(data) => process_accounts_snapshot(data, stream, end_date).map(Some),
                 Err(e) if is_stream_not_supported(&e) => Ok(None),
                 Err(e) => Err(e),
             },
@@ -522,6 +528,7 @@ fn is_stream_not_supported(err: &SharedError) -> bool {
         || err_str.contains("PRODUCTS_NOT_SUPPORTED")
         || err_str.contains("NO_INVESTMENT_ACCOUNTS")
         || err_str.contains("NO_LIABILITY_ACCOUNTS")
+        || err_str.contains("NO_ACCOUNTS")
 }
 
 /// Process time-series data (transactions, investments) - group by date
@@ -559,7 +566,7 @@ fn process_time_series(
             .and_then(|v| v.as_str())
             .unwrap_or("unknown")
             .to_string();
-        let flattened = flatten_to_json(item);
+        let flattened = flatten_to_json(item, false);
         let json_str = serde_json::to_string(&flattened)
             .map_err(|e| SharedError::Synced(format!("Failed to serialize {}: {}", stream, e)))?;
         grouped.entry(date_key).or_default().push(json_str);
@@ -579,7 +586,8 @@ fn process_time_series(
     grouped_json_to_parquet(grouped)
 }
 
-/// Process snapshot data (liabilities) - all records under single date
+/// Process snapshot data (liabilities) - all records under single date.
+/// Adds a `date` column to each record for tracking when the snapshot was captured.
 fn process_snapshot(
     data: serde_json::Value,
     stream: &str,
@@ -588,20 +596,30 @@ fn process_snapshot(
     use crate::parquet::json::grouped_json_to_parquet;
 
     let mut records = Vec::new();
+    let date_str = date.format(DATE_FORMAT).to_string();
 
     // Flatten nested object structure (e.g., liabilities.credit, liabilities.mortgage)
     if let Some(obj) = data.as_object() {
         for (item_type, items) in obj {
             if let Some(array) = items.as_array() {
                 for item in array {
-                    let mut flattened = flatten_to_json(item);
+                    let flattened = flatten_to_json(item, false);
 
-                    flattened.insert(
+                    // Create new map with date first, then extend with other fields
+                    let mut ordered = serde_json::Map::new();
+                    ordered.insert(
+                        "date".to_string(),
+                        serde_json::Value::String(date_str.clone()),
+                    );
+                    ordered.extend(flattened);
+
+                    // Add liability type (e.g., credit, mortgage, student)
+                    ordered.insert(
                         format!("{}_type", stream.trim_end_matches('s')),
                         serde_json::Value::String(item_type.clone()),
                     );
 
-                    let json_str = serde_json::to_string(&flattened).map_err(|e| {
+                    let json_str = serde_json::to_string(&ordered).map_err(|e| {
                         SharedError::Synced(format!("Failed to serialize {}: {}", stream, e))
                     })?;
 
@@ -624,7 +642,56 @@ fn process_snapshot(
     );
 
     let mut grouped = HashMap::new();
-    grouped.insert(date.format(DATE_FORMAT).to_string(), records);
+    grouped.insert(date_str, records);
+    grouped_json_to_parquet(grouped)
+}
+
+/// Process accounts snapshot data (balance) - array of accounts under single date.
+/// Adds a `date` column to each record for tracking when the balance was captured.
+fn process_accounts_snapshot(
+    data: serde_json::Value,
+    stream: &str,
+    date: NaiveDate,
+) -> Result<HashMap<String, Bytes>> {
+    use crate::parquet::json::grouped_json_to_parquet;
+
+    let mut records = Vec::new();
+    let date_str = date.format(DATE_FORMAT).to_string();
+
+    // Accounts come as a flat array, recursively flatten nested objects like balances
+    if let Some(accounts) = data.as_array() {
+        for account in accounts {
+            let flattened = flatten_to_json(account, true);
+
+            // Create new map with date first, then extend with other fields
+            let mut ordered = serde_json::Map::new();
+            ordered.insert(
+                "date".to_string(),
+                serde_json::Value::String(date_str.clone()),
+            );
+            ordered.extend(flattened);
+
+            let json_str = serde_json::to_string(&ordered).map_err(|e| {
+                SharedError::Synced(format!("Failed to serialize {}: {}", stream, e))
+            })?;
+            records.push(json_str);
+        }
+    }
+
+    if records.is_empty() {
+        tracing::warn!("No {} found", stream);
+        return Ok(HashMap::new());
+    }
+
+    tracing::trace!(
+        "Processing {} {} records for {}",
+        records.len(),
+        stream,
+        date
+    );
+
+    let mut grouped = HashMap::new();
+    grouped.insert(date_str, records);
     grouped_json_to_parquet(grouped)
 }
 
@@ -649,8 +716,8 @@ mod tests {
             PlaidClient::product_to_stream("liabilities"),
             Some("liabilities")
         );
+        assert_eq!(PlaidClient::product_to_stream("balance"), Some("balance"));
         assert_eq!(PlaidClient::product_to_stream("auth"), None);
-        assert_eq!(PlaidClient::product_to_stream("balance"), None);
         assert_eq!(PlaidClient::product_to_stream("identity"), None);
         assert_eq!(PlaidClient::product_to_stream("unknown"), None);
     }
