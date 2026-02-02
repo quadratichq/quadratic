@@ -66,15 +66,9 @@ export const FormattingBar = memo(() => {
     // check if any of the formatting groups are too wide to fit on the formatting bar
     const checkFit = () => {
       // ensure all refs are defined before checking fit
-      if (!menuRef.current) {
-        console.log('[FormattingBar] checkFit: menuRef.current is null');
-        return;
-      }
+      if (!menuRef.current) return;
       for (const ref in refs) {
-        if (!refs[ref as FormattingTypes].current) {
-          console.log(`[FormattingBar] checkFit: ref ${ref} is null`);
-          return;
-        }
+        if (!refs[ref as FormattingTypes].current) return;
       }
 
       const menuWidth = menuRef.current?.clientWidth;
@@ -82,19 +76,12 @@ export const FormattingBar = memo(() => {
 
       // First, calculate total width without more button
       let totalWidth = 0;
-      const itemWidths: Record<string, number> = {};
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
         if (itemWidth) {
           totalWidth += itemWidth;
-          itemWidths[key] = itemWidth;
         }
       });
-
-      console.log(
-        `[FormattingBar] checkFit: menuWidth=${menuWidth}, totalWidth=${totalWidth}, moreButtonWidth=${moreButtonWidth}, fitsWithoutMore=${totalWidth <= menuWidth}`
-      );
-      console.log('[FormattingBar] itemWidths:', JSON.stringify(itemWidths));
 
       // If everything fits without more button, show everything
       if (totalWidth <= menuWidth) {
@@ -120,7 +107,6 @@ export const FormattingBar = memo(() => {
       if (hiddenItems.length === 1) {
         hiddenItems.pop();
       }
-      console.log('[FormattingBar] hiddenItems:', hiddenItems);
       setHiddenItems(hiddenItems);
     };
 

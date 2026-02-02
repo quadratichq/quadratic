@@ -85,9 +85,15 @@ export function EmbedUI() {
       }}
     >
       <div className="flex items-center">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center border-b border-r border-border">
+        <a
+          href="https://app.quadratichq.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center border-b border-r border-border transition-colors hover:bg-accent"
+          title="Open Quadratic"
+        >
           <QuadraticLogo />
-        </div>
+        </a>
         <div className="min-w-0 flex-1 overflow-hidden">
           <Toolbar />
         </div>
