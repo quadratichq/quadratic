@@ -74,7 +74,7 @@ async function handler(req: RequestWithUser, res: Response<CreateAIMultiplayerSe
   const session: AIMultiplayerSession = {
     id: uuidv4(),
     fileId,
-    userId,
+    userId: String(userId),
     agents,
     currentTurnAgentId: null,
     status: 'initializing',

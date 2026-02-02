@@ -37,7 +37,7 @@ async function handler(req: RequestWithUser, res: Response) {
   }
 
   // Verify user owns the session
-  if (session.userId !== userId) {
+  if (session.userId !== String(userId)) {
     throw new ApiError(403, 'Not authorized to access this session');
   }
 
