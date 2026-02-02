@@ -263,6 +263,7 @@ export const handleOnboarding = async (page: Page) => {
   // 1. The onboarding URL to appear, OR
   // 2. The onboarding button element to appear
   const onboardingBtnUsePersonal = page.locator('[data-testid="onboarding-btn-use-personal"]');
+  const onboardingQuestionTitle = page.getByText('How will you use Quadratic?');
 
   // First, wait for URL to potentially change to onboarding (with timeout)
   try {
@@ -275,26 +276,34 @@ export const handleOnboarding = async (page: Page) => {
   const currentUrl = page.url();
   const isOnOnboardingUrl = currentUrl.includes('/onboarding');
 
-  // Now check if onboarding button is visible
-  // If we're on the onboarding URL, be more patient and wait longer
-  const timeoutForButton = isOnOnboardingUrl ? 30 * 1000 : 15 * 1000;
-  const isOnboardingVisible = await onboardingBtnUsePersonal
-    .isVisible({ timeout: timeoutForButton })
-    .catch(() => false);
+  // If we're on the onboarding URL, wait for the page to be ready
+  if (isOnOnboardingUrl) {
+    // Wait for the question title to appear as a reliable indicator that the page is loaded
+    try {
+      await onboardingQuestionTitle.waitFor({ state: 'visible', timeout: 30 * 1000 });
+    } catch {
+      // Question title didn't appear, might not be onboarding or page is still loading
+    }
 
-  // If onboarding button is not visible, check if we're already past onboarding
-  if (!isOnboardingVisible) {
-    // Check if we're on the onboarding URL - if so, wait a bit more for elements to load
-    if (isOnOnboardingUrl) {
-      // Wait for the page to fully load
-      await page.waitForLoadState('networkidle', { timeout: 10 * 1000 }).catch(() => {});
-      // Try again to see if the button appears - give it more time in CI
-      const retryVisible = await onboardingBtnUsePersonal.isVisible({ timeout: 30 * 1000 }).catch(() => false);
-      if (!retryVisible) {
-        await handleQuadraticLoading(page);
-        return;
-      }
-    } else {
+    // Wait for the page to fully load
+    await page.waitForLoadState('networkidle', { timeout: 10 * 1000 }).catch(() => {});
+
+    // Wait for the button to be attached to the DOM and visible
+    // Use waitFor with 'visible' state which waits for both attachment and visibility
+    try {
+      await onboardingBtnUsePersonal.waitFor({ state: 'visible', timeout: 30 * 1000 });
+    } catch {
+      // Button didn't appear, might have already completed onboarding or page structure changed
+      await handleQuadraticLoading(page);
+      return;
+    }
+  } else {
+    // Not on onboarding URL, check if button is visible anyway (might be on a different route)
+    const isOnboardingVisible = await onboardingBtnUsePersonal
+      .isVisible({ timeout: 15 * 1000 })
+      .catch(() => false);
+
+    if (!isOnboardingVisible) {
       // Not on onboarding URL and button not visible, onboarding likely not needed
       await handleQuadraticLoading(page);
       return;

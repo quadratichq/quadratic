@@ -2439,7 +2439,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
-    await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
+    await page.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
     await typeInCell(page, { a1: 'A1', text: `Sheet${i + 1}` });
@@ -2457,7 +2457,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   await expect(page).toHaveTitle(`${fileName} - Quadratic`);
 
   // Store sheet navigation toolbar
-  const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+  const sheetNavigation = page.locator('[data-testid="sheet-bar-add-button"]').locator(`..`);
 
   // Store first and last sheet element
   const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet1"]`);
@@ -3438,7 +3438,7 @@ test.skip('Scroll between sheets', async ({ page }) => {
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
-    await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
+    await page.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
     await typeInCell(page, { a1: 'A1', text: `Sheet${i + 1}` });
@@ -3448,7 +3448,7 @@ test.skip('Scroll between sheets', async ({ page }) => {
   await page.locator(`[data-title="Sheet1"]`).click({ timeout: 60 * 1000 });
 
   // Store sheet navigation toolbar
-  const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+  const sheetNavigation = page.locator('[data-testid="sheet-bar-add-button"]').locator(`..`);
 
   // Assert initial screenshot of the sheet navigation toolbar with `Sheet12` as last sheet
   await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`);
