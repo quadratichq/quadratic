@@ -1,6 +1,7 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
+import { useEffect, useRef } from 'react';
 
 interface HyperlinkPopupEditProps {
   editText: string;
@@ -25,11 +26,24 @@ export const HyperlinkPopupEdit = ({
   onSave,
   onCancel,
 }: HyperlinkPopupEditProps) => {
+  const urlInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Focus the URL input when the component mounts
+    // Use a timeout > 100ms to ensure focus happens after the menubar's
+    // focusGrid call (which fires at 100ms when menu closes)
+    const timeoutId = setTimeout(() => {
+      urlInputRef.current?.focus();
+    }, 150);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="link-url">URL</Label>
         <Input
+          ref={urlInputRef}
           id="link-url"
           value={editUrl}
           onChange={(e) => onUrlChange(e.target.value)}
@@ -37,7 +51,6 @@ export const HyperlinkPopupEdit = ({
           onKeyUp={onKeyUp}
           placeholder="https://example.com"
           className="h-8"
-          autoFocus
         />
       </div>
       {!hideTextField && (
