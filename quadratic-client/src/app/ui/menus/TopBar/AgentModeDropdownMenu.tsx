@@ -157,7 +157,7 @@ function FileDropdownMenu() {
           </DropdownMenuItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <DropdownMenuItem className="gap-2" onClick={() => duplicateFileAction.run({ fileUuid, teamUuid })}>
+          <DropdownMenuItem className="gap-2" onClick={() => duplicateFileAction.run({ fileUuid })}>
             <FileCopyIcon />
             Duplicate to personal files
             <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
