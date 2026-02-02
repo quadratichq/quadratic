@@ -9,7 +9,6 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { AI_AGENT_PERSONA_CONFIG } from 'quadratic-shared/ai/multiplayerSession';
 import { memo, useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { BotIcon, PauseIcon, PlayIcon, SendIcon, SquareIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
@@ -69,7 +68,6 @@ export const AIMultiplayerControls = memo(() => {
           {/* Agents List */}
           <div className="flex flex-wrap gap-2 border-b px-4 py-3">
             {agents.map((agent) => {
-              const personaConfig = AI_AGENT_PERSONA_CONFIG[agent.persona];
               const isCurrentTurn = currentTurnAgent?.id === agent.id;
               return (
                 <div

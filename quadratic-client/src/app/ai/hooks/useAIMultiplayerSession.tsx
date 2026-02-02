@@ -14,18 +14,16 @@ import type {
   AIAgentDefinition,
   AIMultiplayerChatMessage,
   AIMultiplayerEvent,
-  AIMultiplayerSession,
   AIMultiplayerSessionConfig,
   CreateAIMultiplayerSessionRequest,
   CreateAIMultiplayerSessionResponse,
 } from 'quadratic-shared/ai/multiplayerSession';
 import { useCallback } from 'react';
-import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilState, useSetRecoilState } from 'recoil';
 
 const API_BASE = '/v0/ai/multiplayer';
 
 export function useAIMultiplayerSession() {
-  const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [state, setState] = useRecoilState(aiMultiplayerSessionAtom);
   const setSession = useSetRecoilState(aiMultiplayerSessionSelector);
   const setShowSetupModal = useSetRecoilState(aiMultiplayerShowSetupModalAtom);
@@ -81,105 +79,8 @@ export function useAIMultiplayerSession() {
   }, []);
 
   // ============================================================================
-  // Session Management
+  // Event Handling (defined before connectToEventStream to avoid forward reference)
   // ============================================================================
-
-  const startSession = useRecoilCallback(
-    ({ snapshot, set }) =>
-      async (agents: AIAgentDefinition[], config?: Partial<AIMultiplayerSessionConfig>, initialPrompt?: string) => {
-        const fileId = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
-        if (!fileId) {
-          console.error('[AIMultiplayerSession] No file UUID available');
-          return;
-        }
-
-        set(aiMultiplayerSessionAtom, (prev) => ({
-          ...prev,
-          isConnecting: true,
-          connectionError: null,
-        }));
-
-        try {
-          const headers = await getAuthHeaders();
-          const body: CreateAIMultiplayerSessionRequest = {
-            fileId,
-            agents,
-            config: config as AIMultiplayerSessionConfig | undefined,
-            initialPrompt,
-          };
-
-          const response = await fetch(`${apiClient.getApiUrl()}${API_BASE}/session`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(body),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to create session');
-          }
-
-          const data: CreateAIMultiplayerSessionResponse = await response.json();
-
-          set(aiMultiplayerSessionAtom, (prev) => ({
-            ...prev,
-            session: data.session,
-            isConnecting: false,
-            showSetupModal: false,
-            showControls: true,
-            pendingAgents: [],
-            pendingConfig: {},
-            messages: [],
-          }));
-
-          // Connect to the event stream
-          connectToEventStream(data.session.id);
-
-          return data.session;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          set(aiMultiplayerSessionAtom, (prev) => ({
-            ...prev,
-            isConnecting: false,
-            connectionError: errorMessage,
-          }));
-          console.error('[AIMultiplayerSession] Failed to start session:', error);
-        }
-      },
-    [getAuthHeaders]
-  );
-
-  const connectToEventStream = useCallback(
-    async (sessionId: string) => {
-      const token = await authClient.getTokenOrRedirect();
-      const eventSource = new EventSource(
-        `${apiClient.getApiUrl()}${API_BASE}/session/${sessionId}/events?token=${encodeURIComponent(token)}`
-      );
-
-      eventSource.onmessage = (event) => {
-        try {
-          const aiEvent: AIMultiplayerEvent = JSON.parse(event.data);
-          handleEvent(aiEvent);
-        } catch (error) {
-          console.error('[AIMultiplayerSession] Failed to parse event:', error);
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error('[AIMultiplayerSession] EventSource error:', error);
-        setState((prev) => ({
-          ...prev,
-          connectionError: 'Connection lost. Attempting to reconnect...',
-        }));
-      };
-
-      setState((prev) => ({
-        ...prev,
-        eventSource,
-      }));
-    },
-    [setState]
-  );
 
   const handleEvent = useCallback(
     (event: AIMultiplayerEvent) => {
@@ -258,6 +159,107 @@ export function useAIMultiplayerSession() {
       }
     },
     [setState, setSession, setMessages]
+  );
+
+  // ============================================================================
+  // Session Management
+  // ============================================================================
+
+  const connectToEventStream = useCallback(
+    async (sessionId: string) => {
+      const token = await authClient.getTokenOrRedirect();
+      const eventSource = new EventSource(
+        `${apiClient.getApiUrl()}${API_BASE}/session/${sessionId}/events?token=${encodeURIComponent(token)}`
+      );
+
+      eventSource.onmessage = (event) => {
+        try {
+          const aiEvent: AIMultiplayerEvent = JSON.parse(event.data);
+          handleEvent(aiEvent);
+        } catch (error) {
+          console.error('[AIMultiplayerSession] Failed to parse event:', error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('[AIMultiplayerSession] EventSource error:', error);
+        setState((prev) => ({
+          ...prev,
+          connectionError: 'Connection lost. Attempting to reconnect...',
+        }));
+      };
+
+      setState((prev) => ({
+        ...prev,
+        eventSource,
+      }));
+    },
+    [setState, handleEvent]
+  );
+
+  const startSession = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async (agents: AIAgentDefinition[], config?: Partial<AIMultiplayerSessionConfig>, initialPrompt?: string) => {
+        const fileId = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
+        if (!fileId) {
+          console.error('[AIMultiplayerSession] No file UUID available');
+          return;
+        }
+
+        set(aiMultiplayerSessionAtom, (prev) => ({
+          ...prev,
+          isConnecting: true,
+          connectionError: null,
+        }));
+
+        try {
+          const headers = await getAuthHeaders();
+          const body: CreateAIMultiplayerSessionRequest = {
+            fileId,
+            agents,
+            config: config as AIMultiplayerSessionConfig | undefined,
+            initialPrompt,
+          };
+
+          const response = await fetch(`${apiClient.getApiUrl()}${API_BASE}/session`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create session');
+          }
+
+          const data: CreateAIMultiplayerSessionResponse = await response.json();
+
+          set(aiMultiplayerSessionAtom, (prev) => ({
+            ...prev,
+            session: data.session,
+            isConnecting: false,
+            showSetupModal: false,
+            showControls: true,
+            pendingAgents: [],
+            pendingConfig: {},
+            messages: [],
+          }));
+
+          // Connect to the event stream
+          connectToEventStream(data.session.id);
+
+          return data.session;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          set(aiMultiplayerSessionAtom, (prev) => ({
+            ...prev,
+            isConnecting: false,
+            connectionError: errorMessage,
+          }));
+          console.error('[AIMultiplayerSession] Failed to start session:', error);
+        }
+      },
+    [getAuthHeaders, connectToEventStream]
   );
 
   // ============================================================================

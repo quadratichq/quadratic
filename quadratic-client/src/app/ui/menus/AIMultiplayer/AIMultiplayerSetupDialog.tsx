@@ -23,7 +23,7 @@ import {
   type AIAgentPersona,
 } from 'quadratic-shared/ai/multiplayerSession';
 import { memo, useCallback, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { BotIcon, PlusIcon, TrashIcon, PlayIcon } from 'lucide-react';
 
 const PERSONAS: AIAgentPersona[] = [
@@ -36,7 +36,7 @@ const PERSONAS: AIAgentPersona[] = [
 ];
 
 export const AIMultiplayerSetupDialog = memo(() => {
-  const [showModal, setShowModal] = useRecoilState(aiMultiplayerShowSetupModalAtom);
+  const showModal = useRecoilValue(aiMultiplayerShowSetupModalAtom);
   const pendingAgents = useRecoilValue(aiMultiplayerPendingAgentsAtom);
   const pendingConfig = useRecoilValue(aiMultiplayerPendingConfigAtom);
   const { addPendingAgent, removePendingAgent, startSession, closeSetupModal } = useAIMultiplayerSession();

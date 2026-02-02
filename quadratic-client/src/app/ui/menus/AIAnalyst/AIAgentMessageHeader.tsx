@@ -1,4 +1,3 @@
-import { AI_AGENT_PERSONA_CONFIG } from 'quadratic-shared/ai/multiplayerSession';
 import type { AIAgentMessage } from 'quadratic-shared/ai/multiplayerSession';
 import { memo } from 'react';
 import { BotIcon, UserIcon } from 'lucide-react';
