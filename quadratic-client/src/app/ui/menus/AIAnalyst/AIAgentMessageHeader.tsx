@@ -1,6 +1,6 @@
 import type { AIAgentMessage } from 'quadratic-shared/ai/multiplayerSession';
 import { memo } from 'react';
-import { BotIcon, UserIcon } from 'lucide-react';
+import { AccountIcon, AIIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 
 interface AIAgentMessageHeaderProps {
@@ -23,7 +23,7 @@ export const AIAgentMessageHeader = memo(({ agentContext, className }: AIAgentMe
     return (
       <div className={cn('flex items-center gap-2 text-sm', className)}>
         <div className="flex items-center justify-center rounded-full p-1" style={{ backgroundColor: '#6B7280' }}>
-          <UserIcon size={12} className="text-white" />
+          <AccountIcon className="text-white" />
         </div>
         <span className="font-medium text-muted-foreground">You (influence)</span>
       </div>
@@ -33,7 +33,7 @@ export const AIAgentMessageHeader = memo(({ agentContext, className }: AIAgentMe
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
       <div className="flex items-center justify-center rounded-full p-1" style={{ backgroundColor: agentColor }}>
-        <BotIcon size={12} className="text-white" />
+        <AIIcon className="text-white" />
       </div>
       <span className="font-medium" style={{ color: agentColor }}>
         {agentName}

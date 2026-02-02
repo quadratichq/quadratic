@@ -24,7 +24,7 @@ import {
 } from 'quadratic-shared/ai/multiplayerSession';
 import { memo, useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { BotIcon, PlusIcon, TrashIcon, PlayIcon } from 'lucide-react';
+import { AddIcon, AIIcon, DeleteIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 
 const PERSONAS: AIAgentPersona[] = [
   'DataAnalyst',
@@ -80,7 +80,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BotIcon size={20} />
+            <AIIcon />
             AI Multiplayer Session
           </DialogTitle>
           <DialogDescription>
@@ -107,7 +107,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
                           className="flex h-8 w-8 items-center justify-center rounded-full"
                           style={{ backgroundColor: personaConfig.defaultColor }}
                         >
-                          <BotIcon size={16} className="text-white" />
+                          <AIIcon className="text-white" />
                         </div>
                         <div>
                           <div className="font-medium">{agent.name}</div>
@@ -115,7 +115,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removePendingAgent(index)}>
-                        <TrashIcon size={16} />
+                        <DeleteIcon />
                       </Button>
                     </div>
                   );
@@ -173,7 +173,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
               </div>
 
               <Button variant="outline" onClick={handleAddAgent} disabled={!newAgentName.trim()} className="w-fit">
-                <PlusIcon size={16} className="mr-2" />
+                <AddIcon className="mr-2" />
                 Add Agent
               </Button>
             </div>
@@ -200,7 +200,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
             Cancel
           </Button>
           <Button onClick={handleStartSession} disabled={pendingAgents.length === 0}>
-            <PlayIcon size={16} className="mr-2" />
+            <SaveAndRunIcon className="mr-2" />
             Start Session ({pendingAgents.length} agent{pendingAgents.length !== 1 ? 's' : ''})
           </Button>
         </DialogFooter>

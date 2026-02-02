@@ -3,9 +3,9 @@ import {
   aiMultiplayerPendingAgentsAtom,
   aiMultiplayerPendingConfigAtom,
   aiMultiplayerSessionAtom,
-  aiMultiplayerSessionSelector,
   aiMultiplayerShowSetupModalAtom,
   defaultAIMultiplayerSessionState,
+  updateSessionStatus,
 } from '@/app/atoms/aiMultiplayerSessionAtom';
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { authClient } from '@/auth/auth';
@@ -25,7 +25,6 @@ const API_BASE = '/v0/ai/multiplayer';
 
 export function useAIMultiplayerSession() {
   const [state, setState] = useRecoilState(aiMultiplayerSessionAtom);
-  const setSession = useSetRecoilState(aiMultiplayerSessionSelector);
   const setShowSetupModal = useSetRecoilState(aiMultiplayerShowSetupModalAtom);
   const setMessages = useSetRecoilState(aiMultiplayerMessagesAtom);
   const setPendingAgents = useSetRecoilState(aiMultiplayerPendingAgentsAtom);
@@ -91,14 +90,17 @@ export function useAIMultiplayerSession() {
 
       switch (event.type) {
         case 'turn_started':
-          setSession((prev) => {
-            if (!prev) return prev;
+          setState((prev) => {
+            if (!prev.session) return prev;
             return {
               ...prev,
-              currentTurnAgentId: event.agentId ?? null,
-              agents: prev.agents.map((agent) =>
-                agent.id === event.agentId ? { ...agent, status: 'thinking' as const } : agent
-              ),
+              session: {
+                ...prev.session,
+                currentTurnAgentId: event.agentId ?? null,
+                agents: prev.session.agents.map((agent) =>
+                  agent.id === event.agentId ? { ...agent, status: 'thinking' as const } : agent
+                ),
+              },
             };
           });
           break;
@@ -112,44 +114,56 @@ export function useAIMultiplayerSession() {
 
         case 'agent_cursor_move':
           if (event.agentId && event.data) {
-            setSession((prev) => {
-              if (!prev) return prev;
+            setState((prev) => {
+              if (!prev.session) return prev;
               return {
                 ...prev,
-                agents: prev.agents.map((agent) =>
-                  agent.id === event.agentId ? { ...agent, cursorPosition: event.data } : agent
-                ),
+                session: {
+                  ...prev.session,
+                  agents: prev.session.agents.map((agent) =>
+                    agent.id === event.agentId ? { ...agent, cursorPosition: event.data } : agent
+                  ),
+                },
               };
             });
           }
           break;
 
         case 'turn_ended':
-          setSession((prev) => {
-            if (!prev) return prev;
+          setState((prev) => {
+            if (!prev.session) return prev;
             return {
               ...prev,
-              turnNumber: event.turnNumber ?? prev.turnNumber + 1,
-              agents: prev.agents.map((agent) =>
-                agent.id === event.agentId
-                  ? { ...agent, status: 'idle' as const, turnsCompleted: agent.turnsCompleted + 1 }
-                  : agent
-              ),
+              session: {
+                ...prev.session,
+                turnNumber: event.turnNumber ?? prev.session.turnNumber + 1,
+                agents: prev.session.agents.map((agent) =>
+                  agent.id === event.agentId
+                    ? { ...agent, status: 'idle' as const, turnsCompleted: agent.turnsCompleted + 1 }
+                    : agent
+                ),
+              },
             };
           });
           break;
 
         case 'session_paused':
-          setSession((prev) => {
-            if (!prev) return prev;
-            return { ...prev, status: 'paused' };
+          setState((prev) => {
+            if (!prev.session) return prev;
+            return {
+              ...prev,
+              session: updateSessionStatus(prev.session, 'paused'),
+            };
           });
           break;
 
         case 'session_ended':
-          setSession((prev) => {
-            if (!prev) return prev;
-            return { ...prev, status: 'ended', endedAt: Date.now() };
+          setState((prev) => {
+            if (!prev.session) return prev;
+            return {
+              ...prev,
+              session: updateSessionStatus(prev.session, 'ended'),
+            };
           });
           break;
 
@@ -158,7 +172,7 @@ export function useAIMultiplayerSession() {
           break;
       }
     },
-    [setState, setSession, setMessages]
+    [setState, setMessages]
   );
 
   // ============================================================================
@@ -302,10 +316,10 @@ export function useAIMultiplayerSession() {
         const session = currentState.session;
         if (!session) return;
 
-        set(aiMultiplayerSessionSelector, {
-          ...session,
-          status: 'running',
-        });
+        set(aiMultiplayerSessionAtom, (prev) => ({
+          ...prev,
+          session: prev.session ? updateSessionStatus(prev.session, 'running') : null,
+        }));
 
         // Execute first turn - subsequent turns will be triggered by turn_ended events
         await executeTurn();
@@ -357,10 +371,10 @@ export function useAIMultiplayerSession() {
         const session = currentState.session;
         if (!session) return;
 
-        set(aiMultiplayerSessionSelector, {
-          ...session,
-          status: 'paused',
-        });
+        set(aiMultiplayerSessionAtom, (prev) => ({
+          ...prev,
+          session: prev.session ? updateSessionStatus(prev.session, 'paused') : null,
+        }));
       },
     []
   );

@@ -6,12 +6,12 @@ import {
   aiMultiplayerSessionStatusAtom,
   aiMultiplayerTurnNumberAtom,
 } from '@/app/atoms/aiMultiplayerSessionAtom';
+import { AIIcon, ArrowDownIcon, ArrowUpwardIcon, SaveAndRunIcon, StopIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { BotIcon, PauseIcon, PlayIcon, SendIcon, SquareIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 
 export const AIMultiplayerControls = memo(() => {
   const isActive = useRecoilValue(aiMultiplayerSessionActiveAtom);
@@ -53,13 +53,13 @@ export const AIMultiplayerControls = memo(() => {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <BotIcon size={16} />
+          <AIIcon />
           <span className="font-medium">AI Multiplayer</span>
           <span className="text-sm text-muted-foreground">· Turn {turnNumber}</span>
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={status} />
-          {isExpanded ? <ChevronUpIcon size={16} /> : <ChevronDownIcon size={16} />}
+          {isExpanded ? <ArrowUpwardIcon /> : <ArrowDownIcon />}
         </div>
       </div>
 
@@ -73,13 +73,14 @@ export const AIMultiplayerControls = memo(() => {
                 <div
                   key={agent.id}
                   className={cn(
-                    'flex items-center gap-2 rounded-full px-3 py-1 text-sm',
+                    'flex items-center gap-2 rounded-full border px-3 py-1 text-sm',
                     isCurrentTurn ? 'ring-2 ring-offset-2' : ''
                   )}
                   style={{
                     backgroundColor: `${agent.color}20`,
                     borderColor: agent.color,
-                    ringColor: agent.color,
+                    // Use outline for dynamic color since ringColor isn't a CSS property
+                    ...(isCurrentTurn ? { outlineColor: agent.color } : {}),
                   }}
                 >
                   <div
@@ -110,7 +111,7 @@ export const AIMultiplayerControls = memo(() => {
               className="flex-1"
             />
             <Button size="icon" variant="outline" onClick={handleSendInfluence} disabled={!influenceMessage.trim()}>
-              <SendIcon size={16} />
+              <SaveAndRunIcon />
             </Button>
           </div>
 
@@ -119,12 +120,12 @@ export const AIMultiplayerControls = memo(() => {
             <div className="flex gap-2">
               {status === 'paused' ? (
                 <Button size="sm" variant="outline" onClick={() => resumeSession()}>
-                  <PlayIcon size={14} className="mr-1" />
+                  <SaveAndRunIcon className="mr-1" />
                   Resume
                 </Button>
               ) : (
                 <Button size="sm" variant="outline" onClick={() => pauseSession()}>
-                  <PauseIcon size={14} className="mr-1" />
+                  <StopIcon className="mr-1" />
                   Pause
                 </Button>
               )}
@@ -135,7 +136,7 @@ export const AIMultiplayerControls = memo(() => {
               )}
             </div>
             <Button size="sm" variant="destructive" onClick={() => endSession()}>
-              <SquareIcon size={14} className="mr-1" />
+              <StopIcon className="mr-1" />
               End Session
             </Button>
           </div>
