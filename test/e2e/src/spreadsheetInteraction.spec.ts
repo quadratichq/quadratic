@@ -4244,8 +4244,12 @@ test('Theme Customization', async ({ page }) => {
     // Click theme toggle button
     await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
+    // Wait for the accent color button to be visible before clicking (popover needs time to open)
+    const accentColorButton = page.getByRole(`button`, { name: theme.name });
+    await expect(accentColorButton).toBeVisible({ timeout: 60 * 1000 });
+
     // Click accent color
-    await page.getByRole(`button`, { name: theme.name }).click({ timeout: 60 * 1000 });
+    await accentColorButton.click({ timeout: 60 * 1000 });
 
     // Assert that the HTML element has accent name applied to 'data-theme' attribute
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
@@ -4383,8 +4387,12 @@ test.skip('Theme Customization from Sheet', async ({ page }) => {
     // Click theme toggle button (identified by contrast icon)
     await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
+    // Wait for the accent color button to be visible before clicking (popover needs time to open)
+    const accentColorButton = page.getByRole(`button`, { name: theme.name });
+    await expect(accentColorButton).toBeVisible({ timeout: 60 * 1000 });
+
     // Click accent color
-    await page.getByRole(`button`, { name: theme.name }).click({ timeout: 60 * 1000 });
+    await accentColorButton.click({ timeout: 60 * 1000 });
 
     // Assert that the HTML element has accent name applied to 'data-theme' attribute
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
