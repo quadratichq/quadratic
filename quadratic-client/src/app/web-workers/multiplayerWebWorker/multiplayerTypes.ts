@@ -32,6 +32,10 @@ export interface MultiplayerUserServer {
   viewport: string;
   code_running: string;
   follow?: string;
+  // AI agent fields
+  is_ai_agent?: boolean;
+  agent_persona?: string;
+  agent_color?: string;
 }
 
 // extended by the client

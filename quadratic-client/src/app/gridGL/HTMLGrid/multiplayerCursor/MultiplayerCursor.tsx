@@ -7,10 +7,12 @@ interface Props {
   name: string;
   color: string;
   offscreen: boolean;
+  isAIAgent?: boolean;
+  agentPersona?: string;
 }
 
 export const MultiplayerCursor = memo((props: Props) => {
-  const { x, y, name, color, offscreen } = props;
+  const { x, y, name, color, offscreen, isAIAgent, agentPersona } = props;
 
   if (offscreen) {
     return (
@@ -21,6 +23,73 @@ export const MultiplayerCursor = memo((props: Props) => {
           backgroundColor: color,
         }}
       />
+    );
+  }
+
+  // AI Agent cursor has a robot icon instead of the regular pointer
+  if (isAIAgent) {
+    return (
+      <div
+        className="multiplayer-cursor multiplayer-cursor-ai"
+        style={{
+          transform: `translateX(${x}px) translateY(${y}px) scale(${1 / pixiApp.viewport.scale.x})`,
+        }}
+      >
+        {/* Robot icon for AI agents */}
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="1.5"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect x="3" y="8" width="18" height="12" rx="2" fill={color} />
+          <circle cx="9" cy="14" r="2" fill="white" />
+          <circle cx="15" cy="14" r="2" fill="white" />
+          <line x1="12" y1="4" x2="12" y2="8" stroke={color} strokeWidth="2" />
+          <circle cx="12" cy="3" r="2" fill={color} />
+        </svg>
+
+        <div
+          style={{
+            backgroundColor: color,
+            position: 'absolute',
+            top: 22,
+            left: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '0.25rem 0.5rem',
+            borderRadius: '0.25rem',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+          }}
+        >
+          <span
+            style={{
+              whiteSpace: 'nowrap',
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'white',
+              lineHeight: '1.2',
+            }}
+          >
+            {name}
+          </span>
+          {agentPersona && (
+            <span
+              style={{
+                whiteSpace: 'nowrap',
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.8)',
+                lineHeight: '1.2',
+              }}
+            >
+              AI · {agentPersona}
+            </span>
+          )}
+        </div>
+      </div>
     );
   }
 

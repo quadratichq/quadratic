@@ -60,9 +60,12 @@ export const MultiplayerCursors = memo((props: Props) => {
             y = bounds.top + props.topHeading;
           }
 
-          const { first_name, last_name, email, index } = player;
+          const { first_name, last_name, email, index, is_ai_agent, agent_persona, agent_color } = player;
           let name: string;
-          if (first_name || last_name) {
+          if (is_ai_agent && first_name) {
+            // For AI agents, use their configured name
+            name = first_name;
+          } else if (first_name || last_name) {
             name = `${first_name} ${last_name}`;
           } else if (email) {
             name = email;
@@ -70,8 +73,20 @@ export const MultiplayerCursors = memo((props: Props) => {
             name = `User ${index + 1}`;
           }
 
-          const color = player.colorString;
-          return <MultiplayerCursor key={id} x={x} y={y} name={name} color={color} offscreen={offscreen} />;
+          // Use agent color if available (for AI agents), otherwise use the assigned color
+          const color = agent_color || player.colorString;
+          return (
+            <MultiplayerCursor
+              key={id}
+              x={x}
+              y={y}
+              name={name}
+              color={color}
+              offscreen={offscreen}
+              isAIAgent={is_ai_agent}
+              agentPersona={agent_persona}
+            />
+          );
         }
         return null;
       })}

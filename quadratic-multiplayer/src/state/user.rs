@@ -31,6 +31,15 @@ pub(crate) struct User {
     pub socket: Option<UserSocket>,
     #[serde(skip)]
     pub last_heartbeat: DateTime<Utc>,
+    /// Whether this user is an AI agent (for AI multiplayer mode)
+    #[serde(default)]
+    pub is_ai_agent: bool,
+    /// The AI agent's persona type (e.g., "DataAnalyst", "VisualizationExpert")
+    #[serde(default)]
+    pub agent_persona: Option<String>,
+    /// The AI agent's assigned color
+    #[serde(default)]
+    pub agent_color: Option<String>,
 }
 
 impl From<User> for quadratic_rust_shared::multiplayer::message::User {
@@ -46,6 +55,9 @@ impl From<User> for quadratic_rust_shared::multiplayer::message::User {
             index: val.index,
             permissions: val.permissions,
             state: val.state,
+            is_ai_agent: val.is_ai_agent,
+            agent_persona: val.agent_persona,
+            agent_color: val.agent_color,
         }
     }
 }

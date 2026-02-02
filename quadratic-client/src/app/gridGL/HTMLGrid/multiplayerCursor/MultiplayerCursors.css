@@ -26,3 +26,21 @@
   top: 0;
   left: 0;
 }
+
+/* AI Agent cursor styles */
+.multiplayer-cursor-ai {
+  animation: ai-cursor-pulse 2s ease-in-out infinite;
+}
+
+.multiplayer-cursor-ai svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes ai-cursor-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}

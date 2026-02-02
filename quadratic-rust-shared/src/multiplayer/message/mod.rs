@@ -19,6 +19,15 @@ pub struct User {
     pub permissions: Vec<FilePermRole>,
     #[serde(flatten)]
     pub state: UserState,
+    /// Whether this user is an AI agent (for AI multiplayer mode)
+    #[serde(default)]
+    pub is_ai_agent: bool,
+    /// The AI agent's persona type (e.g., "DataAnalyst", "VisualizationExpert")
+    #[serde(default)]
+    pub agent_persona: Option<String>,
+    /// The AI agent's assigned color
+    #[serde(default)]
+    pub agent_color: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]

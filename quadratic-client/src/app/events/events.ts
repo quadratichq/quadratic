@@ -29,6 +29,7 @@ import type {
   CoreClientTransactionEnd,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import type { AIAgent, AIMultiplayerSession } from 'quadratic-shared/ai/multiplayerSession';
 import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
 
@@ -190,6 +191,13 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+
+  // AI Multiplayer session events
+  aiMultiplayerSessionStarted: (session: AIMultiplayerSession) => void;
+  aiMultiplayerSessionEnded: () => void;
+  aiMultiplayerTurnChanged: (agent: AIAgent) => void;
+  aiMultiplayerAgentThinking: (agent: AIAgent) => void;
+  aiMultiplayerAgentActing: (agent: AIAgent) => void;
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;
