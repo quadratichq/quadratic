@@ -1,7 +1,7 @@
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon } from '@/shared/components/Icons';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Command,
@@ -86,7 +86,7 @@ function getTimezoneGroups(): TimezoneGroup[] {
 export const ScheduledTasksTimezone = () => {
   const {
     userMakingRequest: { filePermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const { timezone, updateTimezone } = useFileContext();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState(false);

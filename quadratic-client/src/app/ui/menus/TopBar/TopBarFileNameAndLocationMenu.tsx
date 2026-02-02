@@ -7,7 +7,7 @@ import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -60,7 +60,7 @@ function FileLocation() {
     file: { ownerUserId },
     team,
     userMakingRequest: { fileRole, teamRole, id: userId },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;

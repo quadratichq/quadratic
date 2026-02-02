@@ -1,7 +1,7 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useRecoilState } from 'recoil';
 
@@ -10,7 +10,7 @@ export function ConnectionsMenu() {
 
   const {
     team: { uuid: teamUuid, sshPublicKey },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const { connections, staticIps, isLoading } = useConnectionsFetcher();
 
   return (

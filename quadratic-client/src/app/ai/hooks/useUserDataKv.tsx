@@ -12,9 +12,8 @@ export const useUserDataKv = () => {
   // server state through the router.
   // So we keep track of it ourselves and then if the page is ever reloaded,
   // we'll get the freshest state.
-  const {
-    userMakingRequest: { clientDataKv },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const clientDataKv = fileRouteData?.userMakingRequest?.clientDataKv;
   const initialKnowsAboutModelPicker = useMemo(() => Boolean(clientDataKv?.knowsAboutModelPicker), [clientDataKv]);
 
   const [knowsAboutModelPicker, setKnowsAboutModelPicker] = useLocalStorage(

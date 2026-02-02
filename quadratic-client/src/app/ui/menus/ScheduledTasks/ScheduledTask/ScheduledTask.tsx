@@ -9,7 +9,7 @@ import { UseCronInterval } from '@/app/ui/menus/ScheduledTasks/useCronInterval';
 import { useCronRange } from '@/app/ui/menus/ScheduledTasks/useCronRange';
 import { CREATE_TASK_ID, useScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback } from 'react';
@@ -19,7 +19,7 @@ export const ScheduledTask = () => {
   const {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const { timezone } = useFileContext();
   const { currentTask, saveScheduledTask, deleteScheduledTask, showScheduledTasks, getHistory } = useScheduledTasks();
 

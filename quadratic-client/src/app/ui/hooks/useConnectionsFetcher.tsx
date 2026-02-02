@@ -1,6 +1,6 @@
 import type { GetConnections } from '@/routes/api.connections';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFetcher, type FetcherWithComponents } from 'react-router';
 
@@ -13,7 +13,7 @@ export const useConnectionsFetcher = () => {
   const {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const fetcherRef = useRef<FetcherWithComponents<GetConnections>>(fetcher);
 

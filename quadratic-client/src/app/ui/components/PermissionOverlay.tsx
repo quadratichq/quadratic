@@ -4,7 +4,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -21,7 +21,7 @@ export function PermissionOverlay() {
   const {
     file: { uuid: fileUuid },
     team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const location = useLocation();
 
   const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid, teamUuid }), [fileUuid, teamUuid]);

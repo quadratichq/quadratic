@@ -42,9 +42,8 @@ interface CodeEditorHeaderProps {
 }
 
 export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
-  const {
-    userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const teamPermissions = fileRouteData?.userMakingRequest?.teamPermissions;
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);

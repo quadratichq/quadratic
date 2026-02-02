@@ -49,11 +49,7 @@ export function cellsAsync(a1: string): Promise<CellType | CellType[] | CellType
  * Handle response from core worker for async cell request.
  * This is called by the message handler when a response arrives.
  */
-export function handleCellsAsyncResponse(
-  requestId: number,
-  resultsStringified: string | null,
-  error?: string
-): void {
+export function handleCellsAsyncResponse(requestId: number, resultsStringified: string | null, error?: string): void {
   const pending = pendingRequests.get(requestId);
   if (!pending) {
     console.warn('[javascriptLibraryAsync] No pending request for id:', requestId);

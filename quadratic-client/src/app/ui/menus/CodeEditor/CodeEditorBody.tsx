@@ -67,9 +67,8 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
-  const {
-    userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const teamPermissions = fileRouteData?.userMakingRequest?.teamPermissions;
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEdit = useMemo(

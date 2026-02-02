@@ -24,10 +24,9 @@ type CodeEditorPanelProps = {
 
 export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPanelProps) => {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const {
-    userMakingRequest: { teamPermissions },
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const teamPermissions = fileRouteData?.userMakingRequest?.teamPermissions;
+  const teamUuid = fileRouteData?.team?.uuid;
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
   const { panelPosition } = useCodeEditorPanelData();
@@ -58,7 +57,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   );
 
   const schemaBrowser =
-    isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
+    isAuthenticated && connectionInfo !== undefined && teamUuid && teamPermissions?.includes('TEAM_EDIT') ? (
       <ConnectionSchemaBrowser
         teamUuid={teamUuid}
         type={connectionInfo.kind}

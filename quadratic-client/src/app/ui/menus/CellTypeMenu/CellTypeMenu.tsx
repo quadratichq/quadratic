@@ -12,7 +12,7 @@ import '@/app/ui/styles/floating-dialog.css';
 import { apiClient } from '@/shared/api/apiClient';
 import { SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -67,7 +67,7 @@ export const CellTypeMenu = memo(() => {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const {
     userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const includeLanguages = useMemo(() => showCellTypeMenu !== 'connections', [showCellTypeMenu]);
   const searchLabel = useMemo(() => `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`, [includeLanguages]);
 
