@@ -51,10 +51,11 @@
     </div>
     <div class="info" id="info">
       <strong>Instructions:</strong><br>
-      1. Enter an embed URL (e.g., <code>http://localhost:3000/embed?fileId=xxx</code> or <code>https://app.quadratichq.com/embed?fileId=xxx</code>)<br>
+      1. Enter an embed URL (e.g., <code>http://localhost:3000/embed?fileId=xxx</code> or <code>https://app.quadratichq.com/embed?import=https://localhost:8080/excel-formulas.xlsx</code>)<br>
       2. Click "Load" to test the embed<br>
-      3. Your last URL will be saved and automatically loaded on next visit<br><br>
-      <strong>Note:</strong> Use <code>node test-embed-server.js</code> to serve this file.
+      3. Your last URL will be saved and automatically loaded on next visit<br>
+      4. Changing the flags will reload the embed with those options<br><br>
+      <strong>Note:</strong> Use <code>npm run test:embed</code> to run this file.
     </div>
   </div>
 

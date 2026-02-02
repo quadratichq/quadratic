@@ -161,7 +161,7 @@ function loadIframe(url) {
 
 function updateInfo(html) {
   const info = document.getElementById('info');
-  info.innerHTML = `<strong>Current embed URL:</strong><br>${html}<br><br><strong>Note:</strong> Use <code>node test-embed-server.js</code> to serve this file.`;
+  info.innerHTML = `<strong>Current embed URL:</strong><br>${html}<br><br><strong>Note:</strong> Use <code>npm run test:embed</code> to open this test.`;
 }
 
 function showError(message) {

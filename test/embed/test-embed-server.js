@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -83,7 +83,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`\n✅ Test embed server running at http://localhost:${PORT}/test-embed.html`);
+  console.log(`\n✅ Test embed server running at http://localhost:${PORT}`);
   console.log(`\n📁 Serving files from: ${__dirname}`);
-  console.log(`\n🌐 Open http://localhost:${PORT}/test-embed.html in your browser\n`);
+  console.log(`\n🌐 Open http://localhost:${PORT} in your browser\n`);
 });
