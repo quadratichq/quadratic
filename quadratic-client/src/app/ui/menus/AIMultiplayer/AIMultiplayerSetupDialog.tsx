@@ -15,13 +15,7 @@ import {
 } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/shadcn/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import {
   AI_AGENT_PERSONA_CONFIG,
@@ -117,16 +111,10 @@ export const AIMultiplayerSetupDialog = memo(() => {
                         </div>
                         <div>
                           <div className="font-medium">{agent.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {personaConfig.displayName}
-                          </div>
+                          <div className="text-sm text-muted-foreground">{personaConfig.displayName}</div>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removePendingAgent(index)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => removePendingAgent(index)}>
                         <TrashIcon size={16} />
                       </Button>
                     </div>
@@ -140,7 +128,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
           {pendingAgents.length < 5 && (
             <div className="flex flex-col gap-4 rounded-lg border p-4">
               <Label className="text-base">Add Agent</Label>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="agent-name">Name</Label>
@@ -151,7 +139,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
                     onChange={(e) => setNewAgentName(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="agent-persona">Persona</Label>
                   <Select value={newAgentPersona} onValueChange={(v) => setNewAgentPersona(v as AIAgentPersona)}>
@@ -184,12 +172,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
                 />
               </div>
 
-              <Button
-                variant="outline"
-                onClick={handleAddAgent}
-                disabled={!newAgentName.trim()}
-                className="w-fit"
-              >
+              <Button variant="outline" onClick={handleAddAgent} disabled={!newAgentName.trim()} className="w-fit">
                 <PlusIcon size={16} className="mr-2" />
                 Add Agent
               </Button>
@@ -216,10 +199,7 @@ export const AIMultiplayerSetupDialog = memo(() => {
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button
-            onClick={handleStartSession}
-            disabled={pendingAgents.length === 0}
-          >
+          <Button onClick={handleStartSession} disabled={pendingAgents.length === 0}>
             <PlayIcon size={16} className="mr-2" />
             Start Session ({pendingAgents.length} agent{pendingAgents.length !== 1 ? 's' : ''})
           </Button>

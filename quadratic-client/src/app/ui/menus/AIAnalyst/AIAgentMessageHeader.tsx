@@ -23,10 +23,7 @@ export const AIAgentMessageHeader = memo(({ agentContext, className }: AIAgentMe
   if (isUserInfluence) {
     return (
       <div className={cn('flex items-center gap-2 text-sm', className)}>
-        <div
-          className="flex items-center justify-center rounded-full p-1"
-          style={{ backgroundColor: '#6B7280' }}
-        >
+        <div className="flex items-center justify-center rounded-full p-1" style={{ backgroundColor: '#6B7280' }}>
           <UserIcon size={12} className="text-white" />
         </div>
         <span className="font-medium text-muted-foreground">You (influence)</span>
@@ -36,10 +33,7 @@ export const AIAgentMessageHeader = memo(({ agentContext, className }: AIAgentMe
 
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
-      <div
-        className="flex items-center justify-center rounded-full p-1"
-        style={{ backgroundColor: agentColor }}
-      >
+      <div className="flex items-center justify-center rounded-full p-1" style={{ backgroundColor: agentColor }}>
         <BotIcon size={12} className="text-white" />
       </div>
       <span className="font-medium" style={{ color: agentColor }}>

@@ -144,6 +144,11 @@ pub(crate) async fn handle_message(
 
                 // this will be properly set in the enter_room function
                 index: 0,
+
+                // AI agent fields (default to false for regular users)
+                is_ai_agent: false,
+                agent_persona: None,
+                agent_color: None,
             };
 
             // subscribe to the file's pubsub channel

@@ -136,6 +136,10 @@ pub(crate) fn new_user(index: usize) -> User {
         socket: None,
         last_heartbeat: chrono::Utc::now(),
         index,
+        // AI agent fields (default to false for test users)
+        is_ai_agent: false,
+        agent_persona: None,
+        agent_color: None,
     }
 }
 

@@ -12,15 +12,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { AI_AGENT_PERSONA_CONFIG } from 'quadratic-shared/ai/multiplayerSession';
 import { memo, useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-  BotIcon,
-  PauseIcon,
-  PlayIcon,
-  SendIcon,
-  SquareIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from 'lucide-react';
+import { BotIcon, PauseIcon, PlayIcon, SendIcon, SquareIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 
 export const AIMultiplayerControls = memo(() => {
   const isActive = useRecoilValue(aiMultiplayerSessionActiveAtom);
@@ -29,8 +21,7 @@ export const AIMultiplayerControls = memo(() => {
   const currentTurnAgent = useRecoilValue(aiMultiplayerCurrentTurnAgentAtom);
   const turnNumber = useRecoilValue(aiMultiplayerTurnNumberAtom);
 
-  const { pauseSession, resumeSession, endSession, sendUserInfluence, executeTurn } =
-    useAIMultiplayerSession();
+  const { pauseSession, resumeSession, endSession, sendUserInfluence, executeTurn } = useAIMultiplayerSession();
 
   const [influenceMessage, setInfluenceMessage] = useState('');
   const [isExpanded, setIsExpanded] = useState(true);
@@ -96,9 +87,7 @@ export const AIMultiplayerControls = memo(() => {
                   <div
                     className={cn(
                       'h-2 w-2 rounded-full',
-                      agent.status === 'thinking' || agent.status === 'acting'
-                        ? 'animate-pulse'
-                        : ''
+                      agent.status === 'thinking' || agent.status === 'acting' ? 'animate-pulse' : ''
                     )}
                     style={{ backgroundColor: agent.color }}
                   />
@@ -122,12 +111,7 @@ export const AIMultiplayerControls = memo(() => {
               onKeyDown={handleKeyDown}
               className="flex-1"
             />
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={handleSendInfluence}
-              disabled={!influenceMessage.trim()}
-            >
+            <Button size="icon" variant="outline" onClick={handleSendInfluence} disabled={!influenceMessage.trim()}>
               <SendIcon size={16} />
             </Button>
           </div>
@@ -176,11 +160,7 @@ const StatusBadge = memo(({ status }: { status: string | null }) => {
 
   const config = statusConfig[status ?? 'running'] ?? statusConfig.running;
 
-  return (
-    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', config.className)}>
-      {config.label}
-    </span>
-  );
+  return <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', config.className)}>{config.label}</span>;
 });
 
 StatusBadge.displayName = 'StatusBadge';
