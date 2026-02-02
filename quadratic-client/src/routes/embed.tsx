@@ -5,7 +5,7 @@ import { events } from '@/app/events/events';
 import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { isReadonly } from '@/app/helpers/isEmbed';
-import initCoreClient from '@/app/quadratic-core/quadratic_core';
+import initCoreClient, { createBlankFile, getCurrentFileVersion } from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import type { CoreClientImportProgress } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -28,7 +28,8 @@ import { RecoilRoot } from 'recoil';
 
 type EmbedLoaderData =
   | { mode: 'file'; fileData: ApiTypes['/v0/files/:uuid.GET.response'] }
-  | { mode: 'import'; importUrl: string };
+  | { mode: 'import'; importUrl: string }
+  | { mode: 'blank' };
 
 export const shouldRevalidate = () => false;
 
@@ -46,10 +47,6 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     } else if (lowerKey === 'import') {
       importUrl = value;
     }
-  }
-
-  if (!fileId && !importUrl) {
-    throw new Response('Missing fileId or import parameter', { status: 400 });
   }
 
   // Parse preload parameter to determine which workers to preload
@@ -157,7 +154,43 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     return { mode: 'import', importUrl };
   }
 
-  throw new Response('Invalid request', { status: 400 });
+  // Blank mode - create a new blank file
+  const blankFileContents = createBlankFile();
+  const blankVersion = getCurrentFileVersion();
+
+  // Create a blob URL from the blank file contents
+  // Copy to a new ArrayBuffer to ensure compatibility with Blob
+  const contentsArray = new Uint8Array(blankFileContents);
+  const buffer = new ArrayBuffer(contentsArray.length);
+  new Uint8Array(buffer).set(contentsArray);
+  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  try {
+    startupTimer.start('file.loader.quadraticCore.load');
+    const result = await quadraticCore.load({
+      fileId: crypto.randomUUID(),
+      teamUuid: crypto.randomUUID(),
+      url: blobUrl,
+      version: blankVersion,
+      sequenceNumber: 0,
+      noMultiplayer: true,
+    });
+    startupTimer.end('file.loader.quadraticCore.load');
+
+    if (result.error) {
+      captureEvent({
+        message: '[Embed] Failed to create blank file.',
+        extra: { error: result.error },
+      });
+      throw new Response('Failed to create blank file.', { statusText: result.error });
+    }
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+
+  startupTimer.end('file.loader');
+  return { mode: 'blank' };
 };
 
 export const Component = memo(() => {
@@ -320,7 +353,7 @@ export const Component = memo(() => {
           teamUuid: fileData.team.uuid,
         }));
       } else {
-        // For import mode, set minimal permissions (edit allowed since local only, unless readonly)
+        // For import and blank modes, set minimal permissions (edit allowed since local only, unless readonly)
         // Generate a random UUID so EmbedApp can initialize
         const permissions = isReadonly
           ? [FilePermissionSchema.enum.FILE_VIEW]
@@ -412,7 +445,7 @@ export const ErrorBoundary = () => {
       description = 'This file may have been moved or made unavailable.';
     } else if (error.status === 400) {
       title = 'Bad request';
-      description = 'Missing required fileId or import parameter.';
+      description = 'Invalid request parameters.';
     } else if (error.status === 403) {
       title = 'Permission denied';
       description = 'You do not have permission to view this file.';
