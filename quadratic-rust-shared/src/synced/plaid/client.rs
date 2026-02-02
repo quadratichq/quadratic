@@ -403,7 +403,7 @@ impl PlaidClient {
             "transactions" => Some("transactions"),
             "investments" => Some("investments"),
             "liabilities" => Some("liabilities"),
-            "balance" => Some("balance"),
+            "balance" => Some("balances"),
             _ => None,
         }
     }
@@ -436,7 +436,7 @@ impl SyncedClient for PlaidClient {
     /// Get all possible streams for Plaid.
     /// Note: Use `available_streams()` to get streams for a specific connection.
     fn streams() -> Vec<&'static str> {
-        vec!["transactions", "investments", "liabilities", "balance"]
+        vec!["transactions", "investments", "liabilities", "balances"]
     }
 
     /// Test the connection to the Plaid API.
@@ -464,16 +464,40 @@ impl SyncedClient for PlaidClient {
                 Err(e) if is_stream_not_supported(&e) => Ok(None),
                 Err(e) => Err(e),
             },
-            "liabilities" => match self.get_liabilities().await {
-                Ok(data) => process_snapshot(data, stream, end_date).map(Some),
-                Err(e) if is_stream_not_supported(&e) => Ok(None),
-                Err(e) => Err(e),
-            },
-            "balance" => match self.get_balances().await {
-                Ok(data) => process_accounts_snapshot(data, stream, end_date).map(Some),
-                Err(e) if is_stream_not_supported(&e) => Ok(None),
-                Err(e) => Err(e),
-            },
+            "liabilities" => {
+                // Liabilities are point-in-time snapshots; only fetch when syncing today's date
+                let today = chrono::Utc::now().date_naive();
+                if end_date != today {
+                    tracing::debug!(
+                        "Skipping liabilities for historical date {} (today is {})",
+                        end_date,
+                        today
+                    );
+                    return Ok(None);
+                }
+                match self.get_liabilities().await {
+                    Ok(data) => process_snapshot(data, stream, end_date).map(Some),
+                    Err(e) if is_stream_not_supported(&e) => Ok(None),
+                    Err(e) => Err(e),
+                }
+            }
+            "balances" => {
+                // Balances are point-in-time snapshots; only fetch when syncing today's date
+                let today = chrono::Utc::now().date_naive();
+                if end_date != today {
+                    tracing::debug!(
+                        "Skipping balances for historical date {} (today is {})",
+                        end_date,
+                        today
+                    );
+                    return Ok(None);
+                }
+                match self.get_balances().await {
+                    Ok(data) => process_accounts_snapshot(data, stream, end_date).map(Some),
+                    Err(e) if is_stream_not_supported(&e) => Ok(None),
+                    Err(e) => Err(e),
+                }
+            }
             _ => Err(SharedError::Synced(format!("Unknown stream: {}", stream))),
         }
     }
@@ -716,7 +740,7 @@ mod tests {
             PlaidClient::product_to_stream("liabilities"),
             Some("liabilities")
         );
-        assert_eq!(PlaidClient::product_to_stream("balance"), Some("balance"));
+        assert_eq!(PlaidClient::product_to_stream("balance"), Some("balances"));
         assert_eq!(PlaidClient::product_to_stream("auth"), None);
         assert_eq!(PlaidClient::product_to_stream("identity"), None);
         assert_eq!(PlaidClient::product_to_stream("unknown"), None);
