@@ -1,6 +1,8 @@
+import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
+import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { SheetBar } from '@/app/ui/menus/SheetBar/SheetBar';
 import { Toolbar } from '@/app/ui/menus/Toolbar/Toolbar';
@@ -10,6 +12,7 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 /**
  * Button to open the file in the full Quadratic app.
@@ -43,6 +46,7 @@ const EditInQuadraticButton = () => {
  */
 export function EmbedUI() {
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
+  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
 
   useEffect(() => {
     const handleError = (from: string, error: Error | unknown) => setError({ from, error });
@@ -95,6 +99,7 @@ export function EmbedUI() {
         </div>
         <CodeEditor />
       </div>
+      {showCellTypeMenu && <CellTypeMenu />}
     </div>
   );
 }

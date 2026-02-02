@@ -6,6 +6,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
@@ -141,25 +142,33 @@ export const CellTypeMenu = memo(() => {
           </>
         )}
 
-        {teamPermissions?.includes('TEAM_EDIT') && (
-          <CommandGroup heading="Connections">
-            {connections.map((connection, i) => (
-              <ConnectionCommandItem
-                key={connection.uuid}
-                connection={connection}
-                teamUuid={teamUuid}
-                index={i}
-                onSelect={() => openEditor({ Connection: { kind: connection.type, id: connection.uuid } })}
-              />
-            ))}
+        <CommandGroup heading="Connections">
+          {isEmbed ? (
+            <div className="px-2 py-1.5 text-sm">Only available in the full Quadratic app</div>
+          ) : (
+            <>
+              {teamPermissions?.includes('TEAM_EDIT') && (
+                <>
+                  {connections.map((connection, i) => (
+                    <ConnectionCommandItem
+                      key={connection.uuid}
+                      connection={connection}
+                      teamUuid={teamUuid}
+                      index={i}
+                      onSelect={() => openEditor({ Connection: { kind: connection.type, id: connection.uuid } })}
+                    />
+                  ))}
 
-            <CommandItemWrapper
-              name="Add or manage…"
-              icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
-              onSelect={manageConnections}
-            />
-          </CommandGroup>
-        )}
+                  <CommandItemWrapper
+                    name="Add or manage…"
+                    icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
+                    onSelect={manageConnections}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </CommandGroup>
       </CommandList>
     </CommandDialog>
   );
