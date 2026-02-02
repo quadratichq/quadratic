@@ -1,6 +1,7 @@
 import { getActionFileMove, type Action as FileAction } from '@/routes/api.files.$uuid';
 import type { Action as FileShareAction, FilesSharingLoader } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { syncFileLocation } from '@/shared/atom/fileLocationAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -367,7 +368,7 @@ function ShareFileDialogBody({
           ownerId={owner.type === 'user' ? owner.id : null}
           uuid={uuid}
           loggedInUserId={loggedInUserId}
-          disabled={teamRole === 'VIEWER'}
+          disabled={!filePermissions.includes('FILE_MOVE')}
         />
       )}
 
@@ -588,27 +589,7 @@ function CopyLinkButton({
   isTeamFile: boolean;
   uuid: string;
 }) {
-  const fetchers = useFetchers();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const publicLinkAccessFetcher = useMemo(
-    () =>
-      fetchers.find(
-        (fetcher) =>
-          isJsonObject(fetcher.json) && fetcher.json.intent === 'update-public-link-access' && fetcher.state !== 'idle'
-      ),
-    [fetchers]
-  );
-  const optimisticPublicLinkAccess = useMemo(
-    () =>
-      publicLinkAccessFetcher
-        ? (publicLinkAccessFetcher.json as FileShareAction['request.update-public-link-access']).publicLinkAccess
-        : publicLinkAccess,
-    [publicLinkAccess, publicLinkAccessFetcher]
-  );
-  const disabled = useMemo(
-    () => (publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true),
-    [isTeamFile, optimisticPublicLinkAccess, publicLinkAccess]
-  );
 
   return (
     <>
@@ -633,8 +614,7 @@ function CopyLinkButton({
         Copy link with position
       </Button> */}
       <Button
-        variant={disabled ? 'ghost' : 'link'}
-        disabled={disabled}
+        variant={'link'}
         className="flex-shrink-0"
         onClick={() => {
           trackEvent('[FileSharing].publicLinkAccess.clickCopyLink');
@@ -1175,14 +1155,20 @@ function ListItemTeamFile({
     (checked: boolean) => {
       // checked = true means make it a team file (ownerUserId: null)
       // checked = false means make it a personal file (ownerUserId: loggedInUserId)
-      const data = getActionFileMove(checked ? null : loggedInUserId);
+      const newOwnerUserId = checked ? null : loggedInUserId;
+
+      // Submit via fetcher (handles API call)
+      const data = getActionFileMove(newOwnerUserId);
       fetcher.submit(data, {
         method: 'POST',
         action: fetcherUrl,
         encType: 'application/json',
       });
+
+      // Also sync to the atom (if in app context) so TopBar updates immediately
+      syncFileLocation(uuid, newOwnerUserId);
     },
-    [fetcher, fetcherUrl, loggedInUserId]
+    [fetcher, fetcherUrl, loggedInUserId, uuid]
   );
 
   return (
@@ -1194,7 +1180,7 @@ function ListItemTeamFile({
         Everyone at {teamName}
       </Label>
       <Type variant="body2" className="pr-4">
-        {isTeamFile ? 'Can access (team file)' : 'No access (personal file)'}
+        {isTeamFile ? 'Can access' : 'No access'}
       </Type>
     </ListItem>
   );

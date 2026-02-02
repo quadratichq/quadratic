@@ -5,7 +5,7 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { apiClient } from '@/shared/api/apiClient';
+import { moveFile, useFileLocation } from '@/shared/atom/fileLocationAtom';
 import { ExternalLinkIcon, MoveItemIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
@@ -66,7 +66,6 @@ function FileLocation() {
   const { uuid } = useParams() as { uuid: string };
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    file: { ownerUserId },
     team,
     userMakingRequest: { fileRole, teamRole, id: userId },
   } = useFileRouteLoaderData();
@@ -74,39 +73,34 @@ function FileLocation() {
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;
 
+  // Use the atom for reactive file location state (synced with ShareDialog)
+  const { ownerUserId } = useFileLocation();
+
   // Determine current file location based on ownerUserId:
   //   1. You have access to the team and its your file: personal
   //   2. You have access to the team but its not your file: team
   //   3. You don't have access to the team but file was shared via link: "Untitled"
   //   4. You don't have access to the team but you were invited to the file: "Shared with me / Untitled"
-  const [fileType, setFileType] = useState<'team' | 'personal' | 'shared-invite' | 'shared-link'>(
-    ownerUserId !== undefined && ownerUserId === userId
-      ? 'personal'
-      : ownerUserId === undefined && teamRole
-        ? 'team'
-        : fileRole
-          ? 'shared-invite'
-          : 'shared-link'
-  );
+  // Note: ownerUserId can be undefined (from loader) or null (from atom) for team files
+  const fileType = useMemo<'team' | 'personal' | 'shared-invite' | 'shared-link'>(() => {
+    if (ownerUserId != null && ownerUserId === userId) {
+      return 'personal';
+    }
+    if (ownerUserId == null && teamRole) {
+      return 'team';
+    }
+    if (fileRole) {
+      return 'shared-invite';
+    }
+    return 'shared-link';
+  }, [ownerUserId, userId, teamRole, fileRole]);
 
-  const moveFile = useCallback(
-    async (newFileType: 'team' | 'personal') => {
+  const handleMoveFile = useCallback(
+    (newFileType: 'team' | 'personal') => {
       if (!userId) return;
-
-      const previousFileType = fileType;
-
-      // Optimistically update the UI
-      setFileType(newFileType);
-
-      try {
-        await apiClient.files.update(uuid, { ownerUserId: newFileType === 'personal' ? userId : null });
-      } catch (error) {
-        // Revert on failure
-        setFileType(previousFileType);
-        console.error('Failed to move file:', error);
-      }
+      moveFile(uuid, newFileType === 'personal' ? userId : null);
     },
-    [uuid, userId, fileType]
+    [uuid, userId]
   );
 
   // Don't show anything if they're not logged in
@@ -148,7 +142,7 @@ function FileLocation() {
               View personal files
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => moveFile('team')}>
+          <DropdownMenuItem onClick={() => handleMoveFile('team')}>
             <MoveItemIcon className="mr-2" />
             Move to team files
           </DropdownMenuItem>
@@ -186,7 +180,7 @@ function FileLocation() {
               View team files
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => moveFile('personal')}>
+          <DropdownMenuItem onClick={() => handleMoveFile('personal')}>
             <MoveItemIcon className="mr-2" />
             Move to personal files
           </DropdownMenuItem>
