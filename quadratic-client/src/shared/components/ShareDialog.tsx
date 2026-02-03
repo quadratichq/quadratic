@@ -5,7 +5,7 @@ import { syncFileLocation } from '@/shared/atom/fileLocationAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { GroupAddIcon } from '@/shared/components/Icons';
+import { GroupAddIcon, GroupIcon, GroupOffIcon, MailIcon, PublicIcon, PublicOffIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -13,7 +13,6 @@ import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Label } from '@/shared/shadcn/ui/label';
 import {
   Select,
   SelectContent,
@@ -23,12 +22,11 @@ import {
   SelectValue,
 } from '@/shared/shadcn/ui/select';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import { Switch } from '@/shared/shadcn/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { Cross2Icon, EnvelopeClosedIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { Cross2Icon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import type {
   ApiTypes,
   PublicLinkAccess,
@@ -363,16 +361,6 @@ function ShareFileDialogBody({
           uuid={uuid}
           loggedInUserId={loggedInUserId}
           disabled={!filePermissions.includes('FILE_MOVE')}
-        />
-      )}
-
-      {owner.type === 'user' && (
-        <ListItemUser
-          isYou={owner.id === data.userMakingRequest.id}
-          email={owner.email}
-          name={owner.name}
-          picture={owner.picture}
-          action={<Type className="pr-4">Owner</Type>}
         />
       )}
 
@@ -1066,7 +1054,7 @@ function ListItemInvite({ email, action, error }: { email: string; action: React
     <ListItem>
       <div>
         <Avatar>
-          <EnvelopeClosedIcon />
+          <MailIcon />
         </Avatar>
       </div>
       <div className={`flex flex-col`}>
@@ -1100,8 +1088,8 @@ function ListItemUser({
   const secondary = error ? error : name ? email : '';
   return (
     <ListItem>
-      <div className="flex h-9 w-9 items-center justify-center">
-        <Avatar src={picture} size="medium">
+      <div className="flex h-6 w-6 items-center justify-center">
+        <Avatar src={picture} size="small">
           {label}
         </Avatar>
       </div>
@@ -1137,12 +1125,12 @@ function ListItemTeamFile({
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.API.FILE(uuid);
 
-  let isTeamFile = ownerId === null;
+  let value: 'team-file' | 'personal-file' = ownerId === null ? 'team-file' : 'personal-file';
 
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
     const data = fetcher.json as FileAction['request.move'];
-    isTeamFile = data.ownerUserId === null;
+    value = data.ownerUserId === null ? 'team-file' : 'personal-file';
   }
 
   const onCheckedChange = useCallback(
@@ -1167,15 +1155,24 @@ function ListItemTeamFile({
 
   return (
     <ListItem className="py-1">
-      <div className="flex h-6 w-9 items-center justify-center">
-        <Switch disabled={disabled} id="team-file-switch" checked={isTeamFile} onCheckedChange={onCheckedChange} />
+      <div className="flex h-6 w-6 items-center justify-center">
+        {value === 'team-file' ? <GroupIcon /> : <GroupOffIcon />}
       </div>
-      <Label htmlFor="team-file-switch" className="font-normal">
-        Everyone at {teamName}
-      </Label>
-      <Type variant="body2" className="pr-4">
-        {isTeamFile ? 'Can access' : 'No access'}
-      </Type>
+      <Type variant="body2">Everyone at {teamName}</Type>
+
+      <Select
+        disabled={disabled}
+        value={value}
+        onValueChange={(value: 'team-file' | 'personal-file') => onCheckedChange(value === 'team-file')}
+      >
+        <SelectTrigger className={`w-auto`}>
+          <SelectValue>{value === 'team-file' ? 'Can access' : 'No access'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="team-file">Can access</SelectItem>
+          <SelectItem value="personal-file">No access</SelectItem>
+        </SelectContent>
+      </Select>
     </ListItem>
   );
 }
@@ -1226,20 +1223,12 @@ function ListItemPublicLink({
 
   return (
     <ListItem>
-      <div className="flex h-6 w-9 items-center justify-center">
-        <Switch
-          id="public-link-access-switch"
-          checked={publicLinkAccess !== 'NOT_SHARED'}
-          onCheckedChange={(checked) => {
-            setPublicLinkAccess(checked ? 'READONLY' : 'NOT_SHARED');
-          }}
-        />
+      <div className="flex h-6 w-6 items-center justify-center">
+        {publicLinkAccess === 'NOT_SHARED' ? <PublicOffIcon /> : <PublicIcon />}
       </div>
 
       <div className={`flex flex-col`}>
-        <Label htmlFor="public-link-access-switch" className="font-normal">
-          Anyone with the link
-        </Label>
+        <Type variant="body2">Anyone with the link</Type>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
           <Type variant="caption" className="text-destructive">
             Failed to update
@@ -1248,29 +1237,24 @@ function ListItemPublicLink({
       </div>
 
       <div className="flex items-center gap-1">
-        {disabled || publicLinkAccess === 'NOT_SHARED' ? (
-          <Type className="flex h-9 items-center pr-4">{activeOptionLabel}</Type>
-        ) : (
-          <Select
-            value={publicLinkAccess}
-            onValueChange={(value: PublicLinkAccess) => {
-              setPublicLinkAccess(value);
-            }}
-          >
-            <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
-              <SelectValue>{activeOptionLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(optionsByValue)
-                .filter(([value]) => value !== 'NOT_SHARED')
-                .map(([value, label]) => (
-                  <SelectItem value={value} key={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        )}
+        <Select
+          disabled={disabled}
+          value={publicLinkAccess}
+          onValueChange={(value: PublicLinkAccess) => {
+            setPublicLinkAccess(value);
+          }}
+        >
+          <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
+            <SelectValue>{activeOptionLabel}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(optionsByValue).map(([value, label]) => (
+              <SelectItem value={value} key={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </ListItem>
   );
