@@ -247,21 +247,6 @@ function TableListItem({
     [eventSource, data, connectionType]
   );
 
-  const handleInsertClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      if (!tableActions || tableActions.length === 0) return;
-
-      const insertAction = tableActions[0];
-      trackEvent('[ConnectionSchemaBrowser].clickInsert', { eventSource });
-      insertAction.onClick({
-        table: data,
-        tableQuery: getInsertQuery({ table: data, connectionType }),
-      });
-    },
-    [tableActions, eventSource, data, connectionType]
-  );
-
   return (
     <div className="group relative">
       <button
@@ -275,18 +260,7 @@ function TableListItem({
           <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
         </div>
         <div className="truncate leading-normal">{name}</div>
-        {tableActions && tableActions.length > 0 ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto h-5 flex-none px-2 text-xs"
-            onClick={handleInsertClick}
-          >
-            Insert
-          </Button>
-        ) : (
-          <div className="ml-auto flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
-        )}
+        <div className="ml-auto flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
       </button>
       {tableActions && (
         <div className="absolute right-2 top-0">
@@ -381,33 +355,3 @@ function getTableQuery({ table: { name, schema }, connectionType }: { table: Tab
   }
 }
 
-function getInsertQuery({ table: { name, schema }, connectionType }: { table: Table; connectionType: ConnectionType }) {
-  switch (connectionType) {
-    case 'POSTGRES':
-      return `SELECT * FROM "${schema}"."${name}" LIMIT 15`;
-    case 'COCKROACHDB':
-      return `SELECT * FROM "${schema}"."${name}" LIMIT 15`;
-    case 'SUPABASE':
-      return `SELECT * FROM "${schema}"."${name}" LIMIT 15`;
-    case 'NEON':
-      return `SELECT * FROM "${schema}"."${name}" LIMIT 15`;
-    case 'MYSQL':
-      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 15`;
-    case 'MARIADB':
-      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 15`;
-    case 'MSSQL':
-      return `SELECT TOP 15 * FROM [${schema}].[${name}]`;
-    case 'SNOWFLAKE':
-      return `SELECT * FROM "${schema}"."${name}" LIMIT 15`;
-    case 'BIGQUERY':
-      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 15`;
-
-    // datafusion connections
-    case 'MIXPANEL':
-    case 'GOOGLE_ANALYTICS':
-    case 'PLAID':
-      return `SELECT * FROM \`${name}\` LIMIT 15`;
-    default:
-      return '';
-  }
-}

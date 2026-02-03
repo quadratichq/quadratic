@@ -59,7 +59,12 @@ export function ConnectionFormCreate({
     pendingConnectionRef.current = { name, type };
 
     fetcher.submit(json, options);
-    handleNavigateToListView();
+
+    // Only navigate to list view if there's no onConnectionCreated callback
+    // If callback exists, it will handle closing the dialog when the API responds
+    if (!onConnectionCreated) {
+      handleNavigateToListView();
+    }
   };
 
   const props: ConnectionFormProps = {
