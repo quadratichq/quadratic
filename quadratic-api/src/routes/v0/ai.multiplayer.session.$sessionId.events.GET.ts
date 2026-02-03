@@ -3,12 +3,13 @@ import type { AIMultiplayerEvent } from 'quadratic-shared/ai/multiplayerSession'
 import { z } from 'zod';
 import { getSession, subscribeToSession } from '../../ai/multiplayer/sessionStore';
 import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateAccessTokenSSE } from '../../middleware/validateAccessTokenSSE';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 
-export default [validateAccessToken, userMiddleware, handler];
+// Use validateAccessTokenSSE to support token in query params (required for EventSource)
+export default [validateAccessTokenSSE, userMiddleware, handler];
 
 const schema = z.object({
   params: z.object({
