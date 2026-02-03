@@ -1,3 +1,9 @@
+// Mock FREE_EDITABLE_FILE_LIMIT for testing
+jest.mock('../../env-vars', () => ({
+  ...jest.requireActual('../../env-vars'),
+  FREE_EDITABLE_FILE_LIMIT: 5,
+}));
+
 import { workosMock } from '../../tests/workosMock';
 jest.mock('@workos-inc/node', () =>
   workosMock([
@@ -273,6 +279,185 @@ describe('GET /v0/teams/:uuid', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body.team.settings.aiRules).toBeNull();
+        });
+    });
+
+    it('returns requiresUpgradeToEdit field on files', async () => {
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.files).toHaveLength(1);
+          expect(res.body.files[0]).toHaveProperty('userMakingRequest');
+          expect(res.body.files[0].userMakingRequest).toHaveProperty('requiresUpgradeToEdit');
+          // With only 1 file, it should not be restricted (under limit of 5)
+          expect(res.body.files[0].userMakingRequest.requiresUpgradeToEdit).toBe(false);
+        });
+    });
+
+    it('marks older files as edit-restricted when over the soft limit', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+      const user = await dbClient.user.findUniqueOrThrow({
+        where: { auth0Id: 'team_1_owner' },
+      });
+
+      // Create 6 more files (total 7, with limit of 5)
+      // Use different creation dates to control order
+      for (let i = 0; i < 6; i++) {
+        await createFile({
+          data: {
+            name: `Extra File ${i}`,
+            ownerTeamId: team.id,
+            creatorUserId: user.id,
+            createdDate: new Date(Date.now() + (i + 1) * 1000), // Newer than existing file
+          },
+        });
+      }
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.files).toHaveLength(7);
+
+          // Count restricted vs unrestricted files
+          const restrictedFiles = res.body.files.filter(
+            (f: any) => f.userMakingRequest.requiresUpgradeToEdit === true
+          );
+          const unrestrictedFiles = res.body.files.filter(
+            (f: any) => f.userMakingRequest.requiresUpgradeToEdit === false
+          );
+
+          // With limit of 5, 2 should be restricted (oldest ones)
+          expect(restrictedFiles).toHaveLength(2);
+          expect(unrestrictedFiles).toHaveLength(5);
+
+          // Restricted files should not have FILE_EDIT permission
+          for (const file of restrictedFiles) {
+            expect(file.userMakingRequest.filePermissions).not.toContain('FILE_EDIT');
+          }
+
+          // Unrestricted files should have FILE_EDIT permission
+          for (const file of unrestrictedFiles) {
+            expect(file.userMakingRequest.filePermissions).toContain('FILE_EDIT');
+          }
+        });
+    });
+
+    it('returns fileLimit field with correct values', async () => {
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.fileLimit).toBeDefined();
+          expect(res.body.fileLimit.isOverLimit).toBe(false);
+          expect(res.body.fileLimit.totalFiles).toBe(1);
+          expect(res.body.fileLimit.maxEditableFiles).toBe(5);
+        });
+    });
+
+    it('returns fileLimit.isOverLimit=false when team is at exactly the limit', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+      const user = await dbClient.user.findUniqueOrThrow({
+        where: { auth0Id: 'team_1_owner' },
+      });
+
+      // Create 4 more files (total 5, at limit)
+      for (let i = 0; i < 4; i++) {
+        await createFile({
+          data: {
+            name: `Extra File ${i}`,
+            ownerTeamId: team.id,
+            creatorUserId: user.id,
+          },
+        });
+      }
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          // At exactly 5 files (limit), isOverLimit should be false - all files are editable
+          expect(res.body.fileLimit.isOverLimit).toBe(false);
+          expect(res.body.fileLimit.totalFiles).toBe(5);
+          expect(res.body.fileLimit.maxEditableFiles).toBe(5);
+        });
+    });
+
+    it('returns fileLimit.isOverLimit=true when team exceeds file limit', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+      const user = await dbClient.user.findUniqueOrThrow({
+        where: { auth0Id: 'team_1_owner' },
+      });
+
+      // Create 5 more files (total 6, exceeding limit of 5)
+      for (let i = 0; i < 5; i++) {
+        await createFile({
+          data: {
+            name: `Extra File ${i}`,
+            ownerTeamId: team.id,
+            creatorUserId: user.id,
+          },
+        });
+      }
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.fileLimit.isOverLimit).toBe(true);
+          expect(res.body.fileLimit.totalFiles).toBe(6);
+          expect(res.body.fileLimit.maxEditableFiles).toBe(5);
+        });
+    });
+
+    it('returns fileLimit.isOverLimit=true for second user even when restricted files are private to another user', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+      const owner = await dbClient.user.findUniqueOrThrow({
+        where: { auth0Id: 'team_1_owner' },
+      });
+
+      // Create 6 PRIVATE files owned by the team owner (total 7 including the 1 existing public file)
+      // These won't be visible to team_1_editor, but they still count toward the limit
+      for (let i = 0; i < 6; i++) {
+        await createFile({
+          data: {
+            name: `Owner Private File ${i}`,
+            ownerTeamId: team.id,
+            creatorUserId: owner.id,
+            ownerUserId: owner.id, // Private to owner
+          },
+        });
+      }
+
+      // Request as editor - they can only see the 1 public file, not the 6 private ones
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect(200)
+        .expect((res) => {
+          // Editor only sees 1 public file (not the owner's 6 private files)
+          expect(res.body.files).toHaveLength(1);
+          expect(res.body.filesPrivate).toHaveLength(0);
+
+          // But the team IS over the limit (7 total files, limit is 5)
+          // This is the key assertion - the banner should show for the editor
+          expect(res.body.fileLimit.isOverLimit).toBe(true);
+          expect(res.body.fileLimit.totalFiles).toBe(7);
+          expect(res.body.fileLimit.maxEditableFiles).toBe(5);
         });
     });
   });

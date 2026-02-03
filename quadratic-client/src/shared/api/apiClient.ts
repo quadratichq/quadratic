@@ -132,9 +132,9 @@ export const apiClient = {
         );
       },
     },
-    fileLimit(uuid: string, isPrivate: boolean) {
+    fileLimit(uuid: string) {
       return fetchFromApi(
-        `/v0/teams/${uuid}/file-limit?private=${isPrivate}`,
+        `/v0/teams/${uuid}/file-limit`,
         { method: 'GET' },
         ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
       );
