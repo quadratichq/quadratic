@@ -181,12 +181,28 @@ impl Sheet {
                 Some(JsRenderCellSpecial::SpillError),
             ));
         } else if let Some(error) = data_table.get_error() {
+            // For single-value code cells with errors, set the language so that
+            // CellsCodeOutlines can draw the outline (since no Table is created for single cells)
+            let language = if data_table.is_code()
+                && !data_table.is_html_or_image()
+                && !data_table.get_show_name()
+                && !data_table.get_show_columns()
+            {
+                let output_size = data_table.output_size();
+                if output_size.w.get() == 1 && output_size.h.get() == 1 {
+                    Some(data_table.get_language())
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
             cells.push(Self::get_render_cell(
                 code_rect.min.x,
                 code_rect.min.y,
                 &CellValue::Error(Box::new(error)),
                 Format::default(),
-                None,
+                language,
                 None,
             ));
         } else if let Some(intersection) = code_rect.intersection(render_rect) {
@@ -279,9 +295,14 @@ impl Sheet {
             .for_each(|(x, column)| {
                 column.values.range(rect.y_range()).for_each(|(&y, value)| {
                     // For CellValue::Code, we need to get the language and output value
+                    // This includes error cases - the language is preserved so CellsCodeOutlines
+                    // can draw the outline for single-value code cells with errors
                     let (render_value, language) = if let CellValue::Code(code_cell) = value {
                         // Use the output value for rendering, but pass the language for code border
-                        (code_cell.output.as_ref(), Some(code_cell.code_run.language.clone()))
+                        (
+                            code_cell.output.as_ref(),
+                            Some(code_cell.code_run.language.clone()),
+                        )
                     } else {
                         (value, None)
                     };
@@ -301,7 +322,14 @@ impl Sheet {
 
                     Self::ensure_lists_are_clipped(&mut format, &special);
 
-                    render_cells.push(Self::get_render_cell(x, y, render_value, format, language, special));
+                    render_cells.push(Self::get_render_cell(
+                        x,
+                        y,
+                        render_value,
+                        format,
+                        language,
+                        special,
+                    ));
                 });
             });
 
@@ -800,8 +828,8 @@ mod tests {
 
     #[test]
     fn test_render_rich_text_with_links_and_formatting() {
-        use crate::grid::js_types::{JsRenderCellFormatSpan, JsRenderCellLinkSpan};
         use crate::cellvalue::TextSpan;
+        use crate::grid::js_types::{JsRenderCellFormatSpan, JsRenderCellLinkSpan};
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -903,8 +931,8 @@ mod tests {
 
     #[test]
     fn test_render_code_cell_value() {
-        use crate::grid::CodeRun;
         use crate::CodeCell;
+        use crate::grid::CodeRun;
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -941,8 +969,8 @@ mod tests {
 
     #[test]
     fn test_render_code_cell_value_with_error() {
-        use crate::grid::CodeRun;
         use crate::CodeCell;
+        use crate::grid::CodeRun;
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -980,6 +1008,55 @@ mod tests {
         let cell = &render[0];
 
         // Should have the language set for code border rendering
+        assert_eq!(cell.language, Some(CodeCellLanguage::Python));
+        // Should show as a run error
+        assert_eq!(cell.special, Some(JsRenderCellSpecial::RunError));
+    }
+
+    #[test]
+    fn test_render_single_value_data_table_with_error() {
+        use crate::grid::{CodeRun, DataTableKind};
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a DataTable with an error (single-value, no UI)
+        // This simulates a Python cell that has an error and is stored as a DataTable
+        // (because errors prevent it from being converted to CellValue::Code)
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: "invalid".to_string(),
+            error: Some(RunError {
+                span: None,
+                msg: RunErrorMsg::DivideByZero,
+            }),
+            ..Default::default()
+        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Python1",
+            Value::Single(CellValue::Blank), // Error cells have Blank output
+            false,
+            Some(false), // No UI
+            Some(false), // No UI
+            None,
+        );
+        gc.sheet_mut(sheet_id)
+            .set_data_table(Pos { x: 3, y: 3 }, Some(data_table));
+
+        let sheet = gc.sheet(sheet_id);
+        let render = sheet.get_render_cells(
+            Rect {
+                min: Pos { x: 3, y: 3 },
+                max: Pos { x: 3, y: 3 },
+            },
+            gc.a1_context(),
+        );
+
+        assert_eq!(render.len(), 1);
+        let cell = &render[0];
+
+        // Should have the language set for code border rendering (CellsCodeOutlines)
         assert_eq!(cell.language, Some(CodeCellLanguage::Python));
         // Should show as a run error
         assert_eq!(cell.special, Some(JsRenderCellSpecial::RunError));

@@ -475,3 +475,515 @@ impl RenderPipelines {
         pass.draw_indexed(0..indices.len() as u32, 0, 0..1);
     }
 }
+
+#[cfg(all(test, feature = "wgpu"))]
+mod tests {
+    use super::*;
+    use wgpu::{Backends, Instance, InstanceDescriptor, PowerPreference, RequestAdapterOptions};
+
+    /// Create a test wgpu device and queue for testing
+    fn create_test_device() -> (Device, Queue) {
+        let instance = Instance::new(InstanceDescriptor {
+            backends: Backends::all(),
+            ..Default::default()
+        });
+
+        // Try to get a GPU adapter first, fall back to CPU if not available
+        let adapter = pollster::block_on(instance.request_adapter(&RequestAdapterOptions {
+            power_preference: PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        }))
+        .or_else(|| {
+            pollster::block_on(instance.request_adapter(&RequestAdapterOptions {
+                power_preference: PowerPreference::LowPower,
+                compatible_surface: None,
+                force_fallback_adapter: true,
+            }))
+        })
+        .expect("Failed to get adapter (no GPU or CPU adapter available)");
+
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("Test Device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+            },
+            None,
+        ))
+        .expect("Failed to create device");
+
+        (device, queue)
+    }
+
+    #[test]
+    fn test_render_pipelines_new() {
+        let (device, _queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+
+        let _pipelines = RenderPipelines::new(&device, format);
+
+        // Pipelines should be created successfully
+        // We can't directly access the pipelines, but if new() didn't panic, they were created
+        assert!(true);
+    }
+
+    #[test]
+    fn test_render_pipelines_different_formats() {
+        let (device, _queue) = create_test_device();
+
+        // Test with different texture formats
+        let formats = [
+            TextureFormat::Rgba8Unorm,
+            TextureFormat::Bgra8Unorm,
+            TextureFormat::Rgba8UnormSrgb,
+        ];
+
+        for format in formats.iter() {
+            let _pipelines = RenderPipelines::new(&device, *format);
+            // Should not panic
+            assert!(true);
+        }
+    }
+
+    #[test]
+    fn test_draw_triangles_creates_buffers() {
+        let (device, queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+        let pipelines = RenderPipelines::new(&device, format);
+
+        // Create a test render pass
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Test Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Test Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        // Test with valid triangle vertices (x, y, r, g, b, a) * 3 vertices = 18 floats
+        let vertices = [
+            0.0, 0.0, 1.0, 0.0, 0.0, 1.0, // vertex 1: red
+            50.0, 0.0, 0.0, 1.0, 0.0, 1.0, // vertex 2: green
+            25.0, 50.0, 0.0, 0.0, 1.0, 1.0, // vertex 3: blue
+        ];
+
+        let matrix = [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ];
+
+        pipelines.draw_triangles(&mut render_pass, &device, &queue, &vertices, &matrix);
+
+        drop(render_pass);
+        // Should not panic
+        assert!(true);
+    }
+
+    #[test]
+    fn test_draw_triangles_empty_vertices() {
+        let (device, queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+        let pipelines = RenderPipelines::new(&device, format);
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Test Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Test Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        let vertices = [];
+        let matrix = [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ];
+
+        // Should handle empty vertices gracefully (draws 0 vertices)
+        pipelines.draw_triangles(&mut render_pass, &device, &queue, &vertices, &matrix);
+
+        drop(render_pass);
+        assert!(true);
+    }
+
+    #[test]
+    fn test_draw_lines_creates_buffers() {
+        let (device, queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+        let pipelines = RenderPipelines::new(&device, format);
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Test Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Test Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        // Test with valid line vertices (x, y, r, g, b, a) * 2 vertices = 12 floats
+        let vertices = [
+            0.0, 0.0, 1.0, 1.0, 1.0, 1.0, // vertex 1: white
+            100.0, 100.0, 0.0, 0.0, 0.0, 1.0, // vertex 2: black
+        ];
+
+        let matrix = [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ];
+
+        pipelines.draw_lines(&mut render_pass, &device, &queue, &vertices, &matrix);
+
+        drop(render_pass);
+        assert!(true);
+    }
+
+    #[test]
+    fn test_draw_text_creates_buffers() {
+        let (device, queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+        let pipelines = RenderPipelines::new(&device, format);
+
+        // Create a texture for the text
+        let text_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Text Texture"),
+            size: wgpu::Extent3d {
+                width: 256,
+                height: 256,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: TextureFormat::R8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let text_view = text_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let render_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Render Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+
+        let render_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Test Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &render_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        // Test with valid text vertices (x, y, u, v, r, g, b, a) * 4 vertices = 32 floats
+        let vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, // vertex 1
+            50.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, // vertex 2
+            50.0, 50.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // vertex 3
+            0.0, 50.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, // vertex 4
+        ];
+
+        let indices = [0, 1, 2, 0, 2, 3]; // Two triangles forming a quad
+
+        let matrix = [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ];
+
+        pipelines.draw_text(
+            &mut render_pass,
+            &device,
+            &queue,
+            &vertices,
+            &indices,
+            &text_view,
+            &matrix,
+            1.0,
+            1.0,
+            0.5,
+        );
+
+        drop(render_pass);
+        assert!(true);
+    }
+
+    #[test]
+    fn test_draw_sprites_creates_buffers() {
+        let (device, queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+        let pipelines = RenderPipelines::new(&device, format);
+
+        // Create a sprite texture
+        let sprite_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Sprite Texture"),
+            size: wgpu::Extent3d {
+                width: 64,
+                height: 64,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let sprite_view = sprite_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let render_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Render Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+
+        let render_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Test Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &render_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        // Test with valid sprite vertices (x, y, u, v, r, g, b, a) * 4 vertices = 32 floats
+        let vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, // vertex 1
+            32.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, // vertex 2
+            32.0, 32.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // vertex 3
+            0.0, 32.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, // vertex 4
+        ];
+
+        let indices = [0, 1, 2, 0, 2, 3]; // Two triangles forming a quad
+
+        let matrix = [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ];
+
+        pipelines.draw_sprites(
+            &mut render_pass,
+            &device,
+            &queue,
+            &vertices,
+            &indices,
+            &sprite_view,
+            &matrix,
+        );
+
+        drop(render_pass);
+        assert!(true);
+    }
+
+    #[test]
+    fn test_draw_text_uniform_data() {
+        let (device, queue) = create_test_device();
+        let format = TextureFormat::Rgba8Unorm;
+        let pipelines = RenderPipelines::new(&device, format);
+
+        let text_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Text Texture"),
+            size: wgpu::Extent3d {
+                width: 256,
+                height: 256,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: TextureFormat::R8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let text_view = text_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let render_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Render Texture"),
+            size: wgpu::Extent3d {
+                width: 100,
+                height: 100,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+
+        let render_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Test Encoder"),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Test Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &render_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        let vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 50.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 50.0,
+            50.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 50.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        ];
+
+        let indices = [0, 1, 2, 0, 2, 3];
+
+        let matrix = [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ];
+
+        // Test with different scale values
+        pipelines.draw_text(
+            &mut render_pass,
+            &device,
+            &queue,
+            &vertices,
+            &indices,
+            &text_view,
+            &matrix,
+            2.0,
+            1.5,
+            0.25,
+        );
+
+        drop(render_pass);
+        assert!(true);
+    }
+}

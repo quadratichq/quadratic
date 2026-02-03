@@ -13,6 +13,7 @@ mod text_cache;
 mod text_hash;
 mod text_label;
 
+pub use crate::constants::{HASH_HEIGHT, HASH_WIDTH};
 pub use bitmap_font::{
     extract_char_code, split_text_to_characters, BitmapChar, BitmapFont, BitmapFonts, CharFrame,
 };
@@ -27,5 +28,5 @@ pub use font_manager::FontManager;
 pub use horizontal_line::{lines_to_vertices, HorizontalLine};
 pub use label_mesh::{LabelMesh, TextVertex};
 pub use text_cache::{new_text_cache, TextCache, TextCacheEntry, TextCacheKey};
-pub use text_hash::{hash_coords, TextHash, HASH_HEIGHT, HASH_WIDTH};
+pub use text_hash::{hash_coords, TextHash};
 pub use text_label::{TextAnchor, TextLabel, HEADING_FONT_SIZE};

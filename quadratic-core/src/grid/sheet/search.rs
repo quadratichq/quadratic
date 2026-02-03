@@ -70,17 +70,15 @@ impl Sheet {
                 let numeric_format = self.formats.numeric_format.get(pos);
                 let numeric_decimals = self.formats.numeric_decimals.get(pos);
                 let numeric_commas = self.formats.numeric_commas.get(pos);
-                let display = cell_value.to_number_display(
-                    numeric_format,
-                    numeric_decimals,
-                    numeric_commas,
-                );
+                let display =
+                    cell_value.to_number_display(numeric_format, numeric_decimals, numeric_commas);
                 let raw = n.to_string();
 
                 if let Some(regex) = regex {
                     if whole_cell {
                         let raw_whole = regex.find(&raw).is_some_and(|m| m.as_str() == raw);
-                        let display_whole = regex.find(&display).is_some_and(|m| m.as_str() == display);
+                        let display_whole =
+                            regex.find(&display).is_some_and(|m| m.as_str() == display);
                         if raw_whole || display_whole {
                             Some(display)
                         } else {
@@ -164,9 +162,7 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .for_each(|(data_table_pos, data_table)| {
-                if search_code
-                    && let Some(code_run) = data_table.code_run()
-                {
+                if search_code && let Some(code_run) = data_table.code_run() {
                     let code_matches = if let Some(regex) = regex {
                         regex.is_match(&code_run.code)
                     } else {
@@ -262,7 +258,8 @@ impl Sheet {
     /// Returns `Vec<SheetPos>` for all cells that match.
     pub fn search(&self, query: &String, options: &SearchOptions) -> Vec<JsSheetPosText> {
         let case_sensitive = options.case_sensitive.unwrap_or(false);
-        let query = if case_sensitive {
+        let is_regex = options.regex.unwrap_or(false);
+        let query = if case_sensitive || is_regex {
             query.to_owned()
         } else {
             query.to_lowercase()
@@ -271,7 +268,7 @@ impl Sheet {
         let search_code = options.search_code.unwrap_or(false);
 
         // Build regex if enabled
-        let regex = if options.regex.unwrap_or(false) {
+        let regex = if is_regex {
             let pattern = if case_sensitive {
                 query.clone()
             } else {
@@ -1096,9 +1093,11 @@ mod test {
         );
         assert_eq!(results.len(), 2);
         assert!(results.iter().any(|r| r.text == Some("hello".to_string())));
-        assert!(results
-            .iter()
-            .any(|r| r.text == Some("hello world".to_string())));
+        assert!(
+            results
+                .iter()
+                .any(|r| r.text == Some("hello world".to_string()))
+        );
     }
 
     #[test]
@@ -1117,12 +1116,8 @@ mod test {
             },
         );
         assert_eq!(results.len(), 2);
-        assert!(results
-            .iter()
-            .any(|r| r.text == Some("abc123".to_string())));
-        assert!(results
-            .iter()
-            .any(|r| r.text == Some("def456".to_string())));
+        assert!(results.iter().any(|r| r.text == Some("abc123".to_string())));
+        assert!(results.iter().any(|r| r.text == Some("def456".to_string())));
     }
 
     #[test]
@@ -1203,12 +1198,8 @@ mod test {
             },
         );
         assert_eq!(results.len(), 2);
-        assert!(results
-            .iter()
-            .any(|r| r.text == Some("apple".to_string())));
-        assert!(results
-            .iter()
-            .any(|r| r.text == Some("cherry".to_string())));
+        assert!(results.iter().any(|r| r.text == Some("apple".to_string())));
+        assert!(results.iter().any(|r| r.text == Some("cherry".to_string())));
     }
 
     #[test]
@@ -1230,18 +1221,9 @@ mod test {
     #[test]
     fn regex_search_numbers() {
         let mut sheet = Sheet::test();
-        sheet.set_value(
-            Pos { x: 1, y: 1 },
-            CellValue::Number(123.into()),
-        );
-        sheet.set_value(
-            Pos { x: 2, y: 2 },
-            CellValue::Number(456.into()),
-        );
-        sheet.set_value(
-            Pos { x: 3, y: 3 },
-            CellValue::Number(789.into()),
-        );
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Number(123.into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Number(456.into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Number(789.into()));
 
         // Search for numbers containing "2" or "5"
         let results = sheet.search(

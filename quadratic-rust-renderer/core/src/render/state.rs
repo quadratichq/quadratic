@@ -2,7 +2,7 @@
 
 use quadratic_core::grid::SheetId;
 
-use crate::sheets::text::FontManager;
+use crate::sheets::text::{BitmapFont, FontManager};
 use crate::sheets::Sheets;
 use crate::ui::UI;
 use crate::viewport::Viewport;
@@ -98,7 +98,7 @@ impl CoreState {
     // =========================================================================
 
     /// Add a font
-    pub fn add_font(&mut self, font: crate::sheets::text::BitmapFont) {
+    pub fn add_font(&mut self, font: BitmapFont) {
         self.fonts.add(font);
         self.content_dirty = true;
     }

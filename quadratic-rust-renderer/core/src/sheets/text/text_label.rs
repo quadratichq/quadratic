@@ -148,6 +148,12 @@ impl TextLabel {
         self
     }
 
+    /// Create with italic style
+    pub fn with_italic(mut self, italic: bool) -> Self {
+        self.italic = italic;
+        self
+    }
+
     /// Get the computed text width
     pub fn width(&self) -> f32 {
         self.text_width
@@ -348,13 +354,86 @@ impl TextLabel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sheets::text::bitmap_font::{BitmapChar, BitmapFont, CharFrame};
+    use std::collections::HashMap;
+
+    fn create_test_char_frame() -> CharFrame {
+        CharFrame {
+            x: 10.0,
+            y: 20.0,
+            width: 30.0,
+            height: 40.0,
+        }
+    }
+
+    fn create_test_bitmap_char(char_code: u32, x_advance: f32) -> BitmapChar {
+        let mut kerning = HashMap::new();
+        if char_code == b'A' as u32 {
+            kerning.insert(b'B' as u32, -2.0);
+        }
+
+        BitmapChar {
+            texture_uid: 1,
+            x_advance,
+            x_offset: 1.0,
+            y_offset: 2.0,
+            orig_width: 8.0,
+            texture_height: 16.0,
+            kerning,
+            uvs: [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0],
+            frame: create_test_char_frame(),
+        }
+    }
+
+    fn create_test_font(name: &str, size: f32) -> BitmapFont {
+        let mut chars = HashMap::new();
+        chars.insert(b'A' as u32, create_test_bitmap_char(b'A' as u32, 10.0));
+        chars.insert(b'B' as u32, create_test_bitmap_char(b'B' as u32, 12.0));
+        chars.insert(b' ' as u32, create_test_bitmap_char(b' ' as u32, 5.0));
+
+        BitmapFont {
+            font: name.to_string(),
+            size,
+            line_height: size * 1.2,
+            distance_range: 4.0,
+            chars,
+        }
+    }
+
+    fn create_test_fonts() -> BitmapFonts {
+        let mut fonts = BitmapFonts::new();
+        fonts.add(create_test_font("OpenSans", 16.0));
+        fonts.add(create_test_font("OpenSans-Bold", 16.0));
+        fonts.add(create_test_font("OpenSans-Italic", 16.0));
+        fonts.add(create_test_font("OpenSans-BoldItalic", 16.0));
+        fonts
+    }
+
+    // =========================================================================
+    // TextAnchor tests
+    // =========================================================================
 
     #[test]
     fn test_text_anchor_multipliers() {
         assert_eq!(TextAnchor::TopLeft.offset_multipliers(), (0.0, 0.0));
+        assert_eq!(TextAnchor::TopCenter.offset_multipliers(), (0.5, 0.0));
+        assert_eq!(TextAnchor::TopRight.offset_multipliers(), (1.0, 0.0));
+        assert_eq!(TextAnchor::CenterLeft.offset_multipliers(), (0.0, 0.5));
         assert_eq!(TextAnchor::Center.offset_multipliers(), (0.5, 0.5));
+        assert_eq!(TextAnchor::CenterRight.offset_multipliers(), (1.0, 0.5));
+        assert_eq!(TextAnchor::BottomLeft.offset_multipliers(), (0.0, 1.0));
+        assert_eq!(TextAnchor::BottomCenter.offset_multipliers(), (0.5, 1.0));
         assert_eq!(TextAnchor::BottomRight.offset_multipliers(), (1.0, 1.0));
     }
+
+    #[test]
+    fn test_text_anchor_default() {
+        assert_eq!(TextAnchor::default(), TextAnchor::CenterLeft);
+    }
+
+    // =========================================================================
+    // TextLabel construction tests
+    // =========================================================================
 
     #[test]
     fn test_text_label_new() {
@@ -363,5 +442,343 @@ mod tests {
         assert_eq!(label.x, 100.0);
         assert_eq!(label.y, 50.0);
         assert_eq!(label.font_size, HEADING_FONT_SIZE);
+        assert_eq!(label.bold, false);
+        assert_eq!(label.italic, false);
+        assert_eq!(label.color, [0.0, 0.0, 0.0, 1.0]);
+        assert_eq!(label.anchor, TextAnchor::Center);
+        assert_eq!(label.width(), 0.0);
+        assert_eq!(label.height(), 0.0);
+    }
+
+    #[test]
+    fn test_text_label_with_font_size() {
+        let label = TextLabel::new("Test".to_string(), 0.0, 0.0).with_font_size(20.0);
+        assert_eq!(label.font_size, 20.0);
+    }
+
+    #[test]
+    fn test_text_label_with_color() {
+        let color = [1.0, 0.5, 0.25, 0.8];
+        let label = TextLabel::new("Test".to_string(), 0.0, 0.0).with_color(color);
+        assert_eq!(label.color, color);
+    }
+
+    #[test]
+    fn test_text_label_with_anchor() {
+        let label = TextLabel::new("Test".to_string(), 0.0, 0.0).with_anchor(TextAnchor::TopLeft);
+        assert_eq!(label.anchor, TextAnchor::TopLeft);
+    }
+
+    #[test]
+    fn test_text_label_with_bold() {
+        let label = TextLabel::new("Test".to_string(), 0.0, 0.0).with_bold(true);
+        assert_eq!(label.bold, true);
+
+        let label2 = TextLabel::new("Test".to_string(), 0.0, 0.0).with_bold(false);
+        assert_eq!(label2.bold, false);
+    }
+
+    #[test]
+    fn test_text_label_builder_chain() {
+        let label = TextLabel::new("Hello".to_string(), 10.0, 20.0)
+            .with_font_size(24.0)
+            .with_color([1.0, 0.0, 0.0, 1.0])
+            .with_anchor(TextAnchor::TopRight)
+            .with_bold(true);
+
+        assert_eq!(label.text, "Hello");
+        assert_eq!(label.x, 10.0);
+        assert_eq!(label.y, 20.0);
+        assert_eq!(label.font_size, 24.0);
+        assert_eq!(label.color, [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(label.anchor, TextAnchor::TopRight);
+        assert_eq!(label.bold, true);
+    }
+
+    // =========================================================================
+    // Layout tests
+    // =========================================================================
+
+    #[test]
+    fn test_layout_empty_text() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        assert_eq!(label.width(), 0.0);
+        assert_eq!(label.height(), 0.0);
+    }
+
+    #[test]
+    fn test_layout_single_character() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("A".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        assert!(label.width() > 0.0);
+        assert!(label.height() > 0.0);
+    }
+
+    #[test]
+    fn test_layout_multiple_characters() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        assert!(label.width() > 0.0);
+        assert!(label.height() > 0.0);
+    }
+
+    #[test]
+    fn test_layout_with_kerning() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let width_with_kerning = label.width();
+
+        let mut label_no_kerning = TextLabel::new("A B".to_string(), 0.0, 0.0);
+        label_no_kerning.layout(&fonts);
+
+        assert!(width_with_kerning < label_no_kerning.width());
+    }
+
+    #[test]
+    fn test_layout_different_font_sizes() {
+        let fonts = create_test_fonts();
+
+        let mut label_small = TextLabel::new("AB".to_string(), 0.0, 0.0).with_font_size(10.0);
+        label_small.layout(&fonts);
+
+        let mut label_large = TextLabel::new("AB".to_string(), 0.0, 0.0).with_font_size(20.0);
+        label_large.layout(&fonts);
+
+        assert!(label_large.width() > label_small.width());
+        assert!(label_large.height() > label_small.height());
+    }
+
+    #[test]
+    fn test_layout_skips_newlines() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("A\nB".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let mut label_no_newline = TextLabel::new("AB".to_string(), 0.0, 0.0);
+        label_no_newline.layout(&fonts);
+
+        assert_eq!(label.width(), label_no_newline.width());
+    }
+
+    #[test]
+    fn test_layout_missing_font() {
+        let fonts = BitmapFonts::new();
+        let mut label = TextLabel::new("Test".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        assert_eq!(label.width(), 0.0);
+        assert_eq!(label.height(), 0.0);
+    }
+
+    #[test]
+    fn test_layout_bold_font() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0).with_bold(true);
+        label.layout(&fonts);
+
+        assert!(label.width() > 0.0);
+        assert!(label.height() > 0.0);
+    }
+
+    #[test]
+    fn test_layout_italic_font() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0).with_italic(true);
+        label.layout(&fonts);
+
+        assert!(label.width() > 0.0);
+        assert!(label.height() > 0.0);
+    }
+
+    #[test]
+    fn test_layout_bold_italic_font() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0)
+            .with_bold(true)
+            .with_italic(true);
+        label.layout(&fonts);
+
+        assert!(label.width() > 0.0);
+        assert!(label.height() > 0.0);
+    }
+
+    // =========================================================================
+    // Mesh building tests
+    // =========================================================================
+
+    #[test]
+    fn test_get_meshes_empty_text() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let meshes = label.get_meshes(&fonts);
+        assert!(meshes.is_empty());
+    }
+
+    #[test]
+    fn test_get_meshes_single_character() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("A".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let meshes = label.get_meshes(&fonts);
+        assert!(!meshes.is_empty());
+        assert_eq!(meshes.len(), 1);
+        assert_eq!(meshes[0].glyph_count(), 1);
+    }
+
+    #[test]
+    fn test_get_meshes_multiple_characters() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let meshes = label.get_meshes(&fonts);
+        assert!(!meshes.is_empty());
+        assert_eq!(meshes[0].glyph_count(), 2);
+    }
+
+    #[test]
+    fn test_get_meshes_caching() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let meshes1 = {
+            let meshes = label.get_meshes(&fonts);
+            (meshes.len(), meshes[0].glyph_count())
+        };
+
+        let meshes2 = {
+            let meshes = label.get_meshes(&fonts);
+            (meshes.len(), meshes[0].glyph_count())
+        };
+
+        assert_eq!(meshes1.0, meshes2.0);
+        assert_eq!(meshes1.1, meshes2.1);
+    }
+
+    #[test]
+    fn test_get_meshes_different_anchors() {
+        let fonts = create_test_fonts();
+
+        let mut label_tl =
+            TextLabel::new("AB".to_string(), 100.0, 50.0).with_anchor(TextAnchor::TopLeft);
+        label_tl.layout(&fonts);
+        let meshes_tl = label_tl.get_meshes(&fonts);
+
+        let mut label_br =
+            TextLabel::new("AB".to_string(), 100.0, 50.0).with_anchor(TextAnchor::BottomRight);
+        label_br.layout(&fonts);
+        let meshes_br = label_br.get_meshes(&fonts);
+
+        assert!(!meshes_tl.is_empty());
+        assert!(!meshes_br.is_empty());
+
+        if !meshes_tl[0].vertices.is_empty() && !meshes_br[0].vertices.is_empty() {
+            let v_tl = &meshes_tl[0].vertices[0];
+            let v_br = &meshes_br[0].vertices[0];
+            assert_ne!(v_tl.x, v_br.x);
+            assert_ne!(v_tl.y, v_br.y);
+        }
+    }
+
+    #[test]
+    fn test_build_mesh_legacy() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let meshes = label.build_mesh(&fonts);
+        assert!(!meshes.is_empty());
+        assert_eq!(meshes[0].glyph_count(), 2);
+    }
+
+    #[test]
+    fn test_build_mesh_empty_text() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("".to_string(), 0.0, 0.0);
+        label.layout(&fonts);
+
+        let meshes = label.build_mesh(&fonts);
+        assert!(meshes.is_empty());
+    }
+
+    #[test]
+    fn test_get_meshes_with_color() {
+        let fonts = create_test_fonts();
+        let color = [0.5, 0.6, 0.7, 0.8];
+        let mut label = TextLabel::new("A".to_string(), 0.0, 0.0).with_color(color);
+        label.layout(&fonts);
+
+        let meshes = label.get_meshes(&fonts);
+        assert!(!meshes.is_empty());
+        if !meshes[0].vertices.is_empty() {
+            let vertex = &meshes[0].vertices[0];
+            assert_eq!(vertex.r, color[0]);
+            assert_eq!(vertex.g, color[1]);
+            assert_eq!(vertex.b, color[2]);
+            assert_eq!(vertex.a, color[3]);
+        }
+    }
+
+    // =========================================================================
+    // Width and height tests
+    // =========================================================================
+
+    #[test]
+    fn test_width_after_layout() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+
+        assert_eq!(label.width(), 0.0);
+        label.layout(&fonts);
+        assert!(label.width() > 0.0);
+    }
+
+    #[test]
+    fn test_height_after_layout() {
+        let fonts = create_test_fonts();
+        let mut label = TextLabel::new("AB".to_string(), 0.0, 0.0);
+
+        assert_eq!(label.height(), 0.0);
+        label.layout(&fonts);
+        assert!(label.height() > 0.0);
+    }
+
+    #[test]
+    fn test_width_scales_with_font_size() {
+        let fonts = create_test_fonts();
+
+        let mut label1 = TextLabel::new("AB".to_string(), 0.0, 0.0).with_font_size(10.0);
+        label1.layout(&fonts);
+
+        let mut label2 = TextLabel::new("AB".to_string(), 0.0, 0.0).with_font_size(20.0);
+        label2.layout(&fonts);
+
+        assert!(label2.width() > label1.width());
+    }
+
+    #[test]
+    fn test_height_scales_with_font_size() {
+        let fonts = create_test_fonts();
+
+        let mut label1 = TextLabel::new("AB".to_string(), 0.0, 0.0).with_font_size(10.0);
+        label1.layout(&fonts);
+
+        let mut label2 = TextLabel::new("AB".to_string(), 0.0, 0.0).with_font_size(20.0);
+        label2.layout(&fonts);
+
+        assert!(label2.height() > label1.height());
     }
 }
