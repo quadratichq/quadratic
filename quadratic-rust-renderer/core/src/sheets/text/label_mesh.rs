@@ -153,3 +153,241 @@ impl LabelMesh {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+    const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
+    const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
+
+    // =========================================================================
+    // TextVertex tests
+    // =========================================================================
+
+    #[test]
+    fn test_text_vertex_new() {
+        let vertex = TextVertex::new(10.0, 20.0, 0.1, 0.2, RED);
+        assert_eq!(vertex.x, 10.0);
+        assert_eq!(vertex.y, 20.0);
+        assert_eq!(vertex.u, 0.1);
+        assert_eq!(vertex.v, 0.2);
+        assert_eq!(vertex.r, 1.0);
+        assert_eq!(vertex.g, 0.0);
+        assert_eq!(vertex.b, 0.0);
+        assert_eq!(vertex.a, 1.0);
+    }
+
+    #[test]
+    fn test_text_vertex_to_array() {
+        let vertex = TextVertex::new(10.0, 20.0, 0.1, 0.2, [0.5, 0.6, 0.7, 0.8]);
+        let array = vertex.to_array();
+        assert_eq!(array, [10.0, 20.0, 0.1, 0.2, 0.5, 0.6, 0.7, 0.8]);
+    }
+
+    #[test]
+    fn test_text_vertex_clone() {
+        let vertex = TextVertex::new(10.0, 20.0, 0.1, 0.2, BLUE);
+        let cloned = vertex;
+        assert_eq!(cloned.x, 10.0);
+        assert_eq!(cloned.r, 0.0);
+        assert_eq!(cloned.b, 1.0);
+    }
+
+    // =========================================================================
+    // LabelMesh tests
+    // =========================================================================
+
+    #[test]
+    fn test_label_mesh_new() {
+        let mesh = LabelMesh::new("Arial".to_string(), 16.0, 42);
+        assert_eq!(mesh.font_name, "Arial");
+        assert_eq!(mesh.font_size, 16.0);
+        assert_eq!(mesh.texture_uid, 42);
+        assert!(mesh.is_empty());
+        assert_eq!(mesh.glyph_count(), 0);
+    }
+
+    #[test]
+    fn test_label_mesh_default() {
+        let mesh = LabelMesh::default();
+        assert_eq!(mesh.font_name, "");
+        assert_eq!(mesh.font_size, 14.0);
+        assert_eq!(mesh.texture_uid, 0);
+        assert!(mesh.is_empty());
+    }
+
+    #[test]
+    fn test_label_mesh_add_glyph() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, WHITE);
+
+        assert!(!mesh.is_empty());
+        assert_eq!(mesh.glyph_count(), 1);
+        assert_eq!(mesh.vertices.len(), 4);
+        assert_eq!(mesh.indices.len(), 6);
+
+        // Check first vertex (top-left)
+        let v0 = &mesh.vertices[0];
+        assert_eq!(v0.x, 10.0);
+        assert_eq!(v0.y, 20.0);
+        assert_eq!(v0.u, 0.0);
+        assert_eq!(v0.v, 0.0);
+
+        // Check second vertex (top-right)
+        let v1 = &mesh.vertices[1];
+        assert_eq!(v1.x, 60.0); // 10.0 + 50.0
+        assert_eq!(v1.y, 20.0);
+        assert_eq!(v1.u, 0.1);
+        assert_eq!(v1.v, 0.0);
+
+        // Check third vertex (bottom-right)
+        let v2 = &mesh.vertices[2];
+        assert_eq!(v2.x, 60.0);
+        assert_eq!(v2.y, 80.0); // 20.0 + 60.0
+        assert_eq!(v2.u, 0.1);
+        assert_eq!(v2.v, 0.1);
+
+        // Check fourth vertex (bottom-left)
+        let v3 = &mesh.vertices[3];
+        assert_eq!(v3.x, 10.0);
+        assert_eq!(v3.y, 80.0);
+        assert_eq!(v3.u, 0.0);
+        assert_eq!(v3.v, 0.1);
+
+        // Check indices (two triangles)
+        assert_eq!(mesh.indices, [0, 1, 2, 0, 2, 3]);
+    }
+
+    #[test]
+    fn test_label_mesh_add_multiple_glyphs() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+
+        mesh.add_glyph(0.0, 0.0, 50.0, 60.0, &uvs, WHITE);
+        mesh.add_glyph(50.0, 0.0, 50.0, 60.0, &uvs, RED);
+        mesh.add_glyph(100.0, 0.0, 50.0, 60.0, &uvs, BLUE);
+
+        assert_eq!(mesh.glyph_count(), 3);
+        assert_eq!(mesh.vertices.len(), 12); // 3 glyphs * 4 vertices
+        assert_eq!(mesh.indices.len(), 18); // 3 glyphs * 6 indices
+
+        // Check that indices are correctly offset
+        assert_eq!(mesh.indices[0..6], [0, 1, 2, 0, 2, 3]); // First glyph
+        assert_eq!(mesh.indices[6..12], [4, 5, 6, 4, 6, 7]); // Second glyph
+        assert_eq!(mesh.indices[12..18], [8, 9, 10, 8, 10, 11]); // Third glyph
+    }
+
+    #[test]
+    fn test_label_mesh_get_vertex_data() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, [0.5, 0.6, 0.7, 0.8]);
+
+        let vertex_data = mesh.get_vertex_data();
+        assert_eq!(vertex_data.len(), 32); // 4 vertices * 8 floats
+
+        // Check first vertex data
+        assert_eq!(vertex_data[0], 10.0); // x
+        assert_eq!(vertex_data[1], 20.0); // y
+        assert_eq!(vertex_data[2], 0.0); // u
+        assert_eq!(vertex_data[3], 0.0); // v
+        assert_eq!(vertex_data[4], 0.5); // r
+        assert_eq!(vertex_data[5], 0.6); // g
+        assert_eq!(vertex_data[6], 0.7); // b
+        assert_eq!(vertex_data[7], 0.8); // a
+    }
+
+    #[test]
+    fn test_label_mesh_get_index_data() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, WHITE);
+
+        let index_data = mesh.get_index_data();
+        assert_eq!(index_data.len(), 6);
+        assert_eq!(index_data, &[0, 1, 2, 0, 2, 3]);
+    }
+
+    #[test]
+    fn test_label_mesh_is_empty() {
+        let mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        assert!(mesh.is_empty());
+
+        let mut mesh_with_glyph = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh_with_glyph.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, WHITE);
+        assert!(!mesh_with_glyph.is_empty());
+    }
+
+    #[test]
+    fn test_label_mesh_clear() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, WHITE);
+        assert!(!mesh.is_empty());
+
+        mesh.clear();
+        assert!(mesh.is_empty());
+        assert_eq!(mesh.glyph_count(), 0);
+        assert_eq!(mesh.vertices.len(), 0);
+        assert_eq!(mesh.indices.len(), 0);
+    }
+
+    #[test]
+    fn test_label_mesh_glyph_count() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        assert_eq!(mesh.glyph_count(), 0);
+
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, WHITE);
+        assert_eq!(mesh.glyph_count(), 1);
+
+        mesh.add_glyph(60.0, 20.0, 50.0, 60.0, &uvs, RED);
+        assert_eq!(mesh.glyph_count(), 2);
+
+        mesh.add_glyph(110.0, 20.0, 50.0, 60.0, &uvs, BLUE);
+        assert_eq!(mesh.glyph_count(), 3);
+    }
+
+    #[test]
+    fn test_label_mesh_to_text_buffer() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 42);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, WHITE);
+
+        let buffer = mesh.to_text_buffer();
+        assert_eq!(buffer.texture_uid, 42);
+        assert_eq!(buffer.font_size, 16.0);
+        assert_eq!(buffer.vertices.len(), 32); // 4 vertices * 8 floats
+        assert_eq!(buffer.indices.len(), 6);
+        assert_eq!(buffer.indices, [0, 1, 2, 0, 2, 3]);
+    }
+
+    #[test]
+    fn test_label_mesh_to_text_buffer_empty() {
+        let mesh = LabelMesh::new("Arial".to_string(), 16.0, 42);
+        let buffer = mesh.to_text_buffer();
+        assert_eq!(buffer.texture_uid, 42);
+        assert_eq!(buffer.font_size, 16.0);
+        assert!(buffer.vertices.is_empty());
+        assert!(buffer.indices.is_empty());
+    }
+
+    #[test]
+    fn test_label_mesh_glyph_vertex_colors() {
+        let mut mesh = LabelMesh::new("Arial".to_string(), 16.0, 1);
+        let uvs = [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1];
+        mesh.add_glyph(10.0, 20.0, 50.0, 60.0, &uvs, [0.25, 0.5, 0.75, 1.0]);
+
+        // All vertices should have the same color
+        for vertex in &mesh.vertices {
+            assert_eq!(vertex.r, 0.25);
+            assert_eq!(vertex.g, 0.5);
+            assert_eq!(vertex.b, 0.75);
+            assert_eq!(vertex.a, 1.0);
+        }
+    }
+}

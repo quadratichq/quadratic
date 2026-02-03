@@ -47,11 +47,16 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                                 b"face" => {
                                     font_name = String::from_utf8_lossy(&attr.value).to_string();
                                 }
-                                b"size" => {
-                                    if let Ok(s) = String::from_utf8_lossy(&attr.value).parse() {
-                                        font_size = s;
+                                b"size" => match String::from_utf8_lossy(&attr.value).parse() {
+                                    Ok(s) => font_size = s,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse font size '{}': {}",
+                                            String::from_utf8_lossy(&attr.value),
+                                            e
+                                        );
                                     }
-                                }
+                                },
                                 _ => {}
                             }
                         }
@@ -60,33 +65,59 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                         for attr in e.attributes().flatten() {
                             match attr.key.as_ref() {
                                 b"lineHeight" => {
-                                    if let Ok(h) = String::from_utf8_lossy(&attr.value).parse() {
-                                        line_height = h;
+                                    match String::from_utf8_lossy(&attr.value).parse() {
+                                        Ok(h) => line_height = h,
+                                        Err(e) => {
+                                            log::warn!(
+                                                "Failed to parse lineHeight '{}': {}",
+                                                String::from_utf8_lossy(&attr.value),
+                                                e
+                                            );
+                                        }
                                     }
                                 }
                                 b"scaleW" => {
-                                    if let Ok(w) =
-                                        String::from_utf8_lossy(&attr.value).parse::<f32>()
-                                    {
-                                        if w > 0.0 {
-                                            scale_w = w;
+                                    match String::from_utf8_lossy(&attr.value).parse::<f32>() {
+                                        Ok(w) => {
+                                            if w > 0.0 {
+                                                scale_w = w;
+                                            }
+                                        }
+                                        Err(e) => {
+                                            log::warn!(
+                                                "Failed to parse scaleW '{}': {}",
+                                                String::from_utf8_lossy(&attr.value),
+                                                e
+                                            );
                                         }
                                     }
                                 }
                                 b"scaleH" => {
-                                    if let Ok(h) =
-                                        String::from_utf8_lossy(&attr.value).parse::<f32>()
-                                    {
-                                        if h > 0.0 {
-                                            scale_h = h;
+                                    match String::from_utf8_lossy(&attr.value).parse::<f32>() {
+                                        Ok(h) => {
+                                            if h > 0.0 {
+                                                scale_h = h;
+                                            }
+                                        }
+                                        Err(e) => {
+                                            log::warn!(
+                                                "Failed to parse scaleH '{}': {}",
+                                                String::from_utf8_lossy(&attr.value),
+                                                e
+                                            );
                                         }
                                     }
                                 }
-                                b"pages" => {
-                                    if let Ok(p) = String::from_utf8_lossy(&attr.value).parse() {
-                                        page_count = p;
+                                b"pages" => match String::from_utf8_lossy(&attr.value).parse() {
+                                    Ok(p) => page_count = p,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse pages '{}': {}",
+                                            String::from_utf8_lossy(&attr.value),
+                                            e
+                                        );
                                     }
-                                }
+                                },
                                 _ => {}
                             }
                         }
@@ -94,8 +125,15 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                     b"distanceField" => {
                         for attr in e.attributes().flatten() {
                             if attr.key.as_ref() == b"distanceRange" {
-                                if let Ok(r) = String::from_utf8_lossy(&attr.value).parse() {
-                                    distance_range = r;
+                                match String::from_utf8_lossy(&attr.value).parse() {
+                                    Ok(r) => distance_range = r,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse distanceRange '{}': {}",
+                                            String::from_utf8_lossy(&attr.value),
+                                            e
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -114,15 +152,64 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                         for attr in e.attributes().flatten() {
                             let val = String::from_utf8_lossy(&attr.value);
                             match attr.key.as_ref() {
-                                b"id" => id = val.parse().unwrap_or(0),
-                                b"x" => x = val.parse().unwrap_or(0.0),
-                                b"y" => y = val.parse().unwrap_or(0.0),
-                                b"width" => width = val.parse().unwrap_or(0.0),
-                                b"height" => height = val.parse().unwrap_or(0.0),
-                                b"xoffset" => xoffset = val.parse().unwrap_or(0.0),
-                                b"yoffset" => yoffset = val.parse().unwrap_or(0.0),
-                                b"xadvance" => xadvance = val.parse().unwrap_or(0.0),
-                                b"page" => page = val.parse().unwrap_or(0),
+                                b"id" => match val.parse() {
+                                    Ok(v) => id = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char id '{}': {}", val, e);
+                                    }
+                                },
+                                b"x" => match val.parse() {
+                                    Ok(v) => x = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char x '{}': {}", val, e);
+                                    }
+                                },
+                                b"y" => match val.parse() {
+                                    Ok(v) => y = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char y '{}': {}", val, e);
+                                    }
+                                },
+                                b"width" => match val.parse() {
+                                    Ok(v) => width = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char width '{}': {}", val, e);
+                                    }
+                                },
+                                b"height" => match val.parse() {
+                                    Ok(v) => height = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char height '{}': {}", val, e);
+                                    }
+                                },
+                                b"xoffset" => match val.parse() {
+                                    Ok(v) => xoffset = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char xoffset '{}': {}", val, e);
+                                    }
+                                },
+                                b"yoffset" => match val.parse() {
+                                    Ok(v) => yoffset = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char yoffset '{}': {}", val, e);
+                                    }
+                                },
+                                b"xadvance" => match val.parse() {
+                                    Ok(v) => xadvance = v,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse char xadvance '{}': {}",
+                                            val,
+                                            e
+                                        );
+                                    }
+                                },
+                                b"page" => match val.parse() {
+                                    Ok(v) => page = v,
+                                    Err(e) => {
+                                        log::warn!("Failed to parse char page '{}': {}", val, e);
+                                    }
+                                },
                                 _ => {}
                             }
                         }
@@ -173,9 +260,36 @@ pub fn parse_bmfont_xml(xml: &str, font_index: u32) -> anyhow::Result<BitmapFont
                         for attr in e.attributes().flatten() {
                             let val = String::from_utf8_lossy(&attr.value);
                             match attr.key.as_ref() {
-                                b"first" => first = val.parse().unwrap_or(0),
-                                b"second" => second = val.parse().unwrap_or(0),
-                                b"amount" => amount = val.parse().unwrap_or(0.0),
+                                b"first" => match val.parse() {
+                                    Ok(v) => first = v,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse kerning first '{}': {}",
+                                            val,
+                                            e
+                                        );
+                                    }
+                                },
+                                b"second" => match val.parse() {
+                                    Ok(v) => second = v,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse kerning second '{}': {}",
+                                            val,
+                                            e
+                                        );
+                                    }
+                                },
+                                b"amount" => match val.parse() {
+                                    Ok(v) => amount = v,
+                                    Err(e) => {
+                                        log::warn!(
+                                            "Failed to parse kerning amount '{}': {}",
+                                            val,
+                                            e
+                                        );
+                                    }
+                                },
                                 _ => {}
                             }
                         }
@@ -254,7 +368,12 @@ pub fn parse_font_texture_pages(
                     for attr in e.attributes().flatten() {
                         let val = String::from_utf8_lossy(&attr.value);
                         match attr.key.as_ref() {
-                            b"id" => page_id = val.parse().unwrap_or(0),
+                            b"id" => match val.parse() {
+                                Ok(v) => page_id = v,
+                                Err(e) => {
+                                    log::warn!("Failed to parse page id '{}': {}", val, e);
+                                }
+                            },
                             b"file" => {
                                 // Remove query string if present (e.g., "OpenSans.0.png?v=1.0.1")
                                 filename = val.split('?').next().unwrap_or(&val).to_string();
@@ -271,7 +390,10 @@ pub fn parse_font_texture_pages(
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => return Err(anyhow::anyhow!("Error parsing BMFont XML: {:?}", e)),
+            Err(e) => {
+                log::error!("Error parsing BMFont XML for texture pages: {:?}", e);
+                return Err(anyhow::anyhow!("Error parsing BMFont XML: {:?}", e));
+            }
             _ => {}
         }
         buf.clear();
@@ -295,7 +417,17 @@ pub fn load_fonts_from_directory(
 
     for (index, font_file) in font_files.iter().enumerate() {
         let fnt_path = font_dir.join(font_file);
-        let xml = fs::read_to_string(&fnt_path)?;
+        let xml = match fs::read_to_string(&fnt_path) {
+            Ok(xml) => xml,
+            Err(e) => {
+                log::error!("Failed to read font file '{}': {}", fnt_path.display(), e);
+                return Err(anyhow::anyhow!(
+                    "Failed to read font file '{}': {}",
+                    fnt_path.display(),
+                    e
+                ));
+            }
+        };
 
         let font = parse_bmfont_xml(&xml, index as u32)?;
         let textures = parse_font_texture_pages(&xml, index as u32)?;

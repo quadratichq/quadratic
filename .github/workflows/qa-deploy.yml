@@ -575,7 +575,7 @@ jobs:
       contents: read
     runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
       options: --user root
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 15

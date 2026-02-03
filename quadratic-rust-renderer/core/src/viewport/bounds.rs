@@ -1,6 +1,6 @@
 //! Viewport bounds types
 
-use crate::types::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
+use crate::constants::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
 
 /// Visible bounds in world coordinates
 #[derive(Debug, Clone, Copy, Default)]

@@ -60,11 +60,12 @@ pub fn render_text_buffers(
     atlas_font_size: f32,
     distance_range: f32,
 ) {
+    if atlas_font_size == 0.0 {
+        return;
+    }
+
     for buf in buffers {
-        if buf.is_empty() {
-            continue;
-        }
-        if !ctx.has_font_texture(buf.texture_uid) {
+        if buf.is_empty() || !ctx.has_font_texture(buf.texture_uid) {
             continue;
         }
 
