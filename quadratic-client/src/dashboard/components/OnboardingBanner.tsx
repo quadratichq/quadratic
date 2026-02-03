@@ -60,6 +60,18 @@ export function OnboardingBanner() {
   const tabContentClassName = 'flex flex-col gap-2';
   const contentBtnClassName = 'min-w-40 flex-shrink-0';
 
+  const handleCreateBlankFile = () => {
+    trackEvent('[OnboardingBanner].newFileBlank');
+    // Onboarding creates team files (not private)
+    window.location.href = ROUTES.CREATE_FILE(teamUuid);
+  };
+
+  const handleFetchFromApi = () => {
+    trackEvent('[OnboardingBanner].newFileFromApi');
+    // Onboarding creates team files (not private)
+    window.location.href = newApiFileToLink;
+  };
+
   const tabs = [
     {
       label: 'Create a file',
@@ -68,16 +80,8 @@ export function OnboardingBanner() {
         <>
           <p>Start with one of our files:</p>
           <div className="mb-2 flex gap-2">
-            <Button variant="outline" className={contentBtnClassName} asChild>
-              <Link
-                to={ROUTES.CREATE_FILE(teamUuid)}
-                reloadDocument
-                onClick={() => {
-                  trackEvent('[OnboardingBanner].newFileBlank');
-                }}
-              >
-                <PlusIcon className="mr-1" /> Create blank file
-              </Link>
+            <Button variant="outline" className={contentBtnClassName} onClick={handleCreateBlankFile}>
+              <PlusIcon className="mr-1" /> Create blank file
             </Button>
 
             <Button variant="outline" className={contentBtnClassName} asChild>
@@ -93,15 +97,8 @@ export function OnboardingBanner() {
           </div>
           <p>Or bring your own data:</p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link
-                to={newApiFileToLink}
-                onClick={() => {
-                  trackEvent('[OnboardingBanner].newFileFromApi');
-                }}
-              >
-                <RocketIcon className="mr-1" /> Fetch data from an API
-              </Link>
+            <Button variant="outline" onClick={handleFetchFromApi}>
+              <RocketIcon className="mr-1" /> Fetch data from an API
             </Button>
             <Button variant="outline" onClick={onClickImport}>
               <ArrowDownIcon className="mr-1" /> Import CSV, Excel, or Parquet file

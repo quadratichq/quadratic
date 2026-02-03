@@ -12,6 +12,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { AIGetFileName } from '@/app/ui/components/AIGetFileName';
+import { FeatureWalkthrough } from '@/app/ui/components/FeatureWalkthrough';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
@@ -168,6 +169,7 @@ export default function QuadraticUI() {
       <UserMessage />
       <SettingsDialog />
       <ChangelogDialog />
+      {!isEmbed && <FeatureWalkthrough />}
     </div>
   );
 }
