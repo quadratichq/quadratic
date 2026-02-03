@@ -18,7 +18,7 @@ import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnal
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { cn } from '@/shared/shadcn/utils';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -56,10 +56,16 @@ export const AIAnalyst = memo(() => {
       // Open the schema browser with the new connection
       setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
 
+      // For synced connections, include context about the sync state
+      const isSynced = isSyncedConnectionType(connectionType as ConnectionType);
+      const promptText = isSynced
+        ? 'Help me understand how to use my new connection. Note: This is a synced connection that is currently syncing data. It may not be queryable until the initial sync completes.'
+        : 'Help me understand how to use my new connection.';
+
       // Submit a prompt to help the user understand how to use their new connection
       submitPrompt({
         messageSource: 'NewConnection',
-        content: [createTextContent('Help me understand how to use my new connection.')],
+        content: [createTextContent(promptText)],
         context: {
           connection: {
             type: connectionType as ConnectionType,
