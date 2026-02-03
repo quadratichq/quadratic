@@ -1,4 +1,5 @@
 import {
+  aiAnalystActiveSchemaConnectionUuidAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
@@ -14,18 +15,23 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { cn } from '@/shared/shadcn/utils';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useRef } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const AIAnalyst = memo(() => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -43,6 +49,38 @@ export const AIAnalyst = memo(() => {
       events.emit('aiAnalystReady');
     }
   }, [showAIAnalyst, presentationMode]);
+
+  // Listen for new connection prompt events
+  useEffect(() => {
+    const handleNewConnectionPrompt = (
+      connectionUuid: string,
+      connectionType: string,
+      connectionName: string
+    ) => {
+      // Open the schema browser with the new connection
+      setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+
+      // Submit a prompt to help the user understand how to use their new connection
+      submitPrompt({
+        messageSource: 'NewConnection',
+        content: [createTextContent('Help me understand how to use my new connection.')],
+        context: {
+          connection: {
+            type: connectionType as ConnectionType,
+            id: connectionUuid,
+            name: connectionName,
+          },
+        },
+        messageIndex: 0,
+        importFiles: [],
+      });
+    };
+
+    events.on('aiAnalystNewConnectionPrompt', handleNewConnectionPrompt);
+    return () => {
+      events.off('aiAnalystNewConnectionPrompt', handleNewConnectionPrompt);
+    };
+  }, [setAIAnalystActiveSchemaConnectionUuid, submitPrompt]);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {

@@ -10,7 +10,7 @@ import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { apiClient } from '@/shared/api/apiClient';
-import { SettingsIcon } from '@/shared/components/Icons';
+import { PlusIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -107,6 +107,11 @@ export const CellTypeMenu = memo(() => {
     [setCodeEditorState, setShowCellTypeMenu]
   );
 
+  const addConnection = useCallback(() => {
+    setShowCellTypeMenu(false);
+    setShowConnectionsMenu('new');
+  }, [setShowCellTypeMenu, setShowConnectionsMenu]);
+
   const manageConnections = useCallback(() => {
     setShowCellTypeMenu(false);
     setShowConnectionsMenu(true);
@@ -154,7 +159,12 @@ export const CellTypeMenu = memo(() => {
             ))}
 
             <CommandItemWrapper
-              name="Add or manage…"
+              name="Add connection"
+              icon={<PlusIcon className="text-muted-foreground opacity-80" />}
+              onSelect={addConnection}
+            />
+            <CommandItemWrapper
+              name="Manage connections"
               icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />

@@ -6,18 +6,23 @@ import {
 } from '@/shared/constants/urls';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const ConnectionsSidebar = ({
   sshPublicKey,
   staticIps,
+  connectionType,
 }: {
   staticIps: string[] | null;
   sshPublicKey: string;
+  connectionType?: ConnectionType;
 }) => {
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';
   const useSsh = useRecoilValue(connectionFormSshAtom);
+  const isSynced = connectionType ? isSyncedConnectionType(connectionType) : false;
 
   return (
     <div className="flex flex-col gap-4 text-sm">
@@ -33,7 +38,7 @@ export const ConnectionsSidebar = ({
         linkText="Trust center"
         linkHref={TRUST_CENTER}
       />
-      {staticIpsContent && (
+      {staticIpsContent && !isSynced && (
         <SidebarItem
           title="IP allow-list"
           description="Add both of our IPs to your network allow-list."

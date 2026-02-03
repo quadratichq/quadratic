@@ -7,7 +7,11 @@ import {
   type UpdateConnectionAction,
 } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
-import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
+import {
+  ConnectionFormCreate,
+  ConnectionFormEdit,
+  type OnConnectionCreatedCallback,
+} from '@/shared/components/connections/ConnectionForm';
 import {
   connectionsByType,
   potentialConnectionsByType,
@@ -47,6 +51,8 @@ type Props = {
   hideSidebar?: boolean;
   /** Open directly to the 'new' view */
   initialView?: 'new' | 'list';
+  /** Called when a new connection is created successfully */
+  onConnectionCreated?: OnConnectionCreatedCallback;
 };
 
 export type NavigateToListView = () => void;
@@ -70,6 +76,7 @@ export const Connections = ({
   sshPublicKey,
   hideSidebar,
   initialView,
+  onConnectionCreated,
 }: Props) => {
   const submit = useSubmit();
 
@@ -270,6 +277,7 @@ export const Connections = ({
                   type={activeConnectionState.type}
                   handleNavigateToListView={handleNavigateToListView}
                   handleNavigateToNewView={handleNavigateToNewView}
+                  onConnectionCreated={onConnectionCreated}
                 />
               </>
             ) : activeConnectionState.view === 'create-potential' ? (
@@ -302,7 +310,15 @@ export const Connections = ({
           </div>
           {!hideSidebar && (
             <div className="col-span-4 mt-12 md:mt-0">
-              <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+              <ConnectionsSidebar
+                staticIps={staticIps}
+                sshPublicKey={sshPublicKey}
+                connectionType={
+                  activeConnectionState.view === 'create' || activeConnectionState.view === 'edit'
+                    ? activeConnectionState.type
+                    : undefined
+                }
+              />
             </div>
           )}
         </div>

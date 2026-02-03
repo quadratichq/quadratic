@@ -1,3 +1,4 @@
+import { HelpIcon } from '@/shared/components/Icons';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
@@ -6,6 +7,7 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
@@ -76,7 +78,17 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="property_id"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Property ID</FormLabel>
+                <FormLabel className="inline-flex items-center gap-1">
+                  Property ID
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">
+                        <HelpIcon className="text-muted-foreground" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Found in Admin → Property Settings in Google Analytics</TooltipContent>
+                  </Tooltip>
+                </FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -89,7 +101,17 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="start_date"
             render={({ field }) => (
               <FormItem className="col-span-1">
-                <FormLabel>Sync start date</FormLabel>
+                <FormLabel className="inline-flex items-center gap-1">
+                  Sync start date
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">
+                        <HelpIcon className="text-muted-foreground" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Data will be synced starting from this date</TooltipContent>
+                  </Tooltip>
+                </FormLabel>
                 <FormControl>
                   <Input type="date" autoComplete="off" className="block" {...field} />
                 </FormControl>
@@ -103,7 +125,17 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           name="service_account_configuration"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Service account configuration (JSON)</FormLabel>
+              <FormLabel className="inline-flex items-center gap-1">
+                Service account configuration (JSON)
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">
+                      <HelpIcon className="text-muted-foreground" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>JSON key file from Google Cloud Console service account</TooltipContent>
+                </Tooltip>
+              </FormLabel>
               <FormControl>
                 <Textarea autoComplete="off" {...field} className="h-48" />
               </FormControl>
