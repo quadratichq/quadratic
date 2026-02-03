@@ -56,8 +56,6 @@ export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
 export type ColumnRow = { column: number, row: number, };
-// Note: ConnectionKind here only includes user-manageable database connections.
-// Internal routing types like "StockHistory" are handled separately in coreConnection.ts
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE" | "COCKROACHDB" | "BIGQUERY" | "MARIADB" | "SUPABASE" | "NEON" | "MIXPANEL" | "GOOGLE_ANALYTICS" | "PLAID" | "STOCKHISTORY";
 export type DataTableSort = { column_index: number, direction: SortDirection, };
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };

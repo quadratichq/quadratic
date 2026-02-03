@@ -281,7 +281,7 @@ export class Tables extends Container<Table> {
       cellBounds.bottom - 1
     );
     return (
-      tables?.flatMap((pos: JsCoordinate) => {
+      tables?.flatMap((pos) => {
         const table = this.getTable(pos.x, pos.y);
         if (table) {
           return [table];
@@ -657,7 +657,7 @@ export class Tables extends Container<Table> {
     );
     if (!tablePositions) return [];
 
-    return tablePositions?.flatMap((pos: JsCoordinate) => {
+    return tablePositions?.flatMap((pos) => {
       const codeCell = this.singleCellTables[`${pos.x},${pos.y}`];
       if (codeCell) {
         return [codeCell];
@@ -676,7 +676,7 @@ export class Tables extends Container<Table> {
       rect.right - 1,
       rect.bottom - 1
     );
-    return tablePositions.flatMap((pos: JsCoordinate) => {
+    return tablePositions.flatMap((pos) => {
       const table = this.getTable(pos.x, pos.y);
       if (table) {
         return [table];
