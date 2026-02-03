@@ -13,8 +13,9 @@ use quadratic_core::grid::SheetId;
 use quadratic_core::sheet_offsets::SheetOffsets;
 
 use super::fills::CellsFills;
-use super::hash::{hash_key, HASH_HEIGHT, HASH_WIDTH};
+use super::hash::hash_key;
 use super::text::TextHash;
+use crate::constants::{HASH_HEIGHT, HASH_WIDTH};
 use super::text::CellsText;
 
 /// Data for a single sheet
