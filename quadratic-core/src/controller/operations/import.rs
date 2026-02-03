@@ -47,14 +47,14 @@ pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
 fn replace_named_ranges(code: &str, named_ranges: &HashMap<String, String>) -> String {
     let mut result = code.to_string();
     for (name, reference) in named_ranges {
-        if result.contains(name.as_str()) {
-            if let Ok(re) = Regex::new(&format!(r"\b{}\b", regex::escape(name))) {
-                // Escape $ in replacement string to prevent backreference interpretation
-                let escaped_reference = reference.replace('$', "$$");
-                result = re
-                    .replace_all(&result, escaped_reference.as_str())
-                    .to_string();
-            }
+        if result.contains(name.as_str())
+            && let Ok(re) = Regex::new(&format!(r"\b{}\b", regex::escape(name)))
+        {
+            // Escape $ in replacement string to prevent backreference interpretation
+            let escaped_reference = reference.replace('$', "$$");
+            result = re
+                .replace_all(&result, escaped_reference.as_str())
+                .to_string();
         }
     }
     result
