@@ -10,11 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  ConnectionNameSchema,
-  ConnectionSemanticDescriptionSchema,
-  ConnectionTypeSchema,
+    ConnectionNameSchema,
+    ConnectionSemanticDescriptionSchema,
+    ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -61,6 +61,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 }) => {
   const [accessToken, setAccessToken] = useState<string | null>(connection?.typeDetails?.access_token || null);
   const [, setLinkedInstitution] = useState<string | null>(connection?.typeDetails?.institution_name || null);
+  const hasOpenedPlaidRef = useRef(false);
 
   // Map plaidCategory to primary_product: Brokerages -> investments, everything else -> transactions
   const primaryProduct = plaidCategory === 'Brokerages' ? 'investments' : 'transactions';
@@ -90,7 +91,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         // TODO: Show error to user
       }
     };
-    if (!accessToken) {
+    // Only open Plaid Link once, even if dependencies change
+    if (!accessToken && !hasOpenedPlaidRef.current) {
+      hasOpenedPlaidRef.current = true;
       console.log('No access token, opening Plaid Link');
       fetchLinkTokenAndOpen();
     }

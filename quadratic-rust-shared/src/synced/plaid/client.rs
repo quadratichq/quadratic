@@ -556,6 +556,10 @@ fn is_stream_not_supported(err: &SharedError) -> bool {
 /// Check if a date is today (UTC).
 /// Used for snapshot data (balances, liabilities) which can only be fetched in real-time.
 /// We skip historical dates since Plaid only returns current balances, not historical.
+///
+/// Note: All dates in the sync system are UTC. This ensures consistency across
+/// servers and users in different timezones. The `end_date` passed to `process()`
+/// is also calculated using UTC (via `today()` in mod.rs).
 fn is_today(date: NaiveDate) -> bool {
     let today = chrono::Utc::now().date_naive();
     date == today
