@@ -51,6 +51,11 @@ struct NamedRangeReplacement {
 
 /// Replaces named range references in a formula with their full sheet references.
 /// Uses word boundaries to avoid replacing partial matches (e.g., "A" in "ABC").
+///
+/// Note: This may incorrectly replace named ranges that appear inside string literals
+/// (e.g., `="Hello Total World"` with named range `Total` would become
+/// `="Hello Sheet1!$C$3 World"`). This is a known limitation; a string-aware parser
+/// would be needed to handle this edge case.
 fn replace_named_ranges(code: &str, named_ranges: &[NamedRangeReplacement]) -> String {
     let mut result = code.to_string();
     for named_range in named_ranges {
