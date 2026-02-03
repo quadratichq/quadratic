@@ -216,9 +216,6 @@ export const Connections = ({
   const handleNavigateToEditView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ view: 'edit', uuid: connectionUuid, type: connectionType });
   }, []);
-  const handleNavigateToDetailsView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
-    setActiveConnectionState({ view: 'details', type: connectionType, uuid: connectionUuid });
-  }, []);
   const handleNavigateToNewView = useCallback(() => {
     setActiveConnectionState({ view: 'new' });
   }, []);

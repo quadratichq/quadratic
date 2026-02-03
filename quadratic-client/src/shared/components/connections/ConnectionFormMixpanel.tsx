@@ -1,11 +1,9 @@
-import { HelpIcon } from '@/shared/components/Icons';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
@@ -57,6 +55,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
+        <p className="pb-2 text-sm text-muted-foreground">
+          Find your Project ID and API secret in your Mixpanel project's Settings → Access Keys.
+        </p>
         <FormField
           control={form.control}
           name="name"
@@ -75,17 +76,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           name="project_id"
           render={({ field }) => (
             <FormItem className="col-span-3">
-              <FormLabel className="inline-flex items-center gap-1">
-                Project ID
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="cursor-help">
-                      <HelpIcon className="text-muted-foreground" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Found in Project Settings in Mixpanel</TooltipContent>
-                </Tooltip>
-              </FormLabel>
+              <FormLabel>Project ID</FormLabel>
               <FormControl>
                 <Input autoComplete="off" {...field} />
               </FormControl>
@@ -99,17 +90,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="api_secret"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel className="inline-flex items-center gap-1">
-                  API secret
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">
-                        <HelpIcon className="text-muted-foreground" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>Found in Project Settings → Access Keys in Mixpanel</TooltipContent>
-                  </Tooltip>
-                </FormLabel>
+                <FormLabel>API secret</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -122,17 +103,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="start_date"
             render={({ field }) => (
               <FormItem className="col-span-1">
-                <FormLabel className="inline-flex items-center gap-1">
-                  Sync start date
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">
-                        <HelpIcon className="text-muted-foreground" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>Data will be synced starting from this date</TooltipContent>
-                  </Tooltip>
-                </FormLabel>
+                <FormLabel>Sync start date</FormLabel>
                 <FormControl>
                   <Input type="date" autoComplete="off" className="block" {...field} />
                 </FormControl>

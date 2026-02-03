@@ -2,13 +2,12 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
-import { HelpIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
@@ -182,17 +181,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="institution_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="inline-flex items-center gap-1">
-                  Institution
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">
-                        <HelpIcon className="text-muted-foreground" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>The financial institution connected via Plaid</TooltipContent>
-                  </Tooltip>
-                </FormLabel>
+                <FormLabel>Institution</FormLabel>
                 <FormControl>
                   <Input type="text" disabled {...field} />
                 </FormControl>
@@ -204,17 +193,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             name="start_date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="inline-flex items-center gap-1">
-                  Sync start date
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help">
-                        <HelpIcon className="text-muted-foreground" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>Transaction data will be synced starting from this date</TooltipContent>
-                  </Tooltip>
-                </FormLabel>
+                <FormLabel>Sync start date</FormLabel>
                 <FormControl>
                   <Input type="date" autoComplete="off" className="block" {...field} />
                 </FormControl>
