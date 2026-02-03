@@ -52,11 +52,7 @@ export const AIAnalyst = memo(() => {
 
   // Listen for new connection prompt events
   useEffect(() => {
-    const handleNewConnectionPrompt = (
-      connectionUuid: string,
-      connectionType: string,
-      connectionName: string
-    ) => {
+    const handleNewConnectionPrompt = (connectionUuid: string, connectionType: string, connectionName: string) => {
       // Open the schema browser with the new connection
       setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
 

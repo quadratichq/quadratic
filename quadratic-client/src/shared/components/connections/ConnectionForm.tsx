@@ -12,7 +12,11 @@ import { useEffect, useRef } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { useFetcher, useSubmit } from 'react-router';
 
-export type OnConnectionCreatedCallback = (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => void;
+export type OnConnectionCreatedCallback = (
+  connectionUuid: string,
+  connectionType: ConnectionType,
+  connectionName: string
+) => void;
 
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
@@ -50,10 +54,10 @@ export function ConnectionFormCreate({
     const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);
-    
+
     // Store the connection info to pass to callback after creation
     pendingConnectionRef.current = { name, type };
-    
+
     fetcher.submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
