@@ -200,9 +200,15 @@ export function useHyperlinkPopup() {
         // Only set text if it differs from the URL
         textValue = linkSpan.text !== linkSpan.link ? linkSpan.text : '';
       } else {
-        // Plain text cell - pre-populate text field with cell content
+        // Plain text cell - check if content looks like a URL
         const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
-        textValue = displayValue ?? '';
+        if (displayValue && /^https?:\/\//i.test(displayValue)) {
+          // Content is a URL - pre-populate URL field, leave text empty
+          urlValue = displayValue;
+        } else {
+          // Content is not a URL - pre-populate text field
+          textValue = displayValue ?? '';
+        }
       }
 
       setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false });
