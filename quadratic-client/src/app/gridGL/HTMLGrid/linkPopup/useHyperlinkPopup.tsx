@@ -187,26 +187,29 @@ export function useHyperlinkPopup() {
       const offsets = sheet.getCellOffsets(x, y);
       const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
 
-      // Check if the cell already has a hyperlink
+      // Check if the cell is a single-span hyperlink (entire cell is one link)
       const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
-      const linkSpan = cellValue?.kind === 'RichText' ? cellValue.spans?.find((span) => span.link) : undefined;
+      const isSingleSpanHyperlink =
+        cellValue?.kind === 'RichText' && cellValue.spans?.length === 1 && cellValue.spans[0].link;
+      const linkSpan = isSingleSpanHyperlink ? cellValue.spans![0] : undefined;
 
       let urlValue = '';
       let textValue = '';
 
       if (linkSpan) {
-        // Cell has an existing hyperlink - pre-populate URL and text
+        // Cell is a single hyperlink span - pre-populate URL and text for editing
         urlValue = linkSpan.link ?? '';
         // Only set text if it differs from the URL
         textValue = linkSpan.text !== linkSpan.link ? linkSpan.text : '';
       } else {
-        // Plain text cell - check if content looks like a URL
+        // Rich text with multiple spans or plain text - user wants to create a new link
+        // Get the plain text display value for the text field, leave URL blank
         const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
         if (displayValue && /^https?:\/\//i.test(displayValue)) {
           // Content is a URL - pre-populate URL field, leave text empty
           urlValue = displayValue;
         } else {
-          // Content is not a URL - pre-populate text field
+          // Content is not a URL - pre-populate text field with plain text value
           textValue = displayValue ?? '';
         }
       }
