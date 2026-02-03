@@ -6,7 +6,7 @@ import {
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { apiClient } from '@/shared/api/apiClient';
-import { CheckIcon, DatabaseIcon, PlusIcon, SettingsIcon } from '@/shared/components/Icons';
+import { AddIcon, CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -183,7 +183,7 @@ export const AIUserMessageFormConnectionsButton = memo(
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Connections</DropdownMenuLabel>
           <DropdownMenuItem onClick={handleAddConnection} className="gap-4">
-            <PlusIcon className="flex-shrink-0 text-muted-foreground" />
+            <AddIcon className="flex-shrink-0 text-muted-foreground" />
             <span className="truncate">Add connection</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleManageConnections} className="gap-4">

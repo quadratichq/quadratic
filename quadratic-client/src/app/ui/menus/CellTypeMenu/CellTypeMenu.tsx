@@ -10,7 +10,7 @@ import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { apiClient } from '@/shared/api/apiClient';
-import { PlusIcon, SettingsIcon } from '@/shared/components/Icons';
+import { AddIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -160,7 +160,7 @@ export const CellTypeMenu = memo(() => {
 
             <CommandItemWrapper
               name="Add connection"
-              icon={<PlusIcon className="text-muted-foreground opacity-80" />}
+              icon={<AddIcon className="text-muted-foreground opacity-80" />}
               onSelect={addConnection}
             />
             <CommandItemWrapper

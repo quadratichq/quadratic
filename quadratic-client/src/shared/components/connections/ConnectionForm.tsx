@@ -58,7 +58,7 @@ export function ConnectionFormCreate({
     // Store the connection info to pass to callback after creation
     pendingConnectionRef.current = { name, type };
 
-    fetcher.submit(json, { ...options, navigate: false });
+    fetcher.submit(json, options);
     handleNavigateToListView();
   };
 
