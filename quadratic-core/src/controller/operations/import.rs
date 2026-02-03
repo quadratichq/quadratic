@@ -1,4 +1,4 @@
-use std::{io::Cursor, path::Path};
+use std::{collections::HashMap, io::Cursor, path::Path};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
@@ -304,11 +304,19 @@ impl GridController {
                 return Err(anyhow!(
                     "Cannot detect file format for '{file_name}' (extension: {:?})",
                     extension
-                ))
+                ));
             }
         };
 
         let sheets = workbook.sheet_names().to_owned();
+
+        // Collect named ranges into a hash map of names and references
+        let named_ranges: HashMap<String, String> = workbook
+            .defined_names()
+            .iter()
+            .map(|(name, reference)| (name.clone(), reference.clone()))
+            .collect();
+        let named_ranges_names = named_ranges.keys().cloned().collect::<Vec<String>>();
 
         // total rows for calculating import progress
         let total_rows = sheets
@@ -432,12 +440,27 @@ impl GridController {
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
+                        let mut code = cell.to_string();
+
+                        // Check if this formula references any named ranges
+                        let named_range = named_ranges_names
+                            .iter()
+                            .find(|name| code.contains(name.as_str()))
+                            .and_then(|name| {
+                                named_ranges.get(name).map(|reference| (name, reference))
+                            });
+
+                        // in the formula code, replace the named range with the reference
+                        if let Some((name, reference)) = named_range {
+                            code = code.replace(name, reference);
+                        }
+
                         sheet.data_table_insert_full(
                             sheet_pos.into(),
                             DataTable::new(
                                 DataTableKind::CodeRun(CodeRun {
                                     language: CodeCellLanguage::Formula,
-                                    code: cell.to_string(),
+                                    code: code.clone(),
                                     ..Default::default()
                                 }),
                                 &formula_start_name,
@@ -457,7 +480,7 @@ impl GridController {
                         gc.add_formula_without_eval(
                             &mut transaction,
                             sheet_pos,
-                            cell,
+                            &code,
                             formula_start_name.as_str(),
                         );
                         gc.update_a1_context_table_map(&mut transaction);
@@ -2019,6 +2042,21 @@ mod test {
         assert_eq!(sheet.formats.italic.get((1, 10).into()), None);
         assert_eq!(sheet.formats.text_color.get((1, 10).into()), None);
         assert_eq!(sheet.formats.fill_color.get((1, 10).into()), None);
+    }
+
+    #[test]
+    fn import_xlsx_named_ranges() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/named_range.xlsx");
+        gc.import_excel(file.as_ref(), "named_ranges.xlsx", None, false)
+            .unwrap();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+
+        // formula with named range at B4
+        let formula = sheet.code_run_at(&pos![B4]).unwrap();
+        let expected = "SUM(Sheet1!$A$1:$B$3)".to_string();
+        assert_eq!(formula.code, expected);
     }
 
     #[test]
