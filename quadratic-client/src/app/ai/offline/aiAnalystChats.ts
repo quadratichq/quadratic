@@ -138,6 +138,33 @@ class AIAnalystOfflineChats {
     }
   };
 
+  // Switch to a different file context and load its chats
+  // This is used when the user navigates between files to ensure
+  // chats are correctly associated with the right file
+  switchFile = async (userEmail: string, fileId: string): Promise<Chat[]> => {
+    try {
+      // Skip if already on the same file
+      if (this.userEmail === userEmail && this.fileId === fileId) {
+        return this.loadChats();
+      }
+
+      // Re-initialize with new file context
+      // Note: We don't need to fully reinitialize IndexedDB, just update the file context
+      this.userEmail = userEmail;
+      this.fileId = fileId;
+
+      // If db is not initialized yet, initialize it
+      if (!this.db || !this.chatsTable) {
+        await this.init(userEmail, fileId);
+      }
+
+      return this.loadChats();
+    } catch (error) {
+      this.sendAnalyticsError('switchFile', error);
+      return [];
+    }
+  };
+
   // Used by tests to clear all entries from the indexedDb
   testClear = async () => {
     const { chatsTable } = this.validateState('testClear');
