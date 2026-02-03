@@ -15,10 +15,13 @@ export const ConnectionsSidebar = ({
   sshPublicKey,
   staticIps,
   connectionType,
+  showIps,
 }: {
   staticIps: string[] | null;
   sshPublicKey: string;
   connectionType?: ConnectionType;
+  /** Whether to show the IP allow-list section (only shown on database/details pages) */
+  showIps?: boolean;
 }) => {
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';
   const useSsh = useRecoilValue(connectionFormSshAtom);
@@ -38,7 +41,7 @@ export const ConnectionsSidebar = ({
         linkText="Trust center"
         linkHref={TRUST_CENTER}
       />
-      {staticIpsContent && !isSynced && (
+      {showIps && staticIpsContent && !isSynced && (
         <SidebarItem
           title="IP allow-list"
           description="Add both of our IPs to your network allow-list."

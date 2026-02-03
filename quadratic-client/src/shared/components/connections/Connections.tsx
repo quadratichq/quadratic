@@ -35,7 +35,7 @@ import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { Fragment, memo, useCallback, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
@@ -83,11 +83,33 @@ export const Connections = ({
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
+
+  // Check if user only has demo connections (or no connections at all)
+  const hasOnlyDemoConnections = connections.length === 0 || connections.every((c) => c.isDemo === true);
+
   const initialConnectionState =
-    initialView === 'new' ? { view: 'new' as const } : getInitialConnectionState(searchParams);
+    initialView === 'new' || (!connectionsAreLoading && hasOnlyDemoConnections)
+      ? { view: 'new' as const }
+      : getInitialConnectionState(searchParams);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
   const [activeConnectionState, setActiveConnectionState] = useState<ConnectionState>(initialConnectionState);
+
+  // Track if we've already handled the "only demo connections" redirect
+  const hasHandledDemoOnlyRedirect = useRef(false);
+
+  // When loading finishes and we only have demo connections, redirect to 'new' view
+  useEffect(() => {
+    if (
+      !connectionsAreLoading &&
+      hasOnlyDemoConnections &&
+      activeConnectionState.view === 'list' &&
+      !hasHandledDemoOnlyRedirect.current
+    ) {
+      hasHandledDemoOnlyRedirect.current = true;
+      setActiveConnectionState({ view: 'new' });
+    }
+  }, [connectionsAreLoading, hasOnlyDemoConnections, activeConnectionState.view]);
 
   /**
    * Optimistic UI
@@ -301,9 +323,7 @@ export const Connections = ({
                 teamUuid={teamUuid}
                 connectionsAreLoading={connectionsAreLoading}
                 handleNavigateToNewView={handleNavigateToNewView}
-                handleNavigateToCreateView={handleNavigateToCreateView}
                 handleNavigateToEditView={handleNavigateToEditView}
-                handleNavigateToDetailsView={handleNavigateToDetailsView}
                 handleShowConnectionDemo={handleShowConnectionDemo}
               />
             )}
@@ -318,6 +338,7 @@ export const Connections = ({
                     ? activeConnectionState.type
                     : undefined
                 }
+                showIps={activeConnectionState.view === 'details'}
               />
             </div>
           )}
