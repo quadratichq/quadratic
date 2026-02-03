@@ -43,7 +43,8 @@ export class UICellMoving extends Container {
       moving.width ?? 1,
       moving.height ?? 1,
       moving.colRows,
-      moving.original
+      moving.original,
+      moving.additionalTables
     );
   }
 
@@ -77,6 +78,11 @@ export class UICellMoving extends Container {
     ) {
       throw new Error('Expected non-colRows moving to be defined in drawMove');
     }
+
+    // Calculate delta for additional tables
+    const deltaX = moving.toColumn - (moving.column ?? 0);
+    const deltaY = moving.toRow - (moving.row ?? 0);
+
     const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
     const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
     const rectX = start.x;
@@ -92,9 +98,35 @@ export class UICellMoving extends Container {
       this.graphics.endFill();
     }
 
-    // Draw the border rectangle
+    // Draw the border rectangle for the primary table
     this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     this.graphics.drawRect(rectX, rectY, rectWidth, rectHeight);
+
+    // Draw additional tables
+    if (moving.additionalTables) {
+      for (const table of moving.additionalTables) {
+        const tableDestCol = Math.max(1, table.column + deltaX);
+        const tableDestRow = Math.max(1, table.row + deltaY);
+        const tableStart = sheet.getCellOffsets(tableDestCol, tableDestRow);
+        const tableEnd = sheet.getCellOffsets(tableDestCol + table.width - 1, tableDestRow + table.height - 1);
+        const tableRectX = tableStart.x;
+        const tableRectY = tableStart.y;
+        const tableRectWidth = tableEnd.x + tableEnd.width - tableStart.x;
+        const tableRectHeight = tableEnd.y + tableEnd.height - tableStart.y;
+
+        // Draw red fill if invalid
+        if (isInvalid) {
+          this.graphics.lineStyle(); // Clear line style
+          this.graphics.beginFill(getCSSVariableTint('destructive'), INVALID_ALPHA);
+          this.graphics.drawRect(tableRectX, tableRectY, tableRectWidth, tableRectHeight);
+          this.graphics.endFill();
+        }
+
+        // Draw the border rectangle for this additional table
+        this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
+        this.graphics.drawRect(tableRectX, tableRectY, tableRectWidth, tableRectHeight);
+      }
+    }
   }
 
   // draw moving columns and rows (this is the cut and paste version when dragging from the headers)

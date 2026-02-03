@@ -2,6 +2,7 @@
 //! whether to show a red border on the moving cells.
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { AdditionalTable } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { Rectangle } from 'pixi.js';
 
@@ -184,7 +185,8 @@ export function checkMoveDestinationInvalid(
   width: number,
   height: number,
   colRows: 'columns' | 'rows' | undefined,
-  original: Rectangle | undefined
+  original: Rectangle | undefined,
+  additionalTables?: AdditionalTable[]
 ): boolean {
   // Determine the source rectangle
   let sourceX: number;
@@ -236,8 +238,27 @@ export function checkMoveDestinationInvalid(
 
   const sourceRect = new Rectangle(sourceX, sourceY, sourceWidth, sourceHeight);
 
-  // Get tables in the source selection
+  // Get tables in the source selection (these are the tables being moved)
   const sourceTables = getTablesInRect(sourceRect);
+
+  // Add additional tables to the source tables list (they're also being moved)
+  if (additionalTables) {
+    for (const table of additionalTables) {
+      sourceTables.push({
+        x: table.column,
+        y: table.row,
+        width: table.width,
+        height: table.height,
+        hasNameRow: true, // Assume tables have name rows
+        isCodeTable: false,
+        isSingleCell: false,
+      });
+    }
+  }
+
+  // Calculate the delta for the move
+  const deltaX = destX - sourceX;
+  const deltaY = destY - sourceY;
 
   // Check if any source table would overlap with a destination table
   if (sourceTables.length > 0) {
@@ -256,6 +277,52 @@ export function checkMoveDestinationInvalid(
   // (this applies to all moves, not just table moves)
   if (wouldOverlapNameRow(destX, destY, width, height, sourceTables)) {
     return true;
+  }
+
+  // Check additional tables for overlaps
+  if (additionalTables) {
+    for (const table of additionalTables) {
+      const tableDestX = Math.max(1, table.column + deltaX);
+      const tableDestY = Math.max(1, table.row + deltaY);
+
+      // Check if this additional table would overlap a code table
+      if (wouldOverlapCodeTable(tableDestX, tableDestY, table.width, table.height, sourceTables)) {
+        return true;
+      }
+
+      // Check if this additional table would overlap a name row
+      if (wouldOverlapNameRow(tableDestX, tableDestY, table.width, table.height, sourceTables)) {
+        return true;
+      }
+
+      // Check if this additional table would overlap any other table at its destination
+      const tableDestRect = new Rectangle(tableDestX, tableDestY, table.width, table.height);
+      const tablesAtDest = getTablesInRect(tableDestRect);
+      for (const destTable of tablesAtDest) {
+        // Skip if this is one of our source tables (they're moving with us)
+        const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
+        if (isSourceTable) continue;
+
+        // Skip single-cell tables (they can be overwritten)
+        if (destTable.isSingleCell) continue;
+
+        // Check if the additional table would overlap with this destination table
+        if (
+          rectanglesOverlap(
+            tableDestX,
+            tableDestY,
+            table.width,
+            table.height,
+            destTable.x,
+            destTable.y,
+            destTable.width,
+            destTable.height
+          )
+        ) {
+          return true;
+        }
+      }
+    }
   }
 
   return false;

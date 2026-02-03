@@ -16,6 +16,13 @@ import { isMobile } from 'react-device-detect';
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
 const BORDER_THRESHOLD = 8;
 
+export interface AdditionalTable {
+  column: number;
+  row: number;
+  width: number;
+  height: number;
+}
+
 interface MoveCells {
   column?: number;
   row?: number;
@@ -26,6 +33,7 @@ interface MoveCells {
   offset: { x: number; y: number };
   original?: Rectangle;
   colRows?: 'columns' | 'rows';
+  additionalTables?: AdditionalTable[];
 }
 
 export class PointerCellMoving {
@@ -52,7 +60,14 @@ export class PointerCellMoving {
   };
 
   // Starts a table move.
-  tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
+  tableMove = (
+    column: number,
+    row: number,
+    point: Point,
+    width: number,
+    height: number,
+    additionalTables?: AdditionalTable[]
+  ) => {
     if (this.state) return false;
     this.startCell = new Point(column, row);
     const offset = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
@@ -65,6 +80,7 @@ export class PointerCellMoving {
       toRow: row,
       offset: { x: column - offset.column, y: row - offset.row },
       original: new Rectangle(column, row, width, height),
+      additionalTables,
     };
     this.startMove();
   };
@@ -279,14 +295,20 @@ export class PointerCellMoving {
           this.movingCells.height ?? 1
         );
 
+        // Calculate the delta for all tables to move by
+        const deltaX = (this.movingCells.toColumn ?? 0) - (this.movingCells.column ?? 0);
+        const deltaY = (this.movingCells.toRow ?? 0) - (this.movingCells.row ?? 0);
+
         // Check if any cell in the destination rectangle is an invalid drop zone
+        // This now includes checking all additional tables as well
         const isInvalidDestination = checkMoveDestinationInvalid(
           this.movingCells.toColumn ?? 0,
           this.movingCells.toRow ?? 0,
           this.movingCells.width ?? 1,
           this.movingCells.height ?? 1,
           this.movingCells.colRows,
-          this.movingCells.original
+          this.movingCells.original,
+          this.movingCells.additionalTables
         );
 
         // Don't allow dropping if destination is invalid
@@ -305,6 +327,24 @@ export class PointerCellMoving {
           false
         );
 
+        // Move additional selected tables by the same delta
+        if (this.movingCells.additionalTables) {
+          for (const table of this.movingCells.additionalTables) {
+            const tableRect = new Rectangle(table.column, table.row, table.width, table.height);
+            const toColumn = Math.max(1, table.column + deltaX);
+            const toRow = Math.max(1, table.row + deltaY);
+            quadraticCore.moveCells(
+              rectToSheetRect(tableRect, sheets.current),
+              toColumn,
+              toRow,
+              sheets.current,
+              false,
+              false,
+              false
+            );
+          }
+        }
+
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
         if (
           showCodeEditor &&
@@ -316,8 +356,8 @@ export class PointerCellMoving {
             codeCell: {
               ...codeCell,
               pos: {
-                x: codeCell.pos.x + (this.movingCells.toColumn ?? 0) - (this.movingCells.column ?? 0),
-                y: codeCell.pos.y + (this.movingCells.toRow ?? 0) - (this.movingCells.row ?? 0),
+                x: codeCell.pos.x + deltaX,
+                y: codeCell.pos.y + deltaY,
               },
             },
           });
