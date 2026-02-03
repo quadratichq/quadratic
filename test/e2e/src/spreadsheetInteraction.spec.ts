@@ -4220,8 +4220,8 @@ test('Theme Customization', async ({ page }) => {
 
   // Homepage elements for accent color changes
   const upgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
-  // The "Start with AI" button contains nested content (span with "AI"), so we match the full accessible name
-  const startWithAIButtonEl = page.getByRole(`button`, { name: `Start with AI` });
+  // The "Start with AI" item is inside a dropdown menu, so we'll access it after opening the dropdown
+  // It's a menuitem, not a button, since it's inside a DropdownMenuItem
   const upgradeTextSVG = page.getByRole(`navigation`).locator(`svg`);
 
   // Member page elements for accent color changes
@@ -4258,8 +4258,16 @@ test('Theme Customization', async ({ page }) => {
     await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
 
-    // Assert the 'New File' button has the expected accent color
-    await expect(startWithAIButtonEl).toHaveCSS(`background-color`, theme.color);
+    // Assert the 'Start with AI' menuitem has the expected accent color
+    // Open the Import dropdown menu first since the item is inside a dropdown
+    await page.locator(`button:text-is("Import ")`).click({ timeout: 60 * 1000 });
+    // Wait for the dropdown menu to be visible
+    await page.locator('[role="menu"]').waitFor({ state: 'visible', timeout: 60 * 1000 });
+    const startWithAIMenuItem = page.getByRole(`menuitem`, { name: /Start with AI/ });
+    await expect(startWithAIMenuItem).toBeVisible({ timeout: 60 * 1000 });
+    await expect(startWithAIMenuItem).toHaveCSS(`background-color`, theme.color);
+    // Close the dropdown by pressing Escape
+    await page.keyboard.press('Escape');
 
     // Reload the page (removed redundant 10s waitForTimeout)
     await page.reload();
@@ -4269,7 +4277,15 @@ test('Theme Customization', async ({ page }) => {
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
     await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
-    await expect(startWithAIButtonEl).toHaveCSS(`background-color`, theme.color);
+    // Open the Import dropdown menu again after reload
+    await page.locator(`button:text-is("Import ")`).click({ timeout: 60 * 1000 });
+    // Wait for the dropdown menu to be visible
+    await page.locator('[role="menu"]').waitFor({ state: 'visible', timeout: 60 * 1000 });
+    const startWithAIMenuItemAfterReload = page.getByRole(`menuitem`, { name: /Start with AI/ });
+    await expect(startWithAIMenuItemAfterReload).toBeVisible({ timeout: 60 * 1000 });
+    await expect(startWithAIMenuItemAfterReload).toHaveCSS(`background-color`, theme.color);
+    // Close the dropdown by pressing Escape
+    await page.keyboard.press('Escape');
 
     // Navigate to the 'Members' page and assert page
     await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
