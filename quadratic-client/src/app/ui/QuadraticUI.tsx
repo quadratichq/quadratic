@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { useAIAnalystFileSync } from '@/app/ai/hooks/useAIAnalystFileSync';
 import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
@@ -61,6 +62,9 @@ export default function QuadraticUI() {
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+
+  // Sync AI Analyst chats when switching between files
+  useAIAnalystFileSync();
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
