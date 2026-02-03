@@ -89,7 +89,7 @@ impl IntrinioClient {
     }
 }
 
-// For testing - tries INTRINIO_API first, then falls back to INTRINIO_CREDENTIALS (JSON format)
+// For testing - tries INTRINIO_API first
 #[cfg(test)]
 use std::sync::{LazyLock, Mutex};
 
@@ -102,18 +102,7 @@ pub static INTRINIO_API_KEY: LazyLock<Mutex<String>> = LazyLock::new(|| {
         return Mutex::new(api_key);
     }
 
-    // Fall back to INTRINIO_CREDENTIALS (JSON format: {"api_key": "..."})
-    if let Ok(credentials) = std::env::var("INTRINIO_CREDENTIALS") {
-        #[derive(Deserialize)]
-        struct IntrinioConfig {
-            api_key: String,
-        }
-        if let Ok(config) = serde_json::from_str::<IntrinioConfig>(&credentials) {
-            return Mutex::new(config.api_key);
-        }
-    }
-
-    panic!("INTRINIO_API or INTRINIO_CREDENTIALS must be set");
+    panic!("INTRINIO_API");
 });
 
 #[cfg(test)]

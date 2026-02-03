@@ -186,7 +186,7 @@ export const jsConnection = (
   sheetId: string,
   code: string,
   connector_type: ConnectionKind,
-  connection_id: String
+  connection_id: string
 ) => {
   self.sendConnection(transactionId, x, y, sheetId, code, connector_type, connection_id);
 };
