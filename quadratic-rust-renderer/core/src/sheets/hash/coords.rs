@@ -4,7 +4,7 @@
 
 use quadratic_core::sheet_offsets::SheetOffsets;
 
-use super::constants::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
+use crate::constants::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
 
 /// Get hash coordinates for a cell position (1-indexed columns/rows)
 ///
