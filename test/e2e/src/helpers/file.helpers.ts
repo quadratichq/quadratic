@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import path from 'path';
 import { dismissUpgradeToProDialog } from './auth.helpers';
 import { upgradeToProPlan } from './billing.helpers';
-import { waitForAppReady, waitForNetworkIdle } from './wait.helpers';
+import { waitForAppReady, waitForCanvasReady, waitForNetworkIdle } from './wait.helpers';
 
 type CreateFileOptions = {
   fileName: string;
@@ -161,13 +161,8 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
     timeout: 1 * 60 * 1000,
   });
 
-  // Wait for app to load (removed redundant 10s waitForTimeout)
-  await waitForAppReady(page);
-
-  // Confirm file is uploaded
-  await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({
-    timeout: 60 * 1000,
-  });
+  // Wait for app to load and canvas to be visible
+  await waitForCanvasReady(page);
 
   await closeExtraUI(page);
 };
