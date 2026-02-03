@@ -43,7 +43,7 @@ import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-s
 import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FetcherSubmitFunction } from 'react-router';
-import { useFetcher, useFetchers, useSubmit } from 'react-router';
+import { useFetcher, useFetchers, useNavigate, useSubmit } from 'react-router';
 
 type UserMakingRequest = ApiTypes['/v0/teams/:uuid.GET.response']['userMakingRequest'];
 type ShareUser = {
@@ -801,40 +801,50 @@ export function InviteForm({
 
   const onSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
+      // Always prevent default form submission to avoid page reload
       e.preventDefault();
 
-      // Get the data from the form
-      const formData = new FormData(e.currentTarget);
-      const emailFromUser = String(formData.get('email_search')).trim();
-      const role = String(formData.get('role'));
-
-      // Validate email
-      let email;
       try {
-        email = emailSchema.parse(emailFromUser);
-      } catch (e) {
-        setError('Invalid email.');
-        return;
-      }
-      if (disallowedEmails.includes(email)) {
-        setError('This email has already been invited.');
-        return;
-      }
+        // Get the data from the form
+        const formData = new FormData(e.currentTarget);
+        const emailFromUser = String(formData.get('email_search')).trim();
+        const role = String(formData.get('role'));
 
-      // Submit the data
-      // TODO: (enhancement) enhance types so it knows which its submitting to
-      submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
+        // Validate email
+        let email;
+        try {
+          email = emailSchema.parse(emailFromUser);
+        } catch (e) {
+          setError('Invalid email.');
+          return;
+        }
+        if (disallowedEmails.includes(email)) {
+          setError('This email has already been invited.');
+          return;
+        }
 
-      // Reset the email input & focus it
-      if (inputRef.current) {
-        inputRef.current.value = '';
-        inputRef.current.focus();
+        // Submit the data
+        // TODO: (enhancement) enhance types so it knows which its submitting to
+        submit(
+          { intent, email: email, role },
+          { method: 'POST', action, encType: 'application/json', navigate: false }
+        );
+
+        // Reset the email input & focus it
+        if (inputRef.current) {
+          inputRef.current.value = '';
+          inputRef.current.focus();
+        }
+
+        // Handle (optionally) upgrading the invite to a team member
+        // We use `as` here because we won't know the type since this is used
+        // for file and team invites (but we won't pass this function in a team context)
+        setUpgradeMember?.({ email, role: role as UserFileRole });
+      } catch (error) {
+        // If any error occurs, log it but don't let the form submit
+        console.error('Error in invite form submission:', error);
+        setError('An error occurred. Please try again.');
       }
-
-      // Handle (optionally) upgrading the invite to a team member
-      // We use `as` here because we won't know the type since this is used
-      // for file and team invites (but we won't pass this function in a team context)
-      setUpgradeMember?.({ email, role: role as UserFileRole });
     },
     [action, disallowedEmails, intent, submit, setUpgradeMember]
   );
@@ -923,6 +933,7 @@ function ManageUser({
   onAddToTeam?: () => void;
 }) {
   const userId = String(user.id);
+  const navigate = useNavigate();
   // Use consistent fetcher keys so updates can be tracked across the app
   const fetcherDelete = useFetcher({ key: `delete-user-${userId}` });
   const fetcherUpdate = useFetcher({ key: `update-user-${userId}` });
@@ -939,6 +950,13 @@ function ManageUser({
   }
 
   const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
+
+  // Handle redirect if user deleted themselves
+  useEffect(() => {
+    if (fetcherDelete.state === 'idle' && fetcherDelete.data?.ok && fetcherDelete.data.redirect) {
+      navigate('/');
+    }
+  }, [fetcherDelete.state, fetcherDelete.data, navigate]);
 
   // If user is being deleted, hide them
   if (fetcherDelete.state !== 'idle') {
