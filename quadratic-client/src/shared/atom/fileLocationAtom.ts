@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
+import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { atom, getDefaultStore, useAtomValue } from 'jotai';
 
 type FileLocation = {
@@ -59,12 +60,12 @@ export const syncFileLocation = (fileUuid: string, ownerUserId: number | null) =
  * Move a file between personal and team with optimistic update.
  * @param fileUuid - The file's UUID
  * @param newOwnerUserId - null for team file, user ID for personal file
- * @param onError - Optional callback when the API call fails
+ * @param addGlobalSnackbar - Snackbar function for displaying error messages
  */
 export const moveFile = async (
   fileUuid: string,
   newOwnerUserId: number | null,
-  onError?: (error: unknown) => void
+  addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']
 ): Promise<boolean> => {
   const store = getDefaultStore();
   const prev = store.get(fileLocationAtom);
@@ -80,7 +81,7 @@ export const moveFile = async (
     if (prev) {
       store.set(fileLocationAtom, prev);
     }
-    onError?.(error);
+    addGlobalSnackbar('Failed to move file. Try again later.', { severity: 'error' });
     console.error('Failed to move file:', error);
     return false;
   }

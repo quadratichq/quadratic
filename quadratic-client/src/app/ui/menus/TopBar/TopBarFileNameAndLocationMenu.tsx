@@ -6,6 +6,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { moveFile, useFileLocation } from '@/shared/atom/fileLocationAtom';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ExternalLinkIcon, MoveItemIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -72,6 +73,7 @@ function FileLocation() {
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   // Use the atom for reactive file location state (synced with ShareDialog)
   const { ownerUserId } = useFileLocation();
@@ -98,9 +100,9 @@ function FileLocation() {
   const handleMoveFile = useCallback(
     (newFileType: 'team' | 'personal') => {
       if (!userId) return;
-      moveFile(uuid, newFileType === 'personal' ? userId : null);
+      moveFile(uuid, newFileType === 'personal' ? userId : null, addGlobalSnackbar);
     },
-    [uuid, userId]
+    [uuid, userId, addGlobalSnackbar]
   );
 
   // Don't show anything if they're not logged in

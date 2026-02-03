@@ -10,6 +10,7 @@ import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { moveFile, useFileLocation } from '@/shared/atom/fileLocationAtom';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
   DeleteIcon,
   DownloadIcon,
@@ -55,6 +56,7 @@ export const FileMenubarMenu = () => {
   } = useFileRouteLoaderData();
 
   const canMoveFile = filePermissions.includes('FILE_MOVE');
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const [recentFiles, setRecentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
   const recentFilesWithoutCurrentFile = useMemo(
@@ -113,28 +115,20 @@ export const FileMenubarMenu = () => {
 
         <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
-        {canMoveFile && ownerUserId === null ? (
-          <MenubarItem onClick={() => userId && moveFile(fileUuid, userId)}>
-            <MoveItemIcon />
-            Move to personal files
-          </MenubarItem>
-        ) : (
+
         {canMoveFile && ownerUserId === null && (
-          <MenubarItem onClick={() => userId && moveFile(fileUuid, userId)}>
+          <MenubarItem onClick={() => userId && moveFile(fileUuid, userId, addGlobalSnackbar)}>
             <MoveItemIcon />
             Move to personal files
           </MenubarItem>
         )}
         {canMoveFile && ownerUserId !== null && (
-          <MenubarItem onClick={() => moveFile(fileUuid, null)}>
+          <MenubarItem onClick={() => moveFile(fileUuid, null, addGlobalSnackbar)}>
             <MoveItemIcon />
             Move to team files
           </MenubarItem>
         )}
-            <MoveItemIcon />
-            Move to team files
-          </MenubarItem>
-        )}
+
         <MenubarSub>
           <MenubarSubTrigger>
             <DownloadIcon /> Download
