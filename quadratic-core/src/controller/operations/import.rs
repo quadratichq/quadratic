@@ -2,6 +2,8 @@ use std::{collections::HashMap, io::Cursor, path::Path};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
+use itertools::Itertools;
+use regex::Regex;
 use rust_decimal::prelude::ToPrimitive;
 
 use crate::a1::A1Selection;
@@ -39,6 +41,24 @@ use super::{
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 pub const COLUMN_WIDTH_MULTIPLIER: f64 = 7.0;
 pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
+
+/// Replaces named range references in a formula with their full sheet references.
+/// Uses word boundaries to avoid replacing partial matches (e.g., "A" in "ABC").
+fn replace_named_ranges(code: &str, named_ranges: &HashMap<String, String>) -> String {
+    let mut result = code.to_string();
+    for (name, reference) in named_ranges {
+        if result.contains(name.as_str()) {
+            if let Ok(re) = Regex::new(&format!(r"\b{}\b", regex::escape(name))) {
+                // Escape $ in replacement string to prevent backreference interpretation
+                let escaped_reference = reference.replace('$', "$$");
+                result = re
+                    .replace_all(&result, escaped_reference.as_str())
+                    .to_string();
+            }
+        }
+    }
+    result
+}
 
 impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
@@ -310,13 +330,15 @@ impl GridController {
 
         let sheets = workbook.sheet_names().to_owned();
 
-        // Collect named ranges into a hash map of names and references
+        // Collect named ranges into a hash map of names and references.
+        // Sort by the length of the name to ensure that the longest names are replaced first.
         let named_ranges: HashMap<String, String> = workbook
             .defined_names()
             .iter()
             .map(|(name, reference)| (name.clone(), reference.clone()))
+            .sorted_by_key(|(name, _)| name.len())
+            .rev()
             .collect();
-        let named_ranges_names = named_ranges.keys().cloned().collect::<Vec<String>>();
 
         // total rows for calculating import progress
         let total_rows = sheets
@@ -440,20 +462,10 @@ impl GridController {
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
-                        let mut code = cell.to_string();
+                        let code = cell.to_string();
 
-                        // Check if this formula references any named ranges
-                        let named_range = named_ranges_names
-                            .iter()
-                            .find(|name| code.contains(name.as_str()))
-                            .and_then(|name| {
-                                named_ranges.get(name).map(|reference| (name, reference))
-                            });
-
-                        // in the formula code, replace the named range with the reference
-                        if let Some((name, reference)) = named_range {
-                            code = code.replace(name, reference);
-                        }
+                        // Replace all named ranges in the formula with their references
+                        let code = replace_named_ranges(&code, &named_ranges);
 
                         sheet.data_table_insert_full(
                             sheet_pos.into(),
@@ -2057,6 +2069,53 @@ mod test {
         let formula = sheet.code_run_at(&pos![B4]).unwrap();
         let expected = "SUM(Sheet1!$A$1:$B$3)".to_string();
         assert_eq!(formula.code, expected);
+    }
+
+    #[test]
+    fn named_range_replacement_word_boundaries() {
+        // Test the word-boundary-aware replacement logic used for named ranges
+        // This ensures that named ranges that are substrings of other identifiers
+        // are not incorrectly replaced
+
+        let named_ranges: HashMap<String, String> = [
+            ("A".to_string(), "Sheet1!$A$1".to_string()),
+            ("ABC".to_string(), "Sheet1!$B$2".to_string()),
+            ("Total".to_string(), "Sheet1!$C$3".to_string()),
+            ("TotalSum".to_string(), "Sheet1!$D$4".to_string()),
+        ]
+        .into_iter()
+        .collect();
+
+        let test_cases = vec![
+            // (input formula, expected output)
+            // Named range "A" should not match "ABC"
+            ("=SUM(A) + ABC", "=SUM(Sheet1!$A$1) + Sheet1!$B$2"),
+            // Named range at start and end
+            ("=A + A", "=Sheet1!$A$1 + Sheet1!$A$1"),
+            // Named range adjacent to operators
+            (
+                "=A+A*A/A-A",
+                "=Sheet1!$A$1+Sheet1!$A$1*Sheet1!$A$1/Sheet1!$A$1-Sheet1!$A$1",
+            ),
+            // "Total" should not match "TotalSum"
+            ("=Total + TotalSum", "=Sheet1!$C$3 + Sheet1!$D$4"),
+            // Multiple occurrences
+            ("=ABC + ABC + A", "=Sheet1!$B$2 + Sheet1!$B$2 + Sheet1!$A$1"),
+            // Named range in function arguments
+            (
+                "=SUM(A, ABC, Total)",
+                "=SUM(Sheet1!$A$1, Sheet1!$B$2, Sheet1!$C$3)",
+            ),
+            // Named range in parentheses
+            ("=(A)", "=(Sheet1!$A$1)"),
+            // No named ranges to replace
+            ("=1 + 2", "=1 + 2"),
+        ];
+
+        for (input, expected) in test_cases {
+            let result = replace_named_ranges(input, &named_ranges);
+            assert_eq!(result, expected, "Failed for input: {}", input);
+        }
     }
 
     #[test]
