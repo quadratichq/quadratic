@@ -698,6 +698,24 @@ class Core {
     }
   }
 
+  parseDsl(dslContent: string): { error?: string } | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      const result = this.gridController.parseDsl(dslContent);
+      // parseDsl returns a JsValue with { result: boolean, error?: string }
+      if (result && typeof result === 'object') {
+        const jsResult = result as { result: boolean; error?: string };
+        if (!jsResult.result && jsResult.error) {
+          return { error: jsResult.error };
+        }
+      }
+      return undefined;
+    } catch (e) {
+      this.handleCoreError('parseDsl', e);
+      return { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   search(search: string, searchOptions: SearchOptions): JsSheetPosText[] {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

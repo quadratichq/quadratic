@@ -381,6 +381,15 @@ class CoreClient {
         this.send({ type: 'coreClientExportJson', id: e.data.id, json: exportJson });
         return;
 
+      case 'clientCoreParseDsl':
+        const dslResult = core.parseDsl(e.data.dslContent);
+        this.send({
+          type: 'coreClientParseDsl',
+          id: e.data.id,
+          error: dslResult?.error,
+        });
+        return;
+
       case 'clientCoreSearch':
         this.send({
           type: 'coreClientSearch',

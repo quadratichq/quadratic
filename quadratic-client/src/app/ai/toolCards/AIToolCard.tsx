@@ -5,6 +5,7 @@ import { AddLogicalValidation } from '@/app/ai/toolCards/AddLogicalValidations';
 import { AddMessage } from '@/app/ai/toolCards/AddMessage';
 import { AddNumberValidation } from '@/app/ai/toolCards/AddNumberValidation';
 import { AddTextValidation } from '@/app/ai/toolCards/AddTextValidation';
+import { BuildSheet } from '@/app/ai/toolCards/BuildSheet';
 import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ContactUs } from '@/app/ai/toolCards/ContactUs';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
@@ -34,10 +35,10 @@ import { RerunCode } from '@/app/ai/toolCards/RerunCode';
 import { ResizeColumns } from '@/app/ai/toolCards/ResizeColumns';
 import { ResizeRows } from '@/app/ai/toolCards/ResizeRows';
 import { SetBorders } from '@/app/ai/toolCards/SetBorders';
-import { SetDefaultColumnWidth } from '@/app/ai/toolCards/SetDefaultColumnWidth';
-import { SetDefaultRowHeight } from '@/app/ai/toolCards/SetDefaultRowHeight';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
+import { SetDefaultColumnWidth } from '@/app/ai/toolCards/SetDefaultColumnWidth';
+import { SetDefaultRowHeight } from '@/app/ai/toolCards/SetDefaultRowHeight';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
 import { SetSQLCodeCellValue } from '@/app/ai/toolCards/SetSQLCodeCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
@@ -179,6 +180,8 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ContactUs:
       return <ContactUs toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.BuildSheet:
+      return <BuildSheet toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

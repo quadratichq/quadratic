@@ -77,6 +77,7 @@ export enum AITool {
   Redo = 'redo',
   ContactUs = 'contact_us',
   OptimizePrompt = 'optimize_prompt',
+  BuildSheet = 'build_sheet',
 }
 
 export const AIToolSchema = z.enum([
@@ -139,6 +140,7 @@ export const AIToolSchema = z.enum([
   AITool.Redo,
   AITool.ContactUs,
   AITool.OptimizePrompt,
+  AITool.BuildSheet,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -627,6 +629,10 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
+  }),
+  [AITool.BuildSheet]: z.object({
+    sheet_name: stringNullableOptionalSchema,
+    dsl_content: stringSchema,
   }),
 } as const;
 
@@ -3358,5 +3364,230 @@ Optimized:\n
 - Place the result directly below the Revenue column\n
 
 Be specific, detailed, and actionable in every bullet point.\n`,
+  },
+  [AITool.BuildSheet]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+Builds a complete spreadsheet layout using DSL (Domain Specific Language).\n
+Use this tool when the user wants to create a structured spreadsheet with multiple tables, formatted headers, data, formulas, and optionally Python/JavaScript code cells.\n
+This is ideal for creating dashboards, reports, templates, or any structured data layout from scratch.\n
+Provide the complete DSL content that describes the spreadsheet structure.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'Optional sheet name to build on. If not provided, uses the current sheet.',
+        },
+        dsl_content: {
+          type: 'string',
+          description:
+            'The DSL content that describes the spreadsheet structure including cells, tables, grids, formulas, formatting, and code cells.',
+        },
+      },
+      required: ['dsl_content'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.BuildSheet],
+    prompt: `
+Use build_sheet to create structured spreadsheet layouts with multiple elements at once.\n
+This tool uses Quadratic DSL (Domain Specific Language) to efficiently build spreadsheets with data, formulas, formatting, and code.\n
+
+## When to Use build_sheet vs Other Tools
+- Use build_sheet when creating complete layouts, dashboards, or templates with multiple related elements
+- Use set_cell_values for simple data entry without formatting
+- Use set_code_cell_value for standalone Python/JavaScript code cells
+- Use set_formula_cell_value for individual formulas
+
+## DSL Quick Reference
+
+\`\`\`
+cell <position>: <value>
+cell <position>: <value> {<format>}
+grid at <position> [[<values>], ...]
+table "<name>" at <position> { headers: [...], rows: [[...], ...] }
+python at <position> { <code> }
+javascript at <position> { <code> }
+format <range> {<format>}
+\`\`\`
+
+## Cell Positions
+Use Excel-style references: A1, B2, Z100, AA1, AB50
+- Columns: A-Z, then AA-AZ, BA-BZ, etc.
+- Rows: 1-based numbers
+
+## Values
+| Type | Example |
+|------|---------|
+| Text | "Hello World" |
+| Number | 42, 3.14, -100 |
+| Boolean | true, false |
+| Formula | =SUM(A1:A10), =B2*C2 |
+| Blank | blank |
+
+## Statements
+
+### Single Cell
+\`\`\`
+cell A1: "Title"
+cell B2: 100
+cell C3: =A1+B2
+cell D4: "Bold text" {bold}
+\`\`\`
+
+### Grid (Simple Data Layout)
+\`\`\`
+grid at A1 [
+    ["Name", "Age", "City"]
+    ["Alice", 30, "NYC"]
+    ["Bob", 25, "LA"]
+]
+\`\`\`
+
+With row formatting:
+\`\`\`
+grid at A1 [
+    ["Product", "Price", "Stock"] {bold, bg:#333, color:#fff}
+    ["Widget", 25.99, 100]
+    ["Gadget", 49.99, 50]
+]
+\`\`\`
+
+### Table (Named Data Table)
+\`\`\`
+table "Sales" at A1 {
+    headers: ["Region", "Q1", "Q2", "Q3", "Q4"]
+    rows: [
+        ["North", 1000, 1200, 1100, 1300]
+        ["South", 800, 900, 950, 1000]
+    ]
+}
+\`\`\`
+
+With formatting:
+\`\`\`
+table "Budget" at A1 {
+    headers: ["Category", "Budgeted", "Actual", "Variance"]
+    rows: [
+        ["Marketing", 50000, 48000, =C2-B2]
+        ["Engineering", 120000, 125000, =C3-B3]
+    ]
+    formats: {
+        headers: {bold, bg:#1a1a2e, color:#fff}
+        "Budgeted": {format:currency}
+        "Actual": {format:currency}
+        "Variance": {format:currency}
+    }
+}
+\`\`\`
+
+### Code Cells
+\`\`\`
+python at A10 {
+    import pandas as pd
+    data = {"name": ["Alice", "Bob"], "age": [30, 25]}
+    df = pd.DataFrame(data)
+    df
+}
+
+javascript at B10 {
+    const data = [1, 2, 3, 4, 5];
+    data.map(x => x * 2);
+}
+\`\`\`
+
+### Range Formatting
+\`\`\`
+format A1:D1 {bold, bg:#333, color:#fff}
+format B:B {format:currency}
+format 5:5 {italic}
+format C2:C100 {format:percent, decimals:1}
+\`\`\`
+
+## Format Properties
+| Property | Values | Example |
+|----------|--------|---------|
+| bold | flag | {bold} |
+| italic | flag | {italic} |
+| underline | flag | {underline} |
+| strikethrough | flag | {strikethrough} |
+| size | number | {size:14} |
+| color | hex | {color:#ff0000} |
+| bg | hex | {bg:#f0f0f0} |
+| align | left, center, right | {align:center} |
+| valign | top, middle, bottom | {valign:middle} |
+| format | currency, percent, number, date, datetime | {format:currency} |
+| decimals | number | {decimals:2} |
+| border | flag | {border} |
+| width | number | {width:150} |
+| height | number | {height:30} |
+
+Combine with commas: {bold, align:center, bg:#eee}
+
+## Comments
+\`\`\`
+# This is a comment - ignored by parser
+cell A1: "Data"  # Comments can follow statements
+\`\`\`
+
+## Complete Example
+\`\`\`
+# Dashboard: Monthly Sales Report
+
+# Title
+cell A1: "Monthly Sales Report" {bold, size:18}
+cell A2: "Generated: 2024-01-15"
+
+# Sales Data
+table "MonthlySales" at A4 {
+    headers: ["Month", "Revenue", "Expenses", "Profit"]
+    rows: [
+        ["January", 125000, 95000, =B5-C5]
+        ["February", 132000, 98000, =B6-C6]
+        ["March", 145000, 102000, =B7-C7]
+    ]
+    formats: {
+        headers: {bold, bg:#2d3436, color:#fff}
+        "Revenue": {format:currency}
+        "Expenses": {format:currency}
+        "Profit": {format:currency}
+    }
+}
+
+# Summary
+cell A10: "Total Revenue:" {bold}
+cell B10: =SUM(B5:B7) {format:currency}
+
+# Analysis with Python
+python at A13 {
+    import matplotlib.pyplot as plt
+    months = ["Jan", "Feb", "Mar"]
+    revenue = [125000, 132000, 145000]
+    plt.figure(figsize=(8, 4))
+    plt.bar(months, revenue, color='#3498db')
+    plt.title("Monthly Revenue")
+    plt
+}
+\`\`\`
+
+## Best Practices
+1. Use tables for structured data with column formatting
+2. Use grids for simple layouts without table features
+3. Place titles above data with formatting for section headers
+4. Group related data with empty rows between sections
+5. Use formulas for calculations with = prefix
+6. Format consistently across similar data types
+7. Use Python/JS for complex analysis and charts
+
+## Formula Examples
+\`\`\`
+=SUM(A1:A10)           # Sum a range
+=AVERAGE(B2:B100)      # Average
+=IF(A1>100,"High","Low")  # Conditional
+=A1*B1                 # Multiplication
+=TODAY()               # Current date
+\`\`\`
+`,
   },
 } as const;

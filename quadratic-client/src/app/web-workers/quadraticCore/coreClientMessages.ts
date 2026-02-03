@@ -142,6 +142,24 @@ export interface ClientCoreExportJson {
   id: number;
 }
 
+//#endregion
+
+//#region DSL
+
+export interface ClientCoreParseDsl {
+  type: 'clientCoreParseDsl';
+  id: number;
+  dslContent: string;
+}
+
+export interface CoreClientParseDsl {
+  type: 'coreClientParseDsl';
+  id: number;
+  error?: string;
+}
+
+//#endregion
+
 /**
  * Viewport update from client to core worker.
  * Used when SharedArrayBuffer is not available.
@@ -1835,7 +1853,8 @@ export type ClientCoreMessage =
   | ClientCoreSetFormula
   | ClientCoreSetFormulas
   | ClientCoreExportJson
-  | ClientCoreViewportUpdate;
+  | ClientCoreViewportUpdate
+  | ClientCoreParseDsl;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1947,4 +1966,5 @@ export type CoreClientMessage =
   | CoreClientSetFormula
   | CoreClientSetFormulas
   | CoreClientRequestInitPython
-  | CoreClientRequestInitJavascript;
+  | CoreClientRequestInitJavascript
+  | CoreClientParseDsl;

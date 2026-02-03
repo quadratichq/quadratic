@@ -14,6 +14,7 @@ pub mod code;
 pub mod col_row;
 pub mod conditional_format;
 pub mod data_table;
+pub mod dsl;
 pub mod export;
 pub mod formatting;
 pub mod import;

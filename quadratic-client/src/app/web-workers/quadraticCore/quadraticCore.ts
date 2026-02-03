@@ -110,6 +110,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientParseDsl,
   CoreClientPreviewConditionalFormat,
   CoreClientRedoResponse,
   CoreClientRemoveValidationSelection,
@@ -436,6 +437,21 @@ class QuadraticCore {
         resolve(message.json);
       };
       this.send({ type: 'clientCoreExportJson', id });
+    });
+  }
+
+  /**
+   * Parses DSL content and executes operations to populate the grid.
+   * @param dslContent The DSL text to parse and execute
+   * @returns Error message if parsing failed, undefined on success
+   */
+  async parseDsl(dslContent: string): Promise<{ error?: string }> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientParseDsl) => {
+        resolve({ error: message.error });
+      };
+      this.send({ type: 'clientCoreParseDsl', id, dslContent });
     });
   }
 

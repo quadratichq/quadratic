@@ -1736,4 +1736,41 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.OptimizePrompt]: async (args) => {
     return [createTextContent(`Optimized prompt: ${args.optimized_prompt}`)];
   },
+  [AITool.BuildSheet]: async (args) => {
+    try {
+      const { sheet_name, dsl_content } = args;
+
+      // Get target sheet ID
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // Switch to target sheet if needed
+      if (sheetId !== sheets.current) {
+        sheets.current = sheetId;
+      }
+
+      // Parse and execute DSL
+      const result = await quadraticCore.parseDsl(dsl_content);
+
+      if (result.error) {
+        return [createTextContent(`Error building sheet from DSL: ${result.error}`)];
+      }
+
+      // Move AI cursor to A1 to show the built content
+      try {
+        const jsSelection = sheets.stringToSelection('A1', sheetId);
+        const selectionString = jsSelection.save();
+        aiUser.updateSelection(selectionString, sheetId);
+      } catch (e) {
+        console.warn('Failed to update AI user selection:', e);
+      }
+
+      return [
+        createTextContent(
+          'Successfully built sheet from DSL. The spreadsheet has been populated with the specified cells, tables, formatting, and code.'
+        ),
+      ];
+    } catch (e) {
+      return [createTextContent(`Error executing build sheet tool: ${e}`)];
+    }
+  },
 } as const;

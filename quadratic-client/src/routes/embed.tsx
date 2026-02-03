@@ -29,6 +29,7 @@ import { RecoilRoot } from 'recoil';
 type EmbedLoaderData =
   | { mode: 'file'; fileData: ApiTypes['/v0/files/:uuid.GET.response'] }
   | { mode: 'import'; importUrl: string }
+  | { mode: 'dsl'; dslContent: string }
   | { mode: 'blank' };
 
 export const shouldRevalidate = () => false;
@@ -37,15 +38,18 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
   startupTimer.start('file.loader');
 
   const url = new URL(request.url);
-  // Make fileId and import parameters case-insensitive
+  // Make fileId, import, and dsl parameters case-insensitive
   let fileId: string | null = null;
   let importUrl: string | null = null;
+  let dslParam: string | null = null;
   for (const [key, value] of url.searchParams.entries()) {
     const lowerKey = key.toLowerCase();
     if (lowerKey === 'fileid') {
       fileId = value;
     } else if (lowerKey === 'import') {
       importUrl = value;
+    } else if (lowerKey === 'dsl') {
+      dslParam = value;
     }
   }
 
@@ -154,6 +158,52 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     return { mode: 'import', importUrl };
   }
 
+  if (dslParam) {
+    // DSL mode - decode base64 DSL content and populate a blank file
+    let dslContent: string;
+    try {
+      dslContent = atob(dslParam);
+    } catch (error) {
+      throw new Response('Invalid DSL encoding. Expected base64-encoded DSL content.', { status: 400 });
+    }
+
+    // Create blank file first
+    const blankFileContents = createBlankFile();
+    const blankVersion = getCurrentFileVersion();
+
+    const contentsArray = new Uint8Array(blankFileContents);
+    const buffer = new ArrayBuffer(contentsArray.length);
+    new Uint8Array(buffer).set(contentsArray);
+    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    try {
+      startupTimer.start('file.loader.quadraticCore.load');
+      const result = await quadraticCore.load({
+        fileId: crypto.randomUUID(),
+        teamUuid: crypto.randomUUID(),
+        url: blobUrl,
+        version: blankVersion,
+        sequenceNumber: 0,
+        noMultiplayer: true,
+      });
+      startupTimer.end('file.loader.quadraticCore.load');
+
+      if (result.error) {
+        captureEvent({
+          message: '[Embed] Failed to create blank file for DSL.',
+          extra: { error: result.error },
+        });
+        throw new Response('Failed to create blank file for DSL.', { statusText: result.error });
+      }
+    } finally {
+      URL.revokeObjectURL(blobUrl);
+    }
+
+    startupTimer.end('file.loader');
+    return { mode: 'dsl', dslContent };
+  }
+
   // Blank mode - create a new blank file
   const blankFileContents = createBlankFile();
   const blankVersion = getCurrentFileVersion();
@@ -196,13 +246,16 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
 export const Component = memo(() => {
   const loaderData = useLoaderData() as EmbedLoaderData;
   const [importError, setImportError] = useState<string | null>(null);
+  const [dslError, setDslError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(loaderData.mode === 'import');
+  const [isProcessingDsl, setIsProcessingDsl] = useState(loaderData.mode === 'dsl');
   const [importProgress, setImportProgress] = useState(0);
   const [importFileName, setImportFileName] = useState('');
   const importStartedRef = useRef(false);
+  const dslStartedRef = useRef(false);
 
-  // Remove the initial HTML loading UI only after import is complete
-  useRemoveInitialLoadingUI(isImporting);
+  // Remove the initial HTML loading UI only after import/DSL processing is complete
+  useRemoveInitialLoadingUI(isImporting || isProcessingDsl);
 
   // Handle import mode - fetch file from URL and import
   useEffect(() => {
@@ -337,6 +390,31 @@ export const Component = memo(() => {
     }
   }, [loaderData]);
 
+  // Handle DSL mode - parse DSL and execute operations
+  useEffect(() => {
+    if (loaderData.mode === 'dsl' && !dslStartedRef.current) {
+      dslStartedRef.current = true;
+
+      const processDsl = async () => {
+        setIsProcessingDsl(true);
+
+        try {
+          const result = await quadraticCore.parseDsl(loaderData.dslContent);
+          if (result.error) {
+            throw new Error(result.error);
+          }
+        } catch (error) {
+          console.error('DSL parsing error:', error);
+          setDslError(error instanceof Error ? error.message : 'Failed to parse DSL');
+        } finally {
+          setIsProcessingDsl(false);
+        }
+      };
+
+      processDsl();
+    }
+  }, [loaderData]);
+
   // For file mode, use the file data
   const fileData = loaderData.mode === 'file' ? loaderData.fileData : null;
 
@@ -392,6 +470,35 @@ export const Component = memo(() => {
           </Button>
         }
       />
+    );
+  }
+
+  if (dslError) {
+    return (
+      <EmptyPage
+        title="DSL parsing failed"
+        description={dslError}
+        Icon={ExclamationTriangleIcon}
+        actions={
+          <Button asChild variant="outline">
+            <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+              Get help
+            </a>
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (isProcessingDsl) {
+    // Show DSL processing status
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <div className="mt-56 flex w-80 flex-col items-center text-center">
+          <div className="mb-2 text-lg font-medium">Processing DSL</div>
+          <div className="text-sm text-muted-foreground">Building spreadsheet...</div>
+        </div>
+      </div>
     );
   }
 
