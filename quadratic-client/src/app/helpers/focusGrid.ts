@@ -21,3 +21,8 @@ export const focusGrid = (pixiAppSettings?: PixiAppSettings) => {
     grid.focus();
   }
 };
+
+export const focusAIAnalyst = () => {
+  const textarea = document.querySelector<HTMLTextAreaElement>('[data-ai-analyst-input]');
+  textarea?.focus();
+};
