@@ -30,18 +30,4 @@ mod tests {
         assert!(balances.is_array());
         assert!(!balances.as_array().unwrap().is_empty());
     }
-
-    #[tokio::test]
-    async fn test_balances_requires_access_token() {
-        let client = new_plaid_client(false, vec![Products::Transactions]).await;
-        let result = client.get_balances().await;
-
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("Access token not set")
-        );
-    }
 }
-

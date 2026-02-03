@@ -10,9 +10,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-    ConnectionNameSchema,
-    ConnectionSemanticDescriptionSchema,
-    ConnectionTypeSchema,
+  ConnectionNameSchema,
+  ConnectionSemanticDescriptionSchema,
+  ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -153,7 +153,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         <SpinnerIcon className="text-muted-foreground" size="lg" />
         <h4 className="mt-3 text-lg font-medium">Connecting to Plaid…</h4>
         <p className="text-center text-sm text-muted-foreground">
-          Follow the instructions in the pop-up window. If you’re having trouble connecting,{' '}
+          Follow the instructions in the pop-up window. If you're having trouble connecting,{' '}
           <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
             contact us
           </a>
