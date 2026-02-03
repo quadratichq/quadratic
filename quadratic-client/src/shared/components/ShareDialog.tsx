@@ -28,13 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tool
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import {
-  Cross2Icon,
-  EnvelopeClosedIcon,
-  ExclamationTriangleIcon,
-  GlobeIcon,
-  LockClosedIcon,
-} from '@radix-ui/react-icons';
+import { Cross2Icon, EnvelopeClosedIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import type {
   ApiTypes,
   PublicLinkAccess,
@@ -1240,7 +1234,6 @@ function ListItemPublicLink({
             setPublicLinkAccess(checked ? 'READONLY' : 'NOT_SHARED');
           }}
         />
-        {publicLinkAccess === 'NOT_SHARED' ? <LockClosedIcon /> : <GlobeIcon />}
       </div>
 
       <div className={`flex flex-col`}>
