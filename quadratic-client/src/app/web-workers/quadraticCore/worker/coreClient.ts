@@ -518,10 +518,18 @@ class CoreClient {
         core.removeNumericFormat(e.data.selection, e.data.cursor, e.data.isAi);
         return;
 
-      case 'clientCoreMoveCells':
-        core.moveCells(e.data);
+      case 'clientCoreMoveColsRows':
+        core.moveColsRows(e.data);
         this.send({
-          type: 'coreClientMoveCells',
+          type: 'coreClientMoveColsRows',
+          id: e.data.id,
+        });
+        return;
+
+      case 'clientCoreMoveCellsBatch':
+        core.moveCellsBatch(e.data);
+        this.send({
+          type: 'coreClientMoveCellsBatch',
           id: e.data.id,
         });
         return;

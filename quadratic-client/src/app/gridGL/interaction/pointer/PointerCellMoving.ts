@@ -317,32 +317,37 @@ export class PointerCellMoving {
           return true;
         }
 
-        quadraticCore.moveCells(
-          rectToSheetRect(rectangle, sheets.current),
-          this.movingCells.toColumn ?? 0,
-          this.movingCells.toRow ?? 0,
-          sheets.current,
-          this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
-          this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
-          false
-        );
-
-        // Move additional selected tables by the same delta
-        if (this.movingCells.additionalTables) {
-          for (const table of this.movingCells.additionalTables) {
-            const tableRect = new Rectangle(table.column, table.row, table.width, table.height);
-            const toColumn = Math.max(1, table.column + deltaX);
-            const toRow = Math.max(1, table.row + deltaY);
-            quadraticCore.moveCells(
-              rectToSheetRect(tableRect, sheets.current),
-              toColumn,
-              toRow,
-              sheets.current,
-              false,
-              false,
-              false
-            );
-          }
+        // Use moveColsRows for column/row moves (has special handling), moveCellsBatch for everything else
+        if (this.movingCells.colRows) {
+          quadraticCore.moveColsRows(
+            rectToSheetRect(rectangle, sheets.current),
+            this.movingCells.toColumn ?? 0,
+            this.movingCells.toRow ?? 0,
+            sheets.current,
+            this.movingCells.colRows === 'columns',
+            this.movingCells.colRows === 'rows',
+            false
+          );
+        } else {
+          // Use batch move for table moves (handles single or multiple tables)
+          const moves = [
+            {
+              source: rectToSheetRect(rectangle, sheets.current),
+              targetX: this.movingCells.toColumn ?? 0,
+              targetY: this.movingCells.toRow ?? 0,
+              targetSheetId: sheets.current,
+            },
+            ...(this.movingCells.additionalTables ?? []).map((table) => ({
+              source: rectToSheetRect(
+                new Rectangle(table.column, table.row, table.width, table.height),
+                sheets.current
+              ),
+              targetX: Math.max(1, table.column + deltaX),
+              targetY: Math.max(1, table.row + deltaY),
+              targetSheetId: sheets.current,
+            })),
+          ];
+          quadraticCore.moveCellsBatch(moves, false);
         }
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;

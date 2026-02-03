@@ -101,7 +101,8 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
         break;
       case AITool.MoveCells:
         label = 'Moved cells';
-        position = args.target_top_left_position;
+        // Support both new format (moves array) and old format
+        position = args.moves?.[0]?.target_top_left_position ?? args.target_top_left_position;
         icon = <GridActionIcon />;
         break;
       case AITool.InsertRows:

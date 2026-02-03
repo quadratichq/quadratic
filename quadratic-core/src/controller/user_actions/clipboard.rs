@@ -71,9 +71,8 @@ impl GridController {
         }
     }
 
-    /// move cells from source to dest
-    /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
-    pub fn move_cells(
+    /// move entire columns or rows from source to dest
+    pub fn move_cols_rows(
         &mut self,
         source: SheetRect,
         dest: SheetPos,
@@ -84,6 +83,22 @@ impl GridController {
     ) {
         let ops = self.move_cells_operations(source, dest, columns, rows);
         self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
+    }
+
+    /// move multiple cell regions in a single transaction
+    /// each move is a (source, dest) pair
+    pub fn move_cells_batch(
+        &mut self,
+        moves: Vec<(SheetRect, SheetPos)>,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let mut all_ops = Vec::new();
+        for (source, dest) in moves {
+            let ops = self.move_cells_operations(source, dest, false, false);
+            all_ops.extend(ops);
+        }
+        self.start_user_ai_transaction(all_ops, cursor, TransactionName::MoveCells, is_ai);
     }
 
     /// move a code cell vertically
