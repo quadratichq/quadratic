@@ -1210,7 +1210,8 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Navigate to file (removed redundant 10s waitForTimeout, fixed to wait on recipientPage)
   await recipientFileCard.click({ timeout: 60 * 1000 });
-  await recipientPage.waitForLoadState('networkidle');
+  await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
+  await recipientPage.waitForLoadState('networkidle', { timeout: 60 * 1000 }).catch(() => {});
 
   // Assert "Read-only" message appears
   await expect(
@@ -1358,6 +1359,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await cleanUpFiles(page, { fileName });
+
+  // Close recipient browser
+  await recipientBrowser.close();
 });
 
 test.skip('Sheet Actions', async ({ page }) => {
