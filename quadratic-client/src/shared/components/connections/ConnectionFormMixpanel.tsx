@@ -1,6 +1,7 @@
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { DOCUMENTATION_CONNECTIONS_MIXPANEL_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -56,7 +57,16 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
         <p className="pb-2 text-sm text-muted-foreground">
-          Find your Project ID and API secret in your Mixpanel project's Settings → Access Keys.
+          Find your Project ID and API secret in your Mixpanel project's Settings → Access Keys.{' '}
+          <a
+            href={DOCUMENTATION_CONNECTIONS_MIXPANEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-primary"
+          >
+            Learn more
+          </a>
+          .
         </p>
         <FormField
           control={form.control}

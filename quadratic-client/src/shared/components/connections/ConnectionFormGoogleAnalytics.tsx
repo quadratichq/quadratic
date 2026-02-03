@@ -65,7 +65,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             rel="noopener noreferrer"
             className="underline hover:text-primary"
           >
-            Learn how to create a service account
+            Learn more
           </a>
           .
         </p>
