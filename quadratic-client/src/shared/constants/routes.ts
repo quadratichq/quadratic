@@ -25,6 +25,7 @@ export const ROUTES = {
     if (importUrl) params.set('import', importUrl);
     return `/embed?${params.toString()}`;
   },
+  EMBED_CLAIM: (token: string) => `/embed/claim/${token}`,
   FILES_CREATE: '/files/create',
   FILES_CREATE_AI: '/files/create/ai',
   // Team-based AI creation routes (these are the actual routes)
@@ -140,6 +141,4 @@ export const SEARCH_PARAMS = {
   REDIRECT_TO: { KEY: 'redirectTo' },
   // Used to open the scheduled tasks panel when the file loads
   SCHEDULED_TASKS: { KEY: 'scheduled-tasks' },
-  // Used to claim a file from embed mode after authentication
-  EMBED_CLAIM: { KEY: 'embedClaim' },
 } as const;

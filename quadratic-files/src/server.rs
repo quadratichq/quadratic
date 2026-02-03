@@ -63,9 +63,9 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // PROTECTED ROUTES (via JWT)
         //
-        // get a file from storage
+        // get a file from storage (use {*key} to capture paths with slashes like unclaimed/xxx.grid)
         .route(
-            "/storage/{key}",
+            "/storage/{*key}",
             get(get_storage)
                 //
                 // upload a file

@@ -58,9 +58,10 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
   }
 };
 
-// Download a file from the file service.
+// Download a file from the file service using a presigned URL.
 export const downloadFromFileService = async (key: string): Promise<Buffer> => {
-  const url = generateUrl(key, false);
+  // Use presigned URL for authentication-free download
+  const url = getPresignedStorageUrl(key);
 
   try {
     const response = await axios.get(url, {

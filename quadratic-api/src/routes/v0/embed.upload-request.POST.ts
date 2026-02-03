@@ -19,13 +19,17 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/embed/upload-re
     body: { version, claimToken },
   } = parseRequest(req, schema);
 
+  logger.info('[Embed Upload] Received upload request', { claimToken, version });
+
   // Storage key for the unclaimed file
   const storageKey = `unclaimed/${claimToken}.grid`;
+  logger.info('[Embed Upload] Storage key:', { storageKey });
 
   // Set expiration to 24 hours from now
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   // Create the unclaimed file record (client provides the claim token)
+  logger.info('[Embed Upload] Creating unclaimed file record in database...');
   await dbClient.unclaimedFile.create({
     data: {
       claimToken,
@@ -34,9 +38,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/embed/upload-re
       expiresAt,
     },
   });
+  logger.info('[Embed Upload] Database record created');
 
   // Generate presigned upload URL (1 hour validity)
+  logger.info('[Embed Upload] Generating presigned upload URL...');
   const uploadUrl = await getUnclaimedFileUploadUrl(storageKey);
+  logger.info('[Embed Upload] Upload URL generated');
 
   // Fire-and-forget cleanup of expired unclaimed files (non-blocking)
   void cleanupExpiredUnclaimedFiles().catch((err) => {

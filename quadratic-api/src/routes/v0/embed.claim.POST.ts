@@ -24,19 +24,29 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/embed/c
   } = parseRequest(req, schema);
   const { user } = req;
 
+  logger.info('[Embed Claim] Received claim request', { claimToken, userId: user.id });
+
   const jwt = req.header('Authorization');
   if (!jwt) {
     throw new ApiError(401, 'Authorization header required');
   }
 
   // Find the unclaimed file
+  logger.info('[Embed Claim] Looking up unclaimed file in database...');
   const unclaimedFile = await dbClient.unclaimedFile.findUnique({
     where: { claimToken },
   });
 
   if (!unclaimedFile) {
+    logger.warn('[Embed Claim] Claim token not found', { claimToken });
     throw new ApiError(404, 'Claim token not found or has already been used');
   }
+
+  logger.info('[Embed Claim] Found unclaimed file record', {
+    storageKey: unclaimedFile.storageKey,
+    version: unclaimedFile.version,
+    expiresAt: unclaimedFile.expiresAt,
+  });
 
   // Check if the file has expired
   if (unclaimedFile.expiresAt < new Date()) {
@@ -71,26 +81,33 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/embed/c
   const team = userTeamRole.team;
 
   // Download the file from storage (with retries since upload may still be in progress)
+  logger.info('[Embed Claim] Starting file download with retries...');
   let fileBuffer: Buffer | null = null;
   const maxRetries = 10;
   const retryDelayMs = 1000;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
+      logger.info('[Embed Claim] Attempt to download file', {
+        attempt: attempt + 1,
+        storageKey: unclaimedFile.storageKey,
+      });
       fileBuffer = await getUnclaimedFile(unclaimedFile.storageKey);
+      logger.info('[Embed Claim] File downloaded successfully', { size: fileBuffer.length });
       break; // Success, exit loop
     } catch (err) {
       if (attempt < maxRetries - 1) {
         // File not ready yet, wait and retry
-        logger.info('File not ready, retrying...', {
+        logger.info('[Embed Claim] File not ready, retrying...', {
           storageKey: unclaimedFile.storageKey,
           attempt: attempt + 1,
           maxRetries,
+          error: String(err),
         });
         await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
       } else {
         // Final attempt failed
-        logger.error('Failed to download unclaimed file from storage after retries', {
+        logger.error('[Embed Claim] Failed to download unclaimed file from storage after retries', {
           storageKey: unclaimedFile.storageKey,
           error: err,
         });
@@ -105,8 +122,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/embed/c
 
   // Convert to base64 for createFile
   const contents = fileBuffer.toString('base64');
+  logger.info('[Embed Claim] File converted to base64', { base64Length: contents.length });
 
   // Create the file in the user's team (as a private file)
+  logger.info('[Embed Claim] Creating file in database...', { teamId: team.id, userId: user.id });
   const fileName = 'Imported Spreadsheet';
   const dbFile = await createFile({
     name: fileName,
@@ -117,6 +136,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/embed/c
     isPrivate: true,
     jwt,
   });
+  logger.info('[Embed Claim] File created successfully', { fileUuid: dbFile.uuid });
 
   // Clean up the unclaimed file
   try {

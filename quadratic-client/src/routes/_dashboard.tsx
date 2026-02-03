@@ -190,39 +190,6 @@ export const Component = () => {
     }
   }, [searchParams, setSearchParams, addGlobalSnackbar, activeTeamUuid]);
 
-  // Handle embed claim: claim a file from embed mode after authentication
-  useEffect(() => {
-    const claimToken = searchParams.get(SEARCH_PARAMS.EMBED_CLAIM.KEY);
-    if (claimToken && navigation.state === 'idle') {
-      // Remove the claim param from URL immediately to prevent re-processing
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete(SEARCH_PARAMS.EMBED_CLAIM.KEY);
-      setSearchParams(newSearchParams, { replace: true });
-
-      // Claim the file
-      apiClient.embed
-        .claim({ claimToken })
-        .then((response) => {
-          trackEvent('[Embed].fileClaimed', { fileUuid: response.file.uuid });
-          addGlobalSnackbar('File imported successfully!', { severity: 'success' });
-          // Redirect to the newly created file
-          window.location.href = response.redirectUrl;
-        })
-        .catch((error) => {
-          console.error('Failed to claim file:', error);
-          if (error.status === 410) {
-            addGlobalSnackbar('The import link has expired. Please try again from the embedded spreadsheet.', {
-              severity: 'error',
-            });
-          } else if (error.status === 404) {
-            addGlobalSnackbar('The import link is invalid or has already been used.', { severity: 'error' });
-          } else {
-            addGlobalSnackbar('Failed to import file. Please try again.', { severity: 'error' });
-          }
-        });
-    }
-  }, [searchParams, setSearchParams, addGlobalSnackbar, navigation.state]);
-
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
