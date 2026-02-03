@@ -136,12 +136,13 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // fill out log in page and log in
   await page.locator(`[name="email"]`).fill(email, { timeout: 60 * 1000 });
-  page.locator('button:has-text("Continue")').click({ timeout: 60 * 1000 });
+  await page.locator('button:has-text("Continue")').click({ timeout: 60 * 1000 });
 
   // Handle optional captcha/anti-bot step if present
   await handleHumanCheck(page);
 
-  await page.waitForURL((url) => !url.pathname.startsWith('/password'), { timeout: 2 * 60 * 1000 });
+  // Wait for password field to appear after clicking Continue
+  await page.locator(`[name="password"]`).waitFor({ timeout: 2 * 60 * 1000 });
   await page.locator(`[name="password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
   await page.getByRole('button', { name: 'Sign in' }).click({ timeout: 60 * 1000 });
 
