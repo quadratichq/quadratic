@@ -97,12 +97,12 @@ use std::sync::{LazyLock, Mutex};
 pub static INTRINIO_API_KEY: LazyLock<Mutex<String>> = LazyLock::new(|| {
     let _path = dotenv::from_filename(".env.test").ok();
 
-    // Try INTRINIO_API first (plain API key)
-    if let Ok(api_key) = std::env::var("INTRINIO_API") {
+    // Try INTRINIO_API_KEY first (plain API key)
+    if let Ok(api_key) = std::env::var("INTRINIO_API_KEY") {
         return Mutex::new(api_key);
     }
 
-    panic!("INTRINIO_API");
+    panic!("INTRINIO_API_KEY must be set");
 });
 
 #[cfg(test)]
