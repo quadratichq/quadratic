@@ -197,7 +197,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
                       : '';
                   return (
                     <DropdownMenuItem
-                      key={`current-${currentCodeRun.sheetPos.x}-${currentCodeRun.sheetPos.y}`}
+                      key={`current-${currentCodeRun.sheetPos.sheetId}-${currentCodeRun.sheetPos.x}-${currentCodeRun.sheetPos.y}`}
                       className="pl-6 opacity-100"
                       onSelect={(e) => e.preventDefault()}
                     >
@@ -228,7 +228,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
                         : '';
                     return (
                       <DropdownMenuItem
-                        key={`awaiting-${codeRun.sheetPos.x}-${codeRun.sheetPos.y}`}
+                        key={`awaiting-${codeRun.sheetPos.sheetId}-${codeRun.sheetPos.x}-${codeRun.sheetPos.y}`}
                         className="pl-6 opacity-100"
                         onSelect={(e) => e.preventDefault()}
                       >
