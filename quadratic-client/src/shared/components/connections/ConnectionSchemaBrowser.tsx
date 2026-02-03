@@ -354,4 +354,3 @@ function getTableQuery({ table: { name, schema }, connectionType }: { table: Tab
       return '';
   }
 }
-
