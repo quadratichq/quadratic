@@ -13,7 +13,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
-import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
+import { AddIcon, CloseIcon, FastForwardIcon, GroupIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -22,6 +22,7 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useAIMultiplayerSession } from '@/app/ai/hooks/useAIMultiplayerSession';
 
 const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
   ? parseInt(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD || '15', 10)
@@ -44,6 +45,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const { openSetupModal, session: aiMultiplayerSession } = useAIMultiplayerSession();
   const showStartFreshMsg = useMemo(
     () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
     [currentUserMessagesCount, showChatHistory]
@@ -132,6 +134,21 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               }}
             >
               <HistoryIcon />
+            </Button>
+          </TooltipPopover>
+
+          <TooltipPopover label="AI Multiplayer">
+            <Button
+              variant={aiMultiplayerSession ? 'default' : 'ghost'}
+              size="icon-sm"
+              className={cn(!aiMultiplayerSession && 'text-muted-foreground hover:text-foreground')}
+              disabled={loading}
+              onClick={() => {
+                trackEvent('[AIAnalyst].openMultiplayerSetup');
+                openSetupModal();
+              }}
+            >
+              <GroupIcon />
             </Button>
           </TooltipPopover>
 

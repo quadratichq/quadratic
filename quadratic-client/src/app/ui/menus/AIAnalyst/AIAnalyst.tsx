@@ -3,6 +3,7 @@ import {
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { aiMultiplayerSessionActiveAtom } from '@/app/atoms/aiMultiplayerSessionAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
@@ -14,6 +15,7 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { AIMultiplayerControls, AIMultiplayerSetupDialog } from '@/app/ui/menus/AIMultiplayer';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -23,6 +25,7 @@ export const AIAnalyst = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const aiMultiplayerActive = useRecoilValue(aiMultiplayerSessionActiveAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
@@ -74,6 +77,7 @@ export const AIAnalyst = memo(() => {
   return (
     <>
       <AIAnalystGetChatName />
+      <AIMultiplayerSetupDialog />
 
       <div
         ref={aiPanelRef}
@@ -108,6 +112,11 @@ export const AIAnalyst = memo(() => {
                 )}
               >
                 <AIPendingChanges />
+                {aiMultiplayerActive && (
+                  <div className="px-2 pb-2">
+                    <AIMultiplayerControls />
+                  </div>
+                )}
                 <div className="px-2 pb-2" data-walkthrough="ai-chat-input">
                   <AIAnalystUserMessageForm
                     ref={textareaRef}
