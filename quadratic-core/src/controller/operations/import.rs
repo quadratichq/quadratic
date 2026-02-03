@@ -1,8 +1,7 @@
-use std::{collections::HashMap, io::Cursor, path::Path};
+use std::{io::Cursor, path::Path};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
-use itertools::Itertools;
 use regex::Regex;
 use rust_decimal::prelude::ToPrimitive;
 
@@ -42,18 +41,23 @@ const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 pub const COLUMN_WIDTH_MULTIPLIER: f64 = 7.0;
 pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
 
+/// Pre-compiled regex pattern and escaped replacement for a named range.
+/// This avoids recompiling the regex for every formula.
+struct NamedRangeReplacement {
+    name: String,
+    pattern: Regex,
+    replacement: String, // pre-escaped with $$ for $ characters
+}
+
 /// Replaces named range references in a formula with their full sheet references.
 /// Uses word boundaries to avoid replacing partial matches (e.g., "A" in "ABC").
-fn replace_named_ranges(code: &str, named_ranges: &HashMap<String, String>) -> String {
+fn replace_named_ranges(code: &str, named_ranges: &[NamedRangeReplacement]) -> String {
     let mut result = code.to_string();
-    for (name, reference) in named_ranges {
-        if result.contains(name.as_str())
-            && let Ok(re) = Regex::new(&format!(r"\b{}\b", regex::escape(name)))
-        {
-            // Escape $ in replacement string to prevent backreference interpretation
-            let escaped_reference = reference.replace('$', "$$");
-            result = re
-                .replace_all(&result, escaped_reference.as_str())
+    for named_range in named_ranges {
+        if result.contains(named_range.name.as_str()) {
+            result = named_range
+                .pattern
+                .replace_all(&result, named_range.replacement.as_str())
                 .to_string();
         }
     }
@@ -330,14 +334,21 @@ impl GridController {
 
         let sheets = workbook.sheet_names().to_owned();
 
-        // Collect named ranges into a hash map of names and references.
-        // Sort by the length of the name to ensure that the longest names are replaced first.
-        let named_ranges: HashMap<String, String> = workbook
+        // Collect named ranges with pre-compiled regex patterns for efficient replacement.
+        // Word boundaries (\b) ensure we only match complete identifiers, so order doesn't matter.
+        let named_ranges: Vec<NamedRangeReplacement> = workbook
             .defined_names()
             .iter()
-            .map(|(name, reference)| (name.clone(), reference.clone()))
-            .sorted_by_key(|(name, _)| name.len())
-            .rev()
+            .filter_map(|(name, reference)| {
+                let pattern = Regex::new(&format!(r"\b{}\b", regex::escape(name))).ok()?;
+                // Escape $ in replacement string to prevent backreference interpretation
+                let replacement = reference.replace('$', "$$");
+                Some(NamedRangeReplacement {
+                    name: name.clone(),
+                    pattern,
+                    replacement,
+                })
+            })
             .collect();
 
         // total rows for calculating import progress
@@ -2077,13 +2088,20 @@ mod test {
         // This ensures that named ranges that are substrings of other identifiers
         // are not incorrectly replaced
 
-        let named_ranges: HashMap<String, String> = [
-            ("A".to_string(), "Sheet1!$A$1".to_string()),
-            ("ABC".to_string(), "Sheet1!$B$2".to_string()),
-            ("Total".to_string(), "Sheet1!$C$3".to_string()),
-            ("TotalSum".to_string(), "Sheet1!$D$4".to_string()),
+        // Build named ranges with pre-compiled regex patterns
+        // Word boundaries (\b) ensure order doesn't matter - "A" won't match within "ABC"
+        let named_ranges: Vec<NamedRangeReplacement> = [
+            ("A", "Sheet1!$A$1"),
+            ("ABC", "Sheet1!$B$2"),
+            ("Total", "Sheet1!$C$3"),
+            ("TotalSum", "Sheet1!$D$4"),
         ]
         .into_iter()
+        .map(|(name, reference)| NamedRangeReplacement {
+            name: name.to_string(),
+            pattern: Regex::new(&format!(r"\b{}\b", regex::escape(name))).unwrap(),
+            replacement: reference.replace('$', "$$"),
+        })
         .collect();
 
         let test_cases = vec![
