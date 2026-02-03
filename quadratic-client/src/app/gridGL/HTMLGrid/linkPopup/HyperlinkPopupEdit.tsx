@@ -1,7 +1,12 @@
+import { MENUBAR_FOCUS_GRID_DELAY_MS } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { useEffect, useRef } from 'react';
+
+// Buffer time added to MENUBAR_FOCUS_GRID_DELAY_MS to ensure this component's
+// focus happens after the menubar's focusGrid call completes
+const FOCUS_BUFFER_MS = 50;
 
 interface HyperlinkPopupEditProps {
   editText: string;
@@ -29,12 +34,12 @@ export const HyperlinkPopupEdit = ({
   const urlInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Focus the URL input when the component mounts
-    // Use a timeout > 100ms to ensure focus happens after the menubar's
-    // focusGrid call (which fires at 100ms when menu closes)
+    // Focus the URL input when the component mounts.
+    // Delay must exceed MENUBAR_FOCUS_GRID_DELAY_MS to ensure focus happens
+    // after the menubar's focusGrid call (which fires when menu closes).
     const timeoutId = setTimeout(() => {
       urlInputRef.current?.focus();
-    }, 150);
+    }, MENUBAR_FOCUS_GRID_DELAY_MS + FOCUS_BUFFER_MS);
     return () => clearTimeout(timeoutId);
   }, []);
 

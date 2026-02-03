@@ -1,5 +1,6 @@
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { MENUBAR_FOCUS_GRID_DELAY_MS } from '@/shared/constants/appConstants';
 import { cn } from '@/shared/shadcn/utils';
 import { CheckIcon, ChevronRightIcon, DotFilledIcon } from '@radix-ui/react-icons';
 import { Menubar as MenubarPrimitive } from 'radix-ui';
@@ -24,7 +25,7 @@ const Menubar = React.forwardRef<
       ref={ref}
       onValueChange={(value) => {
         if (!value) {
-          setTimeout(() => focusGrid(pixiAppSettings), 100);
+          setTimeout(() => focusGrid(pixiAppSettings), MENUBAR_FOCUS_GRID_DELAY_MS);
         }
       }}
       className={cn('flex h-9 items-center gap-[1px] rounded-md bg-background p-1', className)}

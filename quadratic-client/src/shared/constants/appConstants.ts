@@ -1,4 +1,10 @@
 export const SUPPORT_EMAIL = 'support@quadratichq.com';
+
+// Focus management timing constants
+// When the menubar closes, it schedules a focusGrid call after this delay.
+// Any component that needs to capture focus after a menu action should wait
+// longer than this to avoid having its focus stolen.
+export const MENUBAR_FOCUS_GRID_DELAY_MS = 100;
 export const DEFAULT_FILE_NAME = 'Untitled';
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
 export const EXCEL_IMPORT_MESSAGE = 'Drag and drop an Excel file on the grid to import it.';
