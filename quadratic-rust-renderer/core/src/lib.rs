@@ -25,6 +25,9 @@
 pub mod primitives;
 pub mod render_context;
 
+// Constants
+pub mod constants;
+
 // Data and layout
 pub mod layout;
 pub mod render;
@@ -51,9 +54,8 @@ pub use primitives::{
 pub use render_context::{CommandBuffer, DrawCommand, RenderContext, RenderError, TextureId};
 
 // Sheets and hashing
-pub use sheets::hash::{
-    get_hash_coords, hash_key, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH, SPRITE_SCALE_THRESHOLD,
-};
+pub use constants::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH, SPRITE_SCALE_THRESHOLD};
+pub use sheets::hash::{get_hash_coords, hash_key};
 pub use sheets::{
     render_horizontal_lines, render_text_hash, BitmapFonts, HorizontalLine, Sheet, Sheets,
     TextCache, TextCacheEntry, TextCacheKey, TextHash, VisibleHashBounds,
