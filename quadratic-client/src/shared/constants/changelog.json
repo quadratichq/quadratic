@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.23.9",
+    "date": "2026-01-30",
+    "changes": ["Feature walkthrough for new users", "Free team file limits", "AI thinking improvements", "Bug fixes"],
+    "details": "<h2>Feature walkthrough for new users</h2>\n<p>New users are now greeted with an interactive walkthrough that highlights key Quadratic features:</p>\n<ul>\n<li>The infinite canvas with pinch-to-zoom navigation</li>\n<li>External data connections for live dashboards</li>\n<li>Scheduled tasks for automatic updates</li>\n<li>AI-powered assistance for building formulas and workflows</li>\n</ul>\n<p>The walkthrough can be skipped at any time and is disabled on mobile devices.</p>\n\n<h2>Free team file limits</h2>\n<p>Free teams can now edit up to 5 files. Files beyond this limit become read-only with an option to upgrade. A banner is displayed when the limit is exceeded, and individual files show an \"Upgrade to edit\" prompt.</p>\n\n<h2>AI thinking improvements</h2>\n<p>We've simplified the AI thinking UI to provide a cleaner, more streamlined experience when the AI is reasoning through your requests.</p>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed an issue where inactive or archived connections were still being processed</li>\n<li>Improved build performance for faster deployments</li>\n</ul>"
+  },
+  {
+    "version": "0.23.8",
+    "date": "2026-01-28",
+    "changes": [
+      "Streamlined onboarding",
+      "Synced connections improvements",
+      "JavaScript autocomplete enhancement",
+      "Bug fixes"
+    ],
+    "details": "<h2>Streamlined onboarding</h2>\n<p>New users are now taken directly to create their first file after completing onboarding, making it faster to get started with Quadratic.</p>\n\n<h2>Synced connections improvements</h2>\n<p>We've made several improvements to synced connections:</p>\n<ul>\n<li>Added semantic layers support for Google Analytics, Mixpanel, and Plaid connections</li>\n<li>Improved sync status display in the code editor</li>\n<li>Simplified sync state UI with better error messaging</li>\n<li>Better handling of synced connection errors</li>\n</ul>\n\n<h2>JavaScript autocomplete enhancement</h2>\n<p>Improved JavaScript autocomplete so that <code>(await q.cells())</code> now properly supports dot notation for method chaining.</p>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed hyperlink popup positioning issues</li>\n<li>Fixed template display bug and user filter in dashboard</li>\n<li>Fixed bug with improperly deleting tables after spills</li>\n<li>Fixed favicons in QA environment</li>\n<li>Updated Plaid connection branding from Coinbase to Fidelity</li>\n</ul>"
+  },
+  {
     "version": "0.23.7",
     "date": "2026-01-26",
     "changes": ["AI connection bug fixes", "File checkpoint improvements", "Internal improvements"],

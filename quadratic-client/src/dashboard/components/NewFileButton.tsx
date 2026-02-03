@@ -1,10 +1,9 @@
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import {
   AddIcon,
   AIIcon,
@@ -32,7 +31,11 @@ import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
-const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
+
+const stateToInsertAndRun = {
+  codeString: SNIPPET_PY_API,
+  language: 'Python' as CodeCellLanguage,
+};
 
 export function NewFileButton() {
   const {
@@ -58,13 +61,8 @@ export function NewFileButton() {
       <Button
         variant="default"
         className="gap-2"
-        onClick={async () => {
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
-            return;
-          }
-          navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+        onClick={() => {
+          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
         }}
       >
         <AIIcon className="mr-0" />
@@ -73,15 +71,10 @@ export function NewFileButton() {
 
       <Button
         data-testid="files-list-new-file-button"
-        variant="outline"
-        onClick={async (e) => {
+        variant="default"
+        onClick={(e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
-            return;
-          }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
         }}
       >
         New file
@@ -108,6 +101,18 @@ export function NewFileButton() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={() => {
+                navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
+              }}
+            >
+              <AIIcon className="mr-3" />
+              <span className="flex flex-col">
+                Start with AI
+                <span className="text-xs text-muted-foreground">Import data starting with AI</span>
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
               <FileIcon className="mr-3" />
@@ -117,23 +122,24 @@ export function NewFileButton() {
               </span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem asChild>
-              <Link
-                reloadDocument
-                to={ROUTES.CREATE_FILE(teamUuid, { state: stateToInsertAndRun, private: isPrivate })}
-              >
-                <ApiIcon className="mr-3" />
-                <span className="flex flex-col">
-                  API
-                  <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
-                </span>
-              </Link>
+            <DropdownMenuItem
+              onClick={() => {
+                window.location.href = ROUTES.CREATE_FILE(teamUuid, {
+                  state: stateToInsertAndRun,
+                  private: isPrivate,
+                });
+              }}
+            >
+              <ApiIcon className="mr-3" />
+              <span className="flex flex-col">
+                API
+                <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
+              </span>
             </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link to={ROUTES.TEMPLATES} className="flex items-center">
-                <ExamplesIcon className="mr-3" />
-
+                <ExamplesIcon className="mr-3 text-primary" />
                 <span className="flex flex-col">
                   Templates
                   <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>
