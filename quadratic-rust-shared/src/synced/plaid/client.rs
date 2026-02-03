@@ -465,13 +465,12 @@ impl SyncedClient for PlaidClient {
                 Err(e) => Err(e),
             },
             "liabilities" => {
-                // Liabilities are point-in-time snapshots; only fetch when syncing today's date
-                let today = chrono::Utc::now().date_naive();
-                if end_date != today {
+                // Liabilities are point-in-time snapshots; only fetch when syncing today.
+                // Plaid only returns current liabilities, so historical backfills are skipped.
+                if !is_today(end_date) {
                     tracing::debug!(
-                        "Skipping liabilities for historical date {} (today is {})",
-                        end_date,
-                        today
+                        "Skipping liabilities for historical date {} (not today)",
+                        end_date
                     );
                     return Ok(None);
                 }
@@ -482,13 +481,12 @@ impl SyncedClient for PlaidClient {
                 }
             }
             "balances" => {
-                // Balances are point-in-time snapshots; only fetch when syncing today's date
-                let today = chrono::Utc::now().date_naive();
-                if end_date != today {
+                // Balances are point-in-time snapshots; only fetch when syncing today.
+                // Plaid only returns current balances, so historical backfills are skipped.
+                if !is_today(end_date) {
                     tracing::debug!(
-                        "Skipping balances for historical date {} (today is {})",
-                        end_date,
-                        today
+                        "Skipping balances for historical date {} (not today)",
+                        end_date
                     );
                     return Ok(None);
                 }
@@ -553,6 +551,14 @@ fn is_stream_not_supported(err: &SharedError) -> bool {
         || err_str.contains("NO_INVESTMENT_ACCOUNTS")
         || err_str.contains("NO_LIABILITY_ACCOUNTS")
         || err_str.contains("NO_ACCOUNTS")
+}
+
+/// Check if a date is today (UTC).
+/// Used for snapshot data (balances, liabilities) which can only be fetched in real-time.
+/// We skip historical dates since Plaid only returns current balances, not historical.
+fn is_today(date: NaiveDate) -> bool {
+    let today = chrono::Utc::now().date_naive();
+    date == today
 }
 
 /// Process time-series data (transactions, investments) - group by date
@@ -750,5 +756,21 @@ mod tests {
     async fn test_plaid_client() {
         let client = new_plaid_client(true, vec![Products::Transactions]).await;
         assert!(client.test_connection().await);
+    }
+
+    #[test]
+    fn test_is_today() {
+        use chrono::Duration;
+
+        let today = chrono::Utc::now().date_naive();
+        let yesterday = today - Duration::days(1);
+        let tomorrow = today + Duration::days(1);
+
+        // Only today should return true
+        assert!(super::is_today(today), "today should be true");
+
+        // All other dates should return false
+        assert!(!super::is_today(yesterday), "yesterday should be false");
+        assert!(!super::is_today(tomorrow), "tomorrow should be false");
     }
 }

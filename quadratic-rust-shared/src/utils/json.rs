@@ -8,7 +8,11 @@ pub fn flatten_json_map(
         .map(|(key, value)| {
             let flattened_value = match value {
                 Value::Array(_) | Value::Object(_) => {
-                    Value::String(serde_json::to_string(value).unwrap_or_default())
+                    let json_str = serde_json::to_string(value).unwrap_or_else(|e| {
+                        tracing::warn!("Failed to serialize JSON value for key '{}': {}", key, e);
+                        String::new()
+                    });
+                    Value::String(json_str)
                 }
                 other => other.clone(),
             };
@@ -49,10 +53,15 @@ fn flatten_json_map_with_prefix(
             }
             // Arrays can't be meaningfully flattened, convert to JSON string
             Value::Array(_) => {
-                result.insert(
-                    full_key,
-                    Value::String(serde_json::to_string(value).unwrap_or_default()),
-                );
+                let json_str = serde_json::to_string(value).unwrap_or_else(|e| {
+                    tracing::warn!(
+                        "Failed to serialize JSON array for key '{}': {}",
+                        full_key,
+                        e
+                    );
+                    String::new()
+                });
+                result.insert(full_key, Value::String(json_str));
             }
             // Primitive values are kept as-is
             other => {
@@ -73,7 +82,10 @@ pub fn flatten_to_json<T: serde::Serialize>(
     item: &T,
     recursive: bool,
 ) -> serde_json::Map<String, serde_json::Value> {
-    let json_value = serde_json::to_value(item).unwrap_or(serde_json::Value::Null);
+    let json_value = serde_json::to_value(item).unwrap_or_else(|e| {
+        tracing::warn!("Failed to serialize item to JSON: {}", e);
+        serde_json::Value::Null
+    });
 
     if let serde_json::Value::Object(map) = json_value {
         if recursive {
