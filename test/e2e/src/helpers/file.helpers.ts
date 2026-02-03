@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import path from 'path';
-import { dismissUpgradeToProDialog } from './auth.helpers';
+import { dismissUpgradeToProDialog, skipFeatureWalkthrough } from './auth.helpers';
 import { upgradeToProPlan } from './billing.helpers';
 import { waitForAppReady, waitForCanvasReady, waitForNetworkIdle } from './wait.helpers';
 
@@ -29,6 +29,9 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(page);
 
   // Name file
   await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
@@ -93,6 +96,9 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(page);
 
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible({

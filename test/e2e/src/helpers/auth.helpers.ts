@@ -4,6 +4,26 @@ import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
 
 /**
+ * Skips the feature walkthrough tour if it appears.
+ * This tour shows for authenticated users when first loading a sheet.
+ */
+export const skipFeatureWalkthrough = async (page: Page) => {
+  try {
+    // Check if the feature walkthrough dialog is visible
+    const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
+    if (await walkthroughDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+      // Click the "Skip tour" button
+      const skipButton = page.getByRole('button', { name: /Skip tour/i });
+      await skipButton.click({ timeout: 5000 });
+      // Wait for the dialog to close
+      await walkthroughDialog.waitFor({ state: 'hidden', timeout: 5000 });
+    }
+  } catch {
+    // Walkthrough not present or couldn't be closed, continue silently
+  }
+};
+
+/**
  * Asserts that the Quadratic dashboard page is loaded and the user is logged in.
  * Checks for the user's email, page title, and "Suggested files" heading.
  */
