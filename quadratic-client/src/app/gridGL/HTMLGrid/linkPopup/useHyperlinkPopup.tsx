@@ -54,6 +54,7 @@ export function useHyperlinkPopup() {
 
   // Edit form state
   const [mode, setMode] = useState<PopupMode>('view');
+  const modeRef = useRef<PopupMode>('view');
   const [editUrl, setEditUrl] = useState('');
   const [editText, setEditText] = useState('');
 
@@ -71,6 +72,10 @@ export function useHyperlinkPopup() {
   useEffect(() => {
     linkDataRef.current = linkData;
   }, [linkData]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   // Sync displayData and visibility with linkData
   useEffect(() => {
@@ -765,13 +770,20 @@ export function useHyperlinkPopup() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // Only handle click-outside in edit mode
-      if (mode !== 'edit') return;
+      // Only handle click-outside in edit mode (check via ref to avoid re-running effect)
+      if (modeRef.current !== 'edit') return;
       if (!popupRef.current) return;
 
       // Check if click was outside the popup
       if (!popupRef.current.contains(e.target as Node)) {
-        handleCancelEdit();
+        // Cancel edit: handle inline source cleanup, then close popup
+        if (linkDataRef.current?.source === 'inline') {
+          inlineEditorSpans.cancelPendingHyperlink();
+          inlineEditorMonaco.focus();
+        } else {
+          focusGrid();
+        }
+        closePopup(true);
       }
     };
 
@@ -779,7 +791,7 @@ export function useHyperlinkPopup() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [mode, handleCancelEdit]);
+  }, [closePopup]); // closePopup has no dependencies, uses refs internally
 
   // When editing in inline mode with a text selection, hide the text field
   const hideTextField = displayData?.source === 'inline' && displayData?.hasSelection;
