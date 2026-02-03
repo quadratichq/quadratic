@@ -973,7 +973,7 @@ mod test {
         set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 1, 1);
         set_cell_value(&mut gc, sheet_id, "100", 1, 3);
 
-        gc.move_cells(
+        gc.move_cols_rows(
             SheetRect::new_pos_span(Pos { x: 1, y: 1 }, Pos { x: 3, y: 3 }, sheet_id),
             (11, 11, sheet_id).into(),
             false,
