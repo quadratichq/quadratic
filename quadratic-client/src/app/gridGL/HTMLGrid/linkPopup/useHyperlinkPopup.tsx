@@ -192,46 +192,51 @@ export function useHyperlinkPopup() {
       const offsets = sheet.getCellOffsets(x, y);
       const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
 
-      // Check if the cell is a single-span hyperlink (entire cell is one link)
-      const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
-      const isSingleSpanHyperlink =
-        cellValue?.kind === 'RichText' && cellValue.spans?.length === 1 && cellValue.spans[0].link;
-      const linkSpan = isSingleSpanHyperlink ? cellValue.spans![0] : undefined;
+      try {
+        // Check if the cell is a single-span hyperlink (entire cell is one link)
+        const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
+        const isSingleSpanHyperlink =
+          cellValue?.kind === 'RichText' && cellValue.spans?.length === 1 && cellValue.spans[0].link;
+        const linkSpan = isSingleSpanHyperlink ? cellValue.spans![0] : undefined;
 
-      let urlValue = '';
-      let textValue = '';
-      let isNewLink = false;
+        let urlValue = '';
+        let textValue = '';
+        let isNewLink = false;
 
-      if (linkSpan) {
-        // Cell is a single hyperlink span - pre-populate URL and text for editing
-        urlValue = linkSpan.link ?? '';
-        // Only set text if it differs from the URL
-        textValue = linkSpan.text !== linkSpan.link ? linkSpan.text : '';
-      } else {
-        // Rich text with multiple spans or plain text - user wants to create a new link
-        // Get the plain text display value for the text field, leave URL blank
-        isNewLink = true;
-        const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
-        if (displayValue && /^https?:\/\//i.test(displayValue)) {
-          // Content is a URL - pre-populate URL field, leave text empty
-          urlValue = displayValue;
+        if (linkSpan) {
+          // Cell is a single hyperlink span - pre-populate URL and text for editing
+          urlValue = linkSpan.link ?? '';
+          // Only set text if it differs from the URL
+          textValue = linkSpan.text !== linkSpan.link ? linkSpan.text : '';
         } else {
-          // Content is not a URL - pre-populate text field with plain text value
-          textValue = displayValue ?? '';
+          // Rich text with multiple spans or plain text - user wants to create a new link
+          // Get the plain text display value for the text field, leave URL blank
+          isNewLink = true;
+          const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
+          if (displayValue && /^https?:\/\//i.test(displayValue)) {
+            // Content is a URL - pre-populate URL field, leave text empty
+            urlValue = displayValue;
+          } else {
+            // Content is not a URL - pre-populate text field with plain text value
+            textValue = displayValue ?? '';
+          }
         }
-      }
 
-      setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false, isNewLink });
-      setMode('edit');
-      setEditUrl(urlValue);
-      setEditText(textValue);
+        setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false, isNewLink });
+        setMode('edit');
+        setEditUrl(urlValue);
+        setEditText(textValue);
+      } catch (error) {
+        console.error('Failed to open hyperlink popup:', error);
+        addGlobalSnackbar('Failed to open hyperlink editor. Please try again.');
+      }
     };
 
     events.on('insertLink', handleInsertLink);
     return () => {
       events.off('insertLink', handleInsertLink);
     };
-  }, []);
+  }, [addGlobalSnackbar]);
 
   // Handle inline hyperlink input (Ctrl+K in inline editor)
   useEffect(() => {
