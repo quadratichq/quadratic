@@ -107,7 +107,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
                         <HelpIcon className="text-muted-foreground" />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>Found in Project Settings → Service Accounts in Mixpanel</TooltipContent>
+                    <TooltipContent>Found in Project Settings → Access Keys in Mixpanel</TooltipContent>
                   </Tooltip>
                 </FormLabel>
                 <FormControl>

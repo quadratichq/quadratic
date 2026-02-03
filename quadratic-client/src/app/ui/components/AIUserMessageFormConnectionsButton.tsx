@@ -86,8 +86,10 @@ const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: Co
   return (
     <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isSyncing}>
       <LanguageIcon language={connection.type} className="flex-shrink-0" />
-      <span className="truncate">{connection.name}</span>
-      {isSyncing && <span className="ml-2 text-xs text-muted-foreground">(syncing)</span>}
+      <span className="flex items-center truncate">
+        <span className="truncate">{connection.name}</span>
+        {isSyncing && <span className="ml-1 text-xs text-muted-foreground">(syncing)</span>}
+      </span>
       <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
     </DropdownMenuItem>
   );
