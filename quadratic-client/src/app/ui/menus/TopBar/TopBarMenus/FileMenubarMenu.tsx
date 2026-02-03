@@ -119,7 +119,18 @@ export const FileMenubarMenu = () => {
             Move to personal files
           </MenubarItem>
         ) : (
+        {canMoveFile && ownerUserId === null && (
+          <MenubarItem onClick={() => userId && moveFile(fileUuid, userId)}>
+            <MoveItemIcon />
+            Move to personal files
+          </MenubarItem>
+        )}
+        {canMoveFile && ownerUserId !== null && (
           <MenubarItem onClick={() => moveFile(fileUuid, null)}>
+            <MoveItemIcon />
+            Move to team files
+          </MenubarItem>
+        )}
             <MoveItemIcon />
             Move to team files
           </MenubarItem>
