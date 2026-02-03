@@ -34,6 +34,8 @@ export interface LinkData {
   spanStart?: number;
   // Character end position of this hyperlink span within the cell text
   spanEnd?: number;
+  // True if this is creating a new link (should replace entire cell content on save)
+  isNewLink?: boolean;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -195,6 +197,7 @@ export function useHyperlinkPopup() {
 
       let urlValue = '';
       let textValue = '';
+      let isNewLink = false;
 
       if (linkSpan) {
         // Cell is a single hyperlink span - pre-populate URL and text for editing
@@ -204,6 +207,7 @@ export function useHyperlinkPopup() {
       } else {
         // Rich text with multiple spans or plain text - user wants to create a new link
         // Get the plain text display value for the text field, leave URL blank
+        isNewLink = true;
         const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
         if (displayValue && /^https?:\/\//i.test(displayValue)) {
           // Content is a URL - pre-populate URL field, leave text empty
@@ -214,7 +218,7 @@ export function useHyperlinkPopup() {
         }
       }
 
-      setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false });
+      setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false, isNewLink });
       setMode('edit');
       setEditUrl(urlValue);
       setEditText(textValue);
@@ -636,6 +640,20 @@ export function useHyperlinkPopup() {
     if (linkData.isNakedUrl && !hasCustomTitle) {
       // For naked URLs without a custom title, keep as plain text
       quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
+    } else if (linkData.isNewLink) {
+      // Creating a new link - replace entire cell content with the new hyperlink
+      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+        {
+          text,
+          link: normalizedUrl,
+          bold: null,
+          italic: null,
+          underline: null,
+          strike_through: null,
+          text_color: null,
+          font_size: null,
+        },
+      ]);
     } else {
       // Get the current cell value to check if it has multiple spans
       const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
