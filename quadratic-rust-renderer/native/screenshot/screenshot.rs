@@ -106,7 +106,7 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     // Load the grid file
-    println!("Loading grid file: {:?}", args.file);
+    log::debug!("Loading grid file: {:?}", args.file);
     let file_bytes = fs::read(&args.file)?;
     let grid = import(file_bytes)?;
 
@@ -126,7 +126,7 @@ fn main() -> anyhow::Result<()> {
     let sheet = gc
         .try_sheet(sheet_id)
         .ok_or_else(|| anyhow::anyhow!("Sheet with id {:?} not found", sheet_id))?;
-    println!("Using sheet: {}", sheet.name());
+    log::debug!("Using sheet: {}", sheet.name());
 
     // Get sheet offsets for column/row sizes
     let offsets = sheet.offsets().clone();
@@ -142,11 +142,12 @@ fn main() -> anyhow::Result<()> {
             thumbnail_rect.max.y,
         );
 
-        println!(
+        log::debug!(
             "Thumbnail mode: auto-calculated range (columns 0-{}, rows 0-{})",
-            thumbnail_rect.max.x, thumbnail_rect.max.y
+            thumbnail_rect.max.x,
+            thumbnail_rect.max.y
         );
-        println!("Output: {}x{} PNG", THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+        log::debug!("Output: {}x{} PNG", THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
 
         (
             selection,
@@ -160,7 +161,7 @@ fn main() -> anyhow::Result<()> {
         let (start_pos, end_pos) = parse_a1_range(&args.range)?;
         let selection = SelectionRange::new(start_pos.x, start_pos.y, end_pos.x, end_pos.y);
 
-        println!(
+        log::debug!(
             "Rendering range: {} (columns {}-{}, rows {}-{})",
             args.range,
             selection.start_col,
@@ -173,15 +174,17 @@ fn main() -> anyhow::Result<()> {
         let (_world_x, _world_y, world_w, world_h) = selection.world_bounds(&offsets);
         let aspect_ratio = world_w / world_h;
 
-        println!(
+        log::debug!(
             "Cell area: {:.1}x{:.1} pixels (aspect ratio: {:.3})",
-            world_w, world_h, aspect_ratio
+            world_w,
+            world_h,
+            aspect_ratio
         );
 
         // Calculate output dimensions based on aspect ratio
         let (base_width, base_height) = match (args.width, args.height) {
             (Some(w), Some(_h)) => {
-                println!("Warning: Both width and height specified. Using width and calculating height from aspect ratio.");
+                log::warn!("Both width and height specified. Using width and calculating height from aspect ratio.");
                 (w, (w as f32 / aspect_ratio).round() as u32)
             }
             (Some(w), None) => (w, (w as f32 / aspect_ratio).round() as u32),
@@ -252,7 +255,7 @@ fn main() -> anyhow::Result<()> {
     }
     request.fills = fills;
 
-    println!("Found {} fills", request.fills.len());
+    log::debug!("Found {} fills", request.fills.len());
 
     // Get cells and convert from JsRenderCell to RenderCell
     let mut js_cells = sheet.get_render_cells(render_rect, a1_context);
@@ -277,7 +280,7 @@ fn main() -> anyhow::Result<()> {
 
     request.cells = cells;
 
-    println!("Found {} cells", request.cells.len());
+    log::debug!("Found {} cells", request.cells.len());
 
     // Get borders from the sheet
     let js_borders = sheet.borders_in_sheet();
@@ -419,7 +422,7 @@ fn main() -> anyhow::Result<()> {
 
     // Add table name cells to the cells list
     request.cells.extend(table_name_cells);
-    println!(
+    log::debug!(
         "Found {} table outlines",
         request.table_outlines.tables.len()
     );
@@ -472,22 +475,26 @@ fn main() -> anyhow::Result<()> {
     }
     request.chart_images = chart_images;
     request.grid_exclusion_zones = grid_exclusion_zones;
-    println!("Found {} chart images", request.chart_images.len());
-    println!(
+    log::debug!("Found {} chart images", request.chart_images.len());
+    log::debug!(
         "Created {} grid exclusion zones",
         request.grid_exclusion_zones.len()
     );
 
     // Create renderer and render
-    println!(
+    log::debug!(
         "Creating renderer ({} x {} pixels, {}x DPR = {} x {})...",
-        base_width, base_height, args.dpr, render_width, render_height
+        base_width,
+        base_height,
+        args.dpr,
+        render_width,
+        render_height
     );
     let mut renderer = NativeRenderer::new(render_width, render_height)?;
 
     // Find fonts directory
     let font_dir = find_fonts_directory(args.fonts.as_ref())?;
-    println!("Loading fonts from {:?}", font_dir);
+    log::debug!("Loading fonts from {:?}", font_dir);
 
     // Standard OpenSans font variants
     let font_files = [
@@ -499,14 +506,15 @@ fn main() -> anyhow::Result<()> {
 
     let (fonts, texture_infos) = load_fonts_from_directory(&font_dir, &font_files)?;
 
-    println!("Loaded {} fonts: {:?}", fonts.count(), fonts.font_names());
+    log::debug!("Loaded {} fonts: {:?}", fonts.count(), fonts.font_names());
 
     // Load font textures
     for texture_info in &texture_infos {
         let texture_path = font_dir.join(&texture_info.filename);
-        println!(
+        log::debug!(
             "Loading font texture: {:?} (UID: {})",
-            texture_path, texture_info.texture_uid
+            texture_path,
+            texture_info.texture_uid
         );
 
         let texture_bytes = fs::read(&texture_path)?;
@@ -518,22 +526,22 @@ fn main() -> anyhow::Result<()> {
 
     // Upload chart images
     if !request.chart_images.is_empty() {
-        println!("Uploading {} chart images...", request.chart_images.len());
+        log::debug!("Uploading {} chart images...", request.chart_images.len());
         renderer.upload_chart_images(&request.chart_images)?;
     }
 
     // Upload language icons
     if !request.table_name_icons.is_empty() {
         if let Ok(icons_dir) = find_icons_directory() {
-            println!(
+            log::debug!(
                 "Loading {} language icons from {:?}...",
                 request.table_name_icons.len(),
                 icons_dir
             );
             renderer.upload_language_icons(&request.table_name_icons, &icons_dir)?;
         } else {
-            println!(
-                "Warning: Icons directory not found, {} table icons will not render",
+            log::warn!(
+                "Icons directory not found, {} table icons will not render",
                 request.table_name_icons.len()
             );
         }
@@ -541,10 +549,10 @@ fn main() -> anyhow::Result<()> {
 
     // Load emoji spritesheet (textures are lazy-loaded when needed)
     if let Ok(emoji_dir) = find_emoji_directory() {
-        println!("Loading emoji mapping from {:?}...", emoji_dir);
+        log::debug!("Loading emoji mapping from {:?}...", emoji_dir);
         match load_emoji_spritesheet(&emoji_dir) {
             Ok((spritesheet, _texture_infos)) => {
-                println!(
+                log::debug!(
                     "Loaded emoji mapping: {} emojis, {} texture pages (lazy loading)",
                     spritesheet.emoji_count(),
                     spritesheet.page_count()
@@ -552,14 +560,14 @@ fn main() -> anyhow::Result<()> {
                 renderer.set_emoji_spritesheet(spritesheet, emoji_dir);
             }
             Err(e) => {
-                println!("Warning: Failed to load emoji mapping: {}", e);
+                log::warn!("Failed to load emoji mapping: {}", e);
             }
         }
     } else {
-        println!("Note: Emoji directory not found, emojis will not render");
+        log::debug!("Emoji directory not found, emojis will not render");
     }
 
-    println!(
+    log::debug!(
         "Rendering to {:?} format{}...",
         match image_format {
             ImageFormat::Png => "PNG",
@@ -586,7 +594,7 @@ fn main() -> anyhow::Result<()> {
     // Save to file
     fs::write(&output_path, &image_bytes)?;
     let elapsed = start_time.elapsed();
-    println!(
+    log::info!(
         "Saved to {:?} ({} bytes) in {:.2}s",
         output_path,
         image_bytes.len(),

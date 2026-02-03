@@ -73,6 +73,7 @@ fn is_naked_url(text: &str) -> bool {
     }
 
     // Must contain at least one dot after the protocol/www prefix
+    // Pattern matches: /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i
     let after_prefix = if lower.starts_with("https://") {
         &text[8..]
     } else if lower.starts_with("http://") {
@@ -83,7 +84,13 @@ fn is_naked_url(text: &str) -> bool {
         text
     };
 
-    after_prefix.contains('.')
+    // Must have at least one dot with content before and after
+    if let Some(dot_pos) = after_prefix.find('.') {
+        // Must have at least one character before the dot and after it
+        dot_pos > 0 && dot_pos < after_prefix.len() - 1
+    } else {
+        false
+    }
 }
 
 // =============================================================================
@@ -495,7 +502,7 @@ impl CellLabel {
 
     /// Update cell bounds from sheet offsets
     pub fn update_bounds(&mut self, offsets: &SheetOffsets) {
-        let (x, _single_width) = offsets.column_position_size(self.col);
+        let (x, single_width) = offsets.column_position_size(self.col);
         let (y, height) = offsets.row_position_size(self.row);
 
         // Calculate width: use full table width if table_columns is set
@@ -508,7 +515,7 @@ impl CellLabel {
             }
             total_width
         } else {
-            _single_width
+            single_width
         };
 
         // Apply left padding for table names:
@@ -1422,6 +1429,88 @@ impl EmojiLookup for NoEmoji {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sheets::text::bitmap_font::{BitmapChar, BitmapFont, BitmapFonts, CharFrame};
+    use quadratic_core::color::Rgba;
+    use quadratic_core::sheet_offsets::SheetOffsets;
+    use std::collections::HashMap;
+
+    // =============================================================================
+    // Test helpers
+    // =============================================================================
+
+    fn create_test_font(name: &str) -> BitmapFont {
+        let mut chars = HashMap::new();
+        // Add some basic ASCII characters for testing
+        for code in 32..127u32 {
+            chars.insert(
+                code,
+                BitmapChar {
+                    texture_uid: 0,
+                    x_advance: 8.0,
+                    x_offset: 0.0,
+                    y_offset: 0.0,
+                    orig_width: 8.0,
+                    texture_height: 16.0,
+                    kerning: HashMap::new(),
+                    uvs: [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0],
+                    frame: CharFrame {
+                        x: 0.0,
+                        y: 0.0,
+                        width: 8.0,
+                        height: 16.0,
+                    },
+                },
+            );
+        }
+        BitmapFont {
+            font: name.to_string(),
+            size: DEFAULT_FONT_SIZE,
+            line_height: LINE_HEIGHT,
+            distance_range: 4.0,
+            chars,
+        }
+    }
+
+    fn create_test_fonts() -> BitmapFonts {
+        let mut fonts = BitmapFonts::new();
+        fonts.add(create_test_font("OpenSans"));
+        fonts.add(create_test_font("OpenSans-Bold"));
+        fonts.add(create_test_font("OpenSans-Italic"));
+        fonts.add(create_test_font("OpenSans-Bold-Italic"));
+        fonts
+    }
+
+    fn create_test_render_cell() -> RenderCell {
+        RenderCell {
+            x: 1,
+            y: 1,
+            value: "Hello".to_string(),
+            align: None,
+            vertical_align: None,
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+            underline: None,
+            strike_through: None,
+            font_size: None,
+            table_name: None,
+            column_header: None,
+            special: None,
+            language: None,
+            table_columns: None,
+            link_spans: Vec::new(),
+            format_spans: Vec::new(),
+        }
+    }
+
+    fn create_test_offsets() -> SheetOffsets {
+        SheetOffsets::default()
+    }
+
+    // =============================================================================
+    // URL detection tests
+    // =============================================================================
 
     #[test]
     fn test_is_potential_emoji() {
@@ -1434,11 +1523,620 @@ mod tests {
     }
 
     #[test]
+    fn test_is_naked_url_valid() {
+        assert!(is_naked_url("http://example.com"));
+        assert!(is_naked_url("https://example.com"));
+        assert!(is_naked_url("www.example.com"));
+        assert!(is_naked_url("HTTP://EXAMPLE.COM"));
+        assert!(is_naked_url("HTTPS://EXAMPLE.COM"));
+        assert!(is_naked_url("WWW.EXAMPLE.COM"));
+        assert!(is_naked_url("http://subdomain.example.com"));
+        assert!(is_naked_url("https://example.co.uk"));
+        assert!(is_naked_url("http://example.com/page"));
+        assert!(is_naked_url("https://example.com/path/to/file.html"));
+        assert!(is_naked_url("http://example.com/page?query=value"));
+    }
+
+    #[test]
+    fn test_is_naked_url_invalid() {
+        assert!(!is_naked_url(""));
+        assert!(!is_naked_url("   "));
+        assert!(!is_naked_url("example.com")); // Missing protocol/www
+        assert!(!is_naked_url("http://example")); // Missing dot
+        assert!(!is_naked_url("http://example .com")); // Space
+        assert!(!is_naked_url("http://example.com<bad"));
+        assert!(!is_naked_url("http://example.com>bad"));
+        assert!(!is_naked_url("http://example.com'bad"));
+        assert!(!is_naked_url("http://example.com\"bad"));
+        assert!(!is_naked_url("not a url"));
+    }
+
+    // =============================================================================
+    // CellLabel::new tests
+    // =============================================================================
+
+    #[test]
     fn test_cell_label_new() {
         let label = CellLabel::new("Hello".to_string(), 1, 1);
         assert_eq!(label.text, "Hello");
         assert_eq!(label.col, 1);
         assert_eq!(label.row, 1);
         assert_eq!(label.font_size, DEFAULT_FONT_SIZE);
+        assert_eq!(label.bold, false);
+        assert_eq!(label.italic, false);
+        assert_eq!(label.align, CellAlign::Left);
+        assert_eq!(label.vertical_align, CellVerticalAlign::Bottom);
+        assert_eq!(label.wrap, CellWrap::Overflow);
+    }
+
+    // =============================================================================
+    // CellLabel::from_render_cell tests
+    // =============================================================================
+
+    #[test]
+    fn test_from_render_cell_basic() {
+        let cell = create_test_render_cell();
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.text, "Hello");
+        assert_eq!(label.col, 1);
+        assert_eq!(label.row, 1);
+    }
+
+    #[test]
+    fn test_from_render_cell_special_chart() {
+        let mut cell = create_test_render_cell();
+        cell.special = Some(RenderCellSpecial::Chart);
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.text, "");
+    }
+
+    #[test]
+    fn test_from_render_cell_special_checkbox() {
+        let mut cell = create_test_render_cell();
+        cell.special = Some(RenderCellSpecial::Checkbox);
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.text, "");
+    }
+
+    #[test]
+    fn test_from_render_cell_special_spill_error() {
+        let mut cell = create_test_render_cell();
+        cell.special = Some(RenderCellSpecial::SpillError);
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.text, " #SPILL");
+    }
+
+    #[test]
+    fn test_from_render_cell_special_run_error() {
+        let mut cell = create_test_render_cell();
+        cell.special = Some(RenderCellSpecial::RunError);
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.text, " #ERROR");
+    }
+
+    #[test]
+    fn test_from_render_cell_formatting() {
+        let mut cell = create_test_render_cell();
+        cell.bold = Some(true);
+        cell.italic = Some(true);
+        cell.underline = Some(true);
+        cell.strike_through = Some(true);
+        cell.font_size = Some(16);
+        cell.text_color = Some(Rgba::rgb(255, 0, 0));
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.bold, true);
+        assert_eq!(label.italic, true);
+        assert_eq!(label.underline, true);
+        assert_eq!(label.strike_through, true);
+        assert_eq!(label.font_size, 16.0);
+        assert_eq!(label.color, [1.0, 0.0, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn test_from_render_cell_alignments() {
+        let mut cell = create_test_render_cell();
+        cell.align = Some(CellAlign::Center);
+        cell.vertical_align = Some(CellVerticalAlign::Top);
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.align, CellAlign::Center);
+        assert_eq!(label.vertical_align, CellVerticalAlign::Top);
+    }
+
+    #[test]
+    fn test_from_render_cell_table_name() {
+        let mut cell = create_test_render_cell();
+        cell.table_name = Some(true);
+        cell.language = Some(CodeCellLanguage::Python);
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.is_table_name, true);
+        assert_eq!(label.has_table_icon, true);
+        assert_eq!(label.wrap, CellWrap::Clip);
+    }
+
+    #[test]
+    fn test_from_render_cell_table_name_import() {
+        let mut cell = create_test_render_cell();
+        cell.table_name = Some(true);
+        cell.language = Some(CodeCellLanguage::Import);
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.is_table_name, true);
+        assert_eq!(label.has_table_icon, false); // Import has no icon
+        assert_eq!(label.wrap, CellWrap::Clip);
+    }
+
+    #[test]
+    fn test_from_render_cell_column_header() {
+        let mut cell = create_test_render_cell();
+        cell.column_header = Some(true);
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.wrap, CellWrap::Clip);
+    }
+
+    #[test]
+    fn test_from_render_cell_naked_url() {
+        let mut cell = create_test_render_cell();
+        cell.value = "https://example.com".to_string();
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.link_spans.len(), 1);
+        assert_eq!(label.link_spans[0].url, "https://example.com");
+        assert_eq!(label.link_spans[0].start, 0);
+    }
+
+    #[test]
+    fn test_from_render_cell_naked_url_with_existing_links() {
+        let mut cell = create_test_render_cell();
+        cell.value = "https://example.com".to_string();
+        cell.link_spans.push(RenderCellLinkSpan {
+            start: 0,
+            end: 5,
+            url: "http://other.com".to_string(),
+        });
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.link_spans.len(), 1); // Should not add naked URL if links exist
+    }
+
+    #[test]
+    fn test_from_render_cell_format_spans() {
+        let mut cell = create_test_render_cell();
+        cell.format_spans.push(RenderCellFormatSpan {
+            start: 0,
+            end: 3,
+            bold: Some(true),
+            italic: None,
+            underline: None,
+            strike_through: None,
+            text_color: Some(Rgba::rgb(255, 0, 0)),
+            link: None,
+        });
+
+        let label = CellLabel::from_render_cell(&cell);
+        assert_eq!(label.format_spans.len(), 1);
+    }
+
+    // =============================================================================
+    // update_bounds tests
+    // =============================================================================
+
+    #[test]
+    fn test_update_bounds_regular_cell() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        let offsets = create_test_offsets();
+        label.update_bounds(&offsets);
+
+        assert!(label.cell_x >= 0.0);
+        assert!(label.cell_y >= 0.0);
+        assert!(label.cell_width > 0.0);
+        assert!(label.cell_height > 0.0);
+    }
+
+    #[test]
+    fn test_update_bounds_table_name() {
+        let mut cell = create_test_render_cell();
+        cell.table_name = Some(true);
+        cell.language = Some(CodeCellLanguage::Python);
+        let mut label = CellLabel::from_render_cell(&cell);
+
+        let offsets = create_test_offsets();
+        label.update_bounds(&offsets);
+
+        // Table name should have left padding
+        assert!(label.cell_x >= TABLE_NAME_PADDING);
+    }
+
+    #[test]
+    fn test_update_bounds_table_name_with_columns() {
+        let mut cell = create_test_render_cell();
+        cell.table_name = Some(true);
+        cell.table_columns = Some(3);
+        let mut label = CellLabel::from_render_cell(&cell);
+
+        let offsets = create_test_offsets();
+        label.update_bounds(&offsets);
+
+        // Should use full table width
+        assert!(label.cell_width > 0.0);
+    }
+
+    // =============================================================================
+    // Layout tests
+    // =============================================================================
+
+    #[test]
+    fn test_layout_empty_text() {
+        let mut label = CellLabel::new(String::new(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert_eq!(label.text_width, 0.0);
+        assert_eq!(label.text_height, LINE_HEIGHT);
+        assert_eq!(label.chars.len(), 0);
+    }
+
+    #[test]
+    fn test_layout_single_line() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert!(label.text_width > 0.0);
+        assert_eq!(label.line_widths.len(), 1);
+        assert!(label.chars.len() > 0);
+    }
+
+    #[test]
+    fn test_layout_multi_line() {
+        let mut label = CellLabel::new("Hello\nWorld".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert_eq!(label.line_widths.len(), 2);
+    }
+
+    #[test]
+    fn test_layout_wrap_mode() {
+        let mut label = CellLabel::new("Hello World".to_string(), 1, 1);
+        label.wrap = CellWrap::Wrap;
+        let fonts = create_test_fonts();
+        let mut offsets = create_test_offsets();
+        // Set a narrow cell width to force wrapping
+        offsets.set_column_width(1, 50.0);
+        label.update_bounds(&offsets);
+        label.layout(&fonts);
+
+        // Should wrap if text is wider than cell
+        assert!(label.line_widths.len() >= 1);
+    }
+
+    #[test]
+    fn test_layout_alignment_left() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.align = CellAlign::Left;
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert_eq!(label.horizontal_align_offsets[0], 0.0);
+    }
+
+    #[test]
+    fn test_layout_alignment_center() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.align = CellAlign::Center;
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        // Center alignment should have offset > 0 if text is narrower than max line width
+        assert!(label.horizontal_align_offsets[0] >= 0.0);
+    }
+
+    #[test]
+    fn test_layout_alignment_right() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.align = CellAlign::Right;
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert!(label.horizontal_align_offsets[0] >= 0.0);
+    }
+
+    #[test]
+    fn test_layout_font_size_scaling() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.font_size = 20.0;
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert!(label.text_width > 0.0);
+        assert!(label.text_height > LINE_HEIGHT);
+    }
+
+    // =============================================================================
+    // Format span tests
+    // =============================================================================
+
+    #[test]
+    fn test_get_style_for_char_static() {
+        let mut spans = Vec::new();
+        spans.push(RenderCellFormatSpan {
+            start: 0,
+            end: 3,
+            bold: Some(true),
+            italic: Some(false),
+            underline: None,
+            strike_through: None,
+            text_color: None,
+            link: None,
+        });
+
+        let (bold, italic) = CellLabel::get_style_for_char_static(1, false, false, &spans);
+        assert_eq!(bold, true);
+        assert_eq!(italic, false);
+
+        let (bold, italic) = CellLabel::get_style_for_char_static(5, false, false, &spans);
+        assert_eq!(bold, false); // Outside span
+        assert_eq!(italic, false);
+    }
+
+    #[test]
+    fn test_get_color_for_char_static() {
+        let mut spans = Vec::new();
+        spans.push(RenderCellFormatSpan {
+            start: 0,
+            end: 3,
+            bold: None,
+            italic: None,
+            underline: None,
+            strike_through: None,
+            text_color: Some(Rgba::rgb(255, 0, 0)),
+            link: None,
+        });
+
+        let color = CellLabel::get_color_for_char_static(1, [0.0, 0.0, 0.0, 1.0], &spans);
+        assert_eq!(color, [1.0, 0.0, 0.0, 1.0]);
+
+        let color = CellLabel::get_color_for_char_static(5, [0.0, 0.0, 0.0, 1.0], &spans);
+        assert_eq!(color, [0.0, 0.0, 0.0, 1.0]); // Outside span
+    }
+
+    // =============================================================================
+    // Overflow and clipping tests
+    // =============================================================================
+
+    #[test]
+    fn test_overflow_left() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.align = CellAlign::Right;
+        let fonts = create_test_fonts();
+        let mut offsets = create_test_offsets();
+        offsets.set_column_width(1, 10.0); // Narrow cell
+        label.update_bounds(&offsets);
+        label.layout(&fonts);
+
+        // May have overflow if text is wider than cell
+        assert!(label.overflow_left() >= 0.0);
+    }
+
+    #[test]
+    fn test_overflow_right() {
+        let mut label = CellLabel::new("Hello World".to_string(), 1, 1);
+        label.align = CellAlign::Left;
+        let fonts = create_test_fonts();
+        let mut offsets = create_test_offsets();
+        offsets.set_column_width(1, 10.0); // Narrow cell
+        label.update_bounds(&offsets);
+        label.layout(&fonts);
+
+        // May have overflow if text is wider than cell
+        assert!(label.overflow_right() >= 0.0);
+    }
+
+    #[test]
+    fn test_set_clip_left() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        assert_eq!(label.clip_left(), None);
+        label.set_clip_left(10.0);
+        assert_eq!(label.clip_left(), Some(10.0));
+        assert_eq!(label.effective_clip_left(), 10.0);
+    }
+
+    #[test]
+    fn test_set_clip_right() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        assert_eq!(label.clip_right(), None);
+        label.set_clip_right(100.0);
+        assert_eq!(label.clip_right(), Some(100.0));
+    }
+
+    #[test]
+    fn test_clear_clip_left() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.set_clip_left(10.0);
+        label.clear_clip_left();
+        assert_eq!(label.clip_left(), None);
+    }
+
+    #[test]
+    fn test_clear_clip_right() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.set_clip_right(100.0);
+        label.clear_clip_right();
+        assert_eq!(label.clip_right(), None);
+    }
+
+    #[test]
+    fn test_effective_clip_boundaries() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        let offsets = create_test_offsets();
+        label.update_bounds(&offsets);
+
+        // Without clips, should use cell boundaries
+        assert_eq!(label.effective_clip_left(), label.cell_x);
+        assert_eq!(
+            label.effective_clip_right(),
+            label.cell_x + label.cell_width
+        );
+
+        // With clips, should use clip boundaries
+        label.set_clip_left(50.0);
+        label.set_clip_right(150.0);
+        assert_eq!(label.effective_clip_left(), 50.0);
+        assert_eq!(label.effective_clip_right(), 150.0);
+    }
+
+    // =============================================================================
+    // Accessor tests
+    // =============================================================================
+
+    #[test]
+    fn test_accessors() {
+        let label = CellLabel::new("Hello".to_string(), 2, 3);
+        assert_eq!(label.col(), 2);
+        assert_eq!(label.row(), 3);
+    }
+
+    #[test]
+    fn test_text_position_accessors() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        assert!(label.text_left() >= 0.0);
+        assert!(label.text_right() >= label.text_left());
+        assert!(label.cell_left() >= 0.0);
+        assert!(label.cell_right() >= label.cell_left());
+    }
+
+    // =============================================================================
+    // Emoji tests
+    // =============================================================================
+
+    struct TestEmojiLookup {
+        emojis: Vec<String>,
+    }
+
+    impl EmojiLookup for TestEmojiLookup {
+        fn is_potential_emoji(&self, c: char) -> bool {
+            is_potential_emoji(c)
+        }
+
+        fn has_emoji(&self, emoji: &str) -> bool {
+            self.emojis.contains(&emoji.to_string())
+        }
+    }
+
+    #[test]
+    fn test_has_emojis() {
+        let label = CellLabel::new("Hello".to_string(), 1, 1);
+        assert_eq!(label.has_emojis(), false);
+
+        let mut label = CellLabel::new("Hello 😀".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        let lookup = TestEmojiLookup {
+            emojis: vec!["😀".to_string()],
+        };
+        label.update_bounds(&create_test_offsets());
+        label.layout_with_emojis(&fonts, Some(&lookup));
+
+        assert_eq!(label.has_emojis(), true);
+    }
+
+    #[test]
+    fn test_get_emoji_strings() {
+        let mut label = CellLabel::new("Hello 😀 World 🎉".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        let lookup = TestEmojiLookup {
+            emojis: vec!["😀".to_string(), "🎉".to_string()],
+        };
+        label.update_bounds(&create_test_offsets());
+        label.layout_with_emojis(&fonts, Some(&lookup));
+
+        let emoji_strings = label.get_emoji_strings();
+        assert!(emoji_strings.len() >= 1);
+    }
+
+    // =============================================================================
+    // Mesh building tests
+    // =============================================================================
+
+    #[test]
+    fn test_get_meshes_empty() {
+        let mut label = CellLabel::new(String::new(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        let meshes = label.get_meshes(&fonts);
+        assert_eq!(meshes.len(), 0);
+    }
+
+    #[test]
+    fn test_get_meshes_with_text() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        let meshes = label.get_meshes(&fonts);
+        assert!(meshes.len() > 0);
+    }
+
+    #[test]
+    fn test_get_horizontal_lines_underline() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.underline = true;
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        let lines = label.get_horizontal_lines(&fonts);
+        assert!(lines.len() > 0);
+    }
+
+    #[test]
+    fn test_get_horizontal_lines_strikethrough() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        label.strike_through = true;
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        let lines = label.get_horizontal_lines(&fonts);
+        assert!(lines.len() > 0);
+    }
+
+    #[test]
+    fn test_get_text_buffers() {
+        let mut label = CellLabel::new("Hello".to_string(), 1, 1);
+        let fonts = create_test_fonts();
+        label.update_bounds(&create_test_offsets());
+        label.layout(&fonts);
+
+        let _buffers = label.get_text_buffers(&fonts);
+        // Should not panic
+    }
+
+    // =============================================================================
+    // NoEmoji tests
+    // =============================================================================
+
+    #[test]
+    fn test_no_emoji_lookup() {
+        let no_emoji = NoEmoji;
+        assert_eq!(no_emoji.is_potential_emoji('😀'), false);
+        assert_eq!(no_emoji.has_emoji("😀"), false);
     }
 }

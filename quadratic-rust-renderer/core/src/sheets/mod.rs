@@ -21,10 +21,7 @@ pub use sheet::Sheet;
 pub use sheets::Sheets;
 
 // Re-export commonly used hash types
-pub use hash::{
-    get_hash_coords, hash_key, VisibleHashBounds, HASH_HEIGHT, HASH_PADDING, HASH_WIDTH,
-    SPRITE_SCALE_THRESHOLD,
-};
+pub use hash::{get_hash_coords, hash_key, VisibleHashBounds};
 
 // Re-export TextHash from text module
 pub use text::TextHash;

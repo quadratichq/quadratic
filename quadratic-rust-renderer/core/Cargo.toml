@@ -39,3 +39,6 @@ bytemuck = { version = "1.16", features = ["derive"] }
 log = "0.4"
 anyhow = "1.0"
 thiserror = "2.0"
+
+[dev-dependencies]
+pollster = "0.4"
