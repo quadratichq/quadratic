@@ -181,6 +181,9 @@ export function useHyperlinkPopup() {
   // Handle insert link event
   useEffect(() => {
     const handleInsertLink = async () => {
+      // Don't handle insertLink when inline editor is open - use showInlineHyperlinkInput instead
+      if (inlineEditorHandler.isOpen()) return;
+
       const sheet = sheets.sheet;
       const cursor = sheet.cursor;
       if (cursor.isMultiCursor()) return;
@@ -232,7 +235,7 @@ export function useHyperlinkPopup() {
 
   // Handle inline hyperlink input (Ctrl+K in inline editor)
   useEffect(() => {
-    const handleShowInlineHyperlinkInput = (data: { selectedText: string }) => {
+    const handleShowInlineHyperlinkInput = (data: { selectedText: string; existingUrl?: string }) => {
       // Get the inline editor's position to use for the popup
       const location = inlineEditorHandler.location;
       if (!location) return;
@@ -241,18 +244,27 @@ export function useHyperlinkPopup() {
       const offsets = sheet.getCellOffsets(location.x, location.y);
       const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
 
+      // If the selection precisely matches an existing hyperlink, pre-populate URL and text
+      // Otherwise, leave URL blank and use the selected text (plain text)
+      const urlValue = data.existingUrl ?? '';
+      const textValue = data.selectedText;
+
+      // Set mode ref synchronously to prevent inlineEditorCursorOnHyperlink from overwriting values
+      // (The useEffect that syncs mode to modeRef runs after state updates, creating a race condition)
+      visibilityRef.current.setModeRef('edit');
+
       setLinkData({
         x: location.x,
         y: location.y,
-        url: '',
+        url: urlValue,
         rect,
         source: 'inline',
         isFormula: false,
         hasSelection: !!data.selectedText,
       });
       setMode('edit');
-      setEditUrl('');
-      setEditText(data.selectedText);
+      setEditUrl(urlValue);
+      setEditText(textValue);
     };
 
     events.on('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
