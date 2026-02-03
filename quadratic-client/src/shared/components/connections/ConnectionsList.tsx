@@ -4,7 +4,11 @@ import { EmptyState } from '@/shared/components/EmptyState';
 import { CloseIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
-import type { ConnectionsListConnection, NavigateToView } from '@/shared/components/connections/Connections';
+import type {
+  ConnectionsListConnection,
+  NavigateToView,
+  OnConnectionSelectedCallback,
+} from '@/shared/components/connections/Connections';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { ROUTES } from '@/shared/constants/routes';
 import { timeAgo } from '@/shared/utils/timeAgo';
@@ -24,6 +28,8 @@ type Props = {
   handleNavigateToEditView: NavigateToView;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
   handleNavigateToNewView: () => void;
+  /** Called when an existing connection is selected from the list (in-app only) */
+  onConnectionSelected?: OnConnectionSelectedCallback;
 };
 
 export const ConnectionsList = ({
@@ -33,6 +39,7 @@ export const ConnectionsList = ({
   handleNavigateToNewView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
+  onConnectionSelected,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
 
@@ -82,6 +89,7 @@ export const ConnectionsList = ({
             teamUuid={teamUuid}
             handleNavigateToEditView={handleNavigateToEditView}
             handleShowConnectionDemo={handleShowConnectionDemo}
+            onConnectionSelected={onConnectionSelected}
           />
         ) : (
           <EmptyState
@@ -118,12 +126,14 @@ function ListItems({
   handleShowConnectionDemo,
   items,
   teamUuid,
+  onConnectionSelected,
 }: {
   filterQuery: string;
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
   teamUuid: string;
+  onConnectionSelected?: Props['onConnectionSelected'];
 }) {
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
 
@@ -152,10 +162,14 @@ function ListItems({
               )}
             >
               {isApp ? (
-                // In-app: clickable row that opens edit view
+                // In-app: clickable row - if onConnectionSelected is provided, use it; otherwise edit view
                 <button
                   onClick={() => {
-                    handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                    if (onConnectionSelected) {
+                      onConnectionSelected(uuid, type, name);
+                    } else {
+                      handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                    }
                   }}
                   disabled={!isNavigable}
                   key={uuid}

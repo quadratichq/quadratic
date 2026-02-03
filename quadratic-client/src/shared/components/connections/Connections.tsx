@@ -41,6 +41,12 @@ import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
 };
+export type OnConnectionSelectedCallback = (
+  connectionUuid: string,
+  connectionType: ConnectionType,
+  connectionName: string
+) => void;
+
 type Props = {
   teamUuid: string;
   sshPublicKey: string;
@@ -53,6 +59,8 @@ type Props = {
   initialView?: 'new' | 'list';
   /** Called when a new connection is created successfully */
   onConnectionCreated?: OnConnectionCreatedCallback;
+  /** Called when an existing connection is selected from the list (in-app only) */
+  onConnectionSelected?: OnConnectionSelectedCallback;
 };
 
 export type NavigateToListView = () => void;
@@ -77,6 +85,7 @@ export const Connections = ({
   hideSidebar,
   initialView,
   onConnectionCreated,
+  onConnectionSelected,
 }: Props) => {
   const submit = useSubmit();
 
@@ -322,6 +331,7 @@ export const Connections = ({
                 handleNavigateToNewView={handleNavigateToNewView}
                 handleNavigateToEditView={handleNavigateToEditView}
                 handleShowConnectionDemo={handleShowConnectionDemo}
+                onConnectionSelected={onConnectionSelected}
               />
             )}
           </div>

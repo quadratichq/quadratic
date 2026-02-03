@@ -1,8 +1,8 @@
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { Connections } from '@/shared/components/connections/Connections';
+import { Connections, type OnConnectionSelectedCallback } from '@/shared/components/connections/Connections';
 import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
@@ -12,13 +12,17 @@ import { useRecoilState, useSetRecoilState } from 'recoil';
 export function ConnectionsMenu() {
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
   const {
     team: { uuid: teamUuid, sshPublicKey },
   } = useFileRouteLoaderData();
   const { connections, staticIps, isLoading } = useConnectionsFetcher();
 
-  const initialView = showConnectionsMenu === 'new' ? 'new' : 'list';
+  // Show 'new' view if explicitly requested, or if user has no real connections (only demo or none)
+  const hasOnlyDemoConnections =
+    !isLoading && (connections.length === 0 || connections.every((c) => c.isDemo === true));
+  const initialView = showConnectionsMenu === 'new' || hasOnlyDemoConnections ? 'new' : 'list';
 
   const onConnectionCreated: OnConnectionCreatedCallback = useCallback(
     (connectionUuid, connectionType, connectionName) => {
@@ -32,6 +36,21 @@ export function ConnectionsMenu() {
       events.emit('aiAnalystNewConnectionPrompt', connectionUuid, connectionType, connectionName);
     },
     [setShowConnectionsMenu, setShowAIAnalyst]
+  );
+
+  const onConnectionSelected: OnConnectionSelectedCallback = useCallback(
+    (connectionUuid, connectionType, connectionName) => {
+      // Close the connections dialog
+      setShowConnectionsMenu(false);
+
+      // Open the AI analyst panel with schema viewer
+      setShowAIAnalyst(true);
+      setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+
+      // Emit event to set the connection context in AI chat
+      events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
+    },
+    [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
 
   return (
@@ -56,6 +75,7 @@ export function ConnectionsMenu() {
             staticIps={staticIps}
             initialView={initialView}
             onConnectionCreated={onConnectionCreated}
+            onConnectionSelected={onConnectionSelected}
           />
         )}
       </DialogContent>
