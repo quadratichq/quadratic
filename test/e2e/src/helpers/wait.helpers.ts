@@ -27,9 +27,9 @@ export const waitForAppReady = async (page: Page) => {
  * Wait for the canvas to be visible and ready for interaction.
  * Use this when entering a spreadsheet file.
  */
-export const waitForCanvasReady = async (page: Page) => {
+export const waitForCanvasReady = async (page: Page, timeout = 2 * 60 * 1000) => {
   await waitForAppReady(page);
-  await page.locator('#QuadraticCanvasID').waitFor({ state: 'visible', timeout: 60 * 1000 });
+  await page.locator('#QuadraticCanvasID').waitFor({ state: 'visible', timeout });
 };
 
 /**

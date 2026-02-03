@@ -7,7 +7,7 @@
 use glam::{Mat4, Vec2};
 
 use super::bounds::{VisibleBounds, VisibleHashBounds};
-use crate::types::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
+use crate::constants::{HASH_HEIGHT, HASH_PADDING, HASH_WIDTH};
 
 /// Represents the visible region of the infinite grid
 ///
