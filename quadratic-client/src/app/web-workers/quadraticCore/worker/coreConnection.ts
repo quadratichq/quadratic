@@ -131,31 +131,36 @@ class CoreConnection {
         frequency: params.frequency || 'daily',
       };
 
-      if (core.teamUuid) {
-        const response = await fetch(url, {
-          signal,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwt}`,
-            'X-Team-Id': core.teamUuid,
-          },
-          body: JSON.stringify(body),
-        });
+      if (!core.teamUuid) {
+        std_err = 'Team UUID not available';
+        core.connectionComplete(transactionId, buffer, std_out, std_err, extra);
+        this.lastTransactionId = undefined;
+        return;
+      }
 
-        if (!response.ok) {
-          std_err = (await response.text()) + `\n\nFormula: ${code}`;
-          console.warn(std_err);
-        } else {
-          // StockHistory returns JSON, convert to bytes for the connection complete callback
-          const jsonData = await response.json();
-          const jsonString = JSON.stringify(jsonData);
-          const encoder = new TextEncoder();
-          buffer = encoder.encode(jsonString).buffer;
+      const response = await fetch(url, {
+        signal,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`,
+          'X-Team-Id': core.teamUuid,
+        },
+        body: JSON.stringify(body),
+      });
 
-          const headers = response.headers;
-          extra = headers.get('elapsed-total-ms') ? ` in ${headers.get('elapsed-total-ms')}ms` : '';
-        }
+      if (!response.ok) {
+        std_err = (await response.text()) + `\n\nFormula: ${code}`;
+        console.warn(std_err);
+      } else {
+        // StockHistory returns JSON, convert to bytes for the connection complete callback
+        const jsonData = await response.json();
+        const jsonString = JSON.stringify(jsonData);
+        const encoder = new TextEncoder();
+        buffer = encoder.encode(jsonString).buffer;
+
+        const headers = response.headers;
+        extra = headers.get('elapsed-total-ms') ? ` in ${headers.get('elapsed-total-ms')}ms` : '';
       }
 
       // Send the JSON bytes to core (it will parse as JSON, not Parquet)

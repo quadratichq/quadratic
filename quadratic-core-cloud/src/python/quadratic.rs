@@ -6,11 +6,19 @@ use quadratic_core::controller::execution::run_code::get_cells::{
 };
 use std::cell::RefCell;
 use std::ffi::CString;
+use std::sync::LazyLock;
 
 use crate::connection::fetch_stock_prices;
 use crate::error::Result;
 
 static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
+
+/// Shared tokio runtime for async operations in sync Python callbacks.
+/// This avoids the expense of creating a new runtime per call and prevents
+/// nested runtime panics.
+static TOKIO_RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+    tokio::runtime::Runtime::new().expect("Failed to create tokio runtime")
+});
 
 /// Extract an optional string argument from positional args or kwargs
 fn extract_optional_arg(
@@ -160,12 +168,8 @@ pub(crate) fn create_stock_prices_function(
             let team_id = team_id.borrow().clone();
             let url = connection_url.borrow().clone();
 
-            // Use tokio runtime to call async function
-            let result = tokio::runtime::Runtime::new()
-                .map_err(|e| {
-                    PyErr::new::<PyException, _>(format!("Failed to create runtime: {}", e))
-                })?
-                .block_on(fetch_stock_prices(
+            // Use shared tokio runtime to call async function
+            let result = TOKIO_RUNTIME.block_on(fetch_stock_prices(
                     &token,
                     &team_id,
                     &url,
