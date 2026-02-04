@@ -7,10 +7,12 @@ import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractio
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
+import type { z } from 'zod';
 
 export type EmptyChatPromptSuggestions = AIToolsArgs[AITool.EmptyChatPromptSuggestions]['prompt_suggestions'];
 
@@ -172,7 +174,7 @@ ${
 
 The four categories are:
 1. enrich - Add derived columns, combine fields, look up related data
-2. clean - Fix formatting, remove duplicates, standardize values  
+2. clean - Fix formatting, remove duplicates, standardize values
 3. visualize - Create charts and graphs
 4. analyze - Calculate statistics, find patterns, derive insights
 
