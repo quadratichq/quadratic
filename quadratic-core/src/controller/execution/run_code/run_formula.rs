@@ -36,25 +36,25 @@ impl GridController {
             Ok(parsed) => {
                 // Check if this is a STOCKHISTORY call at the AST level
                 // This properly handles cell references and expressions in arguments
-                if let AstNodeContents::FunctionCall { func, args } = &parsed.ast.inner {
-                    if func.inner.eq_ignore_ascii_case("STOCKHISTORY") {
-                        // Evaluate arguments to resolve cell refs, expressions, etc.
-                        if let Some(params) =
-                            StockHistoryParams::from_evaluated_args(args, &mut eval_ctx)
-                        {
-                            // Route to async connection infrastructure
-                            self.run_connection(
-                                transaction,
-                                sheet_pos,
-                                code.clone(),
-                                crate::grid::ConnectionKind::StockHistory,
-                                params.to_query_json(),
-                            );
-                            return;
-                        }
-                        // If params extraction fails, fall through to normal eval
-                        // which will produce a proper error message
+                if let AstNodeContents::FunctionCall { func, args } = &parsed.ast.inner
+                    && func.inner.eq_ignore_ascii_case("STOCKHISTORY")
+                {
+                    // Evaluate arguments to resolve cell refs, expressions, etc.
+                    if let Some(params) =
+                        StockHistoryParams::from_evaluated_args(args, &mut eval_ctx)
+                    {
+                        // Route to async connection infrastructure
+                        self.run_connection(
+                            transaction,
+                            sheet_pos,
+                            code.clone(),
+                            crate::grid::ConnectionKind::StockHistory,
+                            params.to_query_json(),
+                        );
+                        return;
                     }
+                    // If params extraction fails, fall through to normal eval
+                    // which will produce a proper error message
                 }
 
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
