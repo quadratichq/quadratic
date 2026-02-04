@@ -314,6 +314,12 @@ impl GridController {
             transaction.add_borders(sheet_id);
         }
 
+        // Changing default column size affects all columns including thumbnail area
+        self.thumbnail_dirty_sheet_rect(
+            transaction,
+            SheetRect::single_pos((1, 1).into(), sheet_id),
+        );
+
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);
 
@@ -368,6 +374,12 @@ impl GridController {
             transaction.add_borders(sheet_id);
         }
 
+        // Changing default row size affects all rows including thumbnail area
+        self.thumbnail_dirty_sheet_rect(
+            transaction,
+            SheetRect::single_pos((1, 1).into(), sheet_id),
+        );
+
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);
 
@@ -400,7 +412,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::js_types::JsColumnWidth,
-        wasm_bindings::js::{clear_js_calls, expect_js_offsets},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_offsets},
     };
 
     use crate::test_util::*;
@@ -473,5 +485,85 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(2), 200.0);
         assert_eq!(sheet.offsets.column_width(4), 400.0);
+    }
+
+    #[test]
+    fn test_thumbnail_dirty_resize_column_in_range() {
+        clear_js_calls();
+
+        // Resizing a column within thumbnail range should mark thumbnail as dirty
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Get thumbnail bounds
+        let thumbnail = gc.sheet(sheet_id).offsets.thumbnail();
+
+        // Resize a column within the thumbnail range (column 1 is always in range)
+        let column = 1;
+        assert!(column <= thumbnail.max.x, "Column should be in thumbnail range");
+
+        gc.commit_single_resize(sheet_id, Some(column as i32), None, 150.0, None, false);
+
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
+    }
+
+    #[test]
+    fn test_thumbnail_dirty_resize_row_in_range() {
+        clear_js_calls();
+
+        // Resizing a row within thumbnail range should mark thumbnail as dirty
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Get thumbnail bounds
+        let thumbnail = gc.sheet(sheet_id).offsets.thumbnail();
+
+        // Resize a row within the thumbnail range (row 1 is always in range)
+        let row = 1;
+        assert!(row <= thumbnail.max.y, "Row should be in thumbnail range");
+
+        gc.commit_single_resize(sheet_id, None, Some(row as i32), 30.0, None, false);
+
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
+    }
+
+    #[test]
+    fn test_thumbnail_dirty_default_column_size() {
+        clear_js_calls();
+
+        // Changing default column size should always mark thumbnail as dirty
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Change default column width (select all + resize)
+        gc.resize_all_columns(sheet_id, 150.0, None, false);
+
+        // Verify the default was changed
+        let (default_width, _) = gc.sheet(sheet_id).offsets.defaults();
+        assert_eq!(default_width, 150.0);
+
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
+    }
+
+    #[test]
+    fn test_thumbnail_dirty_default_row_size() {
+        clear_js_calls();
+
+        // Changing default row size should always mark thumbnail as dirty
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Change default row height (select all + resize)
+        gc.resize_all_rows(sheet_id, 30.0, None, false);
+
+        // Verify the default was changed
+        let (_, default_height) = gc.sheet(sheet_id).offsets.defaults();
+        assert_eq!(default_height, 30.0);
+
+        // Verify that jsGenerateThumbnail was called, indicating thumbnail was marked dirty
+        expect_js_call("jsGenerateThumbnail", "".to_string(), true);
     }
 }

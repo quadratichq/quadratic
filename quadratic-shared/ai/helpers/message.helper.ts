@@ -10,7 +10,7 @@ import type {
   ImageContent,
   ImportFilesToGridContent,
   InternalMessage,
-  OpenAIReasoningContent,
+  OpenAIReasoningContentType,
   PdfFileContent,
   SystemMessage,
   TextContent,
@@ -61,7 +61,17 @@ const getPromptMessagesWithoutPDF = (messages: ChatMessage[]): ChatMessage[] => 
 export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
   const messagesWithoutPDF = getPromptMessagesWithoutPDF(messages);
   const messagesWithoutInternal = messagesWithoutPDF.filter((message) => !isInternalMessage(message));
-  const messagesWithUserContext = messagesWithoutInternal.map((message) => {
+
+  // Filter out internal tool calls (e.g., from subagents) from assistant messages
+  const messagesWithoutInternalToolCalls = messagesWithoutInternal.map((message) => {
+    if (message.role !== 'assistant' || message.contextType !== 'userPrompt' || !message.toolCalls) {
+      return message;
+    }
+    const filteredToolCalls = message.toolCalls.filter((tc) => !tc.internal);
+    return { ...message, toolCalls: filteredToolCalls };
+  });
+
+  const messagesWithUserContext = messagesWithoutInternalToolCalls.map((message) => {
     if (!isUserPromptMessage(message)) {
       return { ...message };
     }
@@ -72,7 +82,7 @@ export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
         createTextContent(`NOTE: This is an internal message for context. Do not quote it in your response.\n\n
 User has selected a connection and want to focus on it:
 
-Connection Details: 
+Connection Details:
 type: ${message.context.connection.type}
 id: ${message.context.connection.id}
 name: ${message.context.connection.name}
@@ -85,7 +95,7 @@ name: ${message.context.connection.name}
       userMessage.content = [
         createTextContent(`NOTE: This is an internal message for context. Do not quote it in your response.\n\n
 User attached files with this prompt and they were imported as:
-${message.context.importFiles.prompt} 
+${message.context.importFiles.prompt}
 `),
         ...userMessage.content,
       ];
@@ -204,7 +214,7 @@ export const isContentThinking = (
 
 export const isContentOpenAIReasoning = (
   content: Content[number] | AIResponseContent[number]
-): content is OpenAIReasoningContent => {
+): content is OpenAIReasoningContentType => {
   return ['openai_reasoning_summary', 'openai_reasoning_content'].includes(content.type);
 };
 

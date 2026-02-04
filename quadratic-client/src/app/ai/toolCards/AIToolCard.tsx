@@ -9,6 +9,7 @@ import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ContactUs } from '@/app/ai/toolCards/ContactUs';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
+import { DelegateToSubagent } from '@/app/ai/toolCards/DelegateToSubagent';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
 import { DeleteColumns } from '@/app/ai/toolCards/DeleteColumns';
 import { DeleteRows } from '@/app/ai/toolCards/DeleteRows';
@@ -16,12 +17,14 @@ import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetCodeCellValue } from '@/app/ai/toolCards/GetCodeCellValue';
+import { GetConditionalFormats } from '@/app/ai/toolCards/GetConditionalFormats';
 import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { GetValidations } from '@/app/ai/toolCards/GetValidations';
 import { HasCellData } from '@/app/ai/toolCards/HasCellData';
 import { InsertColumns } from '@/app/ai/toolCards/InsertColumns';
 import { InsertRows } from '@/app/ai/toolCards/InsertRows';
+import { MergeCells } from '@/app/ai/toolCards/MergeCells';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -34,6 +37,8 @@ import { ResizeRows } from '@/app/ai/toolCards/ResizeRows';
 import { SetBorders } from '@/app/ai/toolCards/SetBorders';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
+import { SetDefaultColumnWidth } from '@/app/ai/toolCards/SetDefaultColumnWidth';
+import { SetDefaultRowHeight } from '@/app/ai/toolCards/SetDefaultRowHeight';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
 import { SetSQLCodeCellValue } from '@/app/ai/toolCards/SetSQLCodeCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
@@ -41,9 +46,12 @@ import { TableColumnSettings } from '@/app/ai/toolCards/TableColumnSettings';
 import { TableMeta } from '@/app/ai/toolCards/TableMeta';
 import { TextSearch } from '@/app/ai/toolCards/TextSearch';
 import { Undo } from '@/app/ai/toolCards/Undo';
+import { UnmergeCells } from '@/app/ai/toolCards/UnmergeCells';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
+import { UpdateConditionalFormats } from '@/app/ai/toolCards/UpdateConditionalFormats';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { cn } from '@/shared/shadcn/utils';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
@@ -57,6 +65,9 @@ type AIToolCardProps = {
 };
 
 export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIToolCardProps) => {
+  const { debugFlags } = useDebugFlags();
+  const showSubagent = debugFlags.getFlag('debugShowAISubagent');
+
   if (!Object.values(AITool).includes(toolCall.name as AITool)) {
     return null;
   }
@@ -125,8 +136,16 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <ResizeColumns toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ResizeRows:
       return <ResizeRows toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.SetDefaultColumnWidth:
+      return <SetDefaultColumnWidth toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.SetDefaultRowHeight:
+      return <SetDefaultRowHeight toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetBorders:
       return <SetBorders toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
+    case AITool.MergeCells:
+      return <MergeCells toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.UnmergeCells:
+      return <UnmergeCells toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.InsertColumns:
       return <InsertColumns toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.InsertRows:
@@ -155,12 +174,22 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetConditionalFormats:
+      return <GetConditionalFormats toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.UpdateConditionalFormats:
+      return <UpdateConditionalFormats toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.Undo:
       return <Undo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.Redo:
       return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ContactUs:
       return <ContactUs toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.DelegateToSubagent:
+      // Only show subagent tool card when debug flag is enabled
+      if (!showSubagent) {
+        return null;
+      }
+      return <DelegateToSubagent toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

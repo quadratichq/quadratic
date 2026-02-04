@@ -77,10 +77,12 @@ export class Javascript {
     code: codeRun.code,
   });
 
-  private coreJavascriptToCodeRun = (coreJavascriptRun: CoreJavascriptRun) => ({
+  private coreJavascriptToCodeRun = (coreJavascriptRun: CoreJavascriptRun): CodeRun => ({
     transactionId: coreJavascriptRun.transactionId,
     sheetPos: { x: coreJavascriptRun.x, y: coreJavascriptRun.y, sheetId: coreJavascriptRun.sheetId },
     code: coreJavascriptRun.code,
+    chartPixelWidth: 0,
+    chartPixelHeight: 0,
   });
 
   private next = (): Promise<void> | undefined => {

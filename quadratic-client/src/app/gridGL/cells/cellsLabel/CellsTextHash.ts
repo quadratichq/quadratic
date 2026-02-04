@@ -12,6 +12,7 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
+import { CellsCodeOutlines } from '@/app/gridGL/cells/cellsLabel/CellsCodeOutlines';
 import { CellsDrawRects } from '@/app/gridGL/cells/cellsLabel/CellsDrawRects';
 import { CellsTextHashSpecial } from '@/app/gridGL/cells/cellsLabel/CellsTextHashSpecial';
 import { CellsTextHashValidations } from '@/app/gridGL/cells/cellsLabel/CellsTextHashValidations';
@@ -62,6 +63,9 @@ export class CellsTextHash extends Container {
   newDrawRects: DrawRects[];
   drawRects: CellsDrawRects;
 
+  newCodeOutlines: { x: number; y: number; width: number; height: number }[];
+  codeOutlines: CellsCodeOutlines;
+
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
     this.sheetId = sheetId;
@@ -80,6 +84,9 @@ export class CellsTextHash extends Container {
     this.newDrawRects = [];
     this.drawRects = this.addChild(new CellsDrawRects());
 
+    this.newCodeOutlines = [];
+    this.codeOutlines = this.addChild(new CellsCodeOutlines());
+
     // we track the bounds of both the text and validations
     this.bounds = new Bounds();
     this.updateHashBounds();
@@ -89,6 +96,7 @@ export class CellsTextHash extends Container {
     this.entries.removeChildren();
     this.special.clear();
     this.drawRects.clear();
+    this.codeOutlines.clear();
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -105,6 +113,8 @@ export class CellsTextHash extends Container {
     this.special.update(special);
     this.drawRects.update(this.newDrawRects);
     this.newDrawRects = [];
+    this.codeOutlines.update(this.newCodeOutlines);
+    this.newCodeOutlines = [];
   }
 
   updateHashBounds() {

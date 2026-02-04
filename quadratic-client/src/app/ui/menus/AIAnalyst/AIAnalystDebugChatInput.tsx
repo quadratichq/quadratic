@@ -1,10 +1,10 @@
-import { aiAnalystCurrentChatAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { currentChatAtom, loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { useAtom, useAtomValue } from 'jotai';
 import { getMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { ChatMessagesSchema } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIAnalystDebugChatInput = memo(() => {
   const { debug, debugFlags } = useDebugFlags();
@@ -12,8 +12,8 @@ export const AIAnalystDebugChatInput = memo(() => {
     () => debugFlags.getFlag('debugAIAnalystChatStringInput'),
     [debugFlags]
   );
-  const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
+  const loading = useAtomValue(loadingAtom);
+  const [currentChat, setCurrentChat] = useAtom(currentChatAtom);
   const [error, setError] = useState<string | null>(null);
 
   const chatString = useMemo(
@@ -27,17 +27,17 @@ export const AIAnalystDebugChatInput = memo(() => {
         setError(null);
         const newValue = e.target.value.trim();
         if (!newValue) {
-          setCurrentChat((prev) => ({ id: '', name: '', lastUpdated: Date.now(), messages: [] }));
+          setCurrentChat({ id: '', name: '', lastUpdated: Date.now(), messages: [] });
           return;
         }
 
         const parsedMessages = JSON.parse(newValue);
         const messages = ChatMessagesSchema.parse(parsedMessages);
-        setCurrentChat((prev) => ({ id: '', name: '', lastUpdated: Date.now(), messages }));
+        setCurrentChat({ id: '', name: '', lastUpdated: Date.now(), messages });
       } catch (error) {
         console.error(error);
         setError(`Invalid chat string: ${error}`);
-        setCurrentChat((prev) => ({ id: '', name: '', lastUpdated: Date.now(), messages: [] }));
+        setCurrentChat({ id: '', name: '', lastUpdated: Date.now(), messages: [] });
       }
     },
     [setCurrentChat]

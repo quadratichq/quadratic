@@ -3,12 +3,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { FormatPaintIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
+type SetTextFormatsResponse = AIToolsArgs[AITool.SetTextFormats];
 type FormatEntry = SetTextFormatsResponse['formats'][number];
 
 interface FormatItem {
@@ -119,7 +119,7 @@ export const SetTextFormats = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.SetTextFormats].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.SetTextFormats].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[SetTextFormats] Failed to parse args: ', error);

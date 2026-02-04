@@ -1,0 +1,9 @@
+---
+globs: **/*.rs
+alwaysApply: true
+---
+
+Rust Testing Rules
+
+- Do not write tests that pass but should fail. If a test should fail, it should stay failing until it is properly fixed.
+- If you are running more than 10 tests in quadratic-core, then run the entire test suite, as the speed difference is negligible.

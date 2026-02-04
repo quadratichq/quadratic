@@ -34,7 +34,15 @@ declare var self: WorkerGlobalScope &
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
-    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (
+      transactionId: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
+      chartPixelWidth: number,
+      chartPixelHeight: number
+    ) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
@@ -49,6 +57,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendSheetConditionalFormats: (sheetId: string, conditionalFormats: Uint8Array) => void;
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     sendMultiplayerSynced: () => void;
@@ -58,6 +67,8 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
+    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
   };
 
@@ -163,8 +174,16 @@ export const jsTransactionEnd = (transaction_id: string, transaction_name: strin
   self.sendTransactionEndRender(transaction_id, transactionName);
 };
 
-export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
-  self.sendRunPython(transactionId, x, y, sheetId, code);
+export const jsRunPython = (
+  transactionId: string,
+  x: number,
+  y: number,
+  sheetId: string,
+  code: string,
+  chartPixelWidth: number,
+  chartPixelHeight: number
+) => {
+  self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth, chartPixelHeight);
 };
 
 export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
@@ -197,6 +216,10 @@ export const jsSendImage = (sheetId: string, x: number, y: number, image?: strin
 
 export const jsSheetValidations = (sheetId: string, sheetValidations: Uint8Array) => {
   self.sendSheetValidations(sheetId, sheetValidations);
+};
+
+export const jsSheetConditionalFormats = (sheetId: string, conditionalFormats: Uint8Array) => {
+  self.sendSheetConditionalFormats(sheetId, conditionalFormats);
 };
 
 export const jsValidationWarnings = (warnings: Uint8Array) => {
@@ -245,4 +268,10 @@ export const jsCodeRunningState = (transactionId: string, codeOperations: string
 
 export const jsTimestamp = (): bigint => {
   return BigInt(Date.now());
+};
+
+export const jsMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
+  const clientCopy = new Uint8Array(mergeCells);
+  self.sendMergeCells(sheetId, clientCopy);
+  self.sendMergeCellsRender(sheetId, mergeCells);
 };

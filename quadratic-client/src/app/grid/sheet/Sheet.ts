@@ -4,15 +4,18 @@ import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import type {
   ColumnRow,
+  ConditionalFormatClient,
   GridBounds,
   JsCoordinate,
   JsResponse,
+  Rect,
   SheetBounds,
   SheetInfo,
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import {
+  JsMergeCells,
   SheetContentCache,
   SheetDataTablesCache,
   type SheetOffsets,
@@ -33,12 +36,15 @@ export class Sheet {
   gridOverflowLines: GridOverflowLines;
 
   validations: Validation[] = [];
+  conditionalFormats: ConditionalFormatClient[] = [];
 
   // clamp is the area that the cursor can move around in
   clamp: Rectangle;
 
   private _contentCache: SheetContentCache;
   private _dataTablesCache: SheetDataTablesCache;
+
+  private _mergeCells: JsMergeCells;
 
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
     this._info = info;
@@ -52,12 +58,33 @@ export class Sheet {
 
     this._contentCache = SheetContentCache.new_empty();
     this._dataTablesCache = SheetDataTablesCache.new_empty();
+    this._mergeCells = new JsMergeCells();
 
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
+    events.on('sheetConditionalFormats', this.sheetConditionalFormats);
     events.on('contentCache', this.updateContentCache);
     events.on('dataTablesCache', this.updateTablesCache);
+    events.on('mergeCells', this.updateMergeCells);
   }
+
+  destroy() {
+    this.contentCache.free();
+    events.off('sheetBounds', this.updateBounds);
+    events.off('sheetValidations', this.sheetValidations);
+    events.off('sheetConditionalFormats', this.sheetConditionalFormats);
+    events.off('contentCache', this.updateContentCache);
+    events.off('dataTablesCache', this.updateTablesCache);
+    this._mergeCells.free();
+    events.off('mergeCells', this.updateMergeCells);
+  }
+
+  private updateMergeCells = (sheetId: string, mergeCells: JsMergeCells) => {
+    if (sheetId === this.id) {
+      this._mergeCells.free();
+      this._mergeCells = mergeCells;
+    }
+  };
 
   get id(): string {
     return this._info.sheet_id;
@@ -87,20 +114,16 @@ export class Sheet {
     return this._info.format_bounds;
   }
 
-  destroy() {
-    this.contentCache.free();
-    events.off('sheetBounds', this.updateBounds);
-    events.off('sheetValidations', this.sheetValidations);
-    events.off('contentCache', this.updateContentCache);
-    events.off('dataTablesCache', this.updateTablesCache);
-  }
-
   get contentCache(): SheetContentCache {
     return this._contentCache;
   }
 
   get dataTablesCache(): SheetDataTablesCache {
     return this._dataTablesCache;
+  }
+
+  get mergeCells(): JsMergeCells {
+    return this._mergeCells;
   }
 
   private updateContentCache = (sheetId: string, contentCache: SheetContentCache) => {
@@ -120,6 +143,12 @@ export class Sheet {
   private sheetValidations = (sheetId: string, sheetValidations: Validation[]) => {
     if (sheetId === this.id) {
       this.validations = sheetValidations;
+    }
+  };
+
+  private sheetConditionalFormats = (sheetId: string, conditionalFormats: ConditionalFormatClient[]) => {
+    if (sheetId === this.id) {
+      this.conditionalFormats = conditionalFormats;
     }
   };
 
@@ -305,5 +334,13 @@ export class Sheet {
 
   hasContentInRect = (rect: Rectangle): boolean => {
     return this.contentCache.hasContentInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+  };
+
+  getMergeCellsInRect = (rect: Rectangle): Rect[] => {
+    return this.mergeCells.getMergeCells(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+  };
+
+  getMergeCellRect = (x: number, y: number): Rect | undefined => {
+    return this.mergeCells.getMergeCellRect(x, y) ?? undefined;
   };
 }

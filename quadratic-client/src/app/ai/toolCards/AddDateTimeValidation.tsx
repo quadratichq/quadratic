@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type AddDateTimeValidationResponse = z.infer<(typeof aiToolsSpec)[AITool.AddDateTimeValidation]['responseSchema']>;
+type AddDateTimeValidationResponse = AIToolsArgs[AITool.AddDateTimeValidation];
 
 export const AddDateTimeValidation = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -20,7 +20,7 @@ export const AddDateTimeValidation = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.AddDateTimeValidation].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.AddDateTimeValidation].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[AddDateTimeValidation] Failed to parse args: ', error);

@@ -4,4 +4,6 @@ export interface CodeRun {
   transactionId: string;
   sheetPos: SheetPosTS;
   code: string;
+  chartPixelWidth: number;
+  chartPixelHeight: number;
 }

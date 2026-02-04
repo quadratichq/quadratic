@@ -1,10 +1,10 @@
 import type { AnalyticsAIChat, AIChatSource } from '@prisma/client';
 import type { Response } from 'express';
 import {
-    getLastAIPromptMessageIndex,
-    getLastUserMessage,
-    getLastUserMessageType,
-    isContentText,
+  getLastAIPromptMessageIndex,
+  getLastUserMessage,
+  getLastUserMessageType,
+  isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -13,10 +13,10 @@ import { AILanguagePreferencesSchema, type AIModelKey } from 'quadratic-shared/t
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import {
-    getAILanguagesContext,
-    getAIRulesContext,
-    getQuadraticContext,
-    getToolUseContext,
+  getAILanguagesContext,
+  getAIRulesContext,
+  getQuadraticContext,
+  getToolUseContext,
 } from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
@@ -159,7 +159,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(source, modelKey);
+    // Debug: Log agent type
+    console.log(
+      `[AI.Chat] Building tool context with agentType: ${args.agentType ?? 'undefined (defaulting to MainAgent)'}`
+    );
+    const toolUseContext = getToolUseContext(source, modelKey, args.agentType);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
@@ -168,11 +172,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const userAiLanguagePreferences = result.success ? result.data : [];
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(
-      source,
-      args.language,
-      userAiLanguagePreferences.includes('Javascript')
-    );
+    const quadraticContext = getQuadraticContext(source, args.agentType);
     args.messages = [...quadraticContext, ...args.messages];
   }
 

@@ -543,6 +543,7 @@ fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Resu
             output_array,
             output_display_type: Some(output_type),
             chart_pixel_output: None,
+            chart_image: None,
             has_headers,
         });
     }
@@ -570,6 +571,7 @@ fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Resu
             output_array: None,
             output_display_type: None,
             chart_pixel_output: None,
+            chart_image: None,
             has_headers: false,
         });
     }
@@ -586,6 +588,7 @@ fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Resu
             output_array: None,
             output_display_type: None,
             chart_pixel_output: None,
+            chart_image: None,
             has_headers: false,
         });
     }
@@ -601,6 +604,7 @@ fn parse_deno_output(transaction_id: &str, output: std::process::Output) -> Resu
         output_array: None,
         output_display_type: Some("undefined".to_string()),
         chart_pixel_output: None,
+        chart_image: None,
         has_headers: false,
     })
 }

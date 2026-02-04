@@ -43,6 +43,9 @@ const OperationToChatMessage: OperationMessageMap<TrackedOperation> = {
     `- removed validation rule ${operation.validation_id} in sheet ${operation.sheet_name}`,
   ValidationRemovedSelection: (operation) =>
     `- removed validation rules at ${operation.selection} in sheet ${operation.sheet_name}`,
+  ConditionalFormatSet: (operation) => `- set conditional format at ${operation.selection}`,
+  ConditionalFormatRemoved: (operation) =>
+    `- removed conditional format ${operation.conditional_format_id} in sheet ${operation.sheet_name}`,
   ColumnInserted: (operation) => `- inserted column at ${operation.column} in sheet ${operation.sheet_name}`,
   ColumnDeleted: (operation) => `- deleted column at ${operation.column} in sheet ${operation.sheet_name}`,
   RowInserted: (operation) => `- inserted row at ${operation.row} in sheet ${operation.sheet_name}`,
@@ -56,6 +59,7 @@ const OperationToChatMessage: OperationMessageMap<TrackedOperation> = {
   ComputeCode: (operation) => `- computed code at ${operation.selection}`,
   MoveDataTable: (operation) => `- moved data table from ${operation.from} to ${operation.to}`,
   SwitchDataTableKind: (operation) => `- switched data table at ${operation.selection} to ${operation.kind}`,
+  SetMergeCells: (operation) => `- set merge cells at ${operation.sheet_name}`,
 };
 
 const convertTransactionToChatMessage = (transaction: TrackedTransaction): string => {

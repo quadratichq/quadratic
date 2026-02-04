@@ -1,10 +1,13 @@
 import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import type { FileCreator } from '@/dashboard/components/UserFilesList';
 import { Avatar } from '@/shared/components/Avatar';
+import { ScheduledTasksIcon } from '@/shared/components/Icons';
 import { TYPE } from '@/shared/constants/appConstants';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 
 export function FilesListItemCore({
   name,
@@ -12,6 +15,9 @@ export function FilesListItemCore({
   description,
   creator,
   hasNetworkError,
+  isShared,
+  hasScheduledTasks,
+  fileUuid,
   viewPreferences,
   actions,
   children,
@@ -23,10 +29,14 @@ export function FilesListItemCore({
   viewPreferences: ViewPreferences;
   creator?: FileCreator;
   hasNetworkError?: boolean;
+  isShared?: boolean;
+  hasScheduledTasks?: boolean;
+  fileUuid?: string;
   actions?: ReactNode;
   children?: ReactNode;
   onCreatorClick?: (creator: FileCreator) => void;
 }) {
+  const navigate = useNavigate();
   const isGrid = viewPreferences.layout === Layout.Grid;
   const displayName = nameFilter ? highlightMatchingString(name, nameFilter) : name;
 
@@ -41,7 +51,28 @@ export function FilesListItemCore({
             {hasNetworkError ? (
               <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
             ) : (
-              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>{description}</p>
+              <p className={`${TYPE.caption} flex flex-nowrap items-center gap-1`}>
+                {hasScheduledTasks && fileUuid && (
+                  <TooltipPopover label="View scheduled tasks">
+                    <button
+                      className="flex items-center hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        navigate(
+                          ROUTES.FILE({
+                            uuid: fileUuid,
+                            searchParams: SEARCH_PARAMS.SCHEDULED_TASKS.KEY,
+                          })
+                        );
+                      }}
+                    >
+                      <ScheduledTasksIcon className="h-3 w-3" />
+                    </button>
+                  </TooltipPopover>
+                )}
+                {description}
+              </p>
             )}
           </div>
         </div>

@@ -1085,8 +1085,11 @@ mod tests {
 
     #[test]
     fn ensure_code_run_ordering_is_maintained_for_undo() {
+        // Note: 1x1 formulas are now stored as CellValue::Code, not DataTable.
+        // To test DataTable ordering, we use multi-cell array formulas.
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
+        // Use array formulas (1x2) to ensure they remain as DataTables
         gc.set_code_cell(
             SheetPos {
                 x: 1,
@@ -1094,7 +1097,7 @@ mod tests {
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "1".to_string(),
+            "{1;1}".to_string(), // 1x2 array
             None,
             None,
             false,
@@ -1106,7 +1109,7 @@ mod tests {
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "2".to_string(),
+            "{2;2}".to_string(), // 1x2 array
             None,
             None,
             false,
@@ -1118,7 +1121,7 @@ mod tests {
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "3".to_string(),
+            "{3;3}".to_string(), // 1x2 array
             None,
             None,
             false,

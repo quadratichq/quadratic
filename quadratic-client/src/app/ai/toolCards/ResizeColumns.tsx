@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type ResizeColumnsResponse = z.infer<(typeof aiToolsSpec)[AITool.ResizeColumns]['responseSchema']>;
+type ResizeColumnsResponse = AIToolsArgs[AITool.ResizeColumns];
 
 export const ResizeColumns = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -19,7 +19,7 @@ export const ResizeColumns = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.ResizeColumns].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.ResizeColumns].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[ResizeColumns] Failed to parse args: ', error);

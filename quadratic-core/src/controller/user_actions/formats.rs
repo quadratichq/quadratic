@@ -88,10 +88,14 @@ impl GridController {
             return ops;
         };
 
-        let mut sheet_format_update =
-            SheetFormatUpdates::from_selection(selection, format_update.clone());
+        // Expand selection to include full merged cell rects for all format operations
+        // This ensures formatting is applied to all cells within merged cells
+        let expanded_selection = selection.expand_to_include_merge_rects(&sheet.merge_cells);
 
-        for range in selection.ranges.iter() {
+        let mut sheet_format_update =
+            SheetFormatUpdates::from_selection(&expanded_selection, format_update.clone());
+
+        for range in expanded_selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => {
                     let rect = range.to_rect_unbounded();
@@ -133,7 +137,7 @@ impl GridController {
                             && !table_format_updates.is_default()
                         {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: data_table_pos.to_sheet_pos(expanded_selection.sheet_id),
                                 formats: table_format_updates,
                             });
                         }
@@ -189,13 +193,15 @@ impl GridController {
                         }
 
                         let table_format_updates = SheetFormatUpdates::from_selection(
-                            &A1Selection::from_rect(format_rect.to_sheet_rect(selection.sheet_id)),
+                            &A1Selection::from_rect(
+                                format_rect.to_sheet_rect(expanded_selection.sheet_id),
+                            ),
                             format_update.clone(),
                         );
 
                         if !table_format_updates.is_default() {
                             ops.push(Operation::DataTableFormats {
-                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                sheet_pos: data_table_pos.to_sheet_pos(expanded_selection.sheet_id),
                                 formats: table_format_updates,
                             });
                         }
@@ -216,7 +222,7 @@ impl GridController {
             }
 
             ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: selection.sheet_id,
+                sheet_id: expanded_selection.sheet_id,
                 formats: sheet_format_update,
             });
         }
@@ -578,6 +584,30 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
+    pub(crate) fn merge_cells(
+        &mut self,
+        selection: A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let ops = self.merge_cells_a1_selection_operations(selection);
+        if !ops.is_empty() {
+            self.start_user_ai_transaction(ops, cursor, TransactionName::SetMergeCells, is_ai);
+        }
+    }
+
+    pub(crate) fn unmerge_cells(
+        &mut self,
+        selection: A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let ops = self.unmerge_cells_a1_selection_operations(selection);
+        if !ops.is_empty() {
+            self.start_user_ai_transaction(ops, cursor, TransactionName::SetMergeCells, is_ai);
+        }
+    }
+
     /// Sets multiple format updates in a single transaction.
     /// Each entry is a (selection, format_update) pair.
     pub(crate) fn set_formats_a1(
@@ -840,6 +870,239 @@ mod test {
                 .fill_color,
             Some("blue".to_string())
         );
+    }
+
+    #[test]
+    fn test_set_fill_color_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge cells A1:C3
+        gc.merge_cells(A1Selection::test_a1("A1:C3"), None, false);
+
+        // Set fill color on just the anchor cell (A1)
+        gc.set_fill_color(
+            &A1Selection::test_a1("A1"),
+            Some("green".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+
+            // All cells within the merged cell should have the fill color
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A1])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "A1 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B1])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "B1 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C1])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "C1 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A2])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "A2 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B2])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "B2 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C2])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "C2 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A3])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "A3 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B3])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "B3 should have fill color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C3])
+                    .unwrap_or_default()
+                    .fill_color,
+                Some("green".to_string()),
+                "C3 should have fill color"
+            );
+        }
+
+        // Test with cursor at non-anchor position
+        gc.set_fill_color(
+            &A1Selection::test_a1("B2"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // All cells should now have red fill color
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(pos![A1])
+                .unwrap_or_default()
+                .fill_color,
+            Some("red".to_string()),
+            "A1 should have red fill color after filling from B2"
+        );
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(pos![C3])
+                .unwrap_or_default()
+                .fill_color,
+            Some("red".to_string()),
+            "C3 should have red fill color after filling from B2"
+        );
+    }
+
+    #[test]
+    fn test_format_operations_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge cells A1:C3
+        gc.merge_cells(A1Selection::test_a1("A1:C3"), None, false);
+
+        // Test bold formatting
+        gc.set_bold(&A1Selection::test_a1("B2"), Some(true), None, false)
+            .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+            // All cells within the merged cell should have bold formatting
+            assert_eq!(
+                sheet.formats.bold.get(pos![A1]),
+                Some(true),
+                "A1 should be bold"
+            );
+            assert_eq!(
+                sheet.formats.bold.get(pos![B2]),
+                Some(true),
+                "B2 should be bold"
+            );
+            assert_eq!(
+                sheet.formats.bold.get(pos![C3]),
+                Some(true),
+                "C3 should be bold"
+            );
+        }
+
+        // Test text color formatting
+        gc.set_text_color(
+            &A1Selection::test_a1("A1"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+            // All cells within the merged cell should have blue text color
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![A1])
+                    .unwrap_or_default()
+                    .text_color,
+                Some("blue".to_string()),
+                "A1 should have blue text color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![B2])
+                    .unwrap_or_default()
+                    .text_color,
+                Some("blue".to_string()),
+                "B2 should have blue text color"
+            );
+            assert_eq!(
+                sheet
+                    .formats
+                    .try_format(pos![C3])
+                    .unwrap_or_default()
+                    .text_color,
+                Some("blue".to_string()),
+                "C3 should have blue text color"
+            );
+        }
+
+        // Test italic formatting
+        gc.set_italic(&A1Selection::test_a1("C1"), Some(true), None, false)
+            .unwrap();
+
+        {
+            let sheet = gc.sheet(sheet_id);
+            // All cells within the merged cell should have italic formatting
+            assert_eq!(
+                sheet.formats.italic.get(pos![A1]),
+                Some(true),
+                "A1 should be italic"
+            );
+            assert_eq!(
+                sheet.formats.italic.get(pos![B2]),
+                Some(true),
+                "B2 should be italic"
+            );
+            assert_eq!(
+                sheet.formats.italic.get(pos![C3]),
+                Some(true),
+                "C3 should be italic"
+            );
+        }
     }
 
     #[test]
@@ -1452,5 +1715,140 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.cell_format(pos![A1]).bold, None);
         assert_eq!(sheet.cell_format(pos![B1]).italic, None);
+    }
+
+    #[test]
+    fn test_format_column_with_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a merged cell spanning columns B-D, rows 2-4
+        gc.merge_cells(A1Selection::test_a1("B2:D4"), None, false);
+
+        // Format column B (which intersects the merged cell)
+        gc.set_fill_color(
+            &A1Selection::test_a1("B"),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // All cells within the merged cell should have the fill color
+        let sheet = gc.sheet(sheet_id);
+
+        // Check cells in the merged region
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B2]),
+            Some("blue".to_string()),
+            "B2 should have fill color"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![C3]),
+            Some("blue".to_string()),
+            "C3 (in merged cell) should have fill color"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![D4]),
+            Some("blue".to_string()),
+            "D4 (in merged cell) should have fill color"
+        );
+
+        // Cells in column B but outside merged cell should also have fill color
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B1]),
+            Some("blue".to_string()),
+            "B1 should have fill color (column formatting)"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B10]),
+            Some("blue".to_string()),
+            "B10 should have fill color (column formatting)"
+        );
+    }
+
+    #[test]
+    fn test_format_row_with_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a merged cell spanning columns B-D, rows 2-4
+        gc.merge_cells(A1Selection::test_a1("B2:D4"), None, false);
+
+        // Format row 2 (which intersects the merged cell)
+        gc.set_bold(&A1Selection::test_a1("2"), Some(true), None, false)
+            .unwrap();
+
+        // All cells within the merged cell should have the bold formatting
+        let sheet = gc.sheet(sheet_id);
+
+        // Check cells in the merged region
+        assert_eq!(
+            sheet.formats.bold.get(pos![B2]),
+            Some(true),
+            "B2 should be bold"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![C3]),
+            Some(true),
+            "C3 (in merged cell) should be bold"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![D4]),
+            Some(true),
+            "D4 (in merged cell) should be bold"
+        );
+
+        // Cells in row 2 but outside merged cell should also be bold
+        assert_eq!(
+            sheet.formats.bold.get(pos![A2]),
+            Some(true),
+            "A2 should be bold (row formatting)"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![Z2]),
+            Some(true),
+            "Z2 should be bold (row formatting)"
+        );
+    }
+
+    #[test]
+    fn test_format_column_with_multiple_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two merged cells in column B
+        gc.merge_cells(A1Selection::test_a1("B2:C3"), None, false);
+        gc.merge_cells(A1Selection::test_a1("B5:D6"), None, false);
+
+        // Format column B (which intersects both merged cells)
+        gc.set_italic(&A1Selection::test_a1("B"), Some(true), None, false)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Check first merged cell (B2:C3)
+        assert_eq!(
+            sheet.formats.italic.get(pos![B2]),
+            Some(true),
+            "B2 should be italic"
+        );
+        assert_eq!(
+            sheet.formats.italic.get(pos![C3]),
+            Some(true),
+            "C3 (in first merged cell) should be italic"
+        );
+
+        // Check second merged cell (B5:D6)
+        assert_eq!(
+            sheet.formats.italic.get(pos![B5]),
+            Some(true),
+            "B5 should be italic"
+        );
+        assert_eq!(
+            sheet.formats.italic.get(pos![D6]),
+            Some(true),
+            "D6 (in second merged cell) should be italic"
+        );
     }
 }

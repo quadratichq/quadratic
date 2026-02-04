@@ -9,6 +9,7 @@ mod array_size;
 pub mod arrow;
 pub mod cell_values;
 pub mod cellvalue;
+mod code_cell;
 mod convert;
 mod currency;
 pub mod date_time;
@@ -22,6 +23,7 @@ mod time;
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
 pub use cellvalue::{CellValue, CellValueHash};
+pub use code_cell::CodeCell;
 pub use convert::{CoerceInto, parse_value_text};
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};
@@ -74,6 +76,7 @@ impl From<RunError> for Value {
 impl Value {
     /// Returns the cell value for a single value or an array. Returns an error
     /// for an array with more than a single value, or for a tuple or lambda.
+    #[inline]
     pub fn as_cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -93,6 +96,7 @@ impl Value {
     }
     /// Returns the cell value for a single value or an array. Returns an error
     /// for an array with more than a single value, or for a tuple or lambda.
+    #[inline]
     pub fn into_cell_value(self) -> Result<CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -111,6 +115,7 @@ impl Value {
         }
     }
     /// Returns an array for a single value or array, or an error for a tuple or lambda.
+    #[inline]
     pub fn into_array(self) -> Result<Array, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(Array::from(value)),
@@ -126,6 +131,7 @@ impl Value {
         }
     }
     /// Converts the value into one or more arrays. Lambdas become empty vectors.
+    #[inline]
     pub fn into_arrays(self) -> Vec<Array> {
         match self {
             Value::Single(value) => vec![Array::from(value)],
@@ -136,6 +142,7 @@ impl Value {
     }
     /// Returns a slice of values for a single value or an array. Returns an
     /// error for a tuple or lambda.
+    #[inline]
     pub fn cell_values_slice(&self) -> Result<&[CellValue], RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(std::slice::from_ref(value)),
@@ -154,6 +161,7 @@ impl Value {
     /// Returns the value from an array if this is an array value, or the single
     /// value itself otherwise. If the array index is out of bounds, returns an
     /// internal error. Also returns an error for a tuple or lambda.
+    #[inline]
     pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -201,6 +209,7 @@ impl Value {
     }
 
     /// Returns the size of the value. Lambdas have size 1x1.
+    #[inline]
     pub fn size(&self) -> ArraySize {
         match self {
             Value::Single(_) => ArraySize::_1X1,
@@ -234,14 +243,17 @@ impl Value {
     }
 }
 impl Spanned<Value> {
+    #[inline]
     pub fn cell_value(&self) -> CodeResult<Spanned<&CellValue>> {
         self.inner.as_cell_value().with_span(self.span)
     }
+    #[inline]
     pub fn into_cell_value(self) -> CodeResult<Spanned<CellValue>> {
         self.inner.into_cell_value().with_span(self.span)
     }
     /// Returns an array, or `None` if the value is only a single cell,
     /// tuple, or lambda.
+    #[inline]
     fn as_array(&self) -> Option<Spanned<&Array>> {
         match &self.inner {
             Value::Single(_) => None,
@@ -257,6 +269,7 @@ impl Spanned<Value> {
         }
     }
     /// Returns an array for a single value or array, or an error for a tuple.
+    #[inline]
     pub fn into_array(self) -> CodeResult<Spanned<Array>> {
         self.inner.into_array().with_span(self.span)
     }
@@ -264,6 +277,7 @@ impl Spanned<Value> {
     /// Returns the value from an array if this is an array value, or the single
     /// value itself otherwise. If the array index is out of bounds, returns an
     /// internal error. Also returns an error for a tuple.
+    #[inline]
     pub fn get(&self, x: u32, y: u32) -> CodeResult<Spanned<&CellValue>> {
         self.inner.get(x, y).with_span(self.span)
     }

@@ -28,10 +28,12 @@ mod execute_borders;
 mod execute_borders_old;
 mod execute_code;
 mod execute_col_rows;
+mod execute_conditional_format;
 mod execute_cursor;
 mod execute_data_table;
 mod execute_formats;
 mod execute_formats_old;
+mod execute_merge_cells;
 mod execute_move_cells;
 mod execute_offsets;
 mod execute_sheets;
@@ -226,6 +228,15 @@ impl GridController {
 
                 Operation::MoveColumns { .. } => self.execute_move_columns(transaction, op),
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
+
+                Operation::SetMergeCells { .. } => self.execute_set_merge_cells(transaction, op),
+
+                Operation::SetConditionalFormat { .. } => {
+                    self.execute_set_conditional_format(transaction, op);
+                }
+                Operation::RemoveConditionalFormat { .. } => {
+                    self.execute_remove_conditional_format(transaction, op);
+                }
             }
         }
 

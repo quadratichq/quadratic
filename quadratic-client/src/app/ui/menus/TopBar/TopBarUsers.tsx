@@ -1,4 +1,4 @@
-import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -19,6 +19,7 @@ import {
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
+import { useAtomValue } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import { useSubmit } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -29,7 +30,7 @@ export const TopBarUsers = () => {
   const follow = useRecoilValue(editorInteractionStateFollowAtom);
   const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
   const { users, followers } = useMultiplayerUsers();
-  const isAILoading = useRecoilValue(aiAnalystLoadingAtom);
+  const isAILoading = useAtomValue(loadingAtom);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   // Sync AI user with multiplayer system

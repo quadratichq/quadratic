@@ -1,0 +1,42 @@
+[package]
+name = "quadratic-renderer-core"
+version = "0.1.0"
+edition = "2021"
+description = "Platform-agnostic rendering and layout core for Quadratic"
+
+[features]
+default = []
+
+# Enable wgpu backend (used by native renderer)
+wgpu = ["dep:wgpu"]
+
+# wgpu for native platforms (Vulkan, Metal, DX12)
+wgpu-native = ["wgpu", "wgpu/vulkan-portability", "wgpu/metal", "wgpu/dx12"]
+
+[dependencies]
+# Quadratic core types (Rgba, SheetOffsets, Pos, Rect, etc.)
+# The js feature is needed for wasm-bindgen and ts-rs types
+quadratic-core = { path = "../../quadratic-core", default-features = false, features = ["js"] }
+
+# wgpu for GPU rendering (optional - enabled by native)
+wgpu = { version = "23.0", optional = true, default-features = false, features = ["wgsl"] }
+
+# XML parsing for BMFont files
+quick-xml = "0.37"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+bincode = { version = "2.0.0", features = ["serde"] }
+serde_json = "1.0"
+
+# Math
+glam = "0.30"
+bytemuck = { version = "1.16", features = ["derive"] }
+
+# Utilities
+log = "0.4"
+anyhow = "1.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+pollster = "0.4"

@@ -21,6 +21,8 @@ use crate::{
     python::execute::run_python,
 };
 
+use quadratic_core::{Pos, Rect};
+
 // from main
 // receive the transaction
 // get file from S3
@@ -133,11 +135,41 @@ pub async fn process_transaction(
             // run code
             match &code_run.language {
                 CodeCellLanguage::Python => {
+                    // Calculate chart pixel dimensions from cell size using sheet offsets
+                    // (same logic as client-side run_python.rs)
+                    const DEFAULT_CHART_PIXEL_WIDTH: f32 = 600.0;
+                    const DEFAULT_CHART_PIXEL_HEIGHT: f32 = 460.0;
+
+                    let (chart_pixel_width, chart_pixel_height) =
+                        if let Some(sheet_pos) = current_sheet_pos {
+                            let grid_lock = grid.lock().await;
+                            grid_lock
+                                .try_sheet(sheet_pos.sheet_id)
+                                .and_then(|sheet| {
+                                    let data_table = sheet.data_table_at(&sheet_pos.into())?;
+                                    let (cols, rows) = data_table.chart_output?;
+                                    let pos: Pos = sheet_pos.into();
+                                    let rect = Rect::new(
+                                        pos.x,
+                                        pos.y,
+                                        pos.x + cols as i64 - 1,
+                                        pos.y + rows as i64 - 1,
+                                    );
+                                    let screen_rect = sheet.offsets().screen_rect_cell_offsets(rect);
+                                    Some((screen_rect.w as f32, screen_rect.h as f32))
+                                })
+                                .unwrap_or((DEFAULT_CHART_PIXEL_WIDTH, DEFAULT_CHART_PIXEL_HEIGHT))
+                        } else {
+                            (DEFAULT_CHART_PIXEL_WIDTH, DEFAULT_CHART_PIXEL_HEIGHT)
+                        };
+
                     run_python(
                         Arc::clone(&grid),
                         &code_run.code,
                         &transaction_id,
                         Box::new(create_get_cells()),
+                        chart_pixel_width,
+                        chart_pixel_height,
                     )
                     .await?;
                 }
@@ -233,6 +265,7 @@ mod tests {
         let code_run = CodeRun {
             language,
             code: code.to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -316,6 +349,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "test_code".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

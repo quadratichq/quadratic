@@ -1,16 +1,15 @@
 //! Handles drawing of checkbox and dropdown sprites.
 
-import { emojis } from '@/app/gridGL/pixiApp/emojis/emojis';
+import { emojis, SCALE_EMOJI } from '@/app/gridGL/pixiApp/emojis/emojis';
 import type {
   RenderCheckbox,
   RenderDropdown,
   RenderEmoji,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Assets, MIPMAP_MODES, Rectangle, Sprite, Texture } from 'pixi.js';
+import { CHECKBOX_SIZE, DROPDOWN_PADDING, DROPDOWN_SIZE } from './drawSpecialConstants';
 
-export const CHECKBOX_SIZE = 15;
-export const DROPDOWN_SIZE = [8, 6];
-export const DROPDOWN_PADDING = [5, 8];
+export { CHECKBOX_SIZE, DROPDOWN_PADDING, DROPDOWN_SIZE };
 
 export interface SpecialSprite extends Sprite {
   column: number;
@@ -69,16 +68,21 @@ export const drawDropdown = (options: RenderDropdown) => {
   return sprite;
 };
 
-export const drawEmoji = (options: RenderEmoji): SpecialSprite => {
+export const drawEmoji = (options: RenderEmoji): SpecialSprite | undefined => {
   const texture = emojis.getCharacter(options.emoji);
-  if (!texture) throw new Error(`Expected emoji texture: ${options.emoji}`);
+  if (!texture) {
+    // Emoji not in spritesheet - skip rendering
+    return undefined;
+  }
 
   const sprite = new Sprite(texture) as SpecialSprite;
   sprite.column = -1;
   sprite.row = -1;
   sprite.type = 'emoji';
-  sprite.width = options.width;
-  sprite.height = options.height;
+  // Scale up to compensate for SCALE_EMOJI padding in spritesheet textures
+  // The emoji in the texture is SCALE_EMOJI size of the cell, so we scale up by 1/SCALE_EMOJI
+  sprite.width = options.width / SCALE_EMOJI;
+  sprite.height = options.height / SCALE_EMOJI;
   sprite.rectangle = new Rectangle(-1, -1, 0, 0);
   sprite.position.set(options.x, options.y);
   sprite.anchor.set(0.5);

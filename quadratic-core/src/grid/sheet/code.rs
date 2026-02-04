@@ -111,11 +111,103 @@ impl Sheet {
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        // First check for CellValue::Code in columns
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+            return Some((*code_cell.output).clone());
+        }
+
+        // Otherwise check data_tables
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
         data_table.cell_value_at(
             (pos.x - data_table_pos.x) as u32,
             (pos.y - data_table_pos.y) as u32,
         )
+    }
+
+    /// Iterates over all CellValue::Code positions in the sheet
+    pub fn iter_code_cells_positions(&self) -> Vec<Pos> {
+        let mut positions = Vec::new();
+        // Get the bounds of the columns
+        if let Some(bounds) = self.columns.finite_bounds() {
+            for y in bounds.y_range() {
+                for x in bounds.x_range() {
+                    let pos = Pos { x, y };
+                    if matches!(self.cell_value_ref(pos), Some(CellValue::Code(_))) {
+                        positions.push(pos);
+                    }
+                }
+            }
+        }
+        positions
+    }
+
+    /// Returns true if there's any CellValue::Code in the given rect.
+    /// TODO: Remove this once we support code cells inside tables.
+    pub fn has_code_cell_in_rect(&self, rect: Rect) -> bool {
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if matches!(self.cell_value_ref(pos), Some(CellValue::Code(_))) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Replaces table name references in CellValue::Code cells
+    pub fn replace_table_name_in_code_value_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+    ) {
+        let positions = self.iter_code_cells_positions();
+        for pos in positions {
+            if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+                let mut new_code_run = code_cell.code_run.clone();
+                let sheet_pos = pos.to_sheet_pos(self.id);
+                new_code_run.replace_table_name_in_cell_references(
+                    a1_context, sheet_pos, old_name, new_name,
+                );
+                if new_code_run.code != code_cell.code_run.code {
+                    let new_code_cell = crate::CodeCell {
+                        code_run: new_code_run,
+                        output: code_cell.output.clone(),
+                        last_modified: code_cell.last_modified,
+                    };
+                    self.set_value(pos, CellValue::Code(Box::new(new_code_cell)));
+                }
+            }
+        }
+    }
+
+    /// Replaces column name references in CellValue::Code cells
+    pub fn replace_column_name_in_code_value_cells(
+        &mut self,
+        table_name: &str,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+    ) {
+        let positions = self.iter_code_cells_positions();
+        for pos in positions {
+            if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+                let mut new_code_run = code_cell.code_run.clone();
+                let sheet_pos = pos.to_sheet_pos(self.id);
+                new_code_run.replace_column_name_in_cell_references(
+                    a1_context, sheet_pos, table_name, old_name, new_name,
+                );
+                if new_code_run.code != code_cell.code_run.code {
+                    let new_code_cell = crate::CodeCell {
+                        code_run: new_code_run,
+                        output: code_cell.output.clone(),
+                        last_modified: code_cell.last_modified,
+                    };
+                    self.set_value(pos, CellValue::Code(Box::new(new_code_cell)));
+                }
+            }
+        }
     }
 
     /// TODO(ddimaria): move to DataTable code
@@ -147,6 +239,43 @@ impl Sheet {
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
+        // First check for CellValue::Code in columns
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+            let code_run = &code_cell.code_run;
+            let mut code: String = code_run.code.clone();
+
+            // replace internal cell references with a1 notation
+            if matches!(code_run.language, CodeCellLanguage::Formula) {
+                let replaced = convert_rc_to_a1(&code, a1_context, pos.to_sheet_pos(self.id));
+                code = replaced;
+            }
+
+            let evaluation_result = match &code_run.error {
+                Some(error) => Some(serde_json::to_string(error).unwrap_or("".into())),
+                None => Some(serde_json::to_string(&*code_cell.output).unwrap_or("".into())),
+            };
+
+            let return_info = Some(JsReturnInfo {
+                line_number: code_run.line_number,
+                output_type: code_run.output_type.clone(),
+            });
+
+            return Some(JsCodeCell {
+                x: pos.x,
+                y: pos.y,
+                code_string: code,
+                language: code_run.language.clone(),
+                std_err: code_run.std_err.clone(),
+                std_out: code_run.std_out.clone(),
+                evaluation_result,
+                spill_error: None, // CellValue::Code never spills
+                return_info,
+                cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                last_modified: code_cell.last_modified.timestamp_millis(),
+            });
+        }
+
+        // Otherwise check data_tables
         if let Some((code_pos, data_table)) = self.data_table_that_contains(pos)
             && let DataTableKind::CodeRun(code_run) = &data_table.kind
         {
@@ -214,6 +343,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "=".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -322,6 +452,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -360,6 +491,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),

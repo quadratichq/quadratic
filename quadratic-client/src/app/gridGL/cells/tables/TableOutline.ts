@@ -114,7 +114,26 @@ export class TableOutline extends Graphics {
 
       // box and shade what is causing the spill errors
       this.table.codeCell.spill_error.forEach((error) => {
-        const rectangle = this.table.sheet.getCellOffsets(Number(error.x), Number(error.y));
+        const x = Number(error.x);
+        const y = Number(error.y);
+
+        // Check if this position is a merged cell anchor
+        const mergeRect = this.table.sheet.getMergeCellRect(x, y);
+
+        let rectangle: Rectangle;
+        if (mergeRect) {
+          // If it's a merged cell, draw the border around the entire merged cell
+          rectangle = this.table.sheet.getScreenRectangle(
+            Number(mergeRect.min.x),
+            Number(mergeRect.min.y),
+            Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+            Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+          );
+        } else {
+          // Otherwise, draw the border around just this cell
+          rectangle = this.table.sheet.getCellOffsets(x, y);
+        }
+
         this.drawDashedRectangle(rectangle, colors.cellColorError);
       });
     }

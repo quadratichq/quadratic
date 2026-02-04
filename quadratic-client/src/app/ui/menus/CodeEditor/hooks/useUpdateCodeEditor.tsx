@@ -27,6 +27,8 @@ export const useUpdateCodeEditor = () => {
               pos: { x, y },
               language: codeCell.language,
               lastModified: Number(codeCell.last_modified),
+              // Preserve isSingleCell flag from the previous state
+              isSingleCell: prev.codeCell.isSingleCell,
             },
             codeString: codeCell.code_string,
             editorContent: initialCode
@@ -51,6 +53,8 @@ export const useUpdateCodeEditor = () => {
               pos: { x, y },
               language: prev.codeCell.language,
               lastModified: prev.codeCell.lastModified,
+              // Preserve isSingleCell flag from the previous state
+              isSingleCell: prev.codeCell.isSingleCell,
             },
             codeString: '',
             editorContent: initialCode ? initialCode : (prev.diffEditorContent?.editorContent ?? ''),

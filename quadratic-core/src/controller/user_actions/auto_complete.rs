@@ -29,7 +29,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        Pos, SheetPos, SheetRect,
+        CellValue, Pos, SheetPos, SheetRect,
         a1::A1Selection,
         array,
         controller::user_actions::import::tests::simple_csv,
@@ -962,14 +962,16 @@ mod tests {
     fn test_autocomplete_preserves_data_table_properties() {
         // Test that autocomplete preserves data table properties like
         // show_name, alternating_colors, etc.
+        // Note: 1x1 formulas are stored as CellValue::Code, so we use a multi-cell
+        // array formula to test DataTable property preservation.
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // Create a formula code cell
+        // Create a formula code cell with multi-cell output (1x2 array)
         gc.set_code_cell(
             pos![sheet_id!A1],
             CodeCellLanguage::Formula,
-            "1+1".to_string(),
+            "{1;2}".to_string(), // 1x2 array output
             None,
             None,
             false,
@@ -993,8 +995,8 @@ mod tests {
         // Autocomplete the formula to B1
         gc.autocomplete(
             sheet_id,
-            Rect::test_a1("A1"),
-            Rect::test_a1("A1:B1"),
+            Rect::test_a1("A1:A2"),
+            Rect::test_a1("A1:B2"),
             None,
             false,
         )
@@ -1016,7 +1018,7 @@ mod tests {
 
         // Also verify the formula was correctly adjusted
         let code_run = autocompleted_dt.code_run().unwrap();
-        assert_eq!(code_run.code, "1+1"); // Formula doesn't have references to adjust
+        assert_eq!(code_run.code, "{1;2}"); // Formula doesn't have references to adjust
     }
 
     #[test]
@@ -1151,5 +1153,108 @@ mod tests {
         // Verify the code reference was adjusted
         let code_run = autocompleted_dt.code_run().unwrap();
         assert_eq!(code_run.code, r#"return q.cells("C1");"#);
+    }
+
+    #[test]
+    fn test_autocomplete_cell_value_code() {
+        // Test that CellValue::Code cells (1x1 formulas) are properly autocompleted
+        // with adjusted references instead of just copying display values
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up some source data
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "20".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "100".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "200".to_string(), None, false);
+
+        // Create a 1x1 formula at C1 which should be stored as CellValue::Code
+        gc.set_code_cell(
+            pos![sheet_id!C1],
+            CodeCellLanguage::Formula,
+            "A1+1".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify it's stored as CellValue::Code (not a DataTable)
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            matches!(sheet.cell_value_ref(pos![C1]), Some(CellValue::Code(_))),
+            "1x1 formula should be stored as CellValue::Code"
+        );
+
+        // Verify there's no DataTable at C1
+        assert!(
+            sheet.data_table_at(&pos![C1]).is_none(),
+            "There should be no DataTable for a 1x1 formula"
+        );
+
+        // Autocomplete C1 to C1:D2
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("C1"),
+            Rect::test_a1("C1:D2"),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify all positions have code cells with adjusted references
+        assert_code_cell_value(&gc, sheet_id, 3, 1, "A1+1"); // C1 - original
+        assert_code_cell_value(&gc, sheet_id, 4, 1, "B1+1"); // D1 - column shifted
+        assert_code_cell_value(&gc, sheet_id, 3, 2, "A2+1"); // C2 - row shifted
+        assert_code_cell_value(&gc, sheet_id, 4, 2, "B2+1"); // D2 - both shifted
+
+        // Verify the display values are computed correctly
+        assert_display_cell_value(&gc, sheet_id, 3, 1, "11"); // A1(10)+1 = 11
+        assert_display_cell_value(&gc, sheet_id, 4, 1, "101"); // B1(100)+1 = 101
+        assert_display_cell_value(&gc, sheet_id, 3, 2, "21"); // A2(20)+1 = 21
+        assert_display_cell_value(&gc, sheet_id, 4, 2, "201"); // B2(200)+1 = 201
+    }
+
+    #[test]
+    fn test_autocomplete_cell_value_code_mixed_with_values() {
+        // Test that CellValue::Code cells work alongside regular values in autocomplete
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up source data in columns D, E (far from the autocomplete area)
+        gc.set_cell_value(pos![sheet_id!D2], "5".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!E2], "10".to_string(), None, false);
+
+        // A1 has a regular value, A2 has a 1x1 formula (CellValue::Code)
+        gc.set_cell_value(pos![sheet_id!A1], "Hello".to_string(), None, false);
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "D2*2".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Autocomplete A1:A2 to A1:B2
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A1:A2"),
+            Rect::test_a1("A1:B2"),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // A1 and B1 should have regular values (autocompleted)
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "Hello");
+        assert_display_cell_value(&gc, sheet_id, 2, 1, "Hello");
+
+        // A2 should still be the original formula
+        assert_code_cell_value(&gc, sheet_id, 1, 2, "D2*2");
+        assert_display_cell_value(&gc, sheet_id, 1, 2, "10"); // D2(5)*2 = 10
+
+        // B2 should be an autocompleted formula with adjusted reference
+        assert_code_cell_value(&gc, sheet_id, 2, 2, "E2*2");
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "20"); // E2(10)*2 = 20
     }
 }

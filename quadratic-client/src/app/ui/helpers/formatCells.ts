@@ -137,6 +137,20 @@ export const clearFormattingAndBorders = () => {
   clearFormatting();
 };
 
+export const mergeCells = async () => {
+  const response = await quadraticCore.mergeCells(sheets.getRustSelection(), false);
+  if (response?.result) {
+    sheets.sheet.cursor.updatePosition(true);
+  }
+};
+
+export const unmergeCells = async () => {
+  const response = await quadraticCore.unmergeCells(sheets.getRustSelection(), false);
+  if (response?.result) {
+    sheets.sheet.cursor.updatePosition(true);
+  }
+};
+
 export const setFontSize = (fontSize: number) => {
   quadraticCore.setFontSize(sheets.getRustSelection(), fontSize, false);
   // Update the inline editor if it's open

@@ -67,15 +67,13 @@ export const Validations = () => {
       </div>
 
       {!readOnly && (
-        <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
-          <div className="mx-auto my-1 flex gap-3">
-            <Button variant="secondary" onClick={removeValidations}>
-              Remove All
-            </Button>
-            <Button onClick={addValidation} autoFocus>
-              Add Validation
-            </Button>
-          </div>
+        <div className="flex w-full items-center justify-center gap-3 border-t border-t-gray-100 py-3">
+          <Button variant="secondary" onClick={removeValidations}>
+            Remove All
+          </Button>
+          <Button onClick={addValidation} autoFocus>
+            Add Validation
+          </Button>
         </div>
       )}
     </div>

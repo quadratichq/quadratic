@@ -91,6 +91,7 @@ impl From<CellValue> for JsCellValueKind {
             CellValue::Html(_) => JsCellValueKind::Html,
             CellValue::Image(_) => JsCellValueKind::Image,
             CellValue::RichText(_) => JsCellValueKind::RichText,
+            CellValue::Code(code_cell) => (*code_cell.output).clone().into(),
         }
     }
 }
@@ -110,9 +111,31 @@ pub struct JsCellValuePos {
     pub pos: String,
 }
 
+/// Information about a code cell for editing purposes
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsEditCellCodeCell {
+    pub language: CodeCellLanguage,
+    pub code: String,
+}
+
+/// Result of getting a cell for editing. If the cell is a single-cell code cell,
+/// the code_cell field will be populated with the language and code.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsEditCell {
+    /// The text representation of the cell value for editing
+    pub text: String,
+    /// If this is a single-cell code cell, contains the language and code
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code_cell: Option<JsEditCellCodeCell>,
+}
+
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsSummaryContext {
     pub sheet_name: String,
+    pub default_column_width: f64,
+    pub default_row_height: f64,
     pub data_rects: Vec<JsCellValueSummary>,
     pub errored_code_cells: Option<Vec<JsCodeCell>>,
     pub data_tables: Option<Vec<JsDataTableContext>>,
@@ -421,6 +444,7 @@ pub struct JsHtmlOutput {
     pub html: Option<String>,
     pub name: String,
     pub show_name: bool,
+    pub chart_image: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]

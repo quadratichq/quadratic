@@ -1,9 +1,11 @@
+import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import type {
+  ConditionalFormatClient,
   JsBordersSheet,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -16,7 +18,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import type { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -31,6 +33,7 @@ import type {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
+import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
 
 export interface DirtyObject {
   gridLines?: boolean;
@@ -39,9 +42,9 @@ export interface DirtyObject {
   cellHighlights?: boolean;
   multiplayerCursor?: boolean;
   boxCells?: boolean;
-  singleCellOutlines?: boolean;
   cellMoving?: boolean;
   cellImages?: boolean;
+  viewport?: boolean;
 }
 
 interface EventTypes {
@@ -135,6 +138,7 @@ interface EventTypes {
   insertCodeEditorText: (text: string) => void;
 
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
+  sheetConditionalFormats: (sheetId: string, conditionalFormats: ConditionalFormatClient[]) => void;
   validationWarnings: (warnings: JsHashValidationWarnings[]) => void;
 
   // pointer down on the grid
@@ -190,9 +194,22 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystSubmitPrompt: (args: {
+    content: Content;
+    messageSource: string;
+    context: Context;
+    messageIndex: number;
+    importFiles: ImportFile[];
+  }) => void;
+
+  mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;
+
+  // Format painter events
+  formatPainterStart: (sourceSelection: string, sourceSheetId: string) => void;
+  formatPainterEnd: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

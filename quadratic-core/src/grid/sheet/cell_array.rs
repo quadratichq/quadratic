@@ -130,6 +130,7 @@ impl Sheet {
             }
         }
 
+        // check data tables - iterate each position to identify specific cells causing spill
         for x in spill_rect.x_range() {
             for y in spill_rect.y_range() {
                 let cell_pos = Pos { x, y };
@@ -139,6 +140,17 @@ impl Sheet {
                 {
                     results.insert(cell_pos);
                 }
+            }
+        }
+
+        // check merged cells
+        let merged_cells = self.merge_cells.get_merge_cells(*spill_rect);
+        for merged_rect in merged_cells {
+            // Only add the anchor (top-left) position of each merged cell
+            // The client can look up the full merged rect from this anchor position
+            let anchor_pos = merged_rect.min;
+            if anchor_pos != code_pos {
+                results.insert(anchor_pos);
             }
         }
 
@@ -285,6 +297,69 @@ mod tests {
         assert_eq!(reasons.len(), 2);
         assert!(reasons.contains(&Pos { x: 2, y: 1 }));
         assert!(reasons.contains(&Pos { x: 3, y: 1 }));
+    }
+
+    /// Test that find_spill_error_reasons returns all individual cell positions
+    /// from a data table output, not just the anchor position.
+    #[test]
+    fn test_find_spill_error_reasons_returns_all_data_table_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a data table at E1 that outputs a 2x2 array (E1:F2)
+        gc.set_code_cell(
+            SheetPos {
+                x: 5,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2; 3, 4}".into(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify the data table was created and outputs 2x2
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table_at(&Pos { x: 5, y: 1 }).unwrap();
+        assert_eq!(
+            data_table.output_rect(Pos { x: 5, y: 1 }, true),
+            Rect::new(5, 1, 6, 2)
+        );
+
+        // Create a data table at A1 that would spill to A1:F2 (overlapping with E1:F2)
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3, 4, 5, 6; 7, 8, 9, 10, 11, 12}".into(),
+            None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let spilling_table = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+
+        // The table at A1 should have a spill error
+        assert!(spilling_table.has_spill());
+
+        // Get the spill error reasons - should include ALL cells from E1:F2, not just E1
+        let reasons = sheet.find_spill_error_reasons(
+            &spilling_table.output_rect(Pos { x: 1, y: 1 }, true),
+            Pos { x: 1, y: 1 },
+        );
+
+        // Should contain all 4 cells from the blocking data table's output: E1, F1, E2, F2
+        assert_eq!(reasons.len(), 4);
+        assert!(reasons.contains(&Pos { x: 5, y: 1 })); // E1
+        assert!(reasons.contains(&Pos { x: 6, y: 1 })); // F1
+        assert!(reasons.contains(&Pos { x: 5, y: 2 })); // E2
+        assert!(reasons.contains(&Pos { x: 6, y: 2 })); // F2
     }
 
     #[test]

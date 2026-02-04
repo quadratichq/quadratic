@@ -1,8 +1,8 @@
+import { emptyChatSuggestionsAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import type {
   CategorizedEmptyChatPromptSuggestions,
   SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import { aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -13,8 +13,9 @@ import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAt
 import { PromptIcon } from '@/shared/components/Icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
 const defaultPromptSuggestions = [
@@ -35,6 +36,7 @@ const defaultPromptSuggestions = [
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
 }
+
 const SUGGESTION_CATEGORIES: { key: SuggestionCategory; label: string }[] = [
   { key: 'enrich', label: 'Enrich' },
   { key: 'clean', label: 'Clean' },
@@ -99,7 +101,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
 
   // Get suggestions from centralized state (synced by useEmptyChatSuggestionsSync in QuadraticUI)
-  const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
+  const emptyChatSuggestions = useAtomValue(emptyChatSuggestionsAtom);
   const { suggestions: categorizedSuggestions, loading } = emptyChatSuggestions;
 
   const handleChooseFile = useCallback(async () => {

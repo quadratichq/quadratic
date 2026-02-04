@@ -17,10 +17,12 @@ Rectangular ranges are references to a range of cells in a sheet. They are refer
 
 In A1 notation, when referencing an entire column or row, use the column or row name(s).
 
+**IMPORTANT**: Column and row references like \`A\` or \`A3:A\` should only be used for non-table data. When referencing columns within tables, ALWAYS use table column references like \`Table_Name[Column Name]\` instead of column references like \`A\` or infinite ranges like \`A3:A\`.
+
 ### Column and Row Examples
 
-- B - references the entire column B
-- B3:B - references all rows in column B starting from row 3
+- B - references the entire column B (use only for non-table data)
+- B3:B - references all rows in column B starting from row 3 (use only for non-table data)
 - 10 - references the entire row 10
 - C4:C - references all columns in row C starting from row 4
 - D2:2 - references all columns in row 2 starting from column D
@@ -28,6 +30,8 @@ In A1 notation, when referencing an entire column or row, use the column or row 
 ## Table References
 
 **PREFERRED**: Always use table names (e.g., Table_Name) when working with entire tables or entire columns within tables. Use A1 notation only for non-table data or partial table selections.
+
+**IMPORTANT for Formatting and Conditional Formatting**: When applying formatting or conditional formatting to table columns, ALWAYS use table column references like \`Table_Name[Column Name]\` instead of A1 range notation like \`A2:A2000\`, column references like \`A\`, or infinite ranges like \`A3:A\`. This ensures the formatting applies correctly to the entire column as the table grows or shrinks.
 
 Columns within tables may be referenced by their name in A1 notation, eg, Table1[Column Name]. To reference multiple columns within a table, you use Table1[[Name]:[Address]]. In tables, you can also reference parts of the table. If you only want the table names, you can reference it with Table1[#HEADERS]. If you want the data and the headers, you would use Table1[[#DATA],[#HEADERS]]. By default, tables are referenced as Table1[#DATA].
 

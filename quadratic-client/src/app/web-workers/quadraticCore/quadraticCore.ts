@@ -17,6 +17,8 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatClient,
+  ConditionalFormatUpdate,
   DataTableSort,
   FormatUpdate,
   JsBordersSheet,
@@ -48,7 +50,7 @@ import type {
   Validation,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
-import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type {
@@ -63,6 +65,7 @@ import type {
   ClientCoreUpgradeGridFile,
   CodeOperation,
   CoreClientAddSheetResponse,
+  CoreClientBatchUpdateConditionalFormats,
   CoreClientCodeExecutionState,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
@@ -76,6 +79,7 @@ import type {
   CoreClientExport,
   CoreClientExportCsvSelection,
   CoreClientExportExcel,
+  CoreClientExportJson,
   CoreClientGetAICells,
   CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
@@ -97,11 +101,14 @@ import type {
   CoreClientInsertColumns,
   CoreClientInsertRows,
   CoreClientLoad,
+  CoreClientMergeCells,
+  CoreClientMergeCellsResponse,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientPreviewConditionalFormat,
   CoreClientRedoResponse,
   CoreClientRemoveValidationSelection,
   CoreClientRerunCodeCells,
@@ -119,9 +126,12 @@ import type {
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
   CoreClientUndoResponse,
+  CoreClientUnmergeCellsResponse,
+  CoreClientUpdateConditionalFormat,
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
+  JsEditCell,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
@@ -215,6 +225,8 @@ class QuadraticCore {
             transactionId: data.transactionId,
             sheetPos: { x: state.current.x, y: state.current.y, sheetId: state.current.sheet_id },
             code: '', // Code is not needed for display, can be retrieved from grid if needed
+            chartPixelWidth: 0,
+            chartPixelHeight: 0,
           };
         }
 
@@ -223,6 +235,8 @@ class QuadraticCore {
           transactionId: data.transactionId,
           sheetPos: { x: op.x, y: op.y, sheetId: op.sheet_id },
           code: '', // Code is not needed for display, can be retrieved from grid if needed
+          chartPixelWidth: 0,
+          chartPixelHeight: 0,
         }));
 
         // Emit unified code running state
@@ -259,6 +273,10 @@ class QuadraticCore {
       const warnings = fromUint8Array<JsHashValidationWarnings[]>(e.data.warnings);
       events.emit('validationWarnings', warnings);
       return;
+    } else if (e.data.type === 'coreClientSheetConditionalFormats') {
+      const conditionalFormats = fromUint8Array<ConditionalFormatClient[]>(e.data.conditionalFormats);
+      events.emit('sheetConditionalFormats', e.data.sheetId, conditionalFormats);
+      return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
       return;
@@ -290,6 +308,11 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientStartupTimer') {
       events.emit('startupTimer', e.data.name, { start: e.data.start, end: e.data.end });
+      return;
+    } else if (e.data.type === 'coreClientMergeCells') {
+      const data = e.data as CoreClientMergeCells;
+      const mergeCells = JsMergeCells.createFromBytes(data.mergeCells);
+      events.emit('mergeCells', data.sheetId, mergeCells);
       return;
     }
 
@@ -389,6 +412,16 @@ class QuadraticCore {
     });
   }
 
+  async exportJson(): Promise<string> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientExportJson) => {
+        resolve(message.json);
+      };
+      this.send({ type: 'clientCoreExportJson', id });
+    });
+  }
+
   // Gets a code cell from a sheet
   getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
     const id = this.id++;
@@ -407,7 +440,7 @@ class QuadraticCore {
     });
   }
 
-  getEditCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+  getEditCell(sheetId: string, x: number, y: number): Promise<JsEditCell | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       const message: ClientCoreGetEditCell = {
@@ -1184,6 +1217,16 @@ class QuadraticCore {
     );
   }
 
+  applyFormatPainter(sourceSelection: string, targetSelection: string, isAi: boolean) {
+    this.send({
+      type: 'clientCoreApplyFormatPainter',
+      sourceSelection,
+      targetSelection,
+      cursor: sheets.getCursorPosition(),
+      isAi,
+    });
+  }
+
   //#endregion
 
   //#region Borders
@@ -1205,6 +1248,38 @@ class QuadraticCore {
         selection,
         borderSelection,
         style,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  mergeCells(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMergeCellsResponse) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreMergeCells',
+        id,
+        selection,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  unmergeCells(selection: string, isAi: boolean): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUnmergeCellsResponse) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreUnmergeCells',
+        id,
+        selection,
         cursor: sheets.getCursorPosition(),
         isAi,
       });
@@ -1502,6 +1577,72 @@ class QuadraticCore {
       sheetId,
       cursor: sheets.getCursorPosition(),
       isAi,
+    });
+  }
+
+  updateConditionalFormat(conditionalFormat: ConditionalFormatUpdate): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUpdateConditionalFormat) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreUpdateConditionalFormat',
+        id,
+        conditionalFormat,
+        cursor: sheets.getCursorPosition(),
+      });
+    });
+  }
+
+  removeConditionalFormat(sheetId: string, conditionalFormatId: string) {
+    this.send({
+      type: 'clientCoreRemoveConditionalFormat',
+      sheetId,
+      conditionalFormatId,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  batchUpdateConditionalFormats(
+    sheetId: string,
+    updates: ConditionalFormatUpdate[],
+    deleteIds: string[]
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientBatchUpdateConditionalFormats) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreBatchUpdateConditionalFormats',
+        id,
+        sheetId,
+        updates,
+        deleteIds,
+        cursor: sheets.getCursorPosition(),
+      });
+    });
+  }
+
+  previewConditionalFormat(conditionalFormat: ConditionalFormatUpdate): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientPreviewConditionalFormat) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCorePreviewConditionalFormat',
+        id,
+        conditionalFormat,
+      });
+    });
+  }
+
+  clearPreviewConditionalFormat(sheetId: string) {
+    this.send({
+      type: 'clientCoreClearPreviewConditionalFormat',
+      sheetId,
     });
   }
 

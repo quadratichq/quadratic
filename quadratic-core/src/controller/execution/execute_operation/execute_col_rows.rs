@@ -1,12 +1,12 @@
 use itertools::Itertools;
 
 use crate::{
-    CopyFormats, RefAdjust,
+    CellValue, CopyFormats, RefAdjust, Value,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{DataTableKind, GridBounds, SheetId},
+    grid::{DataTableKind, GridBounds, SheetId, data_table::DataTable},
 };
 
 use anyhow::{Result, bail};
@@ -18,6 +18,7 @@ impl GridController {
         adjustments: &[RefAdjust],
     ) {
         for sheet in self.grid.sheets().values() {
+            // Check DataTables
             for (data_table_pos, data_table) in sheet.data_tables.expensive_iter() {
                 if let Some(code_run) = data_table.code_run() {
                     let sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
@@ -33,6 +34,44 @@ impl GridController {
                     if code_run.code != new_code_run.code {
                         let mut data_table = data_table.clone();
                         data_table.kind = DataTableKind::CodeRun(new_code_run);
+                        transaction.operations.push_back(Operation::SetDataTable {
+                            sheet_pos,
+                            data_table: Some(data_table),
+                            index: usize::MAX,
+                            ignore_old_data_table: true,
+                        });
+                        transaction
+                            .operations
+                            .push_back(Operation::ComputeCode { sheet_pos });
+                    }
+                }
+            }
+
+            // Check CellValue::Code cells
+            for pos in sheet.iter_code_cells_positions() {
+                if let Some(CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
+                    let sheet_pos = pos.to_sheet_pos(sheet.id);
+                    let mut new_code_run = code_cell.code_run.clone();
+                    for &adj in adjustments {
+                        new_code_run.adjust_references(
+                            sheet_pos.sheet_id,
+                            &self.a1_context,
+                            sheet_pos,
+                            adj,
+                        );
+                    }
+                    if code_cell.code_run.code != new_code_run.code {
+                        // Convert to DataTable for the operation (will be converted back after execution if qualifies)
+                        let data_table = DataTable::new(
+                            DataTableKind::CodeRun(new_code_run),
+                            &format!("{}1", code_cell.code_run.language.as_string()),
+                            Value::Single((*code_cell.output).clone()),
+                            false,
+                            None,
+                            None,
+                            None,
+                        )
+                        .with_last_modified(code_cell.last_modified);
                         transaction.operations.push_back(Operation::SetDataTable {
                             sheet_pos,
                             data_table: Some(data_table),
@@ -337,8 +376,8 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        Array, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect, Value,
-        a1::A1Selection,
+        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
+        Value, a1::A1Selection,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
             sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
@@ -395,34 +434,43 @@ mod tests {
             sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
             "3".to_string()
         );
-        let old_dt = sheet.data_table_at(&pos![A1]).unwrap().clone();
-        let old_code_run = old_dt.code_run().unwrap().clone();
+
+        // 1x1 formulas are now stored as CellValue::Code, not DataTable
+        let CellValue::Code(code_cell) = sheet.cell_value_ref(pos![A1]).unwrap().clone() else {
+            panic!("Expected CellValue::Code at A1");
+        };
+        let old_code_run = code_cell.code_run.clone();
 
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
+
+        // The operation converts CellValue::Code to DataTable for the SetDataTable operation
+        assert_eq!(transaction.operations.len(), 2);
+        let Some(Operation::SetDataTable {
+            sheet_pos,
+            data_table: Some(data_table),
+            index,
+            ignore_old_data_table,
+        }) = transaction.operations.front()
+        else {
+            panic!("Expected SetDataTable operation");
+        };
+        assert_eq!(*sheet_pos, pos![sheet_id!A1]);
+        assert_eq!(*index, usize::MAX);
+        assert!(*ignore_old_data_table);
+        let Some(code_run) = data_table.code_run() else {
+            panic!("Expected CodeRun in DataTable");
+        };
+        assert_eq!(code_run.language, CodeCellLanguage::Formula);
+        assert_eq!(code_run.code, "B$17 + $B18");
+        assert!(code_run.formula_ast.is_none()); // formula_ast is cleared when code is adjusted
+        assert_eq!(code_run.cells_accessed, old_code_run.cells_accessed);
+
         assert_eq!(
-            &transaction.operations,
-            &[
-                // first formula, y += 1 for y >= 2
-                Operation::SetDataTable {
-                    sheet_pos: pos![sheet_id!A1],
-                    data_table: Some(DataTable {
-                        kind: DataTableKind::CodeRun(CodeRun {
-                            language: CodeCellLanguage::Formula,
-                            code: "B$17 + $B18".to_string(),
-                            ..old_code_run
-                        }),
-                        ..old_dt
-                    }),
-                    index: usize::MAX,
-                    ignore_old_data_table: true,
-                },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1)
-                },
-                // second formula doesn't change because all Y coordinates are < 2
-                // so no operations needed
-            ]
+            transaction.operations.get(1),
+            Some(&Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 1, 1)
+            })
         );
 
         let mut transaction = PendingTransaction::default();
@@ -501,6 +549,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("B1:B2")"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,
@@ -588,6 +637,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: r#"return q.cells("B1:B2");"#.into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

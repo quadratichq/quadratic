@@ -45,10 +45,12 @@ impl GridController {
         self.process_visible_dirty_hashes(transaction);
         self.process_remaining_dirty_hashes(transaction);
         self.send_validations(transaction);
+        self.send_conditional_formats(transaction);
         self.send_borders(transaction);
         self.send_fills(transaction);
         self.send_undo_redo();
         self.send_set_cursor(transaction);
+        self.send_merge_cells(transaction);
     }
 
     pub(crate) fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
@@ -139,10 +141,15 @@ impl GridController {
                 CELL_SHEET_HEIGHT as i64,
             );
 
+            let mut cells = sheet.get_render_cells(rect, &self.a1_context);
+
+            // Apply conditional formatting to render cells
+            self.apply_conditional_formatting_to_cells(sheet_id, rect, &mut cells);
+
             render_cells_in_hashes.push(JsHashRenderCells {
                 sheet_id,
                 hash,
-                cells: sheet.get_render_cells(rect, &self.a1_context),
+                cells,
             });
 
             validation_warnings.extend(sheet.get_validation_warnings_in_rect(rect, true));
@@ -286,6 +293,7 @@ impl GridController {
 
         sheet.send_content_cache();
         sheet.send_data_tables_cache();
+        sheet.send_merge_cells();
     }
 
     /// Sends delete sheet to the client
@@ -450,6 +458,7 @@ impl GridController {
                     html: None,
                     name: "".to_string(),
                     show_name: true,
+                    chart_image: None,
                 });
 
                 match serde_json::to_vec(&html) {
@@ -513,6 +522,22 @@ impl GridController {
         self.send_validation_warnings(all_warnings);
     }
 
+    fn send_conditional_formats(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.conditional_formats.clear();
+            return;
+        }
+
+        let conditional_formats = std::mem::take(&mut transaction.conditional_formats);
+        for sheet_id in conditional_formats.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            sheet.send_all_conditional_formats(self.a1_context());
+        }
+    }
+
     fn send_borders(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             transaction.sheet_borders.clear();
@@ -574,10 +599,25 @@ impl GridController {
                         CELL_SHEET_HEIGHT as i64,
                     );
 
+                    let mut fills = sheet.get_render_fills_in_rect(rect);
+
+                    // Add conditional format fills
+                    let cf_fills =
+                        self.get_conditional_format_fills(sheet_id, rect, self.a1_context());
+                    for (fill_rect, color) in cf_fills {
+                        fills.push(crate::grid::js_types::JsRenderFill {
+                            x: fill_rect.min.x,
+                            y: fill_rect.min.y,
+                            w: fill_rect.width(),
+                            h: fill_rect.height(),
+                            color,
+                        });
+                    }
+
                     render_fills_in_hashes.push(JsHashRenderFills {
                         sheet_id,
                         hash,
-                        fills: sheet.get_render_fills_in_rect(rect),
+                        fills,
                     });
                 } else {
                     dirty_fills_outside_viewport
@@ -692,6 +732,28 @@ impl GridController {
             !self.undo_stack.is_empty(),
             !self.redo_stack.is_empty(),
         );
+    }
+
+    fn send_merge_cells(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            return;
+        }
+
+        for sheet_id in transaction.merge_cells_updates.iter() {
+            if let Some(sheet) = self.try_sheet(*sheet_id) {
+                match serialize(&SerializationFormat::Bincode, &sheet.merge_cells) {
+                    Ok(merge_cells) => {
+                        crate::wasm_bindings::js::jsMergeCells(sheet_id.to_string(), merge_cells);
+                    }
+                    Err(e) => {
+                        dbgjs!(format!(
+                            "[send_merge_cells] Error serializing merge cells {:?}",
+                            e
+                        ));
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -843,6 +905,7 @@ mod test {
                     html: Some("<html></html>".to_string()),
                     show_name: true,
                     name: "Python1".to_string(),
+                    chart_image: None,
                 })
                 .unwrap()
             ),

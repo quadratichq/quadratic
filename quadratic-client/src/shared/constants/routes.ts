@@ -131,4 +131,6 @@ export const SEARCH_PARAMS = {
   SEQUENCE_NUM: { KEY: 'sequence_num' },
   LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
   REDIRECT_TO: { KEY: 'redirectTo' },
+  // Used to open the scheduled tasks panel when the file loads
+  SCHEDULED_TASKS: { KEY: 'scheduled-tasks' },
 } as const;

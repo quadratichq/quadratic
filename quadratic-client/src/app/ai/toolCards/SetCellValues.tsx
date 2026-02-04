@@ -2,12 +2,12 @@ import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { TableRowsIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type SetCellValuesResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCellValues]['responseSchema']>;
+type SetCellValuesResponse = AIToolsArgs[AITool.SetCellValues];
 
 export const SetCellValues = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -21,7 +21,7 @@ export const SetCellValues = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.SetCellValues].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.SetCellValues].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[SetCellValues] Failed to parse args: ', error);

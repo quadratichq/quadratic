@@ -6,7 +6,9 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export async function doubleClickCell(options: {
   column: number;
@@ -30,7 +32,23 @@ export async function doubleClickCell(options: {
 
   const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
   const codeCell = content.cellsSheet.tables.getCodeCellIntersects({ x: column, y: row });
-  const language = codeCell?.language;
+  let language: CodeCellLanguage | undefined = codeCell?.language;
+
+  // Check if it's a single-cell code cell (1x1 with no table UI)
+  let isSingleCell =
+    codeCell !== undefined && codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
+
+  // If not found in client-side cache, check if it's a single-cell code cell via core API
+  // We also capture the code so we can pass it as initialCode (avoids a second API call)
+  let singleCellCode: string | undefined;
+  if (!language) {
+    const editCell = await quadraticCore.getEditCell(sheets.current, column, row);
+    if (editCell?.codeCell) {
+      language = editCell.codeCell.language;
+      singleCellCode = editCell.codeCell.code;
+      isSingleCell = true;
+    }
+  }
 
   // Open the correct code editor
   if (language) {
@@ -38,6 +56,12 @@ export async function doubleClickCell(options: {
 
     const formula = language === 'Formula';
     const file_import = language === 'Import';
+
+    // For single-cell code cells detected via getEditCell, use the clicked position
+    // For table code cells, use the table's anchor position
+    const codeCellX = codeCell?.x ?? column;
+    const codeCellY = codeCell?.y ?? row;
+    const lastModified = codeCell ? Number(codeCell.last_modified) : Date.now();
 
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
       pixiAppSettings.setCodeEditorState({
@@ -54,12 +78,13 @@ export async function doubleClickCell(options: {
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
-            pos: { x: codeCell.x, y: codeCell.y },
+            pos: { x: codeCellX, y: codeCellY },
             language,
-            lastModified: Number(codeCell.last_modified),
+            lastModified,
+            isSingleCell,
           },
           showCellTypeMenu: false,
-          initialCode: '',
+          initialCode: singleCellCode ?? '',
           inlineEditor: formula,
         },
       });
@@ -68,13 +93,13 @@ export async function doubleClickCell(options: {
         const cursor = sheets.sheet.cursor.position;
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
-        if (codeCell && (cursor.x !== codeCell.x || cursor.y !== codeCell.y)) {
-          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y, { checkForTableRef: true });
+        if (cursor.x !== codeCellX || cursor.y !== codeCellY) {
+          sheets.sheet.cursor.moveTo(codeCellX, codeCellY, { checkForTableRef: true });
         }
         pixiAppSettings.changeInput(true, cell, cursorMode);
       }
-      // editing inside data table
-      else if (hasPermission && file_import) {
+      // editing inside data table (only applies to table code cells, not single-cell)
+      else if (hasPermission && file_import && codeCell) {
         // can't create formula inside data table
         if (cell?.startsWith('=')) {
           pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
@@ -127,11 +152,12 @@ export async function doubleClickCell(options: {
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
-              pos: { x: codeCell.x, y: codeCell.y },
+              pos: { x: codeCellX, y: codeCellY },
               language,
-              lastModified: Number(codeCell.last_modified),
+              lastModified,
+              isSingleCell,
             },
-            initialCode: '',
+            initialCode: singleCellCode ?? '',
             showCellTypeMenu: false,
           },
         });

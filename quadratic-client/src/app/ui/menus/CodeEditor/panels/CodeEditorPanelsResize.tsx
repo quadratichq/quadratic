@@ -1,4 +1,4 @@
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { showAIAnalystAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { getRightPanelsWidth } from '@/app/ui/menus/CodeEditor/panels/getRightPanelsWidth';
@@ -7,8 +7,8 @@ import {
   MIN_WIDTH_VISIBLE_GRID,
   useCodeEditorPanelData,
 } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useAtomValue } from 'jotai';
 import { memo, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 const MIN_WIDTH_EDITOR = 350;
 
@@ -18,7 +18,7 @@ interface CodeEditorPanelsResizeProps {
 
 export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeProps) => {
   const codeEditorPanelData = useCodeEditorPanelData();
-  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const showAIAnalyst = useAtomValue(showAIAnalystAtom);
   const { panelWidth: aiAnalystPanelWidth } = useAIAnalystPanelWidth();
 
   // we need to calculate the console height after a change in bottomHidden

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { exitAgentModeIfActive } from './file.helpers';
 import { waitForAppReady } from './wait.helpers';
 
 /**
@@ -28,6 +29,60 @@ export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
 
 export const setValueInCell = async (page: Page, a1: string, value: string) => {
   await gotoCells(page, { a1 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  // Wait for cell editor to be ready before typing
+  await page.waitForTimeout(500);
+  await page.keyboard.type(value, { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 250 });
+  await page.waitForTimeout(250);
+};
+
+/**
+ * Sets a cell value without closing open popovers (like search).
+ * Uses Control+G (goto) directly instead of gotoCells which presses Escape.
+ * If the search popover was closed by goto, it will be reopened automatically.
+ */
+export const setValueInCellWithoutClosingPopovers = async (
+  page: Page,
+  a1: string,
+  value: string,
+  searchTerm?: string
+) => {
+  // Store whether search was open before navigation
+  const searchWasOpen = await page
+    .locator('#search-input')
+    .isVisible()
+    .catch(() => false);
+
+  // Ensure canvas has focus
+  const canvasHasFocus = (await page.locator('#QuadraticCanvasID:focus-within').count()) > 0;
+  if (!canvasHasFocus) {
+    await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000, force: true });
+  }
+  await page.waitForTimeout(500);
+
+  // Use Control+G to navigate without pressing Escape
+  await page.keyboard.press('Control+G');
+  await page.waitForSelector('[data-testid="goto-menu"]', { timeout: 2 * 1000 });
+  await page.keyboard.type(a1);
+  await page.keyboard.press('Enter');
+  await assertSelection(page, { a1 });
+
+  // If search was open and got closed, reopen it
+  if (searchWasOpen && searchTerm) {
+    const searchStillOpen = await page
+      .locator('#search-input')
+      .isVisible()
+      .catch(() => false);
+    if (!searchStillOpen) {
+      await page.keyboard.press('Control+F');
+      await page.waitForTimeout(300);
+      await page.keyboard.type(searchTerm, { delay: 250 });
+      await page.waitForTimeout(300);
+    }
+  }
+
+  // Edit the cell
   await page.keyboard.press('Enter', { delay: 250 });
   // Wait for cell editor to be ready before typing
   await page.waitForTimeout(500);
@@ -66,6 +121,9 @@ export const sheetRefreshPage = async (page: Page) => {
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
+
+  // Exit Agent Mode if user was dropped into it
+  await exitAgentModeIfActive(page);
 
   // Close AI chat box as needed
   try {

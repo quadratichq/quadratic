@@ -207,6 +207,31 @@ impl Rect {
         self.max.y = self.max.y.max(other.max.y);
     }
 
+    /// Normalizes the rectangle, ensuring min.x <= max.x and min.y <= max.y.
+    /// Returns a new normalized rectangle.
+    pub fn normalize(self) -> Self {
+        Rect {
+            min: Pos {
+                x: self.min.x.min(self.max.x),
+                y: self.min.y.min(self.max.y),
+            },
+            max: Pos {
+                x: self.min.x.max(self.max.x),
+                y: self.min.y.max(self.max.y),
+            },
+        }
+    }
+
+    /// Normalizes the rectangle in place, ensuring min.x <= max.x and min.y <= max.y.
+    pub fn normalize_in_place(&mut self) {
+        if self.min.x > self.max.x {
+            std::mem::swap(&mut self.min.x, &mut self.max.x);
+        }
+        if self.min.y > self.max.y {
+            std::mem::swap(&mut self.min.y, &mut self.max.y);
+        }
+    }
+
     pub fn count(&self) -> usize {
         self.width() as usize * self.height() as usize
     }
@@ -716,6 +741,99 @@ mod test {
         let mut rect = Rect::new(0, 0, 1, 1);
         rect.union_in_place(&Rect::new(1, 1, 2, 2));
         assert_eq!(rect, Rect::new(0, 0, 2, 2));
+    }
+
+    #[test]
+    fn test_normalize() {
+        // Already normalized rect should remain unchanged
+        let rect = Rect::new(0, 0, 1, 1);
+        let normalized = rect.normalize();
+        assert_eq!(normalized.min, Pos { x: 0, y: 0 });
+        assert_eq!(normalized.max, Pos { x: 1, y: 1 });
+
+        // X needs swapping
+        let rect = Rect {
+            min: Pos { x: 5, y: 0 },
+            max: Pos { x: 1, y: 1 },
+        };
+        let normalized = rect.normalize();
+        assert_eq!(normalized.min, Pos { x: 1, y: 0 });
+        assert_eq!(normalized.max, Pos { x: 5, y: 1 });
+
+        // Y needs swapping
+        let rect = Rect {
+            min: Pos { x: 0, y: 5 },
+            max: Pos { x: 1, y: 1 },
+        };
+        let normalized = rect.normalize();
+        assert_eq!(normalized.min, Pos { x: 0, y: 1 });
+        assert_eq!(normalized.max, Pos { x: 1, y: 5 });
+
+        // Both X and Y need swapping
+        let rect = Rect {
+            min: Pos { x: 5, y: 5 },
+            max: Pos { x: 1, y: 1 },
+        };
+        let normalized = rect.normalize();
+        assert_eq!(normalized.min, Pos { x: 1, y: 1 });
+        assert_eq!(normalized.max, Pos { x: 5, y: 5 });
+
+        // Single cell (min == max) should remain unchanged
+        let rect = Rect::single_pos(Pos { x: 3, y: 4 });
+        let normalized = rect.normalize();
+        assert_eq!(normalized.min, Pos { x: 3, y: 4 });
+        assert_eq!(normalized.max, Pos { x: 3, y: 4 });
+    }
+
+    #[test]
+    fn test_normalize_in_place() {
+        // Already normalized rect should remain unchanged
+        let mut rect = Rect::new(0, 0, 1, 1);
+        rect.normalize_in_place();
+        assert_eq!(rect.min, Pos { x: 0, y: 0 });
+        assert_eq!(rect.max, Pos { x: 1, y: 1 });
+
+        // X needs swapping
+        let mut rect = Rect {
+            min: Pos { x: 5, y: 0 },
+            max: Pos { x: 1, y: 1 },
+        };
+        rect.normalize_in_place();
+        assert_eq!(rect.min, Pos { x: 1, y: 0 });
+        assert_eq!(rect.max, Pos { x: 5, y: 1 });
+
+        // Y needs swapping
+        let mut rect = Rect {
+            min: Pos { x: 0, y: 5 },
+            max: Pos { x: 1, y: 1 },
+        };
+        rect.normalize_in_place();
+        assert_eq!(rect.min, Pos { x: 0, y: 1 });
+        assert_eq!(rect.max, Pos { x: 1, y: 5 });
+
+        // Both X and Y need swapping
+        let mut rect = Rect {
+            min: Pos { x: 5, y: 5 },
+            max: Pos { x: 1, y: 1 },
+        };
+        rect.normalize_in_place();
+        assert_eq!(rect.min, Pos { x: 1, y: 1 });
+        assert_eq!(rect.max, Pos { x: 5, y: 5 });
+
+        // Single cell (min == max) should remain unchanged
+        let mut rect = Rect::single_pos(Pos { x: 3, y: 4 });
+        rect.normalize_in_place();
+        assert_eq!(rect.min, Pos { x: 3, y: 4 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
+
+        // Negative coordinates
+        let mut rect = Rect {
+            min: Pos { x: -5, y: -10 },
+            max: Pos { x: -10, y: -5 },
+        };
+        rect.normalize_in_place();
+        assert_eq!(rect.min, Pos { x: -10, y: -10 });
+        assert_eq!(rect.max, Pos { x: -5, y: -5 });
     }
 
     #[test]

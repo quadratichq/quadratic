@@ -29,8 +29,11 @@ impl Sheet {
         max_rows: Option<usize>,
         a1_context: &A1Context,
     ) -> JsSummaryContext {
+        let (default_column_width, default_row_height) = self.offsets.defaults();
         let mut summary = JsSummaryContext {
             sheet_name: self.name.clone(),
+            default_column_width,
+            default_row_height,
             data_rects: self.get_data_rects_in_selection(&selection, max_rows, a1_context),
             errored_code_cells: self.get_errored_code_cells_in_selection(&selection, a1_context),
             data_tables: None,
@@ -372,6 +375,7 @@ mod tests {
         let code_run_1 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "abcd".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -399,6 +403,7 @@ mod tests {
         let code_run_2 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "abcd".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -426,6 +431,7 @@ mod tests {
         let code_run_3 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "[[1, 2], [3, 4]]".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

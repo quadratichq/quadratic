@@ -62,7 +62,19 @@ def to_quadratic_type(value):
     except Exception as e:
         return (str(value), CellValueType.Text.value)
 
+# Global variable to store the chart image from the patched show method
+_captured_chart_image = None
+
 def to_html_with_cdn(self):
+    global _captured_chart_image
+    
+    # Generate chart image before converting to HTML
+    # This is called from the patched fig.show() method
+    # Use chart dimensions from core if available
+    chart_width = globals().get('__chart_pixel_width__')
+    chart_height = globals().get('__chart_pixel_height__')
+    _captured_chart_image = generate_chart_image(self, chart_width, chart_height)
+    
     html = self.to_html(
         include_plotlyjs="cdn",
         include_mathjax="cdn",
@@ -71,6 +83,64 @@ def to_html_with_cdn(self):
         ' src="https://', ' crossorigin="anonymous" src="https://'
     )
     return html
+
+def generate_chart_image(fig, target_width=None, target_height=None):
+    """
+    Generate a base64-encoded WebP image from a Plotly figure using kaleido.
+    
+    If target_width and target_height are provided, the image is rendered at those
+    exact dimensions. Otherwise, falls back to the figure's dimensions or Plotly defaults.
+    
+    Returns a data URL string or None if generation fails.
+    
+    Note: This function works on a copy of the figure to avoid mutating the original.
+    """
+    try:
+        import base64
+        import copy
+        import plotly.io as pio
+        
+        # Work on a deep copy to avoid mutating the original figure
+        fig_copy = copy.deepcopy(fig)
+        
+        # Use target dimensions if provided, otherwise use figure dimensions or defaults
+        if target_width is not None and target_height is not None:
+            render_width = int(target_width)
+            render_height = int(target_height)
+        else:
+            # Fallback to figure's dimensions or Plotly defaults (700x450)
+            render_width = int(fig_copy.layout.width) if fig_copy.layout.width else 700
+            render_height = int(fig_copy.layout.height) if fig_copy.layout.height else 450
+        
+        # Set explicit layout dimensions and disable animations/transitions
+        # to ensure the figure is fully rendered before capture
+        fig_copy.update_layout(
+            width=render_width,
+            height=render_height,
+            autosize=False,
+            # Disable animations that could cause blank renders
+            transition=None,
+        )
+        
+        # Force the figure to be fully validated/constructed by converting to dict
+        _ = fig_copy.to_dict()
+        
+        # Use pio.to_image which gives more control over the rendering engine
+        img_bytes = pio.to_image(
+            fig_copy,
+            format='webp',
+            width=render_width,
+            height=render_height,
+            engine='kaleido',
+            validate=True,  # Validate figure before rendering
+        )
+        
+        if img_bytes is None or len(img_bytes) == 0:
+            return None
+        
+        return 'data:image/webp;base64,' + base64.b64encode(img_bytes).decode('utf-8')
+    except Exception:
+        return None
 
 def setup_plotly_patch():
     """
@@ -92,6 +162,17 @@ def setup_plotly_patch():
         
         # Override the show method to convert to HTML with CDN
         BaseFigure.show = to_html_with_cdn
+        
+        # Initialize Kaleido scope with explicit settings to avoid timing issues
+        try:
+            import kaleido
+            # Pre-warm kaleido by accessing the scope
+            plotly.io.kaleido.scope.default_format = "webp"
+            plotly.io.kaleido.scope.default_width = 700
+            plotly.io.kaleido.scope.default_height = 450
+        except Exception:
+            pass
+            
     except ImportError:
         # Plotly not installed, nothing to patch
         pass
@@ -102,6 +183,7 @@ def process_output_value(output_value):
     output_type = type(output_value).__name__
     output_size = None
     has_headers = False
+    chart_image = None
 
     # TODO(ddimaria): figure out if we need to covert back to a list for array_output
     # We should have a single output
@@ -137,11 +219,22 @@ def process_output_value(output_value):
 
     try:
         import plotly
+        global _captured_chart_image
 
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
+            # Use chart dimensions from core if available
+            chart_width = globals().get('__chart_pixel_width__')
+            chart_height = globals().get('__chart_pixel_height__')
+            chart_image = generate_chart_image(output_value, chart_width, chart_height)
             output_value = to_html_with_cdn(output_value)
             output_type = "Chart"
-    except:
+        elif isinstance(output_value, str) and '<div' in output_value and 'plotly' in output_value.lower():
+            # Output is already HTML from fig.show() - use the captured chart image
+            if _captured_chart_image:
+                chart_image = _captured_chart_image
+                _captured_chart_image = None  # Clear after use
+            output_type = "Chart"
+    except Exception:
         pass
 
     # Convert Pandas.Series to array_output
@@ -200,4 +293,5 @@ def process_output_value(output_value):
         "output_type": output_type,
         "output_size": output_size,
         "has_headers": has_headers,
+        "chart_image": chart_image,
     }

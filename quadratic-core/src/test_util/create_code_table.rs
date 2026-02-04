@@ -9,6 +9,7 @@ use crate::{
 };
 
 /// Creates a Python code table with output of w x h cells with values 0, 1, ..., w * h - 1.
+/// Forces show_name=true to ensure storage as DataTable (not CellValue::Code).
 #[cfg(test)]
 pub fn test_create_code_table(
     gc: &mut GridController,
@@ -23,6 +24,7 @@ pub fn test_create_code_table(
 }
 
 /// Creates a Python code table with output of w x h cells with values.
+/// Forces show_name=true to ensure storage as DataTable (not CellValue::Code).
 #[cfg(test)]
 pub fn test_create_code_table_with_values(
     gc: &mut GridController,
@@ -49,6 +51,7 @@ pub fn test_create_code_table_with_values(
     let code_run = CodeRun {
         language: CodeCellLanguage::Python,
         code: "code".to_string(),
+        formula_ast: None,
         std_out: None,
         std_err: None,
         cells_accessed: Default::default(),
@@ -58,12 +61,15 @@ pub fn test_create_code_table_with_values(
         output_type: None,
     };
 
+    // For 1x1 tables, use show_name=true to force storage as DataTable (prevents CellValue::Code)
+    // For larger tables, show_name=false is fine since they won't be stored as CellValue::Code
+    let show_name = if w == 1 && h == 1 { Some(true) } else { Some(false) };
     let data_table = DataTable::new(
         DataTableKind::CodeRun(code_run),
         "Table1",
         array.into(),
         false,
-        Some(false),
+        show_name,
         Some(false),
         None,
     );

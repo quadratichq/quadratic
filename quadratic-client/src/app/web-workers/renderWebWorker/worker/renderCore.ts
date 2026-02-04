@@ -8,6 +8,7 @@
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsRenderCell, SheetBounds } from '@/app/quadratic-core-types';
 import { type JsOffset, type SheetInfo } from '@/app/quadratic-core-types';
+import { JsMergeCells } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
@@ -82,6 +83,10 @@ class RenderCore {
 
       case 'coreRenderTransactionEnd':
         renderText.transactionEnd(e.data.transactionId, e.data.transactionName);
+        break;
+
+      case 'coreRenderMergeCells':
+        renderText.updateMergeCells(e.data.sheetId, JsMergeCells.createFromBytes(e.data.mergeCells));
         break;
 
       default:

@@ -37,6 +37,8 @@ extern "C" {
         y: i32,
         sheet_id: String,
         code: String,
+        chart_pixel_width: f32,
+        chart_pixel_height: f32,
     ) -> JsValue;
 
     pub fn jsRunJavascript(
@@ -102,6 +104,11 @@ extern "C" {
         sheet_validations: Vec<u8>, /* Vec<Validation> */
     );
 
+    pub fn jsSheetConditionalFormats(
+        sheet_id: String,
+        conditional_formats: Vec<u8>, /* Vec<ConditionalFormat> */
+    );
+
     pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
     pub fn jsMultiplayerSynced();
@@ -118,6 +125,8 @@ extern "C" {
     pub fn jsCodeRunningState(transaction_id: String, code_operations: String);
 
     pub fn jsTimestamp() -> u64;
+
+    pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8> /* MergeCells */);
 }
 
 #[cfg(test)]
@@ -268,10 +277,14 @@ pub fn jsRunPython(
     y: i32,
     sheet_id: String,
     code: String,
+    chart_pixel_width: f32,
+    chart_pixel_height: f32,
 ) -> JsValue {
     js_call(
         "jsRunPython",
-        format!("{transactionId},{x},{y},{sheet_id},{code}"),
+        format!(
+            "{transactionId},{x},{y},{sheet_id},{code},{chart_pixel_width},{chart_pixel_height}"
+        ),
     );
     JsValue::NULL
 }
@@ -498,6 +511,18 @@ pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Va
 
 #[cfg(test)]
 #[allow(non_snake_case)]
+pub fn jsSheetConditionalFormats(
+    sheet_id: String,
+    conditional_formats: Vec<u8>, /* Vec<ConditionalFormat> */
+) {
+    js_call(
+        "jsSheetConditionalFormats",
+        format!("{sheet_id},{conditional_formats:?}"),
+    );
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
 pub fn jsRequestRowHeights(
     transaction_id: String,
     sheet_id: String,
@@ -565,4 +590,10 @@ pub fn jsCodeRunningState(_transaction_id: String, _code_operations: String) {
 pub fn jsTimestamp() -> u64 {
     // Return a fixed timestamp for deterministic tests
     1234567890000 // Jan 13, 2009 23:31:30 GMT
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8> /* MergeCells */) {
+    js_call("jsMergeCells", format!("{sheet_id},{merge_cells:?}"));
 }

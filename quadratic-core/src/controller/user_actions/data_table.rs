@@ -18,9 +18,11 @@ impl GridController {
         }
     }
 
-    /// Gets a data table based on a sheet position.
+    /// Gets a code run based on a sheet position.
+    /// This checks both CellValue::Code in columns and DataTable in data_tables.
     pub fn code_run_at(&self, sheet_pos: &SheetPos) -> Option<&CodeRun> {
-        self.data_table_at(*sheet_pos).and_then(|dt| dt.code_run())
+        self.try_sheet(sheet_pos.sheet_id)
+            .and_then(|sheet| sheet.code_run_at(&(*sheet_pos).into()))
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>, is_ai: bool) {
@@ -215,6 +217,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "return [1,2,3]".into(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

@@ -24,12 +24,10 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
   AIResponseThinkingContent,
-  AISource,
   AIUsage,
   AzureOpenAIModelKey,
   Content,
@@ -41,6 +39,7 @@ import type {
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getFilteredTools } from './tools';
 
 function convertInputTextContent(content: TextContent): ResponseInputContent {
   return {
@@ -83,7 +82,7 @@ export function getOpenAIResponsesApiArgs(
   tools: Array<Tool> | undefined;
   tool_choice: ToolChoiceOptions | ToolChoiceTypes | ToolChoiceFunction | undefined;
 } {
-  const { messages: chatMessages, toolName, source } = args;
+  const { messages: chatMessages, toolName, source, agentType } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -98,10 +97,24 @@ export function getOpenAIResponsesApiArgs(
     }
   }
 
+  // Second pass: collect all tool result IDs that exist
+  // This is needed to filter out orphaned tool calls (e.g., when chat is forked mid-tool-call)
+  const existingToolResultIds = new Set<string>();
+  for (const message of promptMessages) {
+    if (isToolResultMessage(message)) {
+      for (const toolResult of message.content) {
+        existingToolResultIds.add(toolResult.id);
+      }
+    }
+  }
+
   const messages: Array<ResponseInputItem> = promptMessages.reduce<Array<ResponseInputItem>>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Filter out tool calls that don't have corresponding tool results
+      const validToolCalls = message.toolCalls.filter((toolCall) => existingToolResultIds.has(toolCall.id));
+
       const reasoningItems: ResponseReasoningItem[] = [];
       const openaiMessages: ResponseInputItem[] = [
         {
@@ -151,7 +164,7 @@ export function getOpenAIResponsesApiArgs(
           status: 'completed',
           type: 'message',
         },
-        ...message.toolCalls.map<ResponseFunctionToolCall>((toolCall) => ({
+        ...validToolCalls.map<ResponseFunctionToolCall>((toolCall) => ({
           call_id: toolCall.id.startsWith('call_') ? toolCall.id : `call_${toolCall.id}`,
           type: 'function_call' as const,
           name: toolCall.name,
@@ -209,27 +222,20 @@ export function getOpenAIResponsesApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams, agentType);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
 function getOpenAITools(
-  source: AISource,
+  source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
-  strictParams: boolean
+  strictParams: boolean,
+  agentType?: AIRequestHelperArgs['agentType']
 ): Tool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
 
   if (tools.length === 0) {
     return undefined;
@@ -368,6 +374,9 @@ export async function parseOpenAIResponsesStream(
     }));
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -420,8 +429,6 @@ export function parseOpenAIResponsesResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const cacheReadTokens = result.usage?.input_tokens_details.cached_tokens ?? 0;
   const usage: AIUsage = {
     inputTokens: (result.usage?.input_tokens ?? 0) - cacheReadTokens,
@@ -429,6 +436,11 @@ export function parseOpenAIResponsesResponse(
     cacheReadTokens,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

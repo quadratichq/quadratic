@@ -1,4 +1,4 @@
-import { aiAnalystCurrentChatMessagesAtom, aiAnalystImportFilesToGridAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiStore, currentChatMessagesAtom, importFilesToGridAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getExtension, getFileTypeFromName } from '@/app/helpers/files';
@@ -31,7 +31,7 @@ export const useImportFilesToGrid = () => {
           return;
         }
 
-        set(aiAnalystImportFilesToGridAtom, { loading: true });
+        aiStore.set(importFilesToGridAtom, { loading: true });
 
         const currentSheet = sheets.sheet;
 
@@ -48,9 +48,11 @@ export const useImportFilesToGrid = () => {
           source: 'import_files_to_grid' as const,
           files: [],
         };
-        set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-          return [...prev, createInternalImportFilesContent(importFilesToGridContent)];
-        });
+        const prevMessages = aiStore.get(currentChatMessagesAtom);
+        aiStore.set(currentChatMessagesAtom, [
+          ...prevMessages,
+          createInternalImportFilesContent(importFilesToGridContent),
+        ]);
 
         // initialize the import progress state
         set(filesImportProgressAtom, {
@@ -71,10 +73,12 @@ export const useImportFilesToGrid = () => {
         // import files to the grid
         for (const importFile of importFiles) {
           const currentImportFile: InternalImportFile = { fileName: importFile.name, loading: true, error: undefined };
-          set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-            importFilesToGridContent.files = [...importFilesToGridContent.files, { ...currentImportFile }];
-            return [...prev.slice(0, -1), createInternalImportFilesContent(importFilesToGridContent)];
-          });
+          importFilesToGridContent.files = [...importFilesToGridContent.files, { ...currentImportFile }];
+          const currentMessages = aiStore.get(currentChatMessagesAtom);
+          aiStore.set(currentChatMessagesAtom, [
+            ...currentMessages.slice(0, -1),
+            createInternalImportFilesContent(importFilesToGridContent),
+          ]);
 
           // update the current file index
           set(filesImportProgressAtom, (prev) => {
@@ -119,13 +123,12 @@ export const useImportFilesToGrid = () => {
             responsePrompt += `\n - ${errorMessage}`;
           } finally {
             currentImportFile.loading = false;
-            set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-              importFilesToGridContent.files = [
-                ...importFilesToGridContent.files.slice(0, -1),
-                { ...currentImportFile },
-              ];
-              return [...prev.slice(0, -1), createInternalImportFilesContent(importFilesToGridContent)];
-            });
+            importFilesToGridContent.files = [...importFilesToGridContent.files.slice(0, -1), { ...currentImportFile }];
+            const msgs = aiStore.get(currentChatMessagesAtom);
+            aiStore.set(currentChatMessagesAtom, [
+              ...msgs.slice(0, -1),
+              createInternalImportFilesContent(importFilesToGridContent),
+            ]);
           }
         }
 
@@ -136,7 +139,7 @@ export const useImportFilesToGrid = () => {
           files: [],
         });
 
-        set(aiAnalystImportFilesToGridAtom, { loading: false });
+        aiStore.set(importFilesToGridAtom, { loading: false });
 
         userMessage.context = {
           ...userMessage.context,
@@ -145,9 +148,12 @@ export const useImportFilesToGrid = () => {
             files: importFiles.map((file) => ({ name: file.name, size: file.size })),
           },
         };
-        set(aiAnalystCurrentChatMessagesAtom, (prev) => {
-          return [...prev.slice(0, -2), { ...userMessage }, createInternalImportFilesContent(importFilesToGridContent)];
-        });
+        const finalMessages = aiStore.get(currentChatMessagesAtom);
+        aiStore.set(currentChatMessagesAtom, [
+          ...finalMessages.slice(0, -2),
+          { ...userMessage },
+          createInternalImportFilesContent(importFilesToGridContent),
+        ]);
       },
     []
   );

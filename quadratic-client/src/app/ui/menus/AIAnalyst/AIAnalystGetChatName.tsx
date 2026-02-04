@@ -1,19 +1,15 @@
+import { currentChatAtom, currentChatNameAtom, loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useGetChatName } from '@/app/ai/hooks/useGetChatName';
-import {
-  aiAnalystCurrentChatAtom,
-  aiAnalystCurrentChatNameAtom,
-  aiAnalystLoadingAtom,
-} from '@/app/atoms/aiAnalystAtom';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { memo, useEffect } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const AIAnalystGetChatName = memo(() => {
-  const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
-  const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const currentChat = useAtomValue(currentChatAtom);
+  const loading = useAtomValue(loadingAtom);
 
   // updates chat name if it is empty
   const { getChatName } = useGetChatName();
-  const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
+  const setCurrentChatName = useSetAtom(currentChatNameAtom);
   useEffect(() => {
     // 2 = 1 user message + 1 ai message before we trigger the getChatName function
     if (!loading && !currentChat.name && currentChat.messages.length >= 2) {

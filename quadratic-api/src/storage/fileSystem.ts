@@ -27,6 +27,12 @@ export const getPresignedStorageUrl = (key: string): string => {
   return generatePresignedUrl(encrypted);
 };
 
+// Get a presigned URL for uploading a file to the file service.
+export const getPresignedUploadStorageUrl = (key: string): string => {
+  const encrypted = encryptFromEnv(key);
+  return generateUrl(`upload/${encrypted}`, true);
+};
+
 // Upload a file to the file service.
 export const upload = async (key: string, contents: string | Uint8Array, jwt: string): Promise<UploadFileResponse> => {
   const url = generateUrl(key, false);

@@ -110,29 +110,25 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
-    pub fn finite_ref_range_bounds(&self, context: &JsA1Context) -> Result<JsValue, String> {
+    pub fn finite_ref_range_bounds(
+        &self,
+        context: &JsA1Context,
+        merge_cells: &crate::wasm_bindings::merge_cells::JsMergeCells,
+    ) -> Result<JsValue, String> {
         let ranges = self
             .selection
-            .ranges
-            .iter()
-            .filter(|r| r.is_finite())
-            .filter_map(|range| match range {
-                CellRefRange::Sheet { range } => Some(*range),
-                CellRefRange::Table { range } => {
-                    // we ignore charts because their selection needs to match
-                    // up with their pixel-perfect borders
-                    if context
-                        .get_context()
-                        .try_table(range.table_name.as_str())
-                        .is_some_and(|t| t.is_html_image)
-                    {
-                        return None;
-                    }
-                    range.convert_to_ref_range_bounds(false, context.get_context(), false, true)
-                }
-            })
-            .collect::<Vec<_>>();
+            .finite_ref_range_bounds(context.get_context(), Some(merge_cells.get_merge_cells()));
         serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "containsMergedCells")]
+    pub fn contains_merged_cells(
+        &self,
+        context: &JsA1Context,
+        merge_cells: &crate::wasm_bindings::merge_cells::JsMergeCells,
+    ) -> bool {
+        self.selection
+            .contains_merged_cells(context.get_context(), Some(merge_cells.get_merge_cells()))
     }
 
     #[wasm_bindgen(js_name = "getInfiniteRefRangeBounds")]
@@ -382,5 +378,19 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "is1dRange")]
     pub fn is_1d_range(&self, context: &JsA1Context) -> bool {
         self.selection.is_1d_range(context.get_context())
+    }
+
+    /// Returns the first cell position of the first range in the selection.
+    /// This is different from the cursor position, which may be elsewhere.
+    /// For table column selections, this returns the first data cell of that column.
+    #[wasm_bindgen(js_name = "getFirstRangeStart")]
+    pub fn get_first_range_start(&self, context: &JsA1Context) -> Option<JsCoordinate> {
+        use crate::grid::sheet::conditional_format::ConditionalFormatRule;
+
+        ConditionalFormatRule::get_first_cell_from_selection(&self.selection, context.get_context())
+            .map(|pos| JsCoordinate {
+                x: pos.x as u32,
+                y: pos.y as u32,
+            })
     }
 }

@@ -87,9 +87,33 @@ fn upgrade_sheet_formatting(
     }
 }
 
+fn upgrade_code_run(code_run: current::CodeRunSchema) -> v1_12::CodeRunSchema {
+    v1_12::CodeRunSchema {
+        language: code_run.language,
+        code: code_run.code,
+        formula_ast: None, // New field in v1_12, not present in v1_11
+        std_out: code_run.std_out,
+        std_err: code_run.std_err,
+        cells_accessed: code_run.cells_accessed,
+        error: code_run.error,
+        return_type: code_run.return_type,
+        line_number: code_run.line_number,
+        output_type: code_run.output_type,
+    }
+}
+
+fn upgrade_data_table_kind(kind: current::DataTableKindSchema) -> v1_12::DataTableKindSchema {
+    match kind {
+        current::DataTableKindSchema::CodeRun(code_run) => {
+            v1_12::DataTableKindSchema::CodeRun(Box::new(upgrade_code_run(code_run)))
+        }
+        current::DataTableKindSchema::Import(import) => v1_12::DataTableKindSchema::Import(import),
+    }
+}
+
 pub fn upgrade_table(table: current::DataTableSchema) -> v1_12::DataTableSchema {
     v1_12::DataTableSchema {
-        kind: table.kind,
+        kind: upgrade_data_table_kind(table.kind),
         name: table.name,
         value: upgrade_output_value(table.value),
         last_modified: table.last_modified,
@@ -129,7 +153,9 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_12::SheetSchema {
         data_tables: upgrade_tables(sheet.data_tables),
         rows_resize: sheet.rows_resize,
         borders: sheet.borders,
+        merge_cells: v1_12::MergeCellsSchema::default(),
         formats: upgrade_sheet_formatting(sheet.formats),
+        conditional_formats: v1_12::ConditionalFormatsSchema::default(),
     }
 }
 

@@ -1,90 +1,5 @@
+use super::pratt::parse_expression_iterative;
 use super::*;
-
-/// Operator precedence table.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum OpPrecedence {
-    Comparison,
-    Concat,
-    AddSub,
-    MulDiv,
-    Pow,
-    Range,
-    CellRange,
-    Prefix,
-    Suffix,
-    Atom,
-}
-impl Default for OpPrecedence {
-    fn default() -> Self {
-        Self::lowest()
-    }
-}
-impl OpPrecedence {
-    /// Returns the lowest precedence level.
-    pub const fn lowest() -> Self {
-        Self::Comparison
-    }
-    /// Returns the next-highest precedence level. Panics if given
-    /// `OpPrecedence::Atom`.
-    pub fn next(self) -> Self {
-        match self {
-            Self::Comparison => Self::Concat,
-            Self::Concat => Self::AddSub,
-            Self::AddSub => Self::MulDiv,
-            Self::MulDiv => Self::Pow,
-            Self::Pow => Self::Range,
-            Self::Range => Self::CellRange,
-            Self::CellRange => Self::Prefix,
-            Self::Prefix => Self::Suffix,
-            Self::Suffix => Self::Atom,
-            Self::Atom => panic!("tried to get operator precedence level beyond {self:?}"),
-        }
-    }
-
-    /// Returns a list of binary operators at this precedence level.
-    pub fn binary_ops(self) -> &'static [Token] {
-        use Token::*;
-        match self {
-            Self::Comparison => &[Eql, Neq, Lt, Gt, Lte, Gte],
-            Self::Concat => &[Concat],
-            Self::AddSub => &[Plus, Minus],
-            Self::MulDiv => &[Mult, Div],
-            Self::Pow => &[Power],
-            Self::Range => &[RangeOp],
-            Self::CellRange => &[CellRangeOp],
-            Self::Prefix => &[],
-            Self::Suffix => &[],
-            Self::Atom => &[],
-        }
-    }
-
-    /// Returns a list of unary prefix operators at this precedence level.
-    pub fn prefix_ops(self) -> &'static [Token] {
-        use Token::*;
-        match self {
-            Self::Prefix => &[Plus, Minus],
-            _ => &[],
-        }
-    }
-
-    /// Returns a list of unary suffix operators at this precedence level.
-    pub fn suffix_ops(self) -> &'static [Token] {
-        use Token::*;
-        match self {
-            Self::Suffix => &[Percent],
-            _ => &[],
-        }
-    }
-
-    /// Returns whether the binary operators at this precedence level are
-    /// right-associative.
-    pub fn is_right_associative(self) -> bool {
-        match self {
-            OpPrecedence::Pow => true,
-            _ => false,
-        }
-    }
-}
 
 /// Matches an expression, nothing, or a tuple of expressions.
 #[derive(Debug, Copy, Clone)]
@@ -93,6 +8,7 @@ impl_display!(for TupleExpression, "expression or nothing");
 impl SyntaxRule for TupleExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Expression.prefix_matches(p) // also matches start of tuple (left paren)
             || EmptyExpression.prefix_matches(p)
@@ -137,9 +53,11 @@ impl_display!(for OptionalExpression, "expression or nothing");
 impl SyntaxRule for OptionalExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Expression.prefix_matches(p) || EmptyExpression.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         parse_one_of!(p, [Expression, EmptyExpression])
     }
@@ -152,36 +70,22 @@ impl_display!(for Expression, "expression");
 impl SyntaxRule for Expression {
     type Output = ast::AstNode;
 
-    fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        ExpressionWithPrecedence::default().prefix_matches(p)
-    }
-    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        p.parse(ExpressionWithPrecedence::default())
-    }
-}
-
-/// Matches an expression with the given precedence level.
-#[derive(Debug, Default, Copy, Clone)]
-struct ExpressionWithPrecedence(pub OpPrecedence);
-impl_display!(for ExpressionWithPrecedence, "expression");
-impl SyntaxRule for ExpressionWithPrecedence {
-    type Output = ast::AstNode;
-
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        // Check if the next token can start an expression
         if let Some(t) = p.next() {
-            // There are so many tokens that might match, it's more reliable to
-            // just match all of them.
             match t {
                 Token::LParen => true,
                 Token::LBracket => false,
                 Token::LBrace => true,
 
-                //  These only match for expressions that can be empty.
+                // These only match for expressions that can be empty.
                 Token::RParen | Token::RBracket | Token::RBrace => false,
                 Token::ArgSep | Token::RowSep => false,
 
                 Token::Eql | Token::Neq | Token::Lt | Token::Gt | Token::Lte | Token::Gte => false,
 
+                // Plus/Minus can be prefix operators
                 Token::Plus | Token::Minus => true,
 
                 Token::Mult
@@ -215,197 +119,12 @@ impl SyntaxRule for ExpressionWithPrecedence {
             false
         }
     }
+
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        // Check recursion depth to prevent stack overflow
-        p.enter_depth()?;
-
-        // Consume an expression at the given precedence level, which may
-        // consist of expressions with higher precedence.
-        let result = match self.0 {
-            OpPrecedence::Atom => parse_one_of!(
-                p,
-                [
-                    FunctionCall.map(Some),
-                    CellReferenceExpression.map(Some),
-                    TableReferenceExpression.map(Some),
-                    StringLiteralExpression.map(Some),
-                    NumericLiteral.map(Some),
-                    ArrayLiteral.map(Some),
-                    BoolExpression.map(Some),
-                    ErrorExpression.map(Some),
-                    ParenExpression.map(Some),
-                ],
-            )
-            .transpose()
-            .unwrap_or_else(|| p.expected(self)),
-
-            prec if !prec.binary_ops().is_empty() => parse_binary_ops_expr(p, prec),
-            prec if !prec.prefix_ops().is_empty() => parse_prefix_ops(p, prec),
-            prec if !prec.suffix_ops().is_empty() => parse_suffix_ops(p, prec),
-            prec => internal_error!("don't know what to do for precedence {:?}", prec),
-        };
-
-        p.exit_depth();
-        result
+        // Use fully iterative Pratt parsing
+        parse_expression_iterative(p, 0)
     }
-}
-
-/// Parses an expression with any number of binary operators at a specific
-/// precedence level.
-fn parse_binary_ops_expr(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
-    let recursive_expression = ExpressionWithPrecedence(precedence.next());
-
-    let allowed_ops = precedence.binary_ops();
-
-    // First, just make a list of operators and expressions. `ops.len()` should
-    // always be equal to `exprs.len() - 1`.
-    let mut ops: Vec<Spanned<String>> = vec![];
-    let mut exprs: Vec<ast::AstNode> = vec![p.parse(recursive_expression)?];
-    while let Some(tok) = p.peek_next() {
-        if allowed_ops.contains(&tok) {
-            p.next();
-            ops.push(Spanned {
-                span: p.span(),
-                inner: p.token_str().to_string(),
-            });
-            exprs.push(p.parse(recursive_expression)?);
-            continue;
-        } else {
-            break;
-        }
-    }
-
-    let mut ret: ast::AstNode;
-    if precedence.is_right_associative() {
-        // Take out the last/rightmost expression; that's the deepest AST node.
-        ret = exprs.pop().unwrap();
-        // Pair up the remaining operators and expressions, and make a new AST
-        // node using the previous iteration as the right-hand side of the
-        // expression.
-        for (lhs, op) in exprs.into_iter().zip(ops).rev() {
-            ret = AstNode {
-                span: Span::merge(lhs.span, ret.span),
-                inner: ast::AstNodeContents::FunctionCall {
-                    func: op,
-                    args: vec![lhs, ret],
-                },
-            };
-        }
-    } else {
-        // Take out the first/leftmost expression; that's the deepest AST node.
-        let mut exprs_iter = exprs.into_iter();
-        ret = exprs_iter.next().unwrap();
-        // Pair up the remaining operators and expressions, and make a new AST
-        // node using the previous iteration as the left-hand side of the
-        // expression.
-        for (op, rhs) in ops.into_iter().zip(exprs_iter) {
-            ret = AstNode {
-                span: Span::merge(ret.span, rhs.span),
-                inner: ast::AstNodeContents::FunctionCall {
-                    func: op,
-                    args: vec![ret, rhs],
-                },
-            };
-        }
-    }
-    Ok(ret)
-}
-
-/// Parses an expression with any number of prefix operators.
-fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
-    let allowed_ops = precedence.prefix_ops();
-
-    // Build a list of operators in the order that they appear in the source
-    // code.
-    let mut ops: Vec<Spanned<String>> = vec![];
-    while let Some(tok) = p.peek_next() {
-        if allowed_ops.contains(&tok) {
-            p.next();
-            ops.push(Spanned {
-                span: p.span(),
-                inner: p.token_str().to_string(),
-            });
-            continue;
-        } else {
-            break;
-        }
-    }
-    let mut ret = p.parse(ExpressionWithPrecedence(precedence.next()))?;
-    // Now pop the operators off the list from right to left.
-    for op in ops {
-        ret = AstNode {
-            span: Span::merge(op.span, ret.span),
-            inner: ast::AstNodeContents::FunctionCall {
-                func: op,
-                args: vec![ret],
-            },
-        };
-    }
-    Ok(ret)
-}
-
-/// Parses an expression with any number of suffix operators.
-fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
-    let allowed_ops = precedence.suffix_ops();
-
-    // Parse the initial expression.
-    let mut ret = p.parse(ExpressionWithPrecedence(precedence.next()))?;
-
-    // Repeatedly try to consume a suffix.
-    loop {
-        if let Some(tok) = p.peek_next() {
-            if allowed_ops.contains(&tok) {
-                p.next();
-                let op = Spanned {
-                    span: p.span(),
-                    inner: p.token_str().to_string(),
-                };
-                ret = AstNode {
-                    span: Span::merge(ret.span, op.span),
-                    inner: ast::AstNodeContents::FunctionCall {
-                        func: op,
-                        args: vec![ret],
-                    },
-                };
-                continue;
-            }
-
-            // Check for function call suffix: expression followed by (args)
-            // This handles LAMBDA(...)(...) syntax
-            if tok == Token::LParen {
-                let call_args = p.parse(List {
-                    inner: TupleExpression,
-                    sep: Token::ArgSep,
-                    start: Token::LParen,
-                    end: Token::RParen,
-                    sep_name: "comma",
-                    allow_trailing_sep: false,
-                    allow_empty: true,
-                })?;
-
-                // Create an internal __LAMBDA_INVOKE__ node with the callee as the first
-                // argument and the call arguments as remaining arguments.
-                // Note: We use __LAMBDA_INVOKE__ (not CALL) to avoid conflicting with
-                // the Excel CALL function, which should remain unimplemented.
-                let mut args = vec![ret];
-                args.extend(call_args.inner);
-
-                ret = AstNode {
-                    span: Span::merge(args[0].span, call_args.span),
-                    inner: ast::AstNodeContents::FunctionCall {
-                        func: Spanned {
-                            span: call_args.span,
-                            inner: "__LAMBDA_INVOKE__".to_string(),
-                        },
-                        args,
-                    },
-                };
-                continue;
-            }
-        }
-        break;
-    }
-    Ok(ret)
 }
 
 /// Matches a function call.
@@ -415,6 +134,7 @@ impl_display!(for FunctionCall, "function call");
 impl SyntaxRule for FunctionCall {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::FunctionCall)
     }
@@ -454,9 +174,11 @@ impl_display!(for CellReferenceExpression, "cell reference such as 'A6' or '$ZB$
 impl SyntaxRule for CellReferenceExpression {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         CellReference.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(p.parse(CellReference)?.map(|result| match result {
             Ok((sheet_id, range)) => ast::AstNodeContents::CellRef(sheet_id, range),
@@ -472,9 +194,11 @@ impl_display!(for TableReferenceExpression, "table reference such as 'MyTable' o
 impl SyntaxRule for TableReferenceExpression {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         SheetTableReference.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(p.parse(SheetTableReference)?
             .map(ast::AstNodeContents::RangeRef))
@@ -488,6 +212,7 @@ impl_display!(for ParenExpression, "{}", Surround::paren(Expression));
 impl SyntaxRule for ParenExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Surround::paren(Expression).prefix_matches(p)
     }
@@ -505,6 +230,7 @@ impl_display!(for ArrayLiteral, "array literal such as '{{1, 2; 3, 4}}'");
 impl SyntaxRule for ArrayLiteral {
     type Output = AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::LBrace)
     }
@@ -556,9 +282,11 @@ impl_display!(for StringLiteralExpression, "string literal");
 impl SyntaxRule for StringLiteralExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         StringLiteral.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let inner = ast::AstNodeContents::String(p.parse(StringLiteral)?);
         let span = p.span();
@@ -574,6 +302,7 @@ impl_display!(for EmptyExpression, "empty expression");
 impl SyntaxRule for EmptyExpression {
     type Output = ast::AstNode;
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         match p.next() {
             None => true,
@@ -583,6 +312,7 @@ impl SyntaxRule for EmptyExpression {
         }
     }
 
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(Spanned {
             span: Span::empty(p.cursor.unwrap_or(0) as u32),

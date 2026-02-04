@@ -4,6 +4,63 @@ import { buildUrl } from './buildUrl.helpers';
 import { cleanUpFiles } from './file.helpers';
 
 /**
+ * Skips the feature walkthrough tour if it appears.
+ * This tour shows for authenticated users when first loading a sheet.
+ */
+export const skipFeatureWalkthrough = async (page: Page) => {
+  try {
+    const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
+
+    // Wait for dialog to appear (with a reasonable timeout)
+    // Use waitFor to actively wait for it, rather than just checking visibility
+    try {
+      await walkthroughDialog.waitFor({ state: 'visible', timeout: 10000 });
+    } catch {
+      // Dialog didn't appear, nothing to skip
+      return;
+    }
+
+    // Dialog is visible, now click skip
+    const skipButton = page.getByRole('button', { name: /Skip tour/i });
+
+    // Wait for skip button to be visible and ready
+    await skipButton.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Click with force to bypass pointer event interception
+    await skipButton.click({ timeout: 10000, force: true });
+
+    // Wait for the dialog to be completely removed/hidden
+    await walkthroughDialog.waitFor({ state: 'hidden', timeout: 15000 });
+
+    // Additional wait to ensure the dialog is fully dismissed and no longer intercepting events
+    await page.waitForTimeout(500);
+  } catch (error) {
+    // Walkthrough not present or couldn't be closed, continue silently
+    // Log for debugging in case this becomes a persistent issue
+    console.warn('Failed to skip feature walkthrough:', error);
+  }
+};
+
+/**
+ * Ensures the feature walkthrough dialog is dismissed before proceeding.
+ * This is a defensive helper to call right before critical clicks that might be blocked.
+ */
+export const ensureFeatureWalkthroughDismissed = async (page: Page) => {
+  const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
+
+  // Check if dialog is currently visible
+  const isVisible = await walkthroughDialog.isVisible({ timeout: 2000 }).catch(() => false);
+
+  if (isVisible) {
+    // Dialog is present, skip it
+    await skipFeatureWalkthrough(page);
+  }
+
+  // Wait a moment to ensure any dismissal animations complete
+  await page.waitForTimeout(300);
+};
+
+/**
  * Asserts that the Quadratic dashboard page is loaded and the user is logged in.
  * Checks for the user's email, page title, and "Suggested files" heading.
  */
@@ -13,6 +70,24 @@ export const assertDashboardLoaded = async (page: Page, options: { email: string
   await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
   await expect(page).toHaveTitle(/Files - Quadratic/);
   await expect(page.getByRole(`heading`, { name: `Files`, exact: true })).toBeVisible();
+};
+
+/**
+ * Dismisses the "Getting started with your team" onboarding dialog if it appears.
+ * This dialog shows for new team members with onboarding steps.
+ */
+export const dismissGettingStartedDialog = async (page: Page) => {
+  try {
+    const gettingStartedDialog = page.locator('h3:has-text("Getting started with your team")');
+    if (await gettingStartedDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+      // Click the Dismiss button
+      await page.getByRole('button', { name: 'Dismiss' }).click({ timeout: 5000 });
+      // Wait for the dialog to close
+      await gettingStartedDialog.waitFor({ state: 'hidden', timeout: 5000 });
+    }
+  } catch {
+    // Dialog not present or couldn't be closed, continue silently
+  }
 };
 
 /**
@@ -136,12 +211,13 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // fill out log in page and log in
   await page.locator(`[name="email"]`).fill(email, { timeout: 60 * 1000 });
-  page.locator('button:has-text("Continue")').click({ timeout: 60 * 1000 });
+  await page.locator('button:has-text("Continue")').click({ timeout: 60 * 1000 });
 
   // Handle optional captcha/anti-bot step if present
   await handleHumanCheck(page);
 
-  await page.waitForURL((url) => !url.pathname.startsWith('/password'), { timeout: 2 * 60 * 1000 });
+  // Wait for password field to appear after clicking Continue
+  await page.locator(`[name="password"]`).waitFor({ timeout: 2 * 60 * 1000 });
   await page.locator(`[name="password"]`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
   await page.getByRole('button', { name: 'Sign in' }).click({ timeout: 60 * 1000 });
 
@@ -263,6 +339,7 @@ export const handleOnboarding = async (page: Page) => {
   // 1. The onboarding URL to appear, OR
   // 2. The onboarding button element to appear
   const onboardingBtnUsePersonal = page.locator('[data-testid="onboarding-btn-use-personal"]');
+  const onboardingQuestionTitle = page.getByText('How will you use Quadratic?');
 
   // First, wait for URL to potentially change to onboarding (with timeout)
   try {
@@ -275,26 +352,34 @@ export const handleOnboarding = async (page: Page) => {
   const currentUrl = page.url();
   const isOnOnboardingUrl = currentUrl.includes('/onboarding');
 
-  // Now check if onboarding button is visible
-  // If we're on the onboarding URL, be more patient and wait longer
-  const timeoutForButton = isOnOnboardingUrl ? 30 * 1000 : 15 * 1000;
-  const isOnboardingVisible = await onboardingBtnUsePersonal
-    .isVisible({ timeout: timeoutForButton })
-    .catch(() => false);
+  // If we're on the onboarding URL, wait for the page to be ready
+  if (isOnOnboardingUrl) {
+    // Wait for the question title to appear as a reliable indicator that the page is loaded
+    try {
+      await onboardingQuestionTitle.waitFor({ state: 'visible', timeout: 30 * 1000 });
+    } catch {
+      // Question title didn't appear, might not be onboarding or page is still loading
+    }
 
-  // If onboarding button is not visible, check if we're already past onboarding
-  if (!isOnboardingVisible) {
-    // Check if we're on the onboarding URL - if so, wait a bit more for elements to load
-    if (isOnOnboardingUrl) {
-      // Wait for the page to fully load
-      await page.waitForLoadState('networkidle', { timeout: 10 * 1000 }).catch(() => {});
-      // Try again to see if the button appears - give it more time in CI
-      const retryVisible = await onboardingBtnUsePersonal.isVisible({ timeout: 30 * 1000 }).catch(() => false);
-      if (!retryVisible) {
-        await handleQuadraticLoading(page);
-        return;
-      }
-    } else {
+    // Wait for the page to fully load
+    await page.waitForLoadState('networkidle', { timeout: 10 * 1000 }).catch(() => {});
+
+    // Wait for the button to be attached to the DOM and visible
+    // Use waitFor with 'visible' state which waits for both attachment and visibility
+    try {
+      await onboardingBtnUsePersonal.waitFor({ state: 'visible', timeout: 30 * 1000 });
+    } catch {
+      // Button didn't appear, might have already completed onboarding or page structure changed
+      await handleQuadraticLoading(page);
+      return;
+    }
+  } else {
+    // Not on onboarding URL, check if button is visible anyway (might be on a different route)
+    const isOnboardingVisible = await onboardingBtnUsePersonal
+      .isVisible({ timeout: 15 * 1000 })
+      .catch(() => false);
+
+    if (!isOnboardingVisible) {
       // Not on onboarding URL and button not visible, onboarding likely not needed
       await handleQuadraticLoading(page);
       return;

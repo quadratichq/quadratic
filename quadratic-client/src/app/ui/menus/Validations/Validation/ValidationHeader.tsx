@@ -1,52 +1,42 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { ArrowBackIcon, CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
-import { Close } from '@mui/icons-material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useCallback, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export const ValidationHeader = (props: { validationData: ValidationData }) => {
-  const { unsaved, sheetId } = props.validationData;
+  const { validation } = props.validationData;
   const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
-  const [sheetName] = useState(` - ${sheets.getById(sheetId)?.name}`);
-
-  const back = useCallback(() => {
-    setShowValidation(true);
-  }, [setShowValidation]);
-
-  const close = useCallback(() => {
-    setShowValidation(false);
-  }, [setShowValidation]);
+  const isNew = !validation;
 
   return (
-    <div className="mb-2 flex items-center justify-between border-b border-b-gray-100 pb-2">
+    <div className="flex items-center justify-between border-b border-b-gray-100 pb-2 pt-3">
       <div className="flex items-center gap-1">
-        <TooltipPopover label={'Back to Data Validations for the sheet'} side="bottom">
-          <Button onClick={back} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
+        <TooltipPopover label="Back to list" side="bottom">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => {
+              setShowValidation(true);
+            }}
+          >
             <ArrowBackIcon />
           </Button>
         </TooltipPopover>
-
-        <div
-          className={cn(
-            `relative font-medium leading-4`,
-            unsaved &&
-              `after:pointer-events-none after:absolute after:-right-3 after:-top-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
-          )}
-        >
-          Data Validation{sheetName}
-        </div>
+        <h2 className="font-semibold">{isNew ? 'New Data Validation' : 'Edit Data Validation'}</h2>
       </div>
-
-      <TooltipPopover label={'Close'} shortcut="Esc" side="bottom">
-        <Button onClick={close} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
-          <Close />
-        </Button>
-      </TooltipPopover>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => {
+          setShowValidation(false);
+          focusGrid();
+        }}
+      >
+        <CloseIcon />
+      </Button>
     </div>
   );
 };

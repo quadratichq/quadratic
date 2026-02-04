@@ -223,32 +223,30 @@ impl GridController {
                     .top
                     .get_or_insert_default()
                     .set_rect(x1, y1 + 1, x2, y2, style);
-                if clear_neighbors
-                    && let Some(y2) = y2 {
-                        borders.bottom.get_or_insert_default().set_rect(
-                            x1,
-                            y1,
-                            x2,
-                            Some((y2 - 1).max(1)),
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(y2) = y2 {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        x2,
+                        Some((y2 - 1).max(1)),
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Vertical => {
                 borders
                     .left
                     .get_or_insert_default()
                     .set_rect(x1 + 1, y1, x2, y2, style);
-                if clear_neighbors
-                    && let Some(x2) = x2 {
-                        borders.right.get_or_insert_default().set_rect(
-                            x1,
-                            y1,
-                            Some((x2 - 1).max(1)),
-                            y2,
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(x2) = x2 {
+                    borders.right.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some((x2 - 1).max(1)),
+                        y2,
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Left => {
                 borders
@@ -295,16 +293,15 @@ impl GridController {
                         style,
                     );
                 }
-                if clear_neighbors
-                    && let Some(x2) = x2 {
-                        borders.left.get_or_insert_default().set_rect(
-                            x2 + 1,
-                            y1,
-                            Some(x2 + 1),
-                            y2,
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(x2) = x2 {
+                    borders.left.get_or_insert_default().set_rect(
+                        x2 + 1,
+                        y1,
+                        Some(x2 + 1),
+                        y2,
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Bottom => {
                 if let Some(y2) = y2 {
@@ -321,16 +318,15 @@ impl GridController {
                         style,
                     );
                 }
-                if clear_neighbors
-                    && let Some(y2) = y2 {
-                        borders.top.get_or_insert_default().set_rect(
-                            x1,
-                            y2 + 1,
-                            x2,
-                            Some(y2 + 1),
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(y2) = y2 {
+                    borders.top.get_or_insert_default().set_rect(
+                        x1,
+                        y2 + 1,
+                        x2,
+                        Some(y2 + 1),
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             // for clear, we need to remove any borders that are at the edges of
             // the range--eg, the left border at the next column to the right of the range
@@ -382,6 +378,7 @@ impl GridController {
         let mut tables_borders = HashMap::default();
 
         let context = self.a1_context();
+        let sheet = self.try_sheet(selection.sheet_id);
 
         let add_table_ops =
             |range: RefRangeBounds,
@@ -419,10 +416,45 @@ impl GridController {
         for range in selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => {
+                    // Check if this range is within a merged cell. If so,
+                    // only set borders on the anchor cell - the borders will be
+                    // rendered for the entire merged cell from the anchor.
+                    let effective_range = if range.is_finite() {
+                        let rect = range.to_rect();
+                        if let Some(merge_cells) = sheet.map(|s| &s.merge_cells)
+                            && let Some(rect) = rect
+                        {
+                            // Check if the selection is within a merged cell
+                            // This handles both:
+                            // 1. Single cell click inside a merged cell (e.g., D3 in B2:D3)
+                            // 2. Selection that matches the merged cell exactly (B2:D3)
+                            if let Some(merge_rect) = merge_cells.get_merge_cell_rect(rect.min) {
+                                // If the selection is within the merged cell bounds,
+                                // redirect to the anchor cell
+                                if merge_rect.contains_rect(&rect) {
+                                    RefRangeBounds::new_relative(
+                                        merge_rect.min.x,
+                                        merge_rect.min.y,
+                                        merge_rect.min.x,
+                                        merge_rect.min.y,
+                                    )
+                                } else {
+                                    *range
+                                }
+                            } else {
+                                *range
+                            }
+                        } else {
+                            *range
+                        }
+                    } else {
+                        *range
+                    };
+
                     self.a1_border_style_range(
                         border_selection,
                         style,
-                        range,
+                        &effective_range,
                         &mut sheet_borders,
                         clear_neighbors,
                         false,
@@ -432,9 +464,9 @@ impl GridController {
                     if let Some(table) = context.try_table(&range.table_name)
                         && let Some(range) =
                             range.convert_to_ref_range_bounds(true, context, false, false)
-                        {
-                            add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
-                        }
+                    {
+                        add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
+                    }
                 }
             }
         }

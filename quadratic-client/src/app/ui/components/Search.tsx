@@ -32,6 +32,7 @@ export function Search() {
     whole_cell: false,
     search_code: false,
     sheet_id: sheets.current,
+    regex: null,
   });
   const [results, setResults] = useState<JsSheetPosText[]>([]);
   const [current, setCurrent] = useState(0);
@@ -159,7 +160,7 @@ export function Search() {
 
   const closeSearch = useCallback(() => {
     setCursor(undefined);
-    setSearchOptions({ case_sensitive: null, whole_cell: null, search_code: null, sheet_id: null });
+    setSearchOptions({ case_sensitive: null, whole_cell: null, search_code: null, sheet_id: null, regex: null });
     events.emit('search');
     focusGrid();
   }, []);
@@ -192,6 +193,7 @@ export function Search() {
         whole_cell: false,
         search_code: false,
         sheet_id: sheets.current,
+        regex: null,
       });
 
       // if it's not true then it's of type SearchOptions

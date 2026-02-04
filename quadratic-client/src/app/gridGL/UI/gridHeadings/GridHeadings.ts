@@ -135,7 +135,8 @@ export class GridHeadings extends Container {
       ? content.accentColor
       : getCSSVariableTint('muted-foreground');
     this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-    this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
+    const baseColumnRanges = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
+    this.selectedColumns = this.expandColumnRangesForMergedCells(baseColumnRanges, leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
       const start = startPlacement.position;
@@ -270,6 +271,252 @@ export class GridHeadings extends Container {
     return Math.max(rowWidth, CELL_HEIGHT / scale);
   }
 
+  /**
+   * Expands column ranges to include all columns within merged cells in the selection.
+   * Returns ranges in the format [start1, end1, start2, end2, ...]
+   */
+  private expandColumnRangesForMergedCells(baseRanges: number[], fromColumn: number, toColumn: number): number[] {
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+
+    // Get finite ref range bounds which already includes merged cells
+    const finiteRanges = cursor.getFiniteRefRangeBounds();
+
+    // Collect all columns from the finite ranges
+    const allColumns = new Set<number>();
+    // Track merged cells we've already processed to avoid duplicate work
+    const processedMergedCells = new Set<string>();
+
+    // Add columns from base ranges
+    for (let i = 0; i < baseRanges.length; i += 2) {
+      for (let col = baseRanges[i]; col <= baseRanges[i + 1]; col++) {
+        allColumns.add(col);
+      }
+    }
+
+    // Add columns from finite ranges and check for merged cells
+    for (const range of finiteRanges) {
+      const startCol = Number(range.start.col.coord);
+      const endCol = Number(range.end.col.coord);
+      const startRow = Number(range.start.row.coord);
+      const endRow = Number(range.end.row.coord);
+
+      // Skip unbounded ranges
+      if (startCol === -1 || endCol === -1 || startRow === -1 || endRow === -1) continue;
+
+      const minCol = Math.min(startCol, endCol);
+      const maxCol = Math.max(startCol, endCol);
+      const minRow = Math.min(startRow, endRow);
+      const maxRow = Math.max(startRow, endRow);
+
+      // Add columns from the base selection range
+      for (let col = minCol; col <= maxCol; col++) {
+        if (col >= fromColumn && col <= toColumn) {
+          allColumns.add(col);
+        }
+      }
+
+      // Get all merged cells in this range
+      const rangeRect = new Rectangle(minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1);
+      const mergedCells = sheet.getMergeCellsInRect(rangeRect);
+
+      // Process each merged cell
+      for (const mergeRect of mergedCells) {
+        // Create a unique key for this merged cell
+        const mergeKey = `${mergeRect.min.x},${mergeRect.min.y},${mergeRect.max.x},${mergeRect.max.y}`;
+
+        // Only process if we haven't seen this merged cell before
+        if (!processedMergedCells.has(mergeKey)) {
+          processedMergedCells.add(mergeKey);
+
+          // Add all columns from this merged cell
+          const mergeMinCol = Number(mergeRect.min.x);
+          const mergeMaxCol = Number(mergeRect.max.x);
+
+          for (let mergeCol = mergeMinCol; mergeCol <= mergeMaxCol; mergeCol++) {
+            if (mergeCol >= fromColumn && mergeCol <= toColumn) {
+              allColumns.add(mergeCol);
+            }
+          }
+        }
+      }
+
+      // Also check corner cells for merged cells that might partially overlap
+      const cornerCells = [
+        { col: minCol, row: minRow },
+        { col: maxCol, row: minRow },
+        { col: minCol, row: maxRow },
+        { col: maxCol, row: maxRow },
+      ];
+
+      for (const cell of cornerCells) {
+        const mergeRect = sheet.getMergeCellRect(cell.col, cell.row);
+        if (mergeRect) {
+          const mergeKey = `${mergeRect.min.x},${mergeRect.min.y},${mergeRect.max.x},${mergeRect.max.y}`;
+
+          if (!processedMergedCells.has(mergeKey)) {
+            processedMergedCells.add(mergeKey);
+
+            const mergeMinCol = Number(mergeRect.min.x);
+            const mergeMaxCol = Number(mergeRect.max.x);
+
+            for (let mergeCol = mergeMinCol; mergeCol <= mergeMaxCol; mergeCol++) {
+              if (mergeCol >= fromColumn && mergeCol <= toColumn) {
+                allColumns.add(mergeCol);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Convert set to sorted array
+    const sortedColumns = Array.from(allColumns).sort((a, b) => a - b);
+
+    // Convert to ranges format
+    if (sortedColumns.length === 0) return [];
+
+    const ranges: number[] = [];
+    let rangeStart = sortedColumns[0];
+    let rangeEnd = sortedColumns[0];
+
+    for (let i = 1; i < sortedColumns.length; i++) {
+      if (sortedColumns[i] === rangeEnd + 1) {
+        rangeEnd = sortedColumns[i];
+      } else {
+        ranges.push(rangeStart, rangeEnd);
+        rangeStart = sortedColumns[i];
+        rangeEnd = sortedColumns[i];
+      }
+    }
+    ranges.push(rangeStart, rangeEnd);
+
+    return ranges;
+  }
+
+  /**
+   * Expands row ranges to include all rows within merged cells in the selection.
+   * Returns ranges in the format [start1, end1, start2, end2, ...]
+   */
+  private expandRowRangesForMergedCells(baseRanges: number[], fromRow: number, toRow: number): number[] {
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+
+    // Get finite ref range bounds which already includes merged cells
+    const finiteRanges = cursor.getFiniteRefRangeBounds();
+
+    // Collect all rows from the finite ranges
+    const allRows = new Set<number>();
+    // Track merged cells we've already processed to avoid duplicate work
+    const processedMergedCells = new Set<string>();
+
+    // Add rows from base ranges
+    for (let i = 0; i < baseRanges.length; i += 2) {
+      for (let row = baseRanges[i]; row <= baseRanges[i + 1]; row++) {
+        allRows.add(row);
+      }
+    }
+
+    // Add rows from finite ranges and check for merged cells
+    for (const range of finiteRanges) {
+      const startCol = Number(range.start.col.coord);
+      const endCol = Number(range.end.col.coord);
+      const startRow = Number(range.start.row.coord);
+      const endRow = Number(range.end.row.coord);
+
+      // Skip unbounded ranges
+      if (startCol === -1 || endCol === -1 || startRow === -1 || endRow === -1) continue;
+
+      const minCol = Math.min(startCol, endCol);
+      const maxCol = Math.max(startCol, endCol);
+      const minRow = Math.min(startRow, endRow);
+      const maxRow = Math.max(startRow, endRow);
+
+      // Add rows from the base selection range
+      for (let row = minRow; row <= maxRow; row++) {
+        if (row >= fromRow && row <= toRow) {
+          allRows.add(row);
+        }
+      }
+
+      // Get all merged cells in this range
+      const rangeRect = new Rectangle(minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1);
+      const mergedCells = sheet.getMergeCellsInRect(rangeRect);
+
+      // Process each merged cell
+      for (const mergeRect of mergedCells) {
+        // Create a unique key for this merged cell
+        const mergeKey = `${mergeRect.min.x},${mergeRect.min.y},${mergeRect.max.x},${mergeRect.max.y}`;
+
+        // Only process if we haven't seen this merged cell before
+        if (!processedMergedCells.has(mergeKey)) {
+          processedMergedCells.add(mergeKey);
+
+          // Add all rows from this merged cell
+          const mergeMinRow = Number(mergeRect.min.y);
+          const mergeMaxRow = Number(mergeRect.max.y);
+
+          for (let mergeRow = mergeMinRow; mergeRow <= mergeMaxRow; mergeRow++) {
+            if (mergeRow >= fromRow && mergeRow <= toRow) {
+              allRows.add(mergeRow);
+            }
+          }
+        }
+      }
+
+      // Also check corner cells for merged cells that might partially overlap
+      const cornerCells = [
+        { col: minCol, row: minRow },
+        { col: maxCol, row: minRow },
+        { col: minCol, row: maxRow },
+        { col: maxCol, row: maxRow },
+      ];
+
+      for (const cell of cornerCells) {
+        const mergeRect = sheet.getMergeCellRect(cell.col, cell.row);
+        if (mergeRect) {
+          const mergeKey = `${mergeRect.min.x},${mergeRect.min.y},${mergeRect.max.x},${mergeRect.max.y}`;
+
+          if (!processedMergedCells.has(mergeKey)) {
+            processedMergedCells.add(mergeKey);
+
+            const mergeMinRow = Number(mergeRect.min.y);
+            const mergeMaxRow = Number(mergeRect.max.y);
+
+            for (let mergeRow = mergeMinRow; mergeRow <= mergeMaxRow; mergeRow++) {
+              if (mergeRow >= fromRow && mergeRow <= toRow) {
+                allRows.add(mergeRow);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Convert set to sorted array
+    const sortedRows = Array.from(allRows).sort((a, b) => a - b);
+
+    // Convert to ranges format
+    if (sortedRows.length === 0) return [];
+
+    const ranges: number[] = [];
+    let rangeStart = sortedRows[0];
+    let rangeEnd = sortedRows[0];
+
+    for (let i = 1; i < sortedRows.length; i++) {
+      if (sortedRows[i] === rangeEnd + 1) {
+        rangeEnd = sortedRows[i];
+      } else {
+        ranges.push(rangeStart, rangeEnd);
+        rangeStart = sortedRows[i];
+        rangeEnd = sortedRows[i];
+      }
+    }
+    ranges.push(rangeStart, rangeEnd);
+
+    return ranges;
+  }
+
   private drawVerticalBar() {
     const viewport = pixiApp.viewport;
     const bounds = viewport.getVisibleBounds();
@@ -302,7 +549,8 @@ export class GridHeadings extends Container {
       : getCSSVariableTint('muted-foreground');
     this.headingsGraphics.beginFill(selectionColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
-    this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
+    const baseRowRanges = cursor.getSelectedRowRanges(topRow, bottomRow);
+    this.selectedRows = this.expandRowRangesForMergedCells(baseRowRanges, topRow, bottomRow);
     for (let i = 0; i < this.selectedRows.length; i += 2) {
       const startPlacement = offsets.getRowPlacement(this.selectedRows[i]);
       const start = startPlacement.position;
@@ -546,6 +794,11 @@ export class GridHeadings extends Container {
 
   /// Returns future sizes based on a new viewport position (top left)
   getFutureSizes = (viewportTopY: number): HeadingSize => {
+    // When headings are off, return all zeros
+    if (!pixiAppSettings.showHeadings) {
+      return { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
+    }
+
     const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const viewportHeight = bounds.height;

@@ -77,6 +77,42 @@ impl GridController {
                 index: existing_data_table_index,
                 ignore_old_data_table: false,
             });
+        } else if let Some(CellValue::Code(existing_code_cell)) = sheet.cell_value_ref(pos)
+            && existing_code_cell.code_run.language == language
+        {
+            // Existing CellValue::Code - preserve the output value until new calculation completes
+            let name = CellValue::Text(format!("{}1", language.as_string()));
+            ops.push(Operation::SetDataTable {
+                sheet_pos,
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        ..existing_code_cell.code_run.clone()
+                    }),
+                    name,
+                    header_is_first_row: false,
+                    show_name: None,
+                    show_columns: None,
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single((*existing_code_cell.output).clone()), // Preserve old output
+                    spill_value: false,
+                    spill_data_table: false,
+                    spill_merged_cell: false,
+                    last_modified: existing_code_cell.last_modified,
+                    alternating_colors: true,
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                    chart_image: None,
+                }),
+                index: usize::MAX,
+                ignore_old_data_table: false,
+            });
         } else {
             let name = CellValue::Text(
                 code_cell_name.unwrap_or_else(|| format!("{}1", language.as_string())),
@@ -101,12 +137,14 @@ impl GridController {
                     value: Value::Single(CellValue::Blank),
                     spill_value: false,
                     spill_data_table: false,
+                    spill_merged_cell: false,
                     last_modified: now(),
                     alternating_colors: true,
                     formats: None,
                     borders: None,
                     chart_pixel_output: None,
                     chart_output: None,
+                    chart_image: None,
                 }),
                 index: usize::MAX,
                 ignore_old_data_table: false,
@@ -280,7 +318,12 @@ impl GridController {
     pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
+            // Check data_tables
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+            }
+            // Check CellValue::Code in columns
+            for pos in sheet.iter_code_cells_positions() {
                 code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
             }
         }
@@ -294,7 +337,12 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
+        // Check data_tables
         for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+        }
+        // Check CellValue::Code in columns
+        for pos in sheet.iter_code_cells_positions() {
             code_cell_positions.push(pos.to_sheet_pos(sheet_id));
         }
 

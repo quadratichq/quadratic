@@ -8,6 +8,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatUpdate,
   DataTableSort,
   Format,
   FormatUpdate,
@@ -127,6 +128,17 @@ export interface CoreClientExportCsvSelection {
   id: number;
 }
 
+export interface ClientCoreExportJson {
+  type: 'clientCoreExportJson';
+  id: number;
+}
+
+export interface CoreClientExportJson {
+  type: 'coreClientExportJson';
+  json: string;
+  id: number;
+}
+
 //#endregion
 
 //#region Query
@@ -153,9 +165,23 @@ export interface ClientCoreGetEditCell {
   id: number;
 }
 
+/** Code cell info returned when editing a single-cell code cell */
+export interface JsEditCellCodeCell {
+  language: CodeCellLanguage;
+  code: string;
+}
+
+/** Result of getting a cell for editing */
+export interface JsEditCell {
+  /** The text representation of the cell value for editing */
+  text: string;
+  /** If this is a single-cell code cell, contains the language and code */
+  codeCell?: JsEditCellCodeCell;
+}
+
 export interface CoreClientGetEditCell {
   type: 'coreClientGetEditCell';
-  cell: string | undefined;
+  cell: JsEditCell | undefined;
   id: number;
 }
 
@@ -552,6 +578,34 @@ export interface CoreClientSetBorders {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreMergeCells {
+  type: 'clientCoreMergeCells';
+  id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientMergeCellsResponse {
+  type: 'coreClientMergeCellsResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreUnmergeCells {
+  type: 'clientCoreUnmergeCells';
+  id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientUnmergeCellsResponse {
+  type: 'coreClientUnmergeCellsResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetCellRenderResize {
   type: 'clientCoreSetCellRenderResize';
   id: number;
@@ -620,6 +674,62 @@ export interface ClientCoreGetValidationFromPos {
   sheetId: string;
   x: number;
   y: number;
+}
+
+//#endregion
+
+//#region Conditional Formatting
+
+export interface ClientCoreUpdateConditionalFormat {
+  type: 'clientCoreUpdateConditionalFormat';
+  id: number;
+  conditionalFormat: ConditionalFormatUpdate;
+  cursor: string;
+}
+
+export interface CoreClientUpdateConditionalFormat {
+  type: 'coreClientUpdateConditionalFormat';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreRemoveConditionalFormat {
+  type: 'clientCoreRemoveConditionalFormat';
+  sheetId: string;
+  conditionalFormatId: string;
+  cursor: string;
+}
+
+export interface ClientCoreBatchUpdateConditionalFormats {
+  type: 'clientCoreBatchUpdateConditionalFormats';
+  id: number;
+  sheetId: string;
+  updates: ConditionalFormatUpdate[];
+  deleteIds: string[];
+  cursor: string;
+}
+
+export interface CoreClientBatchUpdateConditionalFormats {
+  type: 'coreClientBatchUpdateConditionalFormats';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCorePreviewConditionalFormat {
+  type: 'clientCorePreviewConditionalFormat';
+  id: number;
+  conditionalFormat: ConditionalFormatUpdate;
+}
+
+export interface CoreClientPreviewConditionalFormat {
+  type: 'coreClientPreviewConditionalFormat';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreClearPreviewConditionalFormat {
+  type: 'clientCoreClearPreviewConditionalFormat';
+  sheetId: string;
 }
 
 //#endregion
@@ -854,6 +964,14 @@ export interface ClientCorePasteFromClipboard {
   isAi: boolean;
 }
 
+export interface ClientCoreApplyFormatPainter {
+  type: 'clientCoreApplyFormatPainter';
+  sourceSelection: string;
+  targetSelection: string;
+  cursor: string;
+  isAi: boolean;
+}
+
 //#endregion
 
 //#region Bounds
@@ -1029,6 +1147,12 @@ export interface CoreClientSheetValidations {
   type: 'coreClientSheetValidations';
   sheetId: string;
   sheetValidations: Uint8Array;
+}
+
+export interface CoreClientSheetConditionalFormats {
+  type: 'coreClientSheetConditionalFormats';
+  sheetId: string;
+  conditionalFormats: Uint8Array;
 }
 
 export interface CoreClientGetValidationFromPos {
@@ -1552,6 +1676,12 @@ export interface CoreClientSetFormula {
   error?: string;
 }
 
+export interface CoreClientMergeCells {
+  type: 'coreClientMergeCells';
+  sheetId: string;
+  mergeCells: Uint8Array;
+}
+
 export interface ClientCoreSetFormulas {
   type: 'clientCoreSetFormulas';
   id: number;
@@ -1616,7 +1746,10 @@ export type ClientCoreMessage =
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
+  | ClientCoreApplyFormatPainter
   | ClientCoreSetBorders
+  | ClientCoreMergeCells
+  | ClientCoreUnmergeCells
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
@@ -1637,6 +1770,11 @@ export type ClientCoreMessage =
   | ClientCoreRemoveValidations
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
+  | ClientCoreUpdateConditionalFormat
+  | ClientCoreRemoveConditionalFormat
+  | ClientCoreBatchUpdateConditionalFormats
+  | ClientCorePreviewConditionalFormat
+  | ClientCoreClearPreviewConditionalFormat
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
@@ -1675,7 +1813,8 @@ export type ClientCoreMessage =
   | ClientCoreUndo
   | ClientCoreRedo
   | ClientCoreSetFormula
-  | ClientCoreSetFormulas;
+  | ClientCoreSetFormulas
+  | ClientCoreExportJson;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1695,6 +1834,7 @@ export type CoreClientMessage =
   | CoreClientUpgradeFile
   | CoreClientExport
   | CoreClientExportExcel
+  | CoreClientExportJson
   | CoreClientSearch
   | CoreClientCopyToClipboard
   | CoreClientCutToClipboard
@@ -1720,6 +1860,7 @@ export type CoreClientMessage =
   | CoreClientSheetMetaFills
   | CoreClientGetValidations
   | CoreClientSheetValidations
+  | CoreClientSheetConditionalFormats
   | CoreClientGetValidationFromPos
   | CoreClientGetValidationList
   | CoreClientGetDisplayCell
@@ -1729,6 +1870,7 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientNeighborText
   | CoreClientBordersSheet
+  | CoreClientMergeCells
   | CoreClientGetCellValue
   | CoreClientClientMessage
   | CoreClientGetAISelectionContexts
@@ -1763,6 +1905,8 @@ export type CoreClientMessage =
   | CoreClientResizeColumns
   | CoreClientResizeRows
   | CoreClientSetBorders
+  | CoreClientMergeCellsResponse
+  | CoreClientUnmergeCellsResponse
   | CoreClientDeleteColumns
   | CoreClientDeleteRows
   | CoreClientInsertColumns
@@ -1771,6 +1915,9 @@ export type CoreClientMessage =
   | CoreClientDataTableMeta
   | CoreClientUpdateValidation
   | CoreClientRemoveValidationSelection
+  | CoreClientUpdateConditionalFormat
+  | CoreClientBatchUpdateConditionalFormats
+  | CoreClientPreviewConditionalFormat
   | CoreClientGetAICodeErrors
   | CoreClientGetAITransactions
   | CoreClientUndoResponse

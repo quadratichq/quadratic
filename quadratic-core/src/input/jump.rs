@@ -15,9 +15,12 @@
 use crate::{
     Pos, SheetPos,
     a1::A1Context,
-    grid::{js_types::Direction, sheet::data_tables::cache::SheetDataTablesCache},
+    grid::{
+        js_types::Direction,
+        sheet::{data_tables::cache::SheetDataTablesCache, merge_cells::MergeCells},
+    },
     input::{
-        has_content::{chart_at, has_content_ignore_blank_table, table_header_at},
+        has_content::{chart_at, has_content_ignore_blank_table_with_merge, table_header_at},
         traverse::{find_next_column, find_next_row},
     },
     wasm_bindings::sheet_content_cache::SheetContentCache,
@@ -30,12 +33,13 @@ pub fn jump_cursor(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Pos {
     match direction {
-        Direction::Up => jump_up(current, content_cache, table_cache, context),
-        Direction::Down => jump_down(current, content_cache, table_cache, context),
-        Direction::Left => jump_left(current, content_cache, table_cache, context),
-        Direction::Right => jump_right(current, content_cache, table_cache, context),
+        Direction::Up => jump_up(current, content_cache, table_cache, context, merge_cells),
+        Direction::Down => jump_down(current, content_cache, table_cache, context, merge_cells),
+        Direction::Left => jump_left(current, content_cache, table_cache, context, merge_cells),
+        Direction::Right => jump_right(current, content_cache, table_cache, context, merge_cells),
     }
 }
 
@@ -44,6 +48,7 @@ fn jump_up(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Pos {
     let sheet_id = current.sheet_id;
     let mut y = current.y;
@@ -54,23 +59,38 @@ fn jump_up(
         return Pos { x, y: 1 };
     }
 
+    // adjust the jump position if it is inside a merged cell to the top-most
+    // edge of the merged cell
+    if let Some(merge_rect) = merge_cells.and_then(|mc| mc.get_merge_cell_rect(current.into())) {
+        y = merge_rect.min.y;
+    }
     // adjust the jump position if it is inside a chart to the top-most
     // edge of the chart
-    if let Some(chart_rect) = chart_at(current, table_cache, context) {
+    else if let Some(chart_rect) = chart_at(current, table_cache, context) {
         y = chart_rect.min.y;
     }
 
     let prev_y: i64;
 
     // handle case of cell with content
-    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
+    if has_content_ignore_blank_table_with_merge(
+        Pos { x, y },
+        content_cache,
+        table_cache,
+        merge_cells,
+    ) {
         // if previous cell is empty, find the next cell with content
         if y - 1 == 0 {
             return Pos { x, y: 1 };
         }
 
         // if prev cell is empty, find the next cell with content
-        if !has_content_ignore_blank_table(Pos { x, y: y - 1 }, content_cache, table_cache) {
+        if !has_content_ignore_blank_table_with_merge(
+            Pos { x, y: y - 1 },
+            content_cache,
+            table_cache,
+            merge_cells,
+        ) {
             if let Some(prev) = find_next_row(
                 sheet_id,
                 y - 2,
@@ -80,6 +100,7 @@ fn jump_up(
                 content_cache,
                 table_cache,
                 context,
+                merge_cells,
             ) {
                 prev_y = prev;
             } else {
@@ -96,6 +117,7 @@ fn jump_up(
             content_cache,
             table_cache,
             context,
+            merge_cells,
         ) {
             prev_y = prev + 1;
         } else {
@@ -114,6 +136,7 @@ fn jump_up(
             content_cache,
             table_cache,
             context,
+            merge_cells,
         ) {
             prev_y = prev;
         } else {
@@ -129,23 +152,39 @@ fn jump_down(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Pos {
     let mut y = current.y;
     let x = current.x;
     let sheet_id = current.sheet_id;
 
+    // adjust the jump position if it is inside a merged cell to the bottom-most
+    // edge of the merged cell
+    if let Some(merge_rect) = merge_cells.and_then(|mc| mc.get_merge_cell_rect(current.into())) {
+        y = merge_rect.max.y;
+    }
     // adjust the jump position if it is inside a chart to the bottom-most
     // edge of the chart
-    if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
+    else if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
         y = chart_rect.max.y;
     }
 
     let mut next_y: Option<i64> = None;
 
     // handle case of cell with content
-    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
+    if has_content_ignore_blank_table_with_merge(
+        Pos { x, y },
+        content_cache,
+        table_cache,
+        merge_cells,
+    ) {
         // if next cell is empty, find the next cell with content
-        if !has_content_ignore_blank_table(Pos { x, y: y + 1 }, content_cache, table_cache) {
+        if !has_content_ignore_blank_table_with_merge(
+            Pos { x, y: y + 1 },
+            content_cache,
+            table_cache,
+            merge_cells,
+        ) {
             if let Some(next) = find_next_row(
                 sheet_id,
                 y + 2,
@@ -155,6 +194,7 @@ fn jump_down(
                 content_cache,
                 table_cache,
                 context,
+                merge_cells,
             ) {
                 next_y = Some(next);
             }
@@ -169,6 +209,7 @@ fn jump_down(
             content_cache,
             table_cache,
             context,
+            merge_cells,
         ) {
             next_y = Some(next - 1);
         } else {
@@ -185,6 +226,7 @@ fn jump_down(
         content_cache,
         table_cache,
         context,
+        merge_cells,
     ) {
         next_y = Some(next);
     }
@@ -203,6 +245,7 @@ fn jump_left(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Pos {
     let mut x = current.x;
     let y = current.y;
@@ -213,9 +256,14 @@ fn jump_left(
         return Pos { x: 1, y };
     }
 
+    // adjust the jump position if it is inside a merged cell to the left-most
+    // edge of the merged cell
+    if let Some(merge_rect) = merge_cells.and_then(|mc| mc.get_merge_cell_rect(current.into())) {
+        x = merge_rect.min.x;
+    }
     // adjust the jump position if it is inside a chart to the left-most
     // edge of the chart
-    if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
+    else if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
         x = chart_rect.min.x;
     }
     // adjust the jump position if it is inside a table header to the left-most
@@ -227,12 +275,22 @@ fn jump_left(
     let prev_x;
 
     // handle case of cell with content
-    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
+    if has_content_ignore_blank_table_with_merge(
+        Pos { x, y },
+        content_cache,
+        table_cache,
+        merge_cells,
+    ) {
         // if previous cell is empty, find the next cell with content
         if x - 1 == 0 {
             return Pos { x: 1, y };
         }
-        if !has_content_ignore_blank_table(Pos { x: x - 1, y }, content_cache, table_cache) {
+        if !has_content_ignore_blank_table_with_merge(
+            Pos { x: x - 1, y },
+            content_cache,
+            table_cache,
+            merge_cells,
+        ) {
             if x - 2 == 0 {
                 return Pos { x: 1, y };
             }
@@ -245,6 +303,7 @@ fn jump_left(
                 content_cache,
                 table_cache,
                 context,
+                merge_cells,
             ) {
                 prev_x = prev;
             } else {
@@ -261,6 +320,7 @@ fn jump_left(
             content_cache,
             table_cache,
             context,
+            merge_cells,
         ) {
             prev_x = prev + 1;
         } else {
@@ -277,6 +337,7 @@ fn jump_left(
         content_cache,
         table_cache,
         context,
+        merge_cells,
     ) {
         prev_x = prev;
     } else {
@@ -291,14 +352,21 @@ pub fn jump_right(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &A1Context,
+    merge_cells: Option<&MergeCells>,
 ) -> Pos {
     let mut x = current.x;
     let y = current.y;
     let sheet_id = current.sheet_id;
 
+    // adjust the jump position if it is inside a merged cell to the right-most
+    // edge of the merged cell
+    if let Some(merge_rect) = merge_cells.and_then(|mc| mc.get_merge_cell_rect(current.into())) {
+        x = merge_rect.max.x;
+    }
     // adjust the jump position if it is inside a chart or a table header to
     // the right-most edge
-    if let Some(dt_rect) = table_header_at(SheetPos { x, y, sheet_id }, table_cache, context) {
+    else if let Some(dt_rect) = table_header_at(SheetPos { x, y, sheet_id }, table_cache, context)
+    {
         x = dt_rect.max.x;
     } else if let Some(chart_rect) = chart_at(SheetPos { x, y, sheet_id }, table_cache, context) {
         x = chart_rect.max.x;
@@ -306,9 +374,19 @@ pub fn jump_right(
 
     // handle case of cell with content
     let mut next_x: Option<i64> = None;
-    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
+    if has_content_ignore_blank_table_with_merge(
+        Pos { x, y },
+        content_cache,
+        table_cache,
+        merge_cells,
+    ) {
         // if next cell is empty, find the next cell with content
-        if !has_content_ignore_blank_table(Pos { x: x + 1, y }, content_cache, table_cache) {
+        if !has_content_ignore_blank_table_with_merge(
+            Pos { x: x + 1, y },
+            content_cache,
+            table_cache,
+            merge_cells,
+        ) {
             if let Some(next) = find_next_column(
                 sheet_id,
                 x + 2,
@@ -318,6 +396,7 @@ pub fn jump_right(
                 content_cache,
                 table_cache,
                 context,
+                merge_cells,
             ) {
                 next_x = Some(next);
             }
@@ -332,6 +411,7 @@ pub fn jump_right(
             content_cache,
             table_cache,
             context,
+            merge_cells,
         ) {
             next_x = Some(next - 1);
         } else {
@@ -348,6 +428,7 @@ pub fn jump_right(
         content_cache,
         table_cache,
         context,
+        merge_cells,
     ) {
         next_x = Some(next);
     }
@@ -373,44 +454,76 @@ mod tests {
     #[track_caller]
     fn assert_jump_left(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
-        let content_cache = gc.sheet(sheet_id).content_cache();
-        let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context().clone();
+        let merge_cells = Some(&sheet.merge_cells);
 
-        let new_pos = jump_left(current, &content_cache, sheet_data_tables_cache, &context);
+        let new_pos = jump_left(
+            current,
+            &content_cache,
+            sheet_data_tables_cache,
+            &context,
+            merge_cells,
+        );
         assert_eq!(new_pos, expected);
     }
 
     #[track_caller]
     fn assert_jump_right(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
-        let content_cache = gc.sheet(sheet_id).content_cache();
-        let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context().clone();
+        let merge_cells = Some(&sheet.merge_cells);
 
-        let new_pos = jump_right(current, &content_cache, sheet_data_tables_cache, &context);
+        let new_pos = jump_right(
+            current,
+            &content_cache,
+            sheet_data_tables_cache,
+            &context,
+            merge_cells,
+        );
         assert_eq!(new_pos, expected);
     }
 
     #[track_caller]
     fn assert_jump_up(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
-        let content_cache = gc.sheet(sheet_id).content_cache();
-        let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context().clone();
+        let merge_cells = Some(&sheet.merge_cells);
 
-        let new_pos = jump_up(current, &content_cache, sheet_data_tables_cache, &context);
+        let new_pos = jump_up(
+            current,
+            &content_cache,
+            sheet_data_tables_cache,
+            &context,
+            merge_cells,
+        );
         assert_eq!(new_pos, expected);
     }
 
     #[track_caller]
     fn assert_jump_down(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
-        let content_cache = gc.sheet(sheet_id).content_cache();
-        let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context().clone();
+        let merge_cells = Some(&sheet.merge_cells);
 
-        let new_pos = jump_down(current, &content_cache, sheet_data_tables_cache, &context);
+        let new_pos = jump_down(
+            current,
+            &content_cache,
+            sheet_data_tables_cache,
+            &context,
+            merge_cells,
+        );
         assert_eq!(new_pos, expected);
     }
 
@@ -755,10 +868,49 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
         let table_cache = sheet.data_tables.cache_ref();
-        assert_eq!(row_bounds(3, &content_cache, table_cache), Some((1, 5)));
+        assert_eq!(
+            row_bounds(3, &content_cache, table_cache, None),
+            Some((1, 5))
+        );
 
         assert_jump_left(&gc, pos![sheet_id!F3], pos![E3]);
         assert_jump_left(&gc, pos![sheet_id!E3], pos![C3]);
         assert_jump_left(&gc, pos![sheet_id!C3], pos![A3]);
+    }
+
+    #[test]
+    fn test_jump_with_merged_cells() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Merge cells B2:D4 (3x3 merged cell)
+        gc.merge_cells(
+            crate::a1::A1Selection::test_a1("B2:D4"),
+            None,
+            false,
+        );
+
+        // Set some content around the merged cell
+        gc.set_cell_value(pos![sheet_id!B1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B5], "2".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "3".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!E2], "4".into(), None, false);
+
+        // Test jumping up from inside merged cell - should jump from top edge
+        // Column is maintained (C), so C3 -> C1
+        assert_jump_up(&gc, pos![sheet_id!C3], pos![C1]);
+        assert_jump_up(&gc, pos![sheet_id!D4], pos![D1]); // Should maintain column D
+
+        // Test jumping down from inside merged cell - should jump from bottom edge
+        assert_jump_down(&gc, pos![sheet_id!B2], pos![B5]);
+        assert_jump_down(&gc, pos![sheet_id!C3], pos![C5]); // Should maintain column C
+
+        // Test jumping left from inside merged cell - should jump from left edge
+        assert_jump_left(&gc, pos![sheet_id!C3], pos![A3]);
+        assert_jump_left(&gc, pos![sheet_id!D4], pos![A4]); // Should maintain row 4
+
+        // Test jumping right from inside merged cell - should jump from right edge
+        assert_jump_right(&gc, pos![sheet_id!B2], pos![E2]);
+        assert_jump_right(&gc, pos![sheet_id!C3], pos![E3]); // Should maintain row 3
     }
 }

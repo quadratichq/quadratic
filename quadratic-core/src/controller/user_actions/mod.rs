@@ -6,6 +6,7 @@ pub mod cells;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod conditional_format;
 pub mod data_table;
 pub mod formats;
 pub mod import;

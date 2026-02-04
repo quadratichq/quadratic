@@ -1,3 +1,4 @@
+import { initializeAIAnalyst } from '@/app/ai/atoms/aiAnalystAtoms';
 import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
@@ -13,9 +14,9 @@ import { useLoadScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { preloadUserAILanguages } from '@/shared/hooks/useUserAILanguages';
 import { preloadUserAIRules } from '@/shared/hooks/useUserAIRules';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 
 // Preload user AI preferences early so they're ready when settings menu opens
@@ -24,7 +25,7 @@ preloadUserAILanguages();
 
 export const QuadraticApp = memo(() => {
   // ensure GridSettings are loaded before app starts
-  useSetRecoilState(gridSettingsAtom);
+  const gridSettings = useRecoilValue(gridSettingsAtom);
 
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
@@ -37,6 +38,16 @@ export const QuadraticApp = memo(() => {
 
   // Load scheduled tasks
   useLoadScheduledTasks();
+
+  // Initialize AI Analyst with user and file info
+  const aiAnalystInitializedRef = useRef(false);
+  useEffect(() => {
+    if (aiAnalystInitializedRef.current) return;
+    if (loggedInUser?.email && fileUuid) {
+      aiAnalystInitializedRef.current = true;
+      initializeAIAnalyst(loggedInUser.email, fileUuid, gridSettings.showAIAnalystOnStartup);
+    }
+  }, [loggedInUser?.email, fileUuid, gridSettings.showAIAnalystOnStartup]);
 
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {

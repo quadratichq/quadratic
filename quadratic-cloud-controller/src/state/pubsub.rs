@@ -228,15 +228,22 @@ impl State {
         Ok(file_ids_with_tasks)
     }
 
-    /// Check if a file has pending tasks in PubSub
+    /// Check if a file has undelivered tasks in PubSub.
+    /// Only returns true if there are new messages that haven't been delivered
+    /// to any consumer yet. This prevents creating workers for files where
+    /// all messages have already been delivered (pending acknowledgment).
     pub(crate) async fn file_has_tasks(&self, file_id: Uuid) -> Result<bool> {
         self.reconnect_pubsub_if_unhealthy().await;
+        self.subscribe_pubsub(file_id).await?;
 
         let channel = PubSub::file_id_to_channel(file_id);
         let mut pubsub = self.pubsub.lock().await;
-        let length = pubsub.connection.length(&channel).await?;
 
-        Ok(length > 0)
+        pubsub
+            .connection
+            .has_undelivered_messages(&channel, GROUP)
+            .await
+            .map_err(|e| ControllerError::PubSub(e.to_string()))
     }
 
     /// Remove an active channel if it is empty

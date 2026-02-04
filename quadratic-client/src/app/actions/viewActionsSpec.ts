@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { getShowAIAnalyst, setShowAIAnalyst, toggleShowAIAnalyst } from '@/app/ai/atoms/aiAnalystAtoms';
 import { events } from '@/app/events/events';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -185,8 +186,7 @@ export const viewActionsSpec: ViewActionSpec = {
   [Action.ToggleAIAnalyst]: {
     label: () => 'New chat',
     run: () => {
-      if (!pixiAppSettings.setAIAnalystState) return;
-      pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
+      toggleShowAIAnalyst();
     },
   },
   [Action.AddReferenceToAIAnalyst]: {
@@ -194,7 +194,7 @@ export const viewActionsSpec: ViewActionSpec = {
     Icon: MentionIcon,
     run: (reference: ViewActionArgs[Action.AddReferenceToAIAnalyst]) => {
       trackEvent('[AIMentions].addReferenceFromGrid', {
-        showAIAnalyst: Boolean(pixiAppSettings.aiAnalystState?.showAIAnalyst),
+        showAIAnalyst: getShowAIAnalyst(),
       });
 
       // Note: if we we emit `aiAnalystAddReference` immediately, the event
@@ -203,15 +203,12 @@ export const viewActionsSpec: ViewActionSpec = {
       const emitReferenceEvent = () => {
         events.emit('aiAnalystAddReference', reference ?? '');
       };
-      if (pixiAppSettings.aiAnalystState?.showAIAnalyst) {
+      if (getShowAIAnalyst()) {
         // AIAnalyst is already shown, emit immediately
         emitReferenceEvent();
       } else {
         // AIAnalyst needs to be shown first, wait for it to be ready
-        pixiAppSettings.setAIAnalystState?.((prev) => ({
-          ...prev,
-          showAIAnalyst: true,
-        }));
+        setShowAIAnalyst(true);
         const handleReady = () => {
           events.off('aiAnalystReady', handleReady);
           emitReferenceEvent();

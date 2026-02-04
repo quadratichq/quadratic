@@ -1,10 +1,13 @@
 use super::current;
+use super::data_table::{export_code_run, import_code_run_builder};
 use crate::{
-    CellValue, Duration,
+    CellValue, CodeCell, Duration,
     cellvalue::{Import, TextSpan},
     grid::{CodeCellLanguage, ConnectionKind},
     number::decimal_from_str,
 };
+use anyhow::Result;
+use chrono::{DateTime, TimeZone, Utc};
 use rust_decimal::Decimal;
 use std::str::FromStr;
 
@@ -79,6 +82,13 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
         CellValue::RichText(spans) => {
             current::CellValueSchema::RichText(spans.into_iter().map(export_text_span).collect())
         }
+        CellValue::Code(code_cell) => {
+            current::CellValueSchema::Code(Box::new(current::SingleCodeCellSchema {
+                code_run: export_code_run(code_cell.code_run),
+                output: export_cell_value(*code_cell.output),
+                last_modified: code_cell.last_modified.timestamp_millis(),
+            }))
+        }
     }
 }
 
@@ -141,7 +151,34 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::RichText(spans) => {
             CellValue::RichText(spans.into_iter().map(import_text_span).collect())
         }
+        current::CellValueSchema::Code(code_cell) => {
+            import_code_cell(*code_cell).unwrap_or_else(|e| {
+                dbgjs!(format!("Failed to import code cell: {e}"));
+                CellValue::Blank
+            })
+        }
     }
+}
+
+/// Import a code cell from the schema. Returns a Result since code run parsing can fail.
+fn import_code_cell(code_cell: current::SingleCodeCellSchema) -> Result<CellValue> {
+    let code_run = import_code_run_builder(code_cell.code_run)?;
+    let output = import_cell_value(code_cell.output);
+    let last_modified = Utc
+        .timestamp_millis_opt(code_cell.last_modified)
+        .single()
+        .unwrap_or_else(|| {
+            dbgjs!(format!(
+                "Failed to parse last_modified timestamp: {}",
+                code_cell.last_modified
+            ));
+            Utc::now()
+        });
+    Ok(CellValue::Code(Box::new(CodeCell {
+        code_run,
+        output: Box::new(output),
+        last_modified,
+    })))
 }
 
 #[cfg(test)]
