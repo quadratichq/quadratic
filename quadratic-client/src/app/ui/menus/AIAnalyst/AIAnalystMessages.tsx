@@ -25,6 +25,7 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom, useAtomValue } from 'jotai';
@@ -538,13 +539,19 @@ const PromptSuggestions = memo(() => {
   return (
     <div className="flex flex-row flex-wrap gap-2 px-2">
       {promptSuggestions.suggestions.map((suggestion, index) => (
-        <div
-          key={`${index}-${suggestion.label}`}
-          className="flex h-7 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
-          onClick={() => handleClick(suggestion.prompt)}
-        >
-          <span className="truncate">{suggestion.label}</span>
-        </div>
+        <HoverCard key={`${index}-${suggestion.label}-card`}>
+          <HoverCardTrigger asChild>
+            <div
+              className="flex h-7 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+              onClick={() => handleClick(suggestion.prompt)}
+            >
+              <span className="truncate">{suggestion.label}</span>
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent side="top" align="start">
+            <p className="text-sm">{suggestion.prompt}</p>
+          </HoverCardContent>
+        </HoverCard>
       ))}
     </div>
   );

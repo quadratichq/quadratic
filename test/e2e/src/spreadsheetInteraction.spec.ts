@@ -4257,7 +4257,7 @@ test('Theme Customization', async ({ page }) => {
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
 
     // Assert the 'New file' button has the expected accent color
-    const newFileButton = page.getByRole(`button`, { name: `New file` });
+    const newFileButton = page.getByTestId('files-list-new-file-button');
     await expect(newFileButton).toBeVisible({ timeout: 60 * 1000 });
     await expect(newFileButton).toHaveCSS(`background-color`, theme.color);
 
@@ -4270,7 +4270,7 @@ test('Theme Customization', async ({ page }) => {
     await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
     // Assert the 'New file' button has the expected accent color after reload
-    const newFileButtonAfterReload = page.getByRole(`button`, { name: `New file` });
+    const newFileButtonAfterReload = page.getByTestId('files-list-new-file-button');
     await expect(newFileButtonAfterReload).toBeVisible({ timeout: 60 * 1000 });
     await expect(newFileButtonAfterReload).toHaveCSS(`background-color`, theme.color);
 

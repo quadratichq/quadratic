@@ -17,6 +17,7 @@ export { aiStore } from './store';
 // Types
 export { createDefaultChat } from './types';
 export type {
+  EmptyChatSuggestionsState,
   FailingSqlConnectionsState,
   ImportFilesToGridState,
   PdfImportState,
@@ -32,6 +33,7 @@ export {
   aiAnalystInitializedAtom,
   chatsAtom,
   currentChatBaseAtom,
+  emptyChatSuggestionsAtom,
   failingSqlConnectionsAtom,
   importFilesToGridAtom,
   loadingAtom,
@@ -51,6 +53,7 @@ export {
   chatsCountAtom,
   currentChatMessagesCountAtom,
   currentChatUserMessagesCountAtom,
+  emptyChatSuggestionsLoadingAtom,
   importFilesToGridLoadingAtom,
   pdfImportLoadingAtom,
   promptSuggestionsCountAtom,

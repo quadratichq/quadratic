@@ -42,9 +42,11 @@ export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
     ? undefined
     : Number(process.env.BILLING_AI_USAGE_LIMIT)
   : undefined;
-export const MAX_FILE_COUNT_FOR_PAID_PLAN = process.env.MAX_FILE_COUNT_FOR_PAID_PLAN
-  ? process.env.MAX_FILE_COUNT_FOR_PAID_PLAN.split(',').map(Number)
-  : undefined;
+
+// Maximum number of editable files for free teams (defaults to 5)
+export const FREE_EDITABLE_FILE_LIMIT = process.env.FREE_EDITABLE_FILE_LIMIT
+  ? Number(process.env.FREE_EDITABLE_FILE_LIMIT)
+  : 5;
 
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
