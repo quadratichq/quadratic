@@ -337,8 +337,8 @@ export class PointerCellMoving {
           const moves = [
             {
               source: rectToSheetRect(rectangle, sheets.current),
-              targetX: this.movingCells.toColumn ?? 0,
-              targetY: this.movingCells.toRow ?? 0,
+              targetX: Math.max(1, this.movingCells.toColumn ?? 1),
+              targetY: Math.max(1, this.movingCells.toRow ?? 1),
               targetSheetId: sheets.current,
             },
             ...(this.movingCells.additionalTables ?? []).map((table) => ({

@@ -288,21 +288,26 @@ export const AIToolsArgsSchema = {
     top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
-  [AITool.MoveCells]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    // New format: array of moves
-    moves: z
-      .array(
-        z.object({
-          source_selection_rect: stringSchema,
-          target_top_left_position: stringSchema,
-        })
-      )
-      .optional(),
-    // Old format (backward compatibility for loading old chats)
-    source_selection_rect: stringSchema.optional(),
-    target_top_left_position: stringSchema.optional(),
-  }),
+  [AITool.MoveCells]: z
+    .object({
+      sheet_name: stringNullableOptionalSchema,
+      // New format: array of moves
+      moves: z
+        .array(
+          z.object({
+            source_selection_rect: stringSchema,
+            target_top_left_position: stringSchema,
+          })
+        )
+        .optional(),
+      // Old format (backward compatibility for loading old chats)
+      source_selection_rect: stringSchema.optional(),
+      target_top_left_position: stringSchema.optional(),
+    })
+    .refine(
+      (data) => (data.moves && data.moves.length > 0) || (data.source_selection_rect && data.target_top_left_position),
+      { message: 'Either moves array or source_selection_rect/target_top_left_position must be provided' }
+    ),
   [AITool.DeleteCells]: z.object({
     sheet_name: stringNullableOptionalSchema,
     selection: stringSchema,

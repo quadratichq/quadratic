@@ -124,7 +124,7 @@ export const MoveCells = memo(
           <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
             {moves.map((move, index) => (
               <div
-                key={`${move.source_selection_rect}-${move.target_top_left_position}-${index}`}
+                key={index}
                 className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
                 onClick={() => handleMoveClick(move, toolArgs.data?.sheet_name)}
               >
