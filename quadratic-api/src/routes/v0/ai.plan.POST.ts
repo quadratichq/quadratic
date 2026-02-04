@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { trackAICost } from '../../billing/aiCostTracking.helper';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -147,7 +148,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
       res.setHeader('Connection', 'keep-alive');
 
       // handleAIRequest streams the response directly to res
-      await handleAIRequest({
+      const parsedResponse = await handleAIRequest({
         modelKey,
         args: {
           messages,
@@ -162,6 +163,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
         response: res,
         signal: abortController.signal,
       });
+
+      // Track cost for streaming response
+      if (parsedResponse) {
+        await trackAICost({
+          userId,
+          teamId: team.id,
+          usage: parsedResponse.usage,
+          modelKey,
+          source: 'AIAnalyst',
+        });
+      }
 
       return;
     } else {
@@ -185,6 +197,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
       if (!parsedResponse) {
         throw new ApiError(500, 'Failed to generate plan');
       }
+
+      // Track cost for non-streaming response
+      await trackAICost({
+        userId,
+        teamId: team.id,
+        usage: parsedResponse.usage,
+        modelKey,
+        source: 'AIAnalyst',
+      });
 
       const planText = parsedResponse.responseMessage.content
         .filter((c): c is { type: 'text'; text: string } => c.type === 'text')

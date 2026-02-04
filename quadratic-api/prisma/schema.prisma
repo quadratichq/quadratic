@@ -23,6 +23,7 @@ model User {
     UserTeamRole        UserTeamRole[]
     UserFileRole        UserFileRole[]
     AnalyticsAIChat     AnalyticsAIChat[]
+    AICost              AICost[]
 
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
@@ -86,6 +87,7 @@ model File {
     UserFileRole     UserFileRole[]
     FileInvite       FileInvite[]
     AnalyticsAIChat  AnalyticsAIChat[]
+    AICost           AICost[]
     ScheduledTask    ScheduledTask[]
 
     @@index([uuid])
@@ -133,6 +135,7 @@ model Team {
     TeamInvite   TeamInvite[]
     File         File[]
     Connection   Connection[]
+    AICost       AICost[]
 
     // Onboarding
     onboardingComplete  Boolean? @default(false) @map("onboarding_complete") // null = legacy, do not gate, false = new, gate, true = completed
@@ -385,6 +388,30 @@ model AnalyticsAIChatMessage {
     @@index([chatId, messageIndex])
     @@index([chatId])
     @@index([model])
+}
+
+model AICost {
+    id              Int            @id @default(autoincrement())
+    userId          Int            @map("user_id")
+    user            User           @relation(fields: [userId], references: [id])
+    teamId          Int            @map("team_id")
+    team            Team           @relation(fields: [teamId], references: [id])
+    fileId          Int?           @map("file_id")
+    file            File?          @relation(fields: [fileId], references: [id])
+    cost            Float          // Cost in dollars
+    model           String         // Model key (e.g., "gpt-4", "claude-3-5-sonnet")
+    source          AIChatSource  // Source of the AI request
+    inputTokens     Int            @default(0) @map("input_tokens")
+    outputTokens    Int            @default(0) @map("output_tokens")
+    cacheReadTokens Int            @default(0) @map("cache_read_tokens")
+    cacheWriteTokens Int           @default(0) @map("cache_write_tokens")
+    createdDate     DateTime       @default(now()) @map("created_date")
+
+    @@index([userId])
+    @@index([teamId])
+    @@index([userId, teamId])
+    @@index([createdDate])
+    @@index([teamId, createdDate])
 }
 
 // Scheduled Tasks

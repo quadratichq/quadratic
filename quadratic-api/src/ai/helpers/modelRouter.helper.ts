@@ -18,6 +18,7 @@ import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shar
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
 import logger from '../../utils/logger';
 import { handleAIRequest } from '../handler/ai.handler';
+import { trackAICost } from '../../billing/aiCostTracking.helper';
 
 export const getModelKey = async (
   modelKey: AIModelKey,
@@ -25,7 +26,9 @@ export const getModelKey = async (
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   restrictedCountry: boolean,
-  signal: AbortSignal
+  signal: AbortSignal,
+  userId: number,
+  teamId: number
 ): Promise<AIModelKey> => {
   try {
     if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
@@ -240,6 +243,17 @@ ${userTextPrompt}
       exceededBillingLimit,
       signal,
     });
+
+    // Track cost for model router request
+    if (parsedResponse) {
+      await trackAICost({
+        userId,
+        teamId,
+        usage: parsedResponse.usage,
+        modelKey: DEFAULT_MODEL_ROUTER_MODEL,
+        source: 'ModelRouter',
+      });
+    }
 
     const setAIModelToolCall = parsedResponse?.responseMessage.toolCalls.find(
       (toolCall) => toolCall.name === AITool.SetAIModel

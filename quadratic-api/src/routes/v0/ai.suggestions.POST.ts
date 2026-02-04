@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { trackAICost } from '../../billing/aiCostTracking.helper';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -184,6 +185,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
       });
       return;
     }
+
+    // Track cost for AI suggestions request
+    await trackAICost({
+      userId,
+      teamId: team.id,
+      usage: parsedResponse.usage,
+      modelKey: DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS,
+      source: 'AIAnalyst',
+    });
 
     const responseText = parsedResponse.responseMessage.content
       .filter((c): c is { type: 'text'; text: string } => c.type === 'text')

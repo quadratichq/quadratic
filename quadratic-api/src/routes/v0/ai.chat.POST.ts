@@ -1,4 +1,4 @@
-import type { AnalyticsAIChat } from '@prisma/client';
+import type { AnalyticsAIChat, AIChatSource } from '@prisma/client';
 import type { Response } from 'express';
 import {
     getLastAIPromptMessageIndex,
@@ -22,6 +22,7 @@ import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { trackAICost } from '../../billing/aiCostTracking.helper';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -136,7 +137,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     isOnPaidPlan,
     exceededBillingLimit,
     restrictedCountry,
-    abortController.signal
+    abortController.signal,
+    userId,
+    ownerTeam.id
   );
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
@@ -184,6 +187,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   if (parsedResponse) {
     modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);
+
+    // Track cost for AI request
+    await trackAICost({
+      userId,
+      teamId: ownerTeam.id,
+      fileId,
+      usage: parsedResponse.usage,
+      modelKey,
+      source: source as AIChatSource,
+    });
   }
 
   const model = getModelFromModelKey(modelKey);
