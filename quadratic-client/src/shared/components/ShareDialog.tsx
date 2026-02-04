@@ -804,47 +804,38 @@ export function InviteForm({
       // Always prevent default form submission to avoid page reload
       e.preventDefault();
 
+      // Get the data from the form
+      const formData = new FormData(e.currentTarget);
+      const emailFromUser = String(formData.get('email_search')).trim();
+      const role = String(formData.get('role'));
+
+      // Validate email
       let email: string;
-      let role: string;
-
       try {
-        // Get the data from the form
-        const formData = new FormData(e.currentTarget);
-        const emailFromUser = String(formData.get('email_search')).trim();
-        role = String(formData.get('role'));
-
-        // Validate email
-        try {
-          email = emailSchema.parse(emailFromUser);
-        } catch (e) {
-          setError('Invalid email.');
-          return;
-        }
-        if (disallowedEmails.includes(email)) {
-          setError('This email has already been invited.');
-          return;
-        }
-
-        // Submit the data
-        // TODO: (enhancement) enhance types so it knows which its submitting to
-        submit(
-          { intent, email: email, role },
-          { method: 'POST', action, encType: 'application/json', navigate: false }
-        );
-
-        // Reset the email input & focus it
-        if (inputRef.current) {
-          inputRef.current.value = '';
-          inputRef.current.focus();
-        }
-      } catch (error) {
-        console.error('Error in invite form submission:', error);
-        setError('Failed to submit invite. Please try again.');
+        email = emailSchema.parse(emailFromUser);
+      } catch (e) {
+        setError('Invalid email.');
+        return;
+      }
+      if (disallowedEmails.includes(email)) {
+        setError('This email has already been invited.');
         return;
       }
 
+      // Submit the data
+      // TODO: (enhancement) enhance types so it knows which its submitting to
+      submit(
+        { intent, email: email, role },
+        { method: 'POST', action, encType: 'application/json', navigate: false }
+      );
+
+      // Reset the email input & focus it
+      if (inputRef.current) {
+        inputRef.current.value = '';
+        inputRef.current.focus();
+      }
+
       // Handle (optionally) upgrading the invite to a team member
-      // This is intentionally outside the try-catch so bugs here surface rather than being masked
       // We use `as` here because we won't know the type since this is used
       // for file and team invites (but we won't pass this function in a team context)
       setUpgradeMember?.({ email, role: role as UserFileRole });
@@ -957,12 +948,13 @@ function ManageUser({
   // Handle redirect if user deleted themselves
   const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    if (
-      fetcherDelete.state === 'idle' &&
-      fetcherDelete.data?.ok &&
-      fetcherDelete.data.redirect &&
-      !hasNavigatedRef.current
-    ) {
+    // Reset the navigation guard when a new delete operation starts
+    if (fetcherDelete.state !== 'idle') {
+      hasNavigatedRef.current = false;
+      return;
+    }
+
+    if (fetcherDelete.data?.ok && fetcherDelete.data.redirect && !hasNavigatedRef.current) {
       hasNavigatedRef.current = true;
       navigate('/');
     }
