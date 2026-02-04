@@ -946,19 +946,11 @@ function ManageUser({
   const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
 
   // Handle redirect if user deleted themselves
-  const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    // Reset the navigation guard when a new delete operation starts
-    if (fetcherDelete.state !== 'idle') {
-      hasNavigatedRef.current = false;
-      return;
-    }
-
-    if (fetcherDelete.data?.ok && fetcherDelete.data.redirect && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
+    if (fetcherDelete.data?.ok && fetcherDelete.data.redirect) {
       navigate('/');
     }
-  }, [fetcherDelete.state, fetcherDelete.data, navigate]);
+  }, [fetcherDelete.data, navigate]);
 
   // If user is being deleted, hide them
   if (fetcherDelete.state !== 'idle') {
