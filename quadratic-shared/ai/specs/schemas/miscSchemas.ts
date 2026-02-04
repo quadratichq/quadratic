@@ -32,6 +32,32 @@ export const miscToolsArgsSchemas = {
       })
     ),
   }),
+  [AITool.CategorizedEmptyChatPromptSuggestions]: z.object({
+    enrich: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    clean: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    visualize: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    analyze: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+  }),
   [AITool.PDFImport]: z.object({
     file_name: stringSchema,
     prompt: stringSchema,
@@ -230,6 +256,90 @@ Each prompt suggestion is an object with a label and a prompt.\n
 The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
+`,
+  },
+  [AITool.CategorizedEmptyChatPromptSuggestions]: {
+    sources: ['GetEmptyChatPromptSuggestions'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool provides categorized prompt suggestions for the user based on their spreadsheet data.\n
+It requires exactly 3 suggestions per category (enrich, clean, visualize, analyze).\n
+Each suggestion has a short label (max 7 words) and a detailed prompt.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        enrich: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string', description: 'Short label (max 7 words) for enriching data' },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for adding derived columns, combining fields, or looking up related data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        clean: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string', description: 'Short label (max 7 words) for cleaning data' },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for fixing formatting, removing duplicates, or standardizing values',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        visualize: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string', description: 'Short label (max 7 words) for visualization' },
+              prompt: { type: 'string', description: 'Detailed prompt for creating charts and graphs' },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        analyze: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string', description: 'Short label (max 7 words) for analysis' },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for calculating statistics, finding patterns, or deriving insights',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['enrich', 'clean', 'visualize', 'analyze'],
+      additionalProperties: false,
+    },
+    responseSchema: miscToolsArgsSchemas[AITool.CategorizedEmptyChatPromptSuggestions],
+    prompt: `
+This tool provides categorized prompt suggestions based on the spreadsheet data.\n
+Generate exactly 3 suggestions per category, with each suggestion having a short label and detailed prompt.\n
+The four categories are:\n
+1. enrich - Add derived columns, combine fields, look up related data\n
+2. clean - Fix formatting, remove duplicates, standardize values\n
+3. visualize - Create charts and graphs\n
+4. analyze - Calculate statistics, find patterns, derive insights\n
+Make all suggestions specific to the actual data columns and values in the spreadsheet.\n
 `,
   },
   [AITool.PDFImport]: {
