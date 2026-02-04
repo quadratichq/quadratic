@@ -1,3 +1,3 @@
 pub mod cut;
-pub mod move_actions;
+pub mod move_clipboard;
 pub mod paste;

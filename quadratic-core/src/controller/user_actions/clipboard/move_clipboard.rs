@@ -45,6 +45,26 @@ impl GridController {
             }
         }
 
+        // Create a combined selection of all source areas. This is needed so that
+        // paste_html_operations knows that tables at other source positions are
+        // also being moved (not static tables that would block the paste).
+        let all_source_rects: Vec<Rect> = clipboards_and_cut_ops
+            .iter()
+            .map(|(clipboard, _, _)| {
+                let origin_pos = Pos::new(clipboard.origin.x, clipboard.origin.y);
+                clipboard.to_rect(origin_pos)
+            })
+            .collect();
+        let combined_selection = if let Some(first_clipboard) = clipboards_and_cut_ops.first() {
+            A1Selection::from_rects(
+                all_source_rects,
+                first_clipboard.0.origin.sheet_id,
+                self.a1_context(),
+            )
+        } else {
+            None
+        };
+
         // Phase 2: Generate all operations - cuts first, then pastes
         let mut all_ops = Vec::new();
 
@@ -54,7 +74,14 @@ impl GridController {
         }
 
         // Add all paste operations
-        for (clipboard, _, dest) in clipboards_and_cut_ops {
+        for (mut clipboard, _, dest) in clipboards_and_cut_ops {
+            // Update the clipboard's selection to include all source areas being moved.
+            // This allows paste_html_operations to correctly identify that tables at
+            // other source positions are also being moved in this batch.
+            if let Some(ref combined) = combined_selection {
+                clipboard.selection = combined.clone();
+            }
+
             let selection = A1Selection::from_single_cell(dest);
             if let Ok((paste_ops, data_table_ops)) = self.paste_html_operations(
                 dest.into(),
@@ -1291,6 +1318,115 @@ mod test {
             val1_at_9_1,
             Some(CellValue::Text("B".to_string())),
             "Expected 'B' at (9,1) after chain move"
+        );
+    }
+
+    #[test]
+    fn test_move_cells_batch_multiple_tables_to_previous_positions() {
+        // Test the specific bug where a later table is moved to an earlier table's
+        // original position. Without the fix, the later table would be deleted
+        // instead of moved because paste_html_operations would see the earlier
+        // table (which hasn't been moved yet in the sheet state) and fail.
+        use crate::controller::user_actions::import::tests::simple_csv_at;
+
+        // Create two CSV tables: Table A at (1,1) and Table B at (20,1)
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos!(A1));
+
+        // Import a second CSV at a different position
+        let csv_file = std::fs::read("../quadratic-rust-shared/data/csv/simple.csv").unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv_file.as_slice(),
+            "test2.csv",
+            pos!(T1), // Position (20, 1)
+            None,
+            Some(b','),
+            Some(true),
+            false,
+            false,
+        )
+        .unwrap();
+
+        // Verify both tables exist
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            sheet.data_table_at(&pos!(A1)).is_some(),
+            "Table A should exist at (1,1)"
+        );
+        assert!(
+            sheet.data_table_at(&pos!(T1)).is_some(),
+            "Table B should exist at (20,1)"
+        );
+
+        // Get the table dimensions
+        let table_a = sheet.data_table_at(&pos!(A1)).unwrap();
+        let table_b = sheet.data_table_at(&pos!(T1)).unwrap();
+        let table_a_rect = table_a.output_rect(pos!(A1), false);
+        let table_b_rect = table_b.output_rect(pos!(T1), false);
+
+        // Move Table A to (40,1), and Table B to (1,1) (where Table A was)
+        // This is the scenario that was buggy: Table B moving to Table A's original position
+        let moves = vec![
+            (
+                SheetRect::from_numbers(
+                    table_a_rect.min.x,
+                    table_a_rect.min.y,
+                    table_a_rect.width() as i64,
+                    table_a_rect.height() as i64,
+                    sheet_id,
+                ),
+                SheetPos::new(sheet_id, 40, 1),
+            ),
+            (
+                SheetRect::from_numbers(
+                    table_b_rect.min.x,
+                    table_b_rect.min.y,
+                    table_b_rect.width() as i64,
+                    table_b_rect.height() as i64,
+                    sheet_id,
+                ),
+                SheetPos::new(sheet_id, 1, 1), // Move to where Table A was
+            ),
+        ];
+
+        gc.move_cells_batch(moves, None, false);
+
+        // Verify both tables were moved correctly
+        let sheet = gc.sheet(sheet_id);
+
+        // Table A should now be at (40,1)
+        assert!(
+            sheet.data_table_at(&Pos::new(40, 1)).is_some(),
+            "Table A should have moved to (40,1)"
+        );
+
+        // Table B should now be at (1,1) - this was the bug: Table B was being deleted
+        assert!(
+            sheet.data_table_at(&pos!(A1)).is_some(),
+            "Table B should have moved to (1,1), but it was deleted instead"
+        );
+
+        // Original positions should be empty
+        assert!(
+            sheet.data_table_at(&pos!(T1)).is_none(),
+            "Original position of Table B (20,1) should be empty"
+        );
+
+        // Verify undo works correctly
+        gc.undo(1, None, false);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(
+            sheet.data_table_at(&pos!(A1)).is_some(),
+            "After undo, Table A should be back at (1,1)"
+        );
+        assert!(
+            sheet.data_table_at(&pos!(T1)).is_some(),
+            "After undo, Table B should be back at (20,1)"
+        );
+        assert!(
+            sheet.data_table_at(&Pos::new(40, 1)).is_none(),
+            "After undo, position (40,1) should be empty"
         );
     }
 }
