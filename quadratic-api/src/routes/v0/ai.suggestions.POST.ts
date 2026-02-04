@@ -7,6 +7,7 @@ import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import { trackAICost } from '../../billing/aiCostTracking.helper';
+import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -80,20 +81,28 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
   }
 
   let exceededBillingLimit = false;
+  const isFree = await isFreePlan(team);
 
-  // Check billing limits for non-paid plans
-  if (!isOnPaidPlan) {
-    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
-
-    if (exceededBillingLimit) {
-      res.status(200).json({
-        suggestions: [],
-        isOnPaidPlan,
-        exceededBillingLimit,
-      });
-      return;
+  // Check billing limits based on plan type
+  if (isFree) {
+    // Free plan: use existing message limit check
+    if (!isOnPaidPlan) {
+      const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
+      exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
     }
+  } else {
+    // Pro/Business plan: check allowance and budget limits
+    const canMakeRequest = await canMakeAiRequest(team, userId);
+    exceededBillingLimit = !canMakeRequest.allowed;
+  }
+
+  if (exceededBillingLimit) {
+    res.status(200).json({
+      suggestions: [],
+      isOnPaidPlan,
+      exceededBillingLimit,
+    });
+    return;
   }
 
   // Build context description and content parts

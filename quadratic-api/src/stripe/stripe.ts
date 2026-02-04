@@ -1,5 +1,6 @@
 import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
+import { PlanType } from '../billing/planHelpers';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
 import { trackEvent } from '../analytics/mixpanel';
@@ -86,7 +87,8 @@ export const createCheckoutSession = async (
   teamUuid: string,
   priceId: string,
   redirectUrlSuccess: string,
-  redirectUrlCancel: string
+  redirectUrlCancel: string,
+  planType?: 'pro' | 'business'
 ) => {
   const team = await dbClient.team.findUnique({
     where: {
@@ -112,6 +114,13 @@ export const createCheckoutSession = async (
   url.searchParams.set('subscription', 'created');
   const redirectUrlSuccessWithTracking = url.toString() + '&session_id={CHECKOUT_SESSION_ID}';
 
+  // Determine plan type from price ID if not provided
+  let finalPlanType = planType;
+  if (!finalPlanType) {
+    const proPriceId = await getProPriceId();
+    finalPlanType = priceId === proPriceId ? 'pro' : 'business';
+  }
+
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
     line_items: [
@@ -124,20 +133,43 @@ export const createCheckoutSession = async (
     allow_promotion_codes: true,
     success_url: redirectUrlSuccessWithTracking,
     cancel_url: redirectUrlCancel,
+    subscription_data: {
+      metadata: {
+        plan_type: finalPlanType === 'business' ? 'BUSINESS' : 'PRO',
+      },
+    },
   });
 };
 
-export const getMonthlyPriceId = async () => {
+export const getProPriceId = async () => {
   const prices = await stripe.prices.list({
     active: true,
   });
 
-  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_ai');
+  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_pro');
   if (data.length === 0) {
-    throw new Error('No monthly price found');
+    throw new Error('No Pro plan price found');
   }
 
   return data[0].id;
+};
+
+export const getBusinessPriceId = async () => {
+  const prices = await stripe.prices.list({
+    active: true,
+  });
+
+  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_business');
+  if (data.length === 0) {
+    throw new Error('No Business plan price found');
+  }
+
+  return data[0].id;
+};
+
+// Legacy function for backwards compatibility - defaults to Pro
+export const getMonthlyPriceId = async () => {
+  return getProPriceId();
 };
 
 export const updateTeamStatus = async (
@@ -173,6 +205,28 @@ export const updateTeamStatus = async (
     default:
       logger.error('Unhandled subscription status', { status });
       return;
+  }
+
+  // Get subscription to extract plan type from metadata
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const planTypeFromMetadata = subscription.metadata?.plan_type as PlanType | undefined;
+  
+  // Determine plan type: use metadata if available, otherwise default to PRO for active subscriptions
+  let planType: PlanType | null = null;
+  let monthlyAiAllowancePerUser: number | null = null;
+  
+  if (stripeSubscriptionStatus === SubscriptionStatus.ACTIVE) {
+    if (planTypeFromMetadata === PlanType.BUSINESS) {
+      planType = PlanType.BUSINESS;
+      monthlyAiAllowancePerUser = 40; // $40/user for Business
+    } else {
+      planType = PlanType.PRO;
+      monthlyAiAllowancePerUser = 20; // $20/user for Pro
+    }
+  } else {
+    // No active subscription = FREE
+    planType = PlanType.FREE;
+    monthlyAiAllowancePerUser = 0;
   }
 
   // Use a transaction to get old data and update atomically
@@ -213,15 +267,25 @@ export const updateTeamStatus = async (
     }
 
     // Update the team
+    // Note: planType and monthlyAiAllowancePerUser will be available after Prisma client regeneration
+    const updateData: any = {
+      // activated: true, // activate the team
+      stripeSubscriptionId,
+      stripeSubscriptionStatus,
+      stripeCurrentPeriodEnd: endDate,
+      stripeSubscriptionLastUpdated: new Date(),
+    };
+    
+    if (planType !== null) {
+      updateData.planType = planType;
+    }
+    if (monthlyAiAllowancePerUser !== null) {
+      updateData.monthlyAiAllowancePerUser = monthlyAiAllowancePerUser;
+    }
+    
     const updatedTeam = await tx.team.update({
       where: { stripeCustomerId: customerId },
-      data: {
-        // activated: true, // activate the team
-        stripeSubscriptionId,
-        stripeSubscriptionStatus,
-        stripeCurrentPeriodEnd: endDate,
-        stripeSubscriptionLastUpdated: new Date(),
-      },
+      data: updateData,
     });
 
     return { oldTeam, updatedTeam, teamOwner };

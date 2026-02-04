@@ -24,6 +24,7 @@ model User {
     UserFileRole        UserFileRole[]
     AnalyticsAIChat     AnalyticsAIChat[]
     AICost              AICost[]
+    UserBudgetLimit     UserBudgetLimit[]
 
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
@@ -125,6 +126,12 @@ enum SubscriptionStatus {
     PAUSED
 }
 
+enum PlanType {
+    FREE
+    PRO
+    BUSINESS
+}
+
 model Team {
     id           Int            @id @default(autoincrement())
     uuid         String         @unique @default(uuid())
@@ -148,6 +155,14 @@ model Team {
     stripeCurrentPeriodEnd              DateTime?           @map("stripe_current_period_end")
     stripeSubscriptionLastUpdated       DateTime?           @map("stripe_subscription_last_updated")
     stripeSubscriptionRetentionCouponId String?             @map("stripe_subscription_retention_coupon_id")
+
+    // Plan information
+    planType                    PlanType?            @map("plan_type")
+    monthlyAiAllowancePerUser   Float?               @map("monthly_ai_allowance_per_user") // In dollars
+    allowOveragePayments        Boolean              @default(false) @map("allow_overage_payments") // Business plan only
+    teamMonthlyBudgetLimit      Float?               @map("team_monthly_budget_limit") // Total team budget in dollars
+
+    UserBudgetLimit             UserBudgetLimit[]
 
     // Key/value storage used by Quadratic client on the Team.
     // It remembers things like closing the onboarding banner.
@@ -463,4 +478,19 @@ model ScheduledTaskLog {
     @@index([status])
     @@index([runId, createdDate(sort: Desc)])
     @@index([createdDate(sort: Desc)])
+}
+
+model UserBudgetLimit {
+    id                    Int      @id @default(autoincrement())
+    userId                Int      @map("user_id")
+    user                  User     @relation(fields: [userId], references: [id])
+    teamId                Int      @map("team_id")
+    team                  Team     @relation(fields: [teamId], references: [id])
+    monthlyBudgetLimit    Float    @map("monthly_budget_limit") // In dollars
+    createdDate           DateTime @default(now()) @map("created_date")
+    updatedDate           DateTime @default(now()) @map("updated_date")
+
+    @@unique([userId, teamId])
+    @@index([teamId])
+    @@index([userId, teamId])
 }

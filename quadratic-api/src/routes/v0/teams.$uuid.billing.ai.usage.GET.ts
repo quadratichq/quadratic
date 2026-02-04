@@ -6,6 +6,15 @@ import {
   BillingAIUsageLimitExceeded,
   BillingAIUsageMonthlyForUserInTeam,
 } from '../../billing/AIUsageHelpers';
+import {
+  getCurrentMonthAiCostForTeam,
+  getCurrentMonthAiCostForUser,
+  getMonthlyAiAllowancePerUser,
+  getTeamMonthlyAiAllowance,
+  getUserBudgetLimit,
+  hasExceededTeamBudget,
+  isFreePlan,
+} from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
@@ -59,25 +68,79 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     },
   });
 
-  // Check if the user is member of this team and team is on a paid plan
-  if (userTeamRole) {
-    const isOnPaidPlan = await getIsOnPaidPlan(team);
-    if (isOnPaidPlan) {
-      return res.status(200).json({ exceededBillingLimit: false });
+  const isOnPaidPlan = await getIsOnPaidPlan(team);
+  const isFree = await isFreePlan(team);
+
+  // Get usage information based on plan type
+  if (isFree) {
+    // Free plan: use message limit
+    if (!userTeamRole || !isOnPaidPlan) {
+      const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
+      const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+      const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
+
+      return res.status(200).json({
+        exceededBillingLimit,
+        billingLimit: BILLING_AI_USAGE_LIMIT,
+        currentPeriodUsage,
+        planType: 'FREE',
+        currentMonthAiCost: null,
+        monthlyAiAllowance: null,
+        remainingAllowance: null,
+        teamMonthlyBudgetLimit: null,
+        userMonthlyBudgetLimit: null,
+        allowOveragePayments: false,
+      });
     }
   }
 
-  // if user is not member of this team or team is not on a paid plan, check if the user has exceeded the free usage limit
+  // Pro/Business plan: use cost-based limits
+  const currentMonthAiCost = await getCurrentMonthAiCostForUser(team.id, userId);
+  const monthlyAiAllowancePerUser = await getMonthlyAiAllowancePerUser(team);
+  const remainingAllowance = Math.max(0, monthlyAiAllowancePerUser - currentMonthAiCost);
 
-  // Get usage
-  const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-  const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
-  const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
+  // Get budget limits
+  const userBudgetLimit = await getUserBudgetLimit(team.id, userId);
+  const teamWithBudget = team as typeof team & { 
+    teamMonthlyBudgetLimit?: number | null;
+    allowOveragePayments?: boolean;
+    planType?: string | null;
+  };
+  const teamMonthlyBudgetLimit = teamWithBudget.teamMonthlyBudgetLimit;
+  const teamCurrentMonthCost = await getCurrentMonthAiCostForTeam(team.id);
+  const teamExceededBudget = await hasExceededTeamBudget(team);
+
+  // Check if exceeded allowance
+  const exceededAllowance = currentMonthAiCost >= monthlyAiAllowancePerUser;
+  const exceededBillingLimit = exceededAllowance && !teamWithBudget.allowOveragePayments;
+
+  // If overage is allowed, check budget limits instead
+  let finalExceededBillingLimit = exceededBillingLimit;
+  if (exceededAllowance && teamWithBudget.allowOveragePayments) {
+    // Check user budget (costs are already filtered by calendar month)
+    if (userBudgetLimit) {
+      finalExceededBillingLimit = currentMonthAiCost >= userBudgetLimit.limit;
+    }
+    // Check team budget
+    if (!finalExceededBillingLimit && teamMonthlyBudgetLimit) {
+      finalExceededBillingLimit = teamExceededBudget;
+    }
+  }
 
   const data = {
-    exceededBillingLimit,
-    billingLimit: BILLING_AI_USAGE_LIMIT,
-    currentPeriodUsage,
+    exceededBillingLimit: finalExceededBillingLimit,
+    billingLimit: isFree ? BILLING_AI_USAGE_LIMIT : null,
+    currentPeriodUsage: isFree ? BillingAIUsageForCurrentMonth(await BillingAIUsageMonthlyForUserInTeam(userId, team.id)) : null,
+    planType: isFree ? 'FREE' : (teamWithBudget.planType || 'PRO'),
+    currentMonthAiCost,
+    monthlyAiAllowance: monthlyAiAllowancePerUser,
+    remainingAllowance,
+    teamMonthlyBudgetLimit,
+    teamCurrentMonthCost: teamMonthlyBudgetLimit ? teamCurrentMonthCost : null,
+    userMonthlyBudgetLimit: userBudgetLimit?.limit ?? null,
+    userCurrentMonthCost: userBudgetLimit ? currentMonthAiCost : null,
+    allowOveragePayments: teamWithBudget.allowOveragePayments || false,
   };
+
   return res.status(200).json(data);
 }

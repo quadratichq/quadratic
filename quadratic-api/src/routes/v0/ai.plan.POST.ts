@@ -8,6 +8,7 @@ import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import { trackAICost } from '../../billing/aiCostTracking.helper';
+import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -89,10 +90,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
 
   // Plan generation is always allowed, even if user has exceeded billing limit
   // This encourages users to try the "Start with AI" flow without penalty
+  // However, we still check and track the limit status for reporting
   let exceededBillingLimit = false;
-  if (!isOnPaidPlan) {
-    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+  const isFree = await isFreePlan(team);
+  
+  if (isFree) {
+    if (!isOnPaidPlan) {
+      const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
+      exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+    }
+  } else {
+    // Pro/Business: check but don't block
+    const canMakeRequest = await canMakeAiRequest(team, userId);
+    exceededBillingLimit = !canMakeRequest.allowed;
   }
 
   // Abort the request if the client disconnects

@@ -6,7 +6,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { createCheckoutSession, createCustomer, getMonthlyPriceId } from '../../stripe/stripe';
+import { createCheckoutSession, createCustomer, getProPriceId, getBusinessPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { getIsOnPaidPlan } from '../../utils/billing';
@@ -18,6 +18,7 @@ const schema = z.object({
   query: z.object({
     'redirect-success': z.string().url(),
     'redirect-cancel': z.string().url(),
+    plan: z.enum(['pro', 'business']).optional().default('pro'),
   }),
 });
 
@@ -30,7 +31,7 @@ async function handler(
   const { id: userId, email } = req.user;
   const {
     params: { uuid },
-    query: { 'redirect-success': redirectSuccess, 'redirect-cancel': redirectCancel },
+    query: { 'redirect-success': redirectSuccess, 'redirect-cancel': redirectCancel, plan },
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
@@ -58,9 +59,9 @@ async function handler(
     team.stripeCustomerId = stripeCustomer.id;
   }
 
-  const monthlyPriceId = await getMonthlyPriceId();
+  const priceId = plan === 'business' ? await getBusinessPriceId() : await getProPriceId();
 
-  const session = await createCheckoutSession(uuid, monthlyPriceId, redirectSuccess, redirectCancel);
+  const session = await createCheckoutSession(uuid, priceId, redirectSuccess, redirectCancel, plan);
 
   if (!session.url) {
     return res.status(500).json({ error: { message: 'Failed to create checkout session' } });

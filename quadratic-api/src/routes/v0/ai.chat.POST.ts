@@ -23,6 +23,7 @@ import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import { trackAICost } from '../../billing/aiCostTracking.helper';
+import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -88,12 +89,23 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   let exceededBillingLimit = false;
 
   const messageType = getLastUserMessageType(args.messages);
+  const isFree = await isFreePlan(ownerTeam);
 
-  // Either team is not on a paid plan or user is not a member of the team
-  // and the message is a user prompt, not a tool result
-  if ((!isOnPaidPlan || !userTeamRole) && messageType === 'userPrompt') {
-    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+  // Check billing limits based on plan type
+  if (messageType === 'userPrompt') {
+    if (isFree) {
+      // Free plan: use existing message limit check
+      if (!isOnPaidPlan || !userTeamRole) {
+        const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
+        exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+      }
+    } else {
+      // Pro/Business plan: check allowance and budget limits
+      const canMakeRequest = await canMakeAiRequest(ownerTeam, userId);
+      if (!canMakeRequest.allowed) {
+        exceededBillingLimit = true;
+      }
+    }
 
     if (exceededBillingLimit) {
       const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
