@@ -511,6 +511,9 @@ export const ApiSchemas = {
     message: z.string(),
     redirect: z.boolean().optional(),
   }),
+  '/v0/teams/:uuid/users/:userId/budget.PATCH.response': z.object({
+    monthlyBudgetLimit: z.number().nullable(),
+  }),
   '/v0/teams/:uuid/billing/portal/session.GET.response': z.object({ url: z.string() }),
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
   '/v0/teams/:uuid/billing/retention-discount.GET.response': z.object({
