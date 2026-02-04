@@ -1,4 +1,5 @@
 import { activeSchemaConnectionUuidAtom } from '@/app/ai/atoms/aiAnalystAtoms';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -21,6 +22,7 @@ export const AIAnalystConnectionSchema = memo(() => {
   const [aiAnalystActiveSchemaConnectionUuid, setAIAnalystActiveSchemaConnectionUuid] =
     useAtom(activeSchemaConnectionUuidAtom);
   const { connections } = useConnectionsFetcher();
+  const agentMode = useRecoilValue(agentModeAtom);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
@@ -57,7 +59,12 @@ export const AIAnalystConnectionSchema = memo(() => {
       className="relative hidden h-full shrink-0 overflow-hidden md:block"
       style={{ width: `${panelWidth}px` }}
     >
-      <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
+      <ResizeControl
+        className={agentMode ? 'resize-control--invisible' : ''}
+        position="VERTICAL"
+        style={{ left: `${panelWidth - 1}px` }}
+        setState={handleResize}
+      />
 
       <div className="h-full w-full pt-0.5">
         <ConnectionSchemaBrowser

@@ -1,6 +1,6 @@
 import { chromium, expect, test } from '@playwright/test';
 import { navigateOnSheet, typeInCell } from './helpers/app.helper';
-import { logIn } from './helpers/auth.helpers';
+import { dismissGettingStartedDialog, logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 
 test('Create New File', async ({ page }) => {
@@ -23,6 +23,9 @@ test('Create New File', async ({ page }) => {
 
   // Clean up
   await cleanUpFiles(page, { fileName });
+
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(page);
 
   //--------------------------------
   // Act:

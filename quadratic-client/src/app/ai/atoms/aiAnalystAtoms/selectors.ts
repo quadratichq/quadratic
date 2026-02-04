@@ -1,7 +1,14 @@
 import { atom } from 'jotai';
 import { isUserPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { currentChatAtom } from './chatAtoms';
-import { chatsAtom, importFilesToGridAtom, pdfImportAtom, promptSuggestionsAtom, webSearchAtom } from './primitives';
+import {
+  chatsAtom,
+  emptyChatSuggestionsAtom,
+  importFilesToGridAtom,
+  pdfImportAtom,
+  promptSuggestionsAtom,
+  webSearchAtom,
+} from './primitives';
 
 // ============================================================================
 // Chat Count Selectors
@@ -40,3 +47,10 @@ export const webSearchLoadingAtom = atom((get) => get(webSearchAtom).loading);
 
 /** Whether import files to grid is in progress */
 export const importFilesToGridLoadingAtom = atom((get) => get(importFilesToGridAtom).loading);
+
+// ============================================================================
+// Empty Chat Suggestions Selectors
+// ============================================================================
+
+/** Whether empty chat suggestions are currently being fetched */
+export const emptyChatSuggestionsLoadingAtom = atom((get) => get(emptyChatSuggestionsAtom).loading);

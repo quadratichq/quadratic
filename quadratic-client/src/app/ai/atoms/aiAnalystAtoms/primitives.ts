@@ -1,6 +1,7 @@
 import { atom } from 'jotai';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import type {
+  EmptyChatSuggestionsState,
   FailingSqlConnectionsState,
   ImportFilesToGridState,
   PdfImportState,
@@ -83,4 +84,12 @@ export const importFilesToGridAtom = atom<ImportFilesToGridState>({
 export const failingSqlConnectionsAtom = atom<FailingSqlConnectionsState>({
   uuids: [],
   lastResetTimestamp: 0,
+});
+
+/** Empty chat suggestions state (categorized prompts shown when chat is empty) */
+export const emptyChatSuggestionsAtom = atom<EmptyChatSuggestionsState>({
+  suggestions: undefined,
+  contextHash: undefined,
+  loading: false,
+  abortController: undefined,
 });

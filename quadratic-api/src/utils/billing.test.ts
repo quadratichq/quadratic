@@ -1,13 +1,18 @@
 import type { Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../tests/testDataGenerator';
-import { fileCountForTeam, hasReachedFileLimit } from './billing';
+import { getEditableFileIds, getFileLimitInfo, getFreeEditableFileLimit, requiresUpgradeToEdit } from './billing';
 import type { DecryptedTeam } from './teams';
+
+// Mock FREE_EDITABLE_FILE_LIMIT for testing
+jest.mock('../env-vars', () => ({
+  ...jest.requireActual('../env-vars'),
+  FREE_EDITABLE_FILE_LIMIT: 5,
+}));
 
 let userId: number;
 
 beforeEach(async () => {
-  // Create a user
   userId = (
     await createUser({
       auth0Id: 'testUser',
@@ -17,681 +22,344 @@ beforeEach(async () => {
 
 afterEach(clearDb);
 
-describe('fileCountForTeam', () => {
-  it('returns 0 when team has no files', async () => {
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000001',
-      },
-      users: [{ userId, role: 'OWNER' }],
-    });
-
-    const count = await fileCountForTeam(team, userId);
-    expect(count.totalTeamFiles).toBe(0);
-    expect(count.userPrivateFiles).toBe(0);
-  });
-
-  it('returns correct count when team has files', async () => {
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000002',
-      },
-      users: [{ userId, role: 'OWNER' }],
-    });
-
-    // Create 2 team files (no ownerUserId)
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000010',
-        name: 'Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000011',
-        name: 'Team File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    // Create 3 private files for the user
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000012',
-        name: 'Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000013',
-        name: 'Private File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000014',
-        name: 'Private File 3',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-
-    const count = await fileCountForTeam(team, userId);
-    expect(count.totalTeamFiles).toBe(2);
-    expect(count.userPrivateFiles).toBe(3);
-  });
-
-  it('does not count deleted files', async () => {
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000003',
-      },
-      users: [{ userId, role: 'OWNER' }],
-    });
-
-    // Create 2 active team files and 1 deleted team file
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000020',
-        name: 'Active Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-        deleted: false,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000021',
-        name: 'Active Team File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-        deleted: false,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000022',
-        name: 'Deleted Team File',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-        deleted: true,
-        deletedDate: new Date(),
-      },
-    });
-
-    // Create 2 active private files and 1 deleted private file
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000023',
-        name: 'Active Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-        deleted: false,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000024',
-        name: 'Active Private File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-        deleted: false,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000025',
-        name: 'Deleted Private File',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-        deleted: true,
-        deletedDate: new Date(),
-      },
-    });
-
-    const count = await fileCountForTeam(team, userId);
-    expect(count.totalTeamFiles).toBe(2);
-    expect(count.userPrivateFiles).toBe(2);
-  });
-
-  it('returns 0 when all files are deleted', async () => {
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000004',
-      },
-      users: [{ userId, role: 'OWNER' }],
-    });
-
-    // Create 2 deleted team files
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000030',
-        name: 'Deleted Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-        deleted: true,
-        deletedDate: new Date(),
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000031',
-        name: 'Deleted Team File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-        deleted: true,
-        deletedDate: new Date(),
-      },
-    });
-
-    // Create 2 deleted private files
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000032',
-        name: 'Deleted Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-        deleted: true,
-        deletedDate: new Date(),
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000033',
-        name: 'Deleted Private File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-        deleted: true,
-        deletedDate: new Date(),
-      },
-    });
-
-    const count = await fileCountForTeam(team, userId);
-    expect(count.totalTeamFiles).toBe(0);
-    expect(count.userPrivateFiles).toBe(0);
-  });
-
-  it('only counts files for the specified team', async () => {
-    const team1 = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000005',
-      },
-      users: [{ userId, role: 'OWNER' }],
-    });
-
-    const team2 = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000006',
-      },
-      users: [{ userId, role: 'OWNER' }],
-    });
-
-    // Create 1 team file and 2 private files for team1
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000040',
-        name: 'Team 1 Team File',
-        creatorUserId: userId,
-        ownerTeamId: team1.id,
-        ownerUserId: null,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000041',
-        name: 'Team 1 Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team1.id,
-        ownerUserId: userId,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000042',
-        name: 'Team 1 Private File 2',
-        creatorUserId: userId,
-        ownerTeamId: team1.id,
-        ownerUserId: userId,
-      },
-    });
-
-    // Create 2 team files and 3 private files for team2
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000050',
-        name: 'Team 2 Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team2.id,
-        ownerUserId: null,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000051',
-        name: 'Team 2 Team File 2',
-        creatorUserId: userId,
-        ownerTeamId: team2.id,
-        ownerUserId: null,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000052',
-        name: 'Team 2 Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team2.id,
-        ownerUserId: userId,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000053',
-        name: 'Team 2 Private File 2',
-        creatorUserId: userId,
-        ownerTeamId: team2.id,
-        ownerUserId: userId,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000054',
-        name: 'Team 2 Private File 3',
-        creatorUserId: userId,
-        ownerTeamId: team2.id,
-        ownerUserId: userId,
-      },
-    });
-
-    const count1 = await fileCountForTeam(team1, userId);
-    const count2 = await fileCountForTeam(team2, userId);
-
-    expect(count1.totalTeamFiles).toBe(1);
-    expect(count1.userPrivateFiles).toBe(2);
-    expect(count2.totalTeamFiles).toBe(2);
-    expect(count2.userPrivateFiles).toBe(3);
-  });
-
-  it('distinguishes between total team files and user private files', async () => {
-    const user2Id = (
-      await createUser({
-        auth0Id: 'testUser2',
-      })
-    ).id;
-
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000007',
-      },
-      users: [
-        { userId, role: 'OWNER' },
-        { userId: user2Id, role: 'EDITOR' },
-      ],
-    });
-
-    // Create 3 team files (no ownerUserId)
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000060',
-        name: 'Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000061',
-        name: 'Team File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000062',
-        name: 'Team File 3',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    // Create 2 private files by user1
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000063',
-        name: 'User 1 Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000064',
-        name: 'User 1 Private File 2',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-
-    // Create 3 private files by user2
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000065',
-        name: 'User 2 Private File 1',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: user2Id,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000066',
-        name: 'User 2 Private File 2',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: user2Id,
-      },
-    });
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0000-000000000067',
-        name: 'User 2 Private File 3',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: user2Id,
-      },
-    });
-
-    const count1 = await fileCountForTeam(team, userId);
-    const count2 = await fileCountForTeam(team, user2Id);
-
-    // User 1 perspective: 3 team files (shared, no owner), 2 private files owned by user1
-    expect(count1.totalTeamFiles).toBe(3);
-    expect(count1.userPrivateFiles).toBe(2);
-
-    // User 2 perspective: 3 team files (shared, no owner), 3 private files owned by user2
-    expect(count2.totalTeamFiles).toBe(3);
-    expect(count2.userPrivateFiles).toBe(3);
+describe('getFreeEditableFileLimit', () => {
+  it('returns the configured limit', () => {
+    expect(getFreeEditableFileLimit()).toBe(5);
   });
 });
 
-describe('teamHasReachedFileLimit', () => {
-  it('returns false for paid teams', async () => {
+describe('getEditableFileIds', () => {
+  it('returns all file IDs for paid teams', async () => {
     let team: DecryptedTeam | Team | null = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000100',
-      },
+      team: { uuid: '00000000-0000-0000-0000-000000000001' },
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Upgrade to paid plan
     await upgradeTeamToPro(team.id);
+    team = await dbClient.team.findUnique({ where: { id: team.id } });
+    if (!team) throw new Error('Team not found');
 
-    // Refetch team to get updated subscription status
-    team = await dbClient.team.findUnique({
-      where: { id: team.id },
-    });
-
-    if (!team) {
-      throw new Error('Team not found after upgrade');
-    }
-
-    // Create files beyond the free limit
+    // Create 5 files (at the free limit of 5)
+    const fileIds: number[] = [];
     for (let i = 0; i < 5; i++) {
-      await createFile({
+      const file = await createFile({
         data: {
-          uuid: `00000000-0000-0000-0100-0000000000${i.toString().padStart(2, '0')}`,
+          uuid: `00000000-0000-0000-0001-00000000000${i}`,
           name: `File ${i}`,
           creatorUserId: userId,
           ownerTeamId: team.id,
-          ownerUserId: userId,
+        },
+      });
+      fileIds.push(file.id);
+    }
+
+    const editableIds = await getEditableFileIds(team);
+    expect(editableIds).toHaveLength(5);
+    expect(editableIds.sort()).toEqual(fileIds.sort());
+  });
+
+  it('returns only N most recent file IDs for free teams', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000002' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    // Create 7 files with staggered creation dates (more than limit of 5)
+    const files = [];
+    for (let i = 0; i < 7; i++) {
+      const file = await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0002-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+          createdDate: new Date(Date.now() + i * 1000), // Stagger creation times
+        },
+      });
+      files.push(file);
+    }
+
+    const editableIds = await getEditableFileIds(team);
+    expect(editableIds).toHaveLength(5);
+
+    // Should contain the 5 most recent files (files 6, 5, 4, 3, 2)
+    const expectedIds = [files[6].id, files[5].id, files[4].id, files[3].id, files[2].id];
+    expect(editableIds.sort()).toEqual(expectedIds.sort());
+  });
+
+  it('excludes deleted files', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000003' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    // Create 4 files, delete 2
+    const file1 = await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0003-000000000001',
+        name: 'File 1',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        createdDate: new Date(Date.now()),
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0003-000000000002',
+        name: 'Deleted File 1',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        deleted: true,
+        deletedDate: new Date(),
+        createdDate: new Date(Date.now() + 1000),
+      },
+    });
+    const file3 = await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0003-000000000003',
+        name: 'File 3',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        createdDate: new Date(Date.now() + 2000),
+      },
+    });
+    await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0003-000000000004',
+        name: 'Deleted File 2',
+        creatorUserId: userId,
+        ownerTeamId: team.id,
+        deleted: true,
+        deletedDate: new Date(),
+        createdDate: new Date(Date.now() + 3000),
+      },
+    });
+
+    const editableIds = await getEditableFileIds(team);
+    expect(editableIds).toHaveLength(2);
+    expect(editableIds.sort()).toEqual([file1.id, file3.id].sort());
+  });
+});
+
+describe('requiresUpgradeToEdit', () => {
+  it('returns false for all files on paid teams', async () => {
+    let team: DecryptedTeam | Team | null = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000010' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    await upgradeTeamToPro(team.id);
+    team = await dbClient.team.findUnique({ where: { id: team.id } });
+    if (!team) throw new Error('Team not found');
+
+    // Create 5 files
+    const files = [];
+    for (let i = 0; i < 5; i++) {
+      const file = await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0010-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+        },
+      });
+      files.push(file);
+    }
+
+    // All files should be editable
+    for (const file of files) {
+      expect(await requiresUpgradeToEdit(team, file.id)).toBe(false);
+    }
+  });
+
+  it('returns true for older files on free teams beyond the limit', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000011' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    // Create 7 files with staggered creation dates (more than limit of 5)
+    const files = [];
+    for (let i = 0; i < 7; i++) {
+      const file = await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0011-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+          createdDate: new Date(Date.now() + i * 1000),
+        },
+      });
+      files.push(file);
+    }
+
+    // Oldest 2 files (files[0], files[1]) should be restricted
+    expect(await requiresUpgradeToEdit(team, files[0].id)).toBe(true);
+    expect(await requiresUpgradeToEdit(team, files[1].id)).toBe(true);
+
+    // Newest 5 files (files[2], files[3], files[4], files[5], files[6]) should NOT be restricted
+    expect(await requiresUpgradeToEdit(team, files[2].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[3].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[4].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[5].id)).toBe(false);
+    expect(await requiresUpgradeToEdit(team, files[6].id)).toBe(false);
+  });
+
+  it('returns false for all files when under the limit', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000012' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    // Create only 4 files (under limit of 5)
+    const files = [];
+    for (let i = 0; i < 4; i++) {
+      const file = await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0012-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+        },
+      });
+      files.push(file);
+    }
+
+    // All files should be editable
+    for (const file of files) {
+      expect(await requiresUpgradeToEdit(team, file.id)).toBe(false);
+    }
+  });
+});
+
+describe('getFileLimitInfo', () => {
+  it('returns correct info for free team under limit', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000020' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    // Create 4 files (under limit of 5)
+    for (let i = 0; i < 4; i++) {
+      await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0020-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
         },
       });
     }
 
-    // Should not hit limit with paid plan
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(false);
-    expect(await hasReachedFileLimit(team, userId, false)).toBe(false);
-    expect(await hasReachedFileLimit(team, userId)).toBe(false);
+    const info = await getFileLimitInfo(team);
+    expect(info.isOverLimit).toBe(false);
+    expect(info.totalFiles).toBe(4);
+    expect(info.maxEditableFiles).toBe(5);
+    expect(info.editableFileIds).toHaveLength(4);
   });
 
-  it('checks private file limit when isPrivate=true', async () => {
+  it('returns correct info for free team at limit', async () => {
     const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000101',
-      },
+      team: { uuid: '00000000-0000-0000-0000-000000000021' },
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // Create 1 private file (per-user limit is 1)
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0101-000000000001',
-        name: 'Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
+    // Create exactly 5 files (at limit)
+    for (let i = 0; i < 5; i++) {
+      await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0021-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+        },
+      });
+    }
 
-    // Should hit private file limit
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(true);
-
-    // Should NOT hit team file limit (only 1 file out of 3)
-    expect(await hasReachedFileLimit(team, userId, false)).toBe(false);
-
-    // Without parameter, defaults to team limit check (false since only 1 out of 3)
-    expect(await hasReachedFileLimit(team, userId)).toBe(false);
+    const info = await getFileLimitInfo(team);
+    expect(info.isOverLimit).toBe(false); // At limit (not over) - all 5 files are editable
+    expect(info.totalFiles).toBe(5);
+    expect(info.maxEditableFiles).toBe(5);
+    expect(info.editableFileIds).toHaveLength(5);
   });
 
-  it('checks team file limit when isPrivate=false', async () => {
-    const user2Id = (
-      await createUser({
-        auth0Id: 'testUser2',
-      })
-    ).id;
-
+  it('returns correct info for free team over limit', async () => {
     const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000102',
-      },
-      users: [
-        { userId, role: 'OWNER' },
-        { userId: user2Id, role: 'EDITOR' },
-      ],
-    });
-
-    // Create 3 team files (team limit is 3)
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0102-000000000001',
-        name: 'Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0102-000000000002',
-        name: 'Team File 2',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0102-000000000003',
-        name: 'Team File 3',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    // Create 1 private file for user 1
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0102-000000000004',
-        name: 'Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-
-    // User 1 has reached their private limit (1 file)
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(true);
-
-    // Team has reached the team file limit (3 team files)
-    expect(await hasReachedFileLimit(team, userId, false)).toBe(true);
-
-    // Without parameter, defaults to team limit check (true since 3 out of 3)
-    expect(await hasReachedFileLimit(team, userId)).toBe(true);
-
-    // User 2 has 0 private files, so they have NOT exceeded the limit of 1
-    expect(await hasReachedFileLimit(team, user2Id, true)).toBe(false);
-  });
-
-  it('allows team file creation when only private limit is reached', async () => {
-    const user2Id = (
-      await createUser({
-        auth0Id: 'testUser3',
-      })
-    ).id;
-
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000103',
-      },
-      users: [
-        { userId, role: 'OWNER' },
-        { userId: user2Id, role: 'EDITOR' },
-      ],
-    });
-
-    // User 1 creates 1 private file (reaches their private limit of 1)
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0103-000000000001',
-        name: 'Private File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: userId,
-      },
-    });
-
-    // User 1 has reached private limit
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(true);
-
-    // But team has NOT reached team file limit (1 out of 3)
-    expect(await hasReachedFileLimit(team, userId, false)).toBe(false);
-  });
-
-  it('allows private file creation when only team limit is reached', async () => {
-    const user2Id = (
-      await createUser({
-        auth0Id: 'testUser4',
-      })
-    ).id;
-
-    const user3Id = (
-      await createUser({
-        auth0Id: 'testUser5',
-      })
-    ).id;
-
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000104',
-      },
-      users: [
-        { userId, role: 'OWNER' },
-        { userId: user2Id, role: 'EDITOR' },
-        { userId: user3Id, role: 'EDITOR' },
-      ],
-    });
-
-    // Create 3 team files (team limit is 3)
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0104-000000000001',
-        name: 'Team File 1',
-        creatorUserId: userId,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0104-000000000002',
-        name: 'Team File 2',
-        creatorUserId: user2Id,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    await createFile({
-      data: {
-        uuid: '00000000-0000-0000-0104-000000000003',
-        name: 'Team File 3',
-        creatorUserId: user3Id,
-        ownerTeamId: team.id,
-        ownerUserId: null,
-      },
-    });
-
-    // Team has reached team file limit (3 team files)
-    expect(await hasReachedFileLimit(team, userId, false)).toBe(true);
-
-    // But each user has NOT reached their private limit (each has 0 private files, limit is 1)
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(false);
-    expect(await hasReachedFileLimit(team, user2Id, true)).toBe(false);
-    expect(await hasReachedFileLimit(team, user3Id, true)).toBe(false);
-  });
-
-  it('returns false when neither limit is reached', async () => {
-    const team = await createTeam({
-      team: {
-        uuid: '00000000-0000-0000-0000-000000000105',
-      },
+      team: { uuid: '00000000-0000-0000-0000-000000000022' },
       users: [{ userId, role: 'OWNER' }],
     });
 
-    // No files created yet
-    expect(await hasReachedFileLimit(team, userId, true)).toBe(false);
-    expect(await hasReachedFileLimit(team, userId, false)).toBe(false);
-    expect(await hasReachedFileLimit(team, userId)).toBe(false);
+    // Create 7 files (over limit of 5)
+    for (let i = 0; i < 7; i++) {
+      await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0022-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+        },
+      });
+    }
+
+    const info = await getFileLimitInfo(team);
+    expect(info.isOverLimit).toBe(true);
+    expect(info.totalFiles).toBe(7);
+    expect(info.maxEditableFiles).toBe(5);
+    expect(info.editableFileIds).toHaveLength(5); // Only 5 are editable
+  });
+
+  it('returns correct info for paid team (no limit)', async () => {
+    let team: DecryptedTeam | Team | null = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000023' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    await upgradeTeamToPro(team.id);
+    team = await dbClient.team.findUnique({ where: { id: team.id } });
+    if (!team) throw new Error('Team not found');
+
+    // Create 10 files
+    for (let i = 0; i < 10; i++) {
+      await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0023-0000000000${i.toString().padStart(2, '0')}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+        },
+      });
+    }
+
+    const info = await getFileLimitInfo(team);
+    expect(info.isOverLimit).toBe(false);
+    expect(info.totalFiles).toBe(10);
+    expect(info.maxEditableFiles).toBe(Infinity);
+    expect(info.editableFileIds).toHaveLength(10); // All files editable
+  });
+
+  it('does not count deleted files', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000024' },
+      users: [{ userId, role: 'OWNER' }],
+    });
+
+    // Create 7 files, delete 3
+    for (let i = 0; i < 7; i++) {
+      await createFile({
+        data: {
+          uuid: `00000000-0000-0000-0024-00000000000${i}`,
+          name: `File ${i}`,
+          creatorUserId: userId,
+          ownerTeamId: team.id,
+          deleted: i < 3, // First 3 are deleted
+          deletedDate: i < 3 ? new Date() : null,
+        },
+      });
+    }
+
+    const info = await getFileLimitInfo(team);
+    expect(info.totalFiles).toBe(4); // Only 4 non-deleted files
+    expect(info.isOverLimit).toBe(false); // 4 < 5, so under limit
+    expect(info.editableFileIds).toHaveLength(4);
   });
 });
