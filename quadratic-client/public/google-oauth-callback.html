@@ -71,7 +71,8 @@
     <div class="loading" id="loading">Connecting to Google...</div>
     <div id="status">
       <p class="success">✓ Google Analytics connected successfully!</p>
-      <p style="color: #666; font-size: 14px; margin-bottom: 0;">You can close this window and return to the main page.</p>
+      <p style="color: #666; font-size: 14px; margin-bottom: 0;">You can close this window and return to the main page.
+      </p>
       <button class="close-btn" onclick="window.close()">Close Window</button>
     </div>
     <div id="error-status">
@@ -85,20 +86,6 @@
     // Use BroadcastChannel for cross-window communication
     const channel = new BroadcastChannel('google_oauth');
 
-    // Track if we've already completed
-    let hasCompleted = false;
-
-    // Send exit message when window is closed
-    window.addEventListener('pagehide', () => {
-      if (!hasCompleted) {
-        channel.postMessage({
-          type: 'GOOGLE_EXIT',
-          error: null,
-          metadata: { reason: 'window_closed' }
-        });
-      }
-    });
-
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const authUrl = urlParams.get('authUrl');
@@ -108,18 +95,16 @@
 
     if (error) {
       // OAuth error from Google
-      hasCompleted = true;
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error-status').style.display = 'block';
       document.getElementById('error-message').textContent = `✗ ${error === 'access_denied' ? 'Access denied. Please grant permission to continue.' : 'Failed to connect: ' + error}`;
-      
+
       channel.postMessage({
         type: 'GOOGLE_ERROR',
         error: error
       });
     } else if (code) {
       // We got redirected back from Google with an authorization code
-      hasCompleted = true;
       document.getElementById('loading').style.display = 'none';
       document.getElementById('status').style.display = 'block';
 
@@ -140,7 +125,6 @@
       window.location.href = authUrl;
     } else {
       // No parameters - show error
-      hasCompleted = true;
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error-status').style.display = 'block';
       document.getElementById('error-message').textContent = '✗ Missing parameters. Please try again.';
@@ -149,4 +133,3 @@
 </body>
 
 </html>
-

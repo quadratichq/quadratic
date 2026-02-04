@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/api/apiClient';
-import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
+import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -67,6 +67,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
   // Auto-open Google OAuth when the component mounts and we don't have tokens
   useEffect(() => {
+    if (hasTokens) return;
+
     const fetchAuthUrlAndOpen = async () => {
       try {
         const data = await apiClient.connections.google.getAuthUrl({
@@ -90,16 +92,14 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
       }
     };
 
-    if (!hasTokens) {
-      fetchAuthUrlAndOpen();
-    }
+    fetchAuthUrlAndOpen();
   }, [hasTokens, teamUuid, form]);
 
   // Handle messages from Google OAuth popup via BroadcastChannel
   useEffect(() => {
     const channel = new BroadcastChannel('google_oauth');
 
-    channel.onmessage = async (event) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.data.type === 'GOOGLE_SUCCESS') {
         try {
           // Exchange the authorization code for tokens
@@ -119,13 +119,12 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         }
       } else if (event.data.type === 'GOOGLE_ERROR') {
         form.setError('root', { message: event.data.error || 'Google authentication failed' });
-      } else if (event.data.type === 'GOOGLE_EXIT') {
-        // User closed the popup without completing OAuth
-        // Show a message or allow them to retry
       }
     };
 
+    channel.addEventListener('message', handleMessage);
     return () => {
+      channel.removeEventListener('message', handleMessage);
       channel.close();
     };
   }, [teamUuid, form]);
