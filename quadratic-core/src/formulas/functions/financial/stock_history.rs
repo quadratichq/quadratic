@@ -920,20 +920,7 @@ mod tests {
     }
 
     /// Test cell references in STOCKHISTORY arguments.
-    /// 
-    /// NOTE: This test currently fails due to a subtle test infrastructure issue
-    /// where AST evaluation returns Blank even though ctx.get_cell() works correctly.
-    /// The underlying functionality works in production through the full formula pipeline.
-    /// 
-    /// Debug findings:
-    /// - display_value(A1) = Text("MSFT") ✓
-    /// - get_cell_for_formula(A1) = Text("MSFT") ✓
-    /// - ctx.get_cell(A1) = Text("MSFT") ✓
-    /// - args[0].eval() = Array([Blank]) ✗
-    /// 
-    /// The issue is somewhere in the AST evaluation path, not in the cell reading infrastructure.
     #[test]
-    #[ignore = "Test infrastructure issue - AST eval returns Blank, needs investigation"]
     fn test_from_evaluated_args_with_cell_references() {
         use crate::SheetPos;
         use crate::controller::GridController;
@@ -942,28 +929,41 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // Formula will be "evaluated" from D1 (x=3) to avoid circular ref issues
+        // Formula will be "evaluated" from E1 (x=5, y=1) to avoid circular ref issues
         let formula_pos = SheetPos {
-            x: 3,
-            y: 0,
+            x: 5,
+            y: 1,
             sheet_id,
         };
 
         // Set cell values: A1 = "MSFT", B1 = "2025-02-01", C1 = "2025-02-28"
+        // Note: Formula parser uses 1-based coordinates (A1 = (1,1), B1 = (2,1), etc.)
         gc.set_cell_value(
-            SheetPos { x: 0, y: 0, sheet_id },
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
             "MSFT".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            SheetPos { x: 1, y: 0, sheet_id },
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
             "2025-02-01".to_string(),
             None,
             false,
         );
         gc.set_cell_value(
-            SheetPos { x: 2, y: 0, sheet_id },
+            SheetPos {
+                x: 3,
+                y: 1,
+                sheet_id,
+            },
             "2025-02-28".to_string(),
             None,
             false,

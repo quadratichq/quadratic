@@ -3,8 +3,8 @@ use itertools::Itertools;
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    formulas::{Ctx, ast::AstNodeContents, find_cell_references, parse_formula},
     formulas::functions::financial::stock_history::StockHistoryParams,
+    formulas::{Ctx, ast::AstNodeContents, find_cell_references, parse_formula},
     grid::{
         CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
         data_table::DataTableTemplate,
