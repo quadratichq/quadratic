@@ -703,6 +703,13 @@ export const aiToolsActions: AIToolActionsRecord = {
       ),
     ];
   },
+  [AITool.CategorizedEmptyChatPromptSuggestions]: async () => {
+    return [
+      createTextContent(
+        'Categorized empty chat prompt suggestions tool executed successfully, user is presented with categorized prompt suggestions to choose from.'
+      ),
+    ];
+  },
   [AITool.PDFImport]: async () => {
     return [createTextContent('PDF import tool executed successfully.')];
   },
