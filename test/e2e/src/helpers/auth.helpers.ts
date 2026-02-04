@@ -9,14 +9,14 @@ import { cleanUpFiles } from './file.helpers';
  */
 export const skipFeatureWalkthrough = async (page: Page) => {
   try {
-    // Check if the feature walkthrough dialog is visible
+    // Check if the feature walkthrough dialog is visible (wait longer for it to appear)
     const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
-    if (await walkthroughDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (await walkthroughDialog.isVisible({ timeout: 5000 }).catch(() => false)) {
       // Click the "Skip tour" button
       const skipButton = page.getByRole('button', { name: /Skip tour/i });
-      await skipButton.click({ timeout: 5000 });
+      await skipButton.click({ timeout: 10000 });
       // Wait for the dialog to close
-      await walkthroughDialog.waitFor({ state: 'hidden', timeout: 5000 });
+      await walkthroughDialog.waitFor({ state: 'hidden', timeout: 10000 });
     }
   } catch {
     // Walkthrough not present or couldn't be closed, continue silently

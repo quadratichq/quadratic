@@ -39,6 +39,9 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000);
 
+  // Skip the feature walkthrough tour again before closing AI chat (it may appear after file creation)
+  await skipFeatureWalkthrough(page);
+
   // Close AI chat box as needed
   try {
     await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
@@ -47,6 +50,8 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   }
 
   if (!skipNavigateBack) {
+    // Skip the feature walkthrough tour again before navigating back (it may appear after file operations)
+    await skipFeatureWalkthrough(page);
     // Navigate back to files (removed redundant 10s waitForTimeout)
     await page.locator(`nav a >> nth = 0`).click({ timeout: 60 * 1000 });
     await waitForAppReady(page);
