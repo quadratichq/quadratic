@@ -240,14 +240,7 @@ impl GridController {
                     };
 
                     // Handle StockHistory specially - it receives JSON, not Parquet
-                    let is_stock_history = matches!(
-                        code.language,
-                        CodeCellLanguage::Connection {
-                            kind: ConnectionKind::StockHistory,
-                            ..
-                        }
-                    ) || (matches!(code.language, CodeCellLanguage::Formula)
-                        && crate::formulas::functions::financial::stock_history::is_stock_history_formula(&code.code));
+                    let is_stock_history = name == "StockHistory";
 
                     let parse_error = |e: &String| {
                         dbgjs!(format!("Error parsing data for {}: {}", name, e));
