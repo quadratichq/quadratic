@@ -1,12 +1,7 @@
-import { MENUBAR_FOCUS_GRID_DELAY_MS } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
-import { useEffect, useRef } from 'react';
-
-// Buffer time added to MENUBAR_FOCUS_GRID_DELAY_MS to ensure this component's
-// focus happens after the menubar's focusGrid call completes
-const FOCUS_BUFFER_MS = 50;
+import { useRef } from 'react';
 
 interface HyperlinkPopupEditProps {
   editText: string;
@@ -33,16 +28,6 @@ export const HyperlinkPopupEdit = ({
 }: HyperlinkPopupEditProps) => {
   const urlInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // Focus the URL input when the component mounts.
-    // Delay must exceed MENUBAR_FOCUS_GRID_DELAY_MS to ensure focus happens
-    // after the menubar's focusGrid call (which fires when menu closes).
-    const timeoutId = setTimeout(() => {
-      urlInputRef.current?.focus();
-    }, MENUBAR_FOCUS_GRID_DELAY_MS + FOCUS_BUFFER_MS);
-    return () => clearTimeout(timeoutId);
-  }, []);
-
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
@@ -56,6 +41,7 @@ export const HyperlinkPopupEdit = ({
           onKeyUp={onKeyUp}
           placeholder="https://example.com"
           className="h-8"
+          autoFocus
         />
       </div>
       {!hideTextField && (
