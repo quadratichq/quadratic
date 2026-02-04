@@ -42,6 +42,8 @@ export type UserFilesListFile = {
   uuid: string;
   creator?: FileCreator;
   fileType: 'team' | 'private' | 'shared';
+  /** Whether this file has edit restrictions due to soft file limit (free teams only). */
+  requiresUpgradeToEdit?: boolean;
 };
 
 export function UserFilesList({
