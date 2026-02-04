@@ -18,6 +18,7 @@ type MiscToolActions = {
     | AITool.SetFileName
     | AITool.UserPromptSuggestions
     | AITool.EmptyChatPromptSuggestions
+    | AITool.CategorizedEmptyChatPromptSuggestions
     | AITool.PDFImport
     | AITool.WebSearch
     | AITool.WebSearchInternal
@@ -67,6 +68,13 @@ export const miscToolsActions: MiscToolActions = {
     return [
       createTextContent(
         'Empty chat prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.'
+      ),
+    ];
+  },
+  [AITool.CategorizedEmptyChatPromptSuggestions]: async () => {
+    return [
+      createTextContent(
+        'Categorized empty chat prompt suggestions tool executed successfully, user is presented with categorized prompt suggestions to choose from.'
       ),
     ];
   },
