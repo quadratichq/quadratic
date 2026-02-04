@@ -2,6 +2,7 @@ import { atom } from 'jotai';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import type {
   ContextUsageState,
+  EmptyChatSuggestionsState,
   FailingSqlConnectionsState,
   ImportFilesToGridState,
   PdfImportState,
@@ -98,4 +99,12 @@ export const failingSqlConnectionsAtom = atom<FailingSqlConnectionsState>({
 /** Context usage from AI API responses */
 export const contextUsageAtom = atom<ContextUsageState>({
   usage: undefined,
+});
+
+/** Empty chat suggestions state (categorized prompts shown when chat is empty) */
+export const emptyChatSuggestionsAtom = atom<EmptyChatSuggestionsState>({
+  suggestions: undefined,
+  contextHash: undefined,
+  loading: false,
+  abortController: undefined,
 });
