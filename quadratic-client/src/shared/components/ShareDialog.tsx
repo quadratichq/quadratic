@@ -804,14 +804,16 @@ export function InviteForm({
       // Always prevent default form submission to avoid page reload
       e.preventDefault();
 
+      let email: string;
+      let role: string;
+
       try {
         // Get the data from the form
         const formData = new FormData(e.currentTarget);
         const emailFromUser = String(formData.get('email_search')).trim();
-        const role = String(formData.get('role'));
+        role = String(formData.get('role'));
 
         // Validate email
-        let email;
         try {
           email = emailSchema.parse(emailFromUser);
         } catch (e) {
@@ -835,16 +837,17 @@ export function InviteForm({
           inputRef.current.value = '';
           inputRef.current.focus();
         }
-
-        // Handle (optionally) upgrading the invite to a team member
-        // We use `as` here because we won't know the type since this is used
-        // for file and team invites (but we won't pass this function in a team context)
-        setUpgradeMember?.({ email, role: role as UserFileRole });
       } catch (error) {
-        // If any error occurs, log it but don't let the form submit
         console.error('Error in invite form submission:', error);
-        setError('An error occurred. Please try again.');
+        setError('Failed to submit invite. Please try again.');
+        return;
       }
+
+      // Handle (optionally) upgrading the invite to a team member
+      // This is intentionally outside the try-catch so bugs here surface rather than being masked
+      // We use `as` here because we won't know the type since this is used
+      // for file and team invites (but we won't pass this function in a team context)
+      setUpgradeMember?.({ email, role: role as UserFileRole });
     },
     [action, disallowedEmails, intent, submit, setUpgradeMember]
   );
@@ -952,8 +955,15 @@ function ManageUser({
   const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
 
   // Handle redirect if user deleted themselves
+  const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    if (fetcherDelete.state === 'idle' && fetcherDelete.data?.ok && fetcherDelete.data.redirect) {
+    if (
+      fetcherDelete.state === 'idle' &&
+      fetcherDelete.data?.ok &&
+      fetcherDelete.data.redirect &&
+      !hasNavigatedRef.current
+    ) {
+      hasNavigatedRef.current = true;
       navigate('/');
     }
   }, [fetcherDelete.state, fetcherDelete.data, navigate]);
