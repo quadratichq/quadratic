@@ -54,7 +54,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
   return (
     <Dialog open={state.open} onOpenChange={() => setState({ open: false, eventSource: null })}>
       <DialogContent
-        className={cn('max-w-2xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}
+        className={cn('max-w-5xl', navigation.state !== 'idle' && 'pointer-events-none opacity-50')}
         data-testid="upgrade-to-pro-dialog"
       >
         <DialogHeader>
@@ -73,6 +73,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
             isOnPaidPlan={false}
             canManageBilling={canManageBilling}
             eventSource={`UpgradeDialog-${state.eventSource}`}
+            planType="FREE"
           />
         </div>
       </DialogContent>

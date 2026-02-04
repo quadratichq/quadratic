@@ -133,7 +133,7 @@ export function SettingsDialog() {
       <DialogContent
         className={cn(
           // Full screen on small screens, dialog on larger screens
-          'h-[100vh] max-h-[100vh] w-[100vw] max-w-[100vw] translate-y-0 p-0 sm:h-auto sm:max-h-[calc(100vh-4rem)] sm:max-w-4xl sm:translate-y-3 sm:rounded-lg md:h-[80vh]',
+          'h-[100vh] max-h-[100vh] w-[100vw] max-w-[100vw] translate-y-0 p-0 sm:h-auto sm:max-h-[calc(100vh-4rem)] sm:max-w-6xl sm:translate-y-3 sm:rounded-lg md:h-[80vh]',
           // Remove default padding since we'll handle it internally
           'gap-0'
         )}

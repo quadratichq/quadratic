@@ -68,6 +68,7 @@ export function TeamSettings() {
   const latestUsage = useMemo(() => billing?.usage[0] || { ai_messages: 0 }, [billing?.usage]);
   const isOnPaidPlan = useMemo(() => billing?.status === 'ACTIVE', [billing?.status]);
   const canManageBilling = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
+  const planType = useMemo(() => billing?.planType, [billing?.planType]);
 
   if (!activeTeam || !team || !teamPermissions || !billing || !users) {
     return (
@@ -130,6 +131,7 @@ export function TeamSettings() {
             canManageBilling={canManageBilling}
             teamUuid={team.uuid}
             eventSource="SettingsDialog"
+            planType={planType}
           />
 
           {/* Current Usage */}

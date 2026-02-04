@@ -4,6 +4,7 @@ import type { ApiTypes, FilePermission } from 'quadratic-shared/typesAndSchemas'
 import { z } from 'zod';
 import { getUsers } from '../../auth/providers/auth';
 import { BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { getPlanType } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -169,6 +170,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
+  // Get plan type for the team
+  const planType = await getPlanType(team);
+
   // Get file limit info (includes editable file IDs and whether team is over limit)
   // For free teams, only the N most recently created files are editable
   const isPaidPlan = await getIsOnPaidPlan(team);
@@ -198,6 +202,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,
       currentPeriodEnd: dbTeam.stripeCurrentPeriodEnd?.toISOString(),
+      planType,
       usage,
     },
     userMakingRequest: {

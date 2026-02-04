@@ -51,9 +51,21 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
         );
       },
-      getCheckoutSessionUrl(uuid: string, redirectUrlSuccess: string, redirectUrlCancel: string) {
+      getCheckoutSessionUrl(
+        uuid: string,
+        redirectUrlSuccess: string,
+        redirectUrlCancel: string,
+        plan?: 'pro' | 'business'
+      ) {
+        const queryParams = new URLSearchParams({
+          'redirect-success': redirectUrlSuccess,
+          'redirect-cancel': redirectUrlCancel,
+        });
+        if (plan) {
+          queryParams.set('plan', plan);
+        }
         return fetchFromApi(
-          `/v0/teams/${uuid}/billing/checkout/session?redirect-success=${encodeURIComponent(redirectUrlSuccess)}&redirect-cancel=${encodeURIComponent(redirectUrlCancel)}`,
+          `/v0/teams/${uuid}/billing/checkout/session?${queryParams.toString()}`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );

@@ -5,17 +5,19 @@ import { CheckIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { BusinessPlan } from './BusinessPlan';
 
 type BillingPlansProps = {
   isOnPaidPlan: boolean;
   canManageBilling: boolean;
   eventSource: string;
   teamUuid: string;
+  planType?: 'FREE' | 'PRO' | 'BUSINESS';
 };
 
 export const FreePlan = ({
@@ -28,12 +30,12 @@ export const FreePlan = ({
   showCurrentPlanBadge?: boolean;
 }) => {
   return (
-    <div className={className}>
+    <div className={`${className} flex h-full flex-col`}>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-lg font-semibold">Free plan</h3>
         {showCurrentPlanBadge && <Badge>Current plan</Badge>}
       </div>
-      <div className="flex flex-col gap-2 text-sm">
+      <div className="flex flex-grow flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
           <span>Team members</span>
           <span className="font-medium">Limited</span>
@@ -52,7 +54,7 @@ export const FreePlan = ({
         </div>
       </div>
 
-      {children}
+      <div className="mt-auto">{children}</div>
     </div>
   );
 };
@@ -67,36 +69,19 @@ export const ProPlan = ({
   showCurrentPlanBadge?: boolean;
 }) => {
   return (
-    <div className={className}>
+    <div className={`${className} flex h-full flex-col`}>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-lg font-semibold">Pro plan</h3>
         {showCurrentPlanBadge && <Badge>Current plan</Badge>}
       </div>
-      <div className="flex flex-col gap-2 text-sm">
+      <div className="flex flex-grow flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
           <span>Team members</span>
           <span className="text-sm font-medium">$20/user/month</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1">AI messages</span>
-          <div className="flex items-center gap-1">
-            <span className="flex items-center gap-1 text-sm font-medium">
-              <Dialog>
-                <DialogTrigger className="border-b border-dashed border-border hover:border-foreground">
-                  * Unlimited
-                </DialogTrigger>
-                <DialogContent aria-describedby={undefined}>
-                  <DialogHeader>
-                    <DialogTitle>AI message limits</DialogTitle>
-                  </DialogHeader>
-                  <p className="text-sm text-muted-foreground">
-                    We currently don’t charge for AI usage on the Pro plan. We reserve the right to limit unreasonable
-                    use and abuse.
-                  </p>
-                </DialogContent>
-              </Dialog>
-            </span>
-          </div>
+          <span>AI usage</span>
+          <span className="text-sm font-medium">$20/user/month allowance</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Connections</span>
@@ -120,23 +105,45 @@ export const ProPlan = ({
         </div>
       </div>
 
-      {children}
+      <div className="mt-auto">{children}</div>
     </div>
   );
 };
 
-export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, teamUuid }: BillingPlansProps) => {
+export const BillingPlans = ({
+  isOnPaidPlan,
+  canManageBilling,
+  eventSource,
+  teamUuid,
+  planType,
+}: BillingPlansProps) => {
   const navigate = useNavigate();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-  const className = 'rounded border border-border p-4 outline outline-transparent';
+
+  const currentPlan = planType || (isOnPaidPlan ? 'PRO' : 'FREE');
+  const isFree = currentPlan === 'FREE';
+  const isPro = currentPlan === 'PRO';
+  const isBusiness = currentPlan === 'BUSINESS';
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <FreePlan className={className} showCurrentPlanBadge={!isOnPaidPlan} />
+    <div className="grid grid-cols-3 items-stretch gap-4">
+      <FreePlan
+        className={cn(
+          'rounded p-4 outline outline-transparent',
+          isFree ? 'border-2 border-primary bg-primary/5' : 'border border-border'
+        )}
+        showCurrentPlanBadge={isFree}
+      />
 
       {/* Pro */}
-      <ProPlan className={className} showCurrentPlanBadge={isOnPaidPlan}>
-        {!isOnPaidPlan ? (
+      <ProPlan
+        className={cn(
+          'rounded p-4 outline outline-transparent',
+          isPro ? 'border-2 border-primary bg-primary/5' : 'border border-border'
+        )}
+        showCurrentPlanBadge={isPro}
+      >
+        {isFree ? (
           <Button
             disabled={!canManageBilling}
             onClick={() => {
@@ -147,6 +154,62 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
             data-testid="billing-upgrade-to-pro-button"
           >
             Upgrade to Pro
+          </Button>
+        ) : isPro ? (
+          <div className="mt-4 space-y-2">
+            <Button
+              disabled={!canManageBilling}
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                trackEvent('[Billing].manageBillingClicked', { eventSource });
+                navigate(ROUTES.TEAM_BILLING_MANAGE(teamUuid));
+              }}
+            >
+              Manage subscription
+            </Button>
+            {canManageBilling && <CancellationDialog teamUuid={teamUuid} />}
+          </div>
+        ) : (
+          // Business plan - Pro is a lower tier, no upgrade option
+          <div className="mt-4">
+            <p className="text-center text-xs text-muted-foreground">Lower tier plan</p>
+          </div>
+        )}
+        {!canManageBilling && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Only the team owner can edit billing info.
+            <br />
+            <Link
+              to={ROUTES.TEAM_MEMBERS(teamUuid)}
+              className="underline"
+              onClick={() => setShowUpgradeDialog({ open: false, eventSource: null })}
+            >
+              View team members
+            </Link>
+          </p>
+        )}
+      </ProPlan>
+
+      {/* Business */}
+      <BusinessPlan
+        className={cn(
+          'rounded p-4 outline outline-transparent',
+          isBusiness ? 'border-2 border-primary bg-primary/5' : 'border border-border'
+        )}
+        showCurrentPlanBadge={isBusiness}
+      >
+        {isFree || isPro ? (
+          <Button
+            disabled={!canManageBilling}
+            onClick={() => {
+              trackEvent('[Billing].upgradeToBusinessClicked', { eventSource });
+              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid) + '?plan=business');
+            }}
+            className="mt-4 w-full"
+            data-testid="billing-upgrade-to-business-button"
+          >
+            Upgrade to Business
           </Button>
         ) : (
           <div className="mt-4 space-y-2">
@@ -177,7 +240,7 @@ export const BillingPlans = ({ isOnPaidPlan, canManageBilling, eventSource, team
             </Link>
           </p>
         )}
-      </ProPlan>
+      </BusinessPlan>
     </div>
   );
 };

@@ -418,6 +418,7 @@ export const ApiSchemas = {
     billing: z.object({
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
+      planType: z.enum(['FREE', 'PRO', 'BUSINESS']).optional(),
       usage: z.array(
         z.object({
           month: z.string(),

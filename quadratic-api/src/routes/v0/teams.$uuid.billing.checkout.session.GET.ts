@@ -59,7 +59,22 @@ async function handler(
     team.stripeCustomerId = stripeCustomer.id;
   }
 
-  const priceId = plan === 'business' ? await getBusinessPriceId() : await getProPriceId();
+  // Get the price ID for the selected plan
+  let priceId: string;
+  if (plan === 'business') {
+    try {
+      priceId = await getBusinessPriceId();
+    } catch (error) {
+      // Business plan price doesn't exist in Stripe yet
+      return res.status(503).json({
+        error: {
+          message: 'Business plan is not yet available. Please try upgrading to Pro plan instead.',
+        },
+      });
+    }
+  } else {
+    priceId = await getProPriceId();
+  }
 
   const session = await createCheckoutSession(uuid, priceId, redirectSuccess, redirectCancel, plan);
 

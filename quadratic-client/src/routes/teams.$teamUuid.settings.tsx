@@ -98,6 +98,7 @@ export const Component = () => {
   const latestUsage = useMemo(() => billing.usage[0] || { ai_messages: 0 }, [billing.usage]);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
   const canManageBilling = useMemo(() => teamPermissions.includes('TEAM_MANAGE'), [teamPermissions]);
+  const planType = useMemo(() => billing.planType, [billing.planType]);
 
   // If you don't have permission, you can't see this view
   if (!teamPermissions.includes('TEAM_EDIT')) {
@@ -133,6 +134,7 @@ export const Component = () => {
                   canManageBilling={canManageBilling}
                   teamUuid={team.uuid}
                   eventSource="TeamSettings"
+                  planType={planType}
                 />
 
                 {/* Current Usage */}
@@ -235,7 +237,7 @@ export const Component = () => {
               >
                 {!isOnPaidPlan && (
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary">Exclusive to Pro</Badge>
+                    <Badge variant="secondary">Available in Pro and Business plans</Badge>
                     <Button
                       asChild
                       variant="link"
@@ -307,7 +309,7 @@ function SettingsRow(props: { children: ReactNode[]; className?: string }) {
   }
 
   return (
-    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-3xl`, props.className)}>
+    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-5xl`, props.className)}>
       <div className="pt-2">{props.children[0]}</div>
       <div className="">{props.children[1]}</div>
     </div>

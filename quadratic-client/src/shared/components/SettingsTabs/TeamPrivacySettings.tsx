@@ -130,7 +130,7 @@ export function TeamPrivacySettings() {
         >
           {!isOnPaidPlan && (
             <div className="flex items-center gap-1">
-              <Badge variant="secondary">Exclusive to Pro</Badge>
+              <Badge variant="secondary">Available in Pro and Business plans</Badge>
               <Button
                 asChild
                 variant="link"
