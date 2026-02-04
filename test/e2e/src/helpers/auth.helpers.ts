@@ -9,18 +9,55 @@ import { cleanUpFiles } from './file.helpers';
  */
 export const skipFeatureWalkthrough = async (page: Page) => {
   try {
-    // Check if the feature walkthrough dialog is visible (wait longer for it to appear)
     const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
-    if (await walkthroughDialog.isVisible({ timeout: 5000 }).catch(() => false)) {
-      // Click the "Skip tour" button
-      const skipButton = page.getByRole('button', { name: /Skip tour/i });
-      await skipButton.click({ timeout: 10000 });
-      // Wait for the dialog to close
-      await walkthroughDialog.waitFor({ state: 'hidden', timeout: 10000 });
+    
+    // Wait for dialog to appear (with a reasonable timeout)
+    // Use waitFor to actively wait for it, rather than just checking visibility
+    try {
+      await walkthroughDialog.waitFor({ state: 'visible', timeout: 10000 });
+    } catch {
+      // Dialog didn't appear, nothing to skip
+      return;
     }
-  } catch {
+    
+    // Dialog is visible, now click skip
+    const skipButton = page.getByRole('button', { name: /Skip tour/i });
+    
+    // Wait for skip button to be visible and ready
+    await skipButton.waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Click with force to bypass pointer event interception
+    await skipButton.click({ timeout: 10000, force: true });
+    
+    // Wait for the dialog to be completely removed/hidden
+    await walkthroughDialog.waitFor({ state: 'hidden', timeout: 15000 });
+    
+    // Additional wait to ensure the dialog is fully dismissed and no longer intercepting events
+    await page.waitForTimeout(500);
+  } catch (error) {
     // Walkthrough not present or couldn't be closed, continue silently
+    // Log for debugging in case this becomes a persistent issue
+    console.warn('Failed to skip feature walkthrough:', error);
   }
+};
+
+/**
+ * Ensures the feature walkthrough dialog is dismissed before proceeding.
+ * This is a defensive helper to call right before critical clicks that might be blocked.
+ */
+export const ensureFeatureWalkthroughDismissed = async (page: Page) => {
+  const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
+  
+  // Check if dialog is currently visible
+  const isVisible = await walkthroughDialog.isVisible({ timeout: 2000 }).catch(() => false);
+  
+  if (isVisible) {
+    // Dialog is present, skip it
+    await skipFeatureWalkthrough(page);
+  }
+  
+  // Wait a moment to ensure any dismissal animations complete
+  await page.waitForTimeout(300);
 };
 
 /**

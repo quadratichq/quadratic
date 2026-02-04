@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import path from 'path';
-import { dismissUpgradeToProDialog, skipFeatureWalkthrough } from './auth.helpers';
+import { dismissUpgradeToProDialog, ensureFeatureWalkthroughDismissed, skipFeatureWalkthrough } from './auth.helpers';
 import { upgradeToProPlan } from './billing.helpers';
 import { waitForAppReady, waitForCanvasReady, waitForNetworkIdle } from './wait.helpers';
 
@@ -44,6 +44,8 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
 
   // Close AI chat box as needed
   try {
+    // Ensure walkthrough is dismissed right before clicking (defensive check)
+    await ensureFeatureWalkthroughDismissed(page);
     await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
   } catch (e) {
     console.error(e);
@@ -52,6 +54,8 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
   if (!skipNavigateBack) {
     // Skip the feature walkthrough tour again before navigating back (it may appear after file operations)
     await skipFeatureWalkthrough(page);
+    // Ensure walkthrough is dismissed right before clicking (defensive check)
+    await ensureFeatureWalkthroughDismissed(page);
     // Navigate back to files (removed redundant 10s waitForTimeout)
     await page.locator(`nav a >> nth = 0`).click({ timeout: 60 * 1000 });
     await waitForAppReady(page);
