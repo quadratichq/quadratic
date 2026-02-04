@@ -23,7 +23,6 @@ const Menubar = React.forwardRef<
     <MenubarPrimitive.Root
       ref={ref}
       onValueChange={(value) => {
-        console.log('onValueChange', value);
         // If nothing changed, rather than return focus back to the menubar, we're going to
         // return it back to the grid.
         if (!value) {
