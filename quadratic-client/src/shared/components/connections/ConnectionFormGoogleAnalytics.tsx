@@ -26,9 +26,9 @@ const ConnectionFormGoogleAnalyticsSchema = z.object({
 type FormValues = z.infer<typeof ConnectionFormGoogleAnalyticsSchema>;
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const defaultStartDate = threeMonthsAgo.toISOString().split('T')[0];
 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
