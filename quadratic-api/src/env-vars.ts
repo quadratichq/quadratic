@@ -57,6 +57,12 @@ export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 export const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID as string;
 export const PLAID_SECRET = process.env.PLAID_SECRET as string;
 export const PLAID_ENVIRONMENT = process.env.PLAID_ENVIRONMENT as 'sandbox' | 'development' | 'production';
+
+// Google OAuth (for Google Analytics)
+export const GOOGLE_OAUTH_CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID as string;
+export const GOOGLE_OAUTH_CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET as string;
+export const GOOGLE_OAUTH_REDIRECT_URI = process.env.GOOGLE_OAUTH_REDIRECT_URI as string;
+
 [
   'STRIPE_SECRET_KEY',
   'ENCRYPTION_KEY',
@@ -66,6 +72,9 @@ export const PLAID_ENVIRONMENT = process.env.PLAID_ENVIRONMENT as 'sandbox' | 'd
   'PLAID_CLIENT_ID',
   'PLAID_SECRET',
   'PLAID_ENVIRONMENT',
+  'GOOGLE_OAUTH_CLIENT_ID',
+  'GOOGLE_OAUTH_CLIENT_SECRET',
+  'GOOGLE_OAUTH_REDIRECT_URI',
 ].forEach(ensureEnvVarExists);
 
 // WorkOS

@@ -141,10 +141,18 @@ export const ConnectionTypeDetailsMixpanelSchema = z.object({
   start_date: z.string().date(),
 });
 
+// Google Analytics connection - supports both Service Account (legacy) and OAuth authentication
+// Service Account: Uses service_account_configuration JSON
+// OAuth: Uses access_token, refresh_token, and token_expires_at
 export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
   property_id: z.string().min(1, { message: 'Required' }),
-  service_account_configuration: z.string().min(1, { message: 'Required' }),
   start_date: z.string().date(),
+  // Service Account authentication (legacy)
+  service_account_configuration: z.string().optional(),
+  // OAuth authentication (preferred)
+  access_token: z.string().optional(),
+  refresh_token: z.string().optional(),
+  token_expires_at: z.string().datetime().optional(),
 });
 
 export const ConnectionTypeDetailsPlaidSchema = z.object({
@@ -262,5 +270,27 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/plaid/exchange-token.POST.response': z.object({
     accessToken: z.string(),
     itemId: z.string(),
+  }),
+
+  // Google OAuth endpoints (for Google Analytics)
+  '/v0/teams/:uuid/google/auth-url.GET.response': z.object({
+    authUrl: z.string(),
+  }),
+
+  '/v0/teams/:uuid/google/exchange-token.POST.request': z.object({
+    code: z.string(),
+  }),
+  '/v0/teams/:uuid/google/exchange-token.POST.response': z.object({
+    accessToken: z.string(),
+    refreshToken: z.string(),
+    expiresAt: z.string().datetime(),
+  }),
+
+  '/v0/teams/:uuid/google/refresh-token.POST.request': z.object({
+    refreshToken: z.string(),
+  }),
+  '/v0/teams/:uuid/google/refresh-token.POST.response': z.object({
+    accessToken: z.string(),
+    expiresAt: z.string().datetime(),
   }),
 };

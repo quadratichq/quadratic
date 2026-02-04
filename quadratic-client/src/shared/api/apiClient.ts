@@ -536,6 +536,35 @@ export const apiClient = {
         );
       },
     },
+    google: {
+      getAuthUrl({ teamUuid }: { teamUuid: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/google/auth-url`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/google/auth-url.GET.response']
+        );
+      },
+      exchangeToken({ teamUuid, code }: { teamUuid: string; code: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/google/exchange-token`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+          },
+          ApiSchemas['/v0/teams/:uuid/google/exchange-token.POST.response']
+        );
+      },
+      refreshToken({ teamUuid, refreshToken }: { teamUuid: string; refreshToken: string }) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/google/refresh-token`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ refreshToken }),
+          },
+          ApiSchemas['/v0/teams/:uuid/google/refresh-token.POST.response']
+        );
+      },
+    },
   },
 
   ai: {
