@@ -4,6 +4,56 @@ import { dismissUpgradeToProDialog, ensureFeatureWalkthroughDismissed, skipFeatu
 import { upgradeToProPlan } from './billing.helpers';
 import { waitForAppReady, waitForCanvasReady, waitForNetworkIdle } from './wait.helpers';
 
+/**
+ * Exits Agent Mode if the user is currently in Agent Mode.
+ * This handles cases where some users are dropped into Agent Mode when first entering a sheet.
+ */
+export const exitAgentModeIfActive = async (page: Page) => {
+  try {
+    const agentModeButton = page.getByRole('button', { name: 'Agent mode' });
+    const isVisible = await agentModeButton.isVisible({ timeout: 5000 });
+    if (isVisible) {
+      // Click the button to exit Agent Mode
+      await agentModeButton.click({ timeout: 10 * 1000 });
+      
+      // Wait for the button to no longer have "Agent mode" text
+      // The button element stays in DOM but changes from "Agent mode" text to icon-only
+      // We verify exit by polling to check that a button with "Agent mode" text no longer exists
+      const maxWaitTime = 10 * 1000; // 10 seconds max
+      const pollInterval = 250; // Check every 250ms
+      const maxAttempts = Math.ceil(maxWaitTime / pollInterval);
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const buttonStillHasText = await page
+          .getByRole('button', { name: 'Agent mode' })
+          .isVisible({ timeout: pollInterval })
+          .catch(() => false);
+        
+        if (!buttonStillHasText) {
+          // Button no longer has "Agent mode" text, mode switch completed
+          break;
+        }
+        
+        if (attempt < maxAttempts - 1) {
+          await page.waitForTimeout(pollInterval);
+        }
+      }
+      
+      // Wait for UI transitions and animations to complete
+      // Agent Mode has significant UI changes:
+      // - Sidebar appears/disappears
+      // - Toolbar appears/disappears  
+      // - Container styling changes (padding, rounded corners, shadows)
+      // - Menubar appears/disappears
+      // These changes involve React re-renders and CSS transitions
+      await page.waitForTimeout(1000);
+    }
+  } catch (e) {
+    // Agent Mode button not present, which is fine - user is not in Agent Mode
+    void e;
+  }
+};
+
 type CreateFileOptions = {
   fileName: string;
   skipNavigateBack?: boolean;
@@ -32,6 +82,9 @@ export const createFile = async (page: Page, { fileName, skipNavigateBack = fals
 
   // Skip the feature walkthrough tour if it appears
   await skipFeatureWalkthrough(page);
+
+  // Exit Agent Mode if user was dropped into it
+  await exitAgentModeIfActive(page);
 
   // Name file
   await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
@@ -109,6 +162,9 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   // Skip the feature walkthrough tour if it appears
   await skipFeatureWalkthrough(page);
 
+  // Exit Agent Mode if user was dropped into it
+  await exitAgentModeIfActive(page);
+
   // Assert we navigate into the file
   await expect(page.locator(`button:text("${fileName}")`)).toBeVisible({
     timeout: 60 * 1000,
@@ -178,6 +234,9 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
 
   // Wait for app to load and canvas to be visible
   await waitForCanvasReady(page);
+
+  // Exit Agent Mode if user was dropped into it
+  await exitAgentModeIfActive(page);
 
   await closeExtraUI(page);
 };
