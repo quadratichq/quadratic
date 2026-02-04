@@ -592,6 +592,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       const parsedMoves = movesToProcess.map((m) => parseMove(m.source_selection_rect, m.target_top_left_position));
 
       // Move AI cursor to show the first target destination
+      if (parsedMoves.length === 0) {
+        return [createTextContent('No valid moves to process')];
+      }
       const first = parsedMoves[0];
       try {
         const targetRange = `${xyToA1(first.x, first.y)}:${xyToA1(first.x + first.rangeWidth, first.y + first.rangeHeight)}`;

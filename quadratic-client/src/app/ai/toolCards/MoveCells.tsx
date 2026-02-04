@@ -77,13 +77,7 @@ export const MoveCells = memo(
     const icon = <GridActionIcon />;
     const moves = getMoves();
     const moveCount = moves.length;
-    const label = loading
-      ? moveCount > 1
-        ? 'Moving cells'
-        : 'Moving cells'
-      : moveCount > 1
-        ? `Moved ${moveCount} selections`
-        : 'Moved cells';
+    const label = loading ? 'Moving cells' : moveCount > 1 ? `Moved ${moveCount} selections` : 'Moved cells';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;

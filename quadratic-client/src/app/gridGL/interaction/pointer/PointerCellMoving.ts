@@ -21,6 +21,7 @@ export interface AdditionalTable {
   row: number;
   width: number;
   height: number;
+  name: string;
 }
 
 interface MoveCells {
@@ -34,6 +35,7 @@ interface MoveCells {
   original?: Rectangle;
   colRows?: 'columns' | 'rows';
   additionalTables?: AdditionalTable[];
+  primaryTableName?: string;
 }
 
 export class PointerCellMoving {
@@ -66,6 +68,7 @@ export class PointerCellMoving {
     point: Point,
     width: number,
     height: number,
+    primaryTableName: string,
     additionalTables?: AdditionalTable[]
   ) => {
     if (this.state) return false;
@@ -81,6 +84,7 @@ export class PointerCellMoving {
       offset: { x: column - offset.column, y: row - offset.row },
       original: new Rectangle(column, row, width, height),
       additionalTables,
+      primaryTableName,
     };
     this.startMove();
   };
@@ -347,7 +351,19 @@ export class PointerCellMoving {
               targetSheetId: sheets.current,
             })),
           ];
-          quadraticCore.moveCellsBatch(moves, false);
+          // Select all moved tables after the move completes
+          const tableNames = this.movingCells.primaryTableName
+            ? [this.movingCells.primaryTableName, ...(this.movingCells.additionalTables?.map((t) => t.name) ?? [])]
+            : undefined;
+
+          quadraticCore.moveCellsBatch(moves, false).then(() => {
+            if (tableNames) {
+              // Create a selection string from table names (comma-separated)
+              const selectionString = tableNames.join(', ');
+              const jsSelection = sheets.stringToSelection(selectionString, sheets.current);
+              sheets.sheet.cursor.loadFromSelection(jsSelection);
+            }
+          });
         }
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;

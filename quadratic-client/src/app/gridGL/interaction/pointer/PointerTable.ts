@@ -241,6 +241,7 @@ export class PointerTable {
                 row: table.codeCell.y,
                 width: table.codeCell.w,
                 height: table.codeCell.h,
+                name: table.codeCell.name,
               };
             }
             return null;
@@ -253,6 +254,7 @@ export class PointerTable {
           this.tableNameDown.point,
           this.tableNameDown.table.w,
           this.tableNameDown.table.h,
+          this.tableNameDown.table.name,
           additionalTables.length > 0 ? additionalTables : undefined
         );
       }
