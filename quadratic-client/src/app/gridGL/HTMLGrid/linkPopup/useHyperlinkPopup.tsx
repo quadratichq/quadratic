@@ -771,8 +771,7 @@ export function useHyperlinkPopup() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       // Only handle click-outside in edit mode (check via ref to avoid re-running effect)
-      if (modeRef.current !== 'edit') return;
-      if (!popupRef.current) return;
+      if (modeRef.current !== 'edit' || !popupRef.current) return;
 
       // Check if click was outside the popup
       if (!popupRef.current.contains(e.target as Node)) {
