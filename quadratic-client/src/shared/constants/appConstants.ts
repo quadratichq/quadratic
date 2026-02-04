@@ -22,3 +22,6 @@ export const VERSION = import.meta.env.VITE_VERSION;
 // Font version constant - shared between font generation script and runtime code
 // Update this when fonts are regenerated to bust cache
 export const FONT_VERSION = '1.0.1';
+
+// AI gradient colors used for AI-related UI elements
+export const AI_GRADIENT = 'from-indigo-500 via-purple-600 to-fuchsia-600';
