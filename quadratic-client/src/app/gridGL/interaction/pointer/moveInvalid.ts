@@ -241,6 +241,10 @@ export function checkMoveDestinationInvalid(
   // Add additional tables to the source tables list (they're also being moved)
   if (additionalTables) {
     for (const table of additionalTables) {
+      // Check if this table is already in sourceTables (e.g., if it overlaps sourceRect)
+      const alreadyExists = sourceTables.some((t) => t.x === table.column && t.y === table.row);
+      if (alreadyExists) continue;
+
       // Get the actual table to retrieve accurate properties
       const tableRect = new Rectangle(table.column, table.row, table.width, table.height);
       const actualTables = getTablesInRect(tableRect);
@@ -290,6 +294,28 @@ export function checkMoveDestinationInvalid(
       destX: Math.max(1, table.column + deltaX),
       destY: Math.max(1, table.row + deltaY),
     }));
+
+    // Check if the primary table's destination would collide with any additional table's destination
+    // This is important because Math.max(1, ...) clamping could push tables together
+    // Apply the same clamping to the primary table's destination for consistency
+    const primaryDestX = Math.max(1, destX);
+    const primaryDestY = Math.max(1, destY);
+    for (const additionalDest of additionalTableDestinations) {
+      if (
+        rectanglesOverlap(
+          primaryDestX,
+          primaryDestY,
+          width,
+          height,
+          additionalDest.destX,
+          additionalDest.destY,
+          additionalDest.table.width,
+          additionalDest.table.height
+        )
+      ) {
+        return true;
+      }
+    }
 
     for (let i = 0; i < additionalTableDestinations.length; i++) {
       const { table, destX: tableDestX, destY: tableDestY } = additionalTableDestinations[i];

@@ -589,12 +589,29 @@ export const aiToolsActions: AIToolActionsRecord = {
         ];
       }
 
-      const parsedMoves = movesToProcess.map((m) => parseMove(m.source_selection_rect, m.target_top_left_position));
+      // Parse all moves and collect errors - this way we can report all invalid moves, not just the first one
+      const parseResults = movesToProcess.map((m, index) => {
+        try {
+          return { success: true as const, data: parseMove(m.source_selection_rect, m.target_top_left_position) };
+        } catch (e) {
+          return {
+            success: false as const,
+            error: `Move ${index + 1} (${m.source_selection_rect} → ${m.target_top_left_position}): ${e instanceof Error ? e.message : String(e)}`,
+          };
+        }
+      });
+
+      const errors = parseResults.filter((r) => !r.success);
+      if (errors.length > 0) {
+        const errorMessages = errors.map((e) => (e.success ? '' : e.error)).join('\n');
+        return [createTextContent(`Invalid move(s):\n${errorMessages}`)];
+      }
+
+      const parsedMoves = parseResults
+        .filter((r): r is { success: true; data: ReturnType<typeof parseMove> } => r.success)
+        .map((r) => r.data);
 
       // Move AI cursor to show the first target destination
-      if (parsedMoves.length === 0) {
-        return [createTextContent('No valid moves to process')];
-      }
       const first = parsedMoves[0];
       try {
         const targetRange = `${xyToA1(first.x, first.y)}:${xyToA1(first.x + first.rangeWidth, first.y + first.rangeHeight)}`;

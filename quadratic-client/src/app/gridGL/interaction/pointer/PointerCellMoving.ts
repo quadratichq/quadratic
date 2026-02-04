@@ -356,14 +356,21 @@ export class PointerCellMoving {
             ? [this.movingCells.primaryTableName, ...(this.movingCells.additionalTables?.map((t) => t.name) ?? [])]
             : undefined;
 
-          quadraticCore.moveCellsBatch(moves, false).then(() => {
-            if (tableNames) {
-              // Create a selection string from table names (comma-separated)
-              const selectionString = tableNames.join(', ');
-              const jsSelection = sheets.stringToSelection(selectionString, sheets.current);
-              sheets.sheet.cursor.loadFromSelection(jsSelection);
-            }
-          });
+          const sheetId = sheets.current;
+          quadraticCore
+            .moveCellsBatch(moves, false)
+            .then(() => {
+              // Only update selection if we're still on the same sheet
+              if (tableNames && sheets.current === sheetId) {
+                // Create a selection string from table names (comma-separated)
+                const selectionString = tableNames.join(', ');
+                const jsSelection = sheets.stringToSelection(selectionString, sheetId);
+                sheets.sheet.cursor.loadFromSelection(jsSelection);
+              }
+            })
+            .catch((error) => {
+              console.error('Failed to move cells batch:', error);
+            });
         }
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
