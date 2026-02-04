@@ -122,88 +122,88 @@ export const Component = () => {
         </SettingsRow>
 
         <>
-          <SettingsRow>
+          {/* Billing Section */}
+          <div className="flex flex-col gap-4 sm:max-w-5xl">
             <Type variant="body2" className="font-bold">
               Billing
             </Type>
+
+            {/* Plan Comparison */}
+            <BillingPlans
+              isOnPaidPlan={isOnPaidPlan}
+              canManageBilling={canManageBilling}
+              teamUuid={team.uuid}
+              eventSource="TeamSettings"
+              planType={planType}
+            />
+
+            <p className="pt-2 text-sm text-muted-foreground">
+              Learn more on our{' '}
+              <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                pricing page
+                <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
+              </a>
+            </p>
+          </div>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              Current usage
+            </Type>
             <div>
-              <div className="flex flex-col gap-4">
-                {/* Plan Comparison */}
-                <BillingPlans
-                  isOnPaidPlan={isOnPaidPlan}
-                  canManageBilling={canManageBilling}
-                  teamUuid={team.uuid}
-                  eventSource="TeamSettings"
-                  planType={planType}
-                />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">
+                    Team members{' '}
+                    <span className="text-muted-foreground">
+                      (
+                      <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
+                        manage
+                      </Link>
+                      )
+                    </span>
+                  </span>
 
-                {/* Current Usage */}
-                <div>
-                  <h3 className="text-md mb-3 font-semibold">Current usage</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">
-                        Team members{' '}
-                        <span className="text-muted-foreground">
-                          (
-                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
-                            manage
-                          </Link>
-                          )
-                        </span>
-                      </span>
-
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-left font-medium">{users.length}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">Your AI messages</span>
-                        <Dialog>
-                          <DialogTrigger>
-                            <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                          </DialogTrigger>
-                          <DialogContent aria-describedby={undefined}>
-                            <DialogHeader>
-                              <DialogTitle>Usage history</DialogTitle>
-                            </DialogHeader>
-                            <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
-                            <div className="space-y-3">
-                              {billing.usage.map((usage) => (
-                                <div key={usage.month} className="flex justify-between">
-                                  <span>
-                                    {(function formatDate(dateStr: string) {
-                                      const [year, month] = dateStr.split('-');
-                                      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                      return date.toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        year: 'numeric',
-                                      });
-                                    })(usage.month)}
-                                  </span>
-                                  <span>{usage.ai_messages}</span>
-                                </div>
-                              ))}
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 text-left font-medium">{users.length}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">Your AI messages</span>
+                    <Dialog>
+                      <DialogTrigger>
+                        <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                      </DialogTrigger>
+                      <DialogContent aria-describedby={undefined}>
+                        <DialogHeader>
+                          <DialogTitle>Usage history</DialogTitle>
+                        </DialogHeader>
+                        <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
+                        <div className="space-y-3">
+                          {billing.usage.map((usage) => (
+                            <div key={usage.month} className="flex justify-between">
+                              <span>
+                                {(function formatDate(dateStr: string) {
+                                  const [year, month] = dateStr.split('-');
+                                  const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+                                  return date.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    year: 'numeric',
+                                  });
+                                })(usage.month)}
+                              </span>
+                              <span>{usage.ai_messages}</span>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
-                      </div>
-                    </div>
+                          ))}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
                   </div>
                 </div>
               </div>
-
-              <p className="pt-4 text-sm text-muted-foreground">
-                Learn more on our{' '}
-                <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-                  pricing page
-                  <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
-                </a>
-              </p>
             </div>
           </SettingsRow>
           <SettingsRow>

@@ -1,9 +1,9 @@
 import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
-import { PlanType } from '../billing/planHelpers';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
 import { trackEvent } from '../analytics/mixpanel';
+import { PlanType } from '../billing/planHelpers';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';
@@ -146,9 +146,9 @@ export const getProPriceId = async () => {
     active: true,
   });
 
-  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_pro');
+  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_ai');
   if (data.length === 0) {
-    throw new Error('No Pro plan price found');
+    throw new Error('No Pro plan price found (lookup_key: team_monthly_ai)');
   }
 
   return data[0].id;
@@ -210,11 +210,11 @@ export const updateTeamStatus = async (
   // Get subscription to extract plan type from metadata
   const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
   const planTypeFromMetadata = subscription.metadata?.plan_type as PlanType | undefined;
-  
+
   // Determine plan type: use metadata if available, otherwise default to PRO for active subscriptions
   let planType: PlanType | null = null;
   let monthlyAiAllowancePerUser: number | null = null;
-  
+
   if (stripeSubscriptionStatus === SubscriptionStatus.ACTIVE) {
     if (planTypeFromMetadata === PlanType.BUSINESS) {
       planType = PlanType.BUSINESS;
@@ -275,14 +275,14 @@ export const updateTeamStatus = async (
       stripeCurrentPeriodEnd: endDate,
       stripeSubscriptionLastUpdated: new Date(),
     };
-    
+
     if (planType !== null) {
       updateData.planType = planType;
     }
     if (monthlyAiAllowancePerUser !== null) {
       updateData.monthlyAiAllowancePerUser = monthlyAiAllowancePerUser;
     }
-    
+
     const updatedTeam = await tx.team.update({
       where: { stripeCustomerId: customerId },
       data: updateData,

@@ -95,6 +95,15 @@ export const apiClient = {
 
         return data;
       },
+      async aiUsageUsers(uuid: string) {
+        const data = await fetchFromApi(
+          `/v0/teams/${uuid}/billing/ai/usage/users`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/ai/usage/users.GET.response']
+        );
+
+        return data;
+      },
     },
     files: {
       deleted: {

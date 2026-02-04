@@ -1,5 +1,6 @@
 import type { Action as FileShareAction, FilesSharingLoader } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { apiClient } from '@/shared/api/apiClient';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -79,6 +80,34 @@ export function ShareTeamDialog() {
   const uuid = useMemo(() => data?.team?.uuid ?? '', [data?.team?.uuid]);
   const userMakingRequest = data?.userMakingRequest;
   const license = data?.license;
+
+  // Fetch AI usage data for all users
+  const [userUsageData, setUserUsageData] = useState<
+    ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response'] | null
+  >(null);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
+  const lastFetchedUuidRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // Only fetch if we have a uuid, not loading, and haven't already fetched for this uuid
+    if (uuid && !isLoading && uuid !== lastFetchedUuidRef.current) {
+      lastFetchedUuidRef.current = uuid;
+      setIsLoadingUsage(true);
+      apiClient.teams.billing
+        .aiUsageUsers(uuid)
+        .then((usageData) => {
+          setUserUsageData(usageData);
+        })
+        .catch((error) => {
+          console.error('[ShareTeamDialog] Failed to fetch user usage data:', error);
+          // Reset ref on error so we can retry
+          lastFetchedUuidRef.current = null;
+        })
+        .finally(() => {
+          setIsLoadingUsage(false);
+        });
+    }
+  }, [uuid, isLoading]);
 
   // All hooks must be called before any conditional returns
   const action = useMemo(() => (uuid ? ROUTES.TEAM(uuid) : ''), [uuid]);
@@ -180,15 +209,20 @@ export function ShareTeamDialog() {
         </div>
       )}
 
-      {users.map((user) => (
-        <ManageTeamUser
-          key={user.id}
-          user={user}
-          userMakingRequest={userMakingRequest}
-          numberOfOwners={numberOfOwners}
-          action={action}
-        />
-      ))}
+      {users.map((user) => {
+        const usage = userUsageData?.users.find((u) => u.userId === user.id);
+        return (
+          <ManageTeamUser
+            key={user.id}
+            user={user}
+            userMakingRequest={userMakingRequest}
+            numberOfOwners={numberOfOwners}
+            action={action}
+            usage={usage}
+            isLoadingUsage={isLoadingUsage}
+          />
+        );
+      })}
 
       {invites.map((invite) => (
         <ManageInvite
@@ -216,16 +250,20 @@ export function ShareTeamDialog() {
   );
 }
 
-function ManageTeamUser({
+const ManageTeamUser = React.memo(function ManageTeamUser({
   action,
   numberOfOwners,
   user,
   userMakingRequest,
+  usage,
+  isLoadingUsage,
 }: {
   action: string;
   numberOfOwners: number;
   user: ShareUser;
   userMakingRequest: UserMakingRequest;
+  usage?: ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response']['users'][0];
+  isLoadingUsage?: boolean;
 }) {
   const isLoggedInUser = userMakingRequest.id === user.id;
   const canDelete = isLoggedInUser
@@ -239,6 +277,30 @@ function ManageTeamUser({
     ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
     : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
   const confirmFn = useConfirmDialog('deleteUserFromTeam', { name: user.name ?? user.email, isLoggedInUser });
+
+  // Format usage display
+  const usageDisplay = useMemo(() => {
+    if (isLoadingUsage || !usage) {
+      return null;
+    }
+
+    if (usage.planType === 'FREE') {
+      // Free users: show messages out of total messages
+      if (usage.currentPeriodUsage !== null && usage.billingLimit !== null) {
+        return `${usage.currentPeriodUsage} / ${usage.billingLimit} messages`;
+      }
+      return null;
+    } else {
+      // Pro/Business users: show $ current usage / $ total usage
+      // For Pro/Business, total usage is either monthlyAiAllowance or userMonthlyBudgetLimit (if set)
+      const totalUsage = usage.userMonthlyBudgetLimit ?? usage.monthlyAiAllowance;
+      if (usage.currentMonthAiCost !== null && totalUsage !== null) {
+        return `$${usage.currentMonthAiCost.toFixed(2)} / $${totalUsage.toFixed(2)}`;
+      }
+      return null;
+    }
+  }, [usage, isLoadingUsage]);
+
   return (
     <ManageUser
       key={user.id}
@@ -275,9 +337,10 @@ function ManageTeamUser({
           : undefined
       }
       roles={roles}
+      usageDisplay={usageDisplay}
     />
   );
-}
+});
 
 function ShareFileDialogBody({
   uuid,
@@ -913,6 +976,7 @@ function ManageUser({
   onDelete,
   onUpdate,
   onAddToTeam,
+  usageDisplay,
 }: {
   onDelete?: (submit: FetcherSubmitFunction, userId: string) => Promise<void>;
   onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
@@ -921,6 +985,7 @@ function ManageUser({
   user: ShareUser;
   roles: (UserTeamRole | UserFileRole)[];
   onAddToTeam?: () => void;
+  usageDisplay?: string | null;
 }) {
   const userId = String(user.id);
   // Use consistent fetcher keys so updates can be tracked across the app
@@ -955,6 +1020,7 @@ function ManageUser({
       name={user.name}
       picture={user.picture}
       error={error}
+      usageDisplay={usageDisplay}
       action={
         isReadOnly ? (
           <Type className="pr-4">{label}</Type>
@@ -1117,6 +1183,7 @@ function ListItemUser({
   action,
   error,
   isYou,
+  usageDisplay,
 }: {
   name?: string;
   email: string;
@@ -1124,6 +1191,7 @@ function ListItemUser({
   action: ReactNode;
   error?: string;
   isYou: boolean;
+  usageDisplay?: string | null;
 }) {
   const label = name ? name : email;
   const secondary = error ? error : name ? email : '';
@@ -1138,11 +1206,18 @@ function ListItemUser({
         <Type variant="body2">
           {label} {isYou && ' (You)'}
         </Type>
-        {secondary && (
-          <Type variant="caption" className={error ? 'text-destructive' : 'text-muted-foreground'}>
-            {secondary}
-          </Type>
-        )}
+        <div className="flex flex-col gap-0.5">
+          {secondary && (
+            <Type variant="caption" className={error ? 'text-destructive' : 'text-muted-foreground'}>
+              {secondary}
+            </Type>
+          )}
+          {usageDisplay && (
+            <Type variant="caption" className="text-muted-foreground">
+              AI usage: {usageDisplay}
+            </Type>
+          )}
+        </div>
       </div>
 
       <div>{action}</div>

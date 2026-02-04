@@ -676,8 +676,39 @@ export const ApiSchemas = {
 
   '/v0/teams/:uuid/billing/ai/usage.GET.response': z.object({
     exceededBillingLimit: z.boolean(),
-    billingLimit: z.number().optional(),
-    currentPeriodUsage: z.number().optional(),
+    billingLimit: z.number().nullable().optional(),
+    currentPeriodUsage: z.number().nullable().optional(),
+    planType: z.string().optional(),
+    currentMonthAiCost: z.number().nullable().optional(),
+    monthlyAiAllowance: z.number().nullable().optional(),
+    remainingAllowance: z.number().nullable().optional(),
+    teamMonthlyBudgetLimit: z.number().nullable().optional(),
+    teamCurrentMonthCost: z.number().nullable().optional(),
+    userMonthlyBudgetLimit: z.number().nullable().optional(),
+    userCurrentMonthCost: z.number().nullable().optional(),
+    allowOveragePayments: z.boolean().optional(),
+  }),
+
+  '/v0/teams/:uuid/billing/ai/usage/users.GET.response': z.object({
+    users: z.array(
+      z.object({
+        userId: z.number(),
+        planType: z.enum(['FREE', 'PRO', 'BUSINESS']),
+        currentPeriodUsage: z.number().nullable(),
+        billingLimit: z.number().nullable(),
+        currentMonthAiCost: z.number().nullable(),
+        monthlyAiAllowance: z.number().nullable(),
+        userMonthlyBudgetLimit: z.number().nullable(),
+      })
+    ),
+  }),
+
+  '/v0/teams/:uuid/billing/budget.PATCH.response': z.object({
+    teamMonthlyBudgetLimit: z.number().nullable(),
+  }),
+
+  '/v0/teams/:uuid/billing/overage.PATCH.response': z.object({
+    allowOveragePayments: z.boolean(),
   }),
 
   /**

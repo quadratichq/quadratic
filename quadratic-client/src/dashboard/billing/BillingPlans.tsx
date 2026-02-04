@@ -1,4 +1,3 @@
-import { CancellationDialog } from '@/components/CancellationDialog';
 import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { CheckIcon } from '@/shared/components/Icons';
@@ -133,7 +132,35 @@ export const BillingPlans = ({
           isFree ? 'border-2 border-primary bg-primary/5' : 'border border-border'
         )}
         showCurrentPlanBadge={isFree}
-      />
+      >
+        {isPro && (
+          <Button
+            disabled={!canManageBilling}
+            variant="outline"
+            className="mt-4 w-full"
+            onClick={() => {
+              trackEvent('[Billing].downgradeToFreeClicked', { eventSource });
+              navigate(ROUTES.TEAM_BILLING_MANAGE(teamUuid));
+            }}
+            data-testid="billing-downgrade-to-free-button"
+          >
+            Downgrade
+          </Button>
+        )}
+        {!canManageBilling && isPro && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Only the team owner can edit billing info.
+            <br />
+            <Link
+              to={ROUTES.TEAM_MEMBERS(teamUuid)}
+              className="underline"
+              onClick={() => setShowUpgradeDialog({ open: false, eventSource: null })}
+            >
+              View team members
+            </Link>
+          </p>
+        )}
+      </FreePlan>
 
       {/* Pro */}
       <ProPlan
@@ -156,7 +183,7 @@ export const BillingPlans = ({
             Upgrade to Pro
           </Button>
         ) : isPro ? (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4">
             <Button
               disabled={!canManageBilling}
               variant="outline"
@@ -168,12 +195,22 @@ export const BillingPlans = ({
             >
               Manage subscription
             </Button>
-            {canManageBilling && <CancellationDialog teamUuid={teamUuid} />}
           </div>
         ) : (
-          // Business plan - Pro is a lower tier, no upgrade option
+          // Business plan - Pro is a lower tier, show downgrade button
           <div className="mt-4">
-            <p className="text-center text-xs text-muted-foreground">Lower tier plan</p>
+            <Button
+              disabled={!canManageBilling}
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                trackEvent('[Billing].downgradeToProClicked', { eventSource });
+                navigate(ROUTES.TEAM_BILLING_MANAGE(teamUuid));
+              }}
+              data-testid="billing-downgrade-to-pro-button"
+            >
+              Downgrade
+            </Button>
           </div>
         )}
         {!canManageBilling && (
@@ -212,7 +249,7 @@ export const BillingPlans = ({
             Upgrade to Business
           </Button>
         ) : (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4">
             <Button
               disabled={!canManageBilling}
               variant="outline"
@@ -224,7 +261,6 @@ export const BillingPlans = ({
             >
               Manage subscription
             </Button>
-            {canManageBilling && <CancellationDialog teamUuid={teamUuid} />}
           </div>
         )}
         {!canManageBilling && (

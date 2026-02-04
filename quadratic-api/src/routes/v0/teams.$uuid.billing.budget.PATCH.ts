@@ -9,7 +9,6 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
-import { ApiError } from '../../utils/ApiError';
 
 const schema = z.object({
   params: z.object({
