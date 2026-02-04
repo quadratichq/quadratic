@@ -1,5 +1,4 @@
 import {
-  aiAnalystActiveSchemaConnectionUuidAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
@@ -17,14 +16,13 @@ import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = memo(() => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
