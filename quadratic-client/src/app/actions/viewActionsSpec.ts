@@ -184,7 +184,7 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => openCodeEditor(),
   },
   [Action.ToggleAIAnalyst]: {
-    label: () => 'Sheet chat',
+    label: () => 'New chat',
     run: () => {
       toggleShowAIAnalyst();
     },
