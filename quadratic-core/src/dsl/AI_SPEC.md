@@ -100,7 +100,7 @@ table "Budget" at A1 {
 ```
 python at A10 {
     import pandas as pd
-    
+
     data = {"name": ["Alice", "Bob"], "age": [30, 25]}
     df = pd.DataFrame(data)
     df
@@ -183,10 +183,10 @@ cell B12: =SUM(D5:D8) {format:currency, bold, color:#27ae60}
 # Analysis with Python
 python at A15 {
     import matplotlib.pyplot as plt
-    
+
     months = ["Jan", "Feb", "Mar", "Apr"]
     revenue = [125000, 132000, 145000, 138000]
-    
+
     plt.figure(figsize=(8, 4))
     plt.bar(months, revenue, color='#3498db')
     plt.title("Monthly Revenue")
