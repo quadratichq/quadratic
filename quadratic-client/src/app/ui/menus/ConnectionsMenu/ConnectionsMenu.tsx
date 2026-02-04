@@ -4,15 +4,27 @@ import { events } from '@/app/events/events';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
+import { ConnectionSyncingStatusModal } from '@/shared/components/connections/ConnectionSyncingStatusModal';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import { useCallback } from 'react';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { useCallback, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
+
+interface PendingSyncedConnection {
+  uuid: string;
+  type: ConnectionType;
+  name: string;
+}
 
 export function ConnectionsMenu() {
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
+
+  // State for the syncing status modal
+  const [pendingSyncedConnection, setPendingSyncedConnection] = useState<PendingSyncedConnection | null>(null);
 
   const {
     team: { uuid: teamUuid, sshPublicKey },
@@ -24,8 +36,9 @@ export function ConnectionsMenu() {
     !isLoading && (connections.length === 0 || connections.every((c) => c.isDemo === true));
   const initialView = showConnectionsMenu === 'new' || hasOnlyDemoConnections ? 'new' : 'list';
 
-  const onConnectionCreated: OnConnectionCreatedCallback = useCallback(
-    (connectionUuid, connectionType, connectionName) => {
+  // Shared logic for completing connection creation (opening AI panel, adding context pill)
+  const completeConnectionCreation = useCallback(
+    (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
       // Close the connections dialog
       setShowConnectionsMenu(false);
 
@@ -39,31 +52,88 @@ export function ConnectionsMenu() {
     [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
 
+  const onConnectionCreated: OnConnectionCreatedCallback = useCallback(
+    (connectionUuid, connectionType, connectionName) => {
+      // For synced connections, show the syncing status modal instead of going directly to the sheet
+      if (isSyncedConnectionType(connectionType)) {
+        // Close the connections dialog but show the syncing modal
+        setShowConnectionsMenu(false);
+        setPendingSyncedConnection({
+          uuid: connectionUuid,
+          type: connectionType,
+          name: connectionName,
+        });
+        return;
+      }
+
+      // For non-synced connections, proceed directly
+      completeConnectionCreation(connectionUuid, connectionType, connectionName);
+    },
+    [setShowConnectionsMenu, completeConnectionCreation]
+  );
+
+  const handleSyncingModalUseConnection = useCallback(() => {
+    if (pendingSyncedConnection) {
+      completeConnectionCreation(
+        pendingSyncedConnection.uuid,
+        pendingSyncedConnection.type,
+        pendingSyncedConnection.name
+      );
+      setPendingSyncedConnection(null);
+    }
+  }, [pendingSyncedConnection, completeConnectionCreation]);
+
+  const handleSyncingModalClose = useCallback(() => {
+    if (pendingSyncedConnection) {
+      completeConnectionCreation(
+        pendingSyncedConnection.uuid,
+        pendingSyncedConnection.type,
+        pendingSyncedConnection.name
+      );
+      setPendingSyncedConnection(null);
+    }
+  }, [pendingSyncedConnection, completeConnectionCreation]);
+
   return (
-    <Dialog open={!!showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
-      <DialogContent
-        className="max-w-4xl"
-        onPointerDownOutside={(event) => {
-          event.preventDefault();
-        }}
-        aria-describedby={undefined}
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
-        </DialogHeader>
-        {/* Unmount it so we reset the state */}
-        {showConnectionsMenu && (
-          <Connections
-            connections={connections}
-            connectionsAreLoading={isLoading}
-            teamUuid={teamUuid}
-            sshPublicKey={sshPublicKey}
-            staticIps={staticIps}
-            initialView={initialView}
-            onConnectionCreated={onConnectionCreated}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={!!showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
+        <DialogContent
+          className="max-w-4xl"
+          onPointerDownOutside={(event) => {
+            event.preventDefault();
+          }}
+          aria-describedby={undefined}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
+          </DialogHeader>
+          {/* Unmount it so we reset the state */}
+          {showConnectionsMenu && (
+            <Connections
+              connections={connections}
+              connectionsAreLoading={isLoading}
+              teamUuid={teamUuid}
+              sshPublicKey={sshPublicKey}
+              staticIps={staticIps}
+              initialView={initialView}
+              onConnectionCreated={onConnectionCreated}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Syncing status modal for newly created synced connections */}
+      {pendingSyncedConnection && (
+        <ConnectionSyncingStatusModal
+          open={true}
+          connectionUuid={pendingSyncedConnection.uuid}
+          connectionType={pendingSyncedConnection.type}
+          connectionName={pendingSyncedConnection.name}
+          teamUuid={teamUuid}
+          onUseConnection={handleSyncingModalUseConnection}
+          onClose={handleSyncingModalClose}
+        />
+      )}
+    </>
   );
 }
