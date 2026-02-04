@@ -6,7 +6,7 @@ import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdit
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { openLink } from '@/app/helpers/links';
+import { ensureHttpProtocol, hasHttpProtocol, openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CopyIcon } from '@/shared/components/Icons';
@@ -218,7 +218,7 @@ export function useHyperlinkPopup() {
           // Get the plain text display value for the text field, leave URL blank
           isNewLink = true;
           const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
-          if (displayValue && /^https?:\/\//i.test(displayValue)) {
+          if (displayValue && hasHttpProtocol(displayValue)) {
             // Content is a URL - pre-populate URL field, leave text empty
             urlValue = displayValue;
           } else {
@@ -639,7 +639,7 @@ export function useHyperlinkPopup() {
   const handleSaveEdit = useCallback(async () => {
     if (!linkData || !editUrl.trim()) return;
 
-    const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
+    const normalizedUrl = ensureHttpProtocol(editUrl);
     const text = editText.trim() || normalizedUrl;
     const hasCustomTitle = text !== normalizedUrl;
 
