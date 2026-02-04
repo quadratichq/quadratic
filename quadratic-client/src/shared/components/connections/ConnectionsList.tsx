@@ -1,7 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon } from '@/shared/components/Icons';
+import { CloseIcon, EditIcon, FileIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -224,7 +224,7 @@ function ListItems({
 
                   {showDashboardActions && (
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" asChild>
+                      <Button size="sm" asChild>
                         <Link
                           to={ROUTES.CREATE_FILE(teamUuid, {
                             connectionUuid: uuid,
@@ -233,15 +233,17 @@ function ListItems({
                             private: true,
                           })}
                         >
+                          <FileIcon />
                           Open in spreadsheet
                         </Link>
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
                       >
-                        Edit connection
+                        <EditIcon />
+                        Edit
                       </Button>
                     </div>
                   )}

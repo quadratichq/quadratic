@@ -1,3 +1,4 @@
+import { aiAnalystActiveSchemaConnectionUuidAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
@@ -5,6 +6,7 @@ import {
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -24,7 +26,11 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  isSyncedConnectionType,
+  type ConnectionList,
+  type ConnectionType,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -62,6 +68,8 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 export const CellTypeMenu = memo(() => {
   const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { connections } = useConnectionsFetcher();
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
@@ -117,6 +125,23 @@ export const CellTypeMenu = memo(() => {
     setShowConnectionsMenu(true);
   }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
+  const selectConnection = useCallback(
+    (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
+      trackEvent('[CellTypeMenu].selectConnection', { type: connectionType });
+
+      // Close the menu
+      setShowCellTypeMenu(false);
+
+      // Open the AI analyst panel with schema viewer
+      setShowAIAnalyst(true);
+      setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+
+      // Emit event to set the connection context in AI chat
+      events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
+    },
+    [setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
+  );
+
   return (
     <CommandDialog
       dialogProps={{ open: true, onOpenChange: close }}
@@ -154,7 +179,7 @@ export const CellTypeMenu = memo(() => {
                 connection={connection}
                 teamUuid={teamUuid}
                 index={i}
-                onSelect={() => openEditor({ Connection: { kind: connection.type, id: connection.uuid } })}
+                onSelect={() => selectConnection(connection.uuid, connection.type, connection.name)}
               />
             ))}
 
