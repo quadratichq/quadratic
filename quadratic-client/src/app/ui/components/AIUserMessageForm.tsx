@@ -372,18 +372,14 @@ export const AIUserMessageForm = memo(
         maxHeight={maxHeight}
         disabled={waitingOnMessageIndex !== undefined}
         onDragEnter={handleDrag}
+        {...(isAnalyst && { 'data-ai-analyst-input': true })}
       />
     );
 
     return (
       <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
-          <AIAnalystEmptyChatPromptSuggestions
-            submit={handleSubmit}
-            context={context}
-            files={files}
-            importFiles={importFiles}
-          />
+          <AIAnalystEmptyChatPromptSuggestions submit={handleSubmit} />
         )}
 
         <form

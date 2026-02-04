@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { exitAgentModeIfActive } from './file.helpers';
 import { waitForAppReady } from './wait.helpers';
 
 /**
@@ -120,6 +121,9 @@ export const sheetRefreshPage = async (page: Page) => {
 
   // Wait for app to load (removed redundant 10s waitForTimeout)
   await waitForAppReady(page);
+
+  // Exit Agent Mode if user was dropped into it
+  await exitAgentModeIfActive(page);
 
   // Close AI chat box as needed
   try {
