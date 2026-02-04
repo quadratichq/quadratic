@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { chromium, expect, test } from '@playwright/test';
-import { logIn } from './helpers/auth.helpers';
+import { logIn, skipFeatureWalkthrough } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, createSharedFile, uploadFile } from './helpers/file.helpers';
 
 const getViewCharacteristics = async (page: Page) => {
@@ -495,6 +495,9 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   // Edit "C - Test File 1" so it becomes Last updated
   await sharedUserPage.locator(`a :text("${testFile1}")`).click({ timeout: 60 * 1000 });
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(sharedUserPage);
 
   await sharedUserPage.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 

@@ -1,5 +1,5 @@
 import { chromium, expect, test } from '@playwright/test';
-import { logIn } from './helpers/auth.helpers';
+import { logIn, skipFeatureWalkthrough } from './helpers/auth.helpers';
 import { inviteUserToTeam } from './helpers/billing.helpers';
 import { buildUrl } from './helpers/buildUrl.helpers';
 import { cleanUpFiles, createFile } from './helpers/file.helpers';
@@ -907,6 +907,9 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
     .first()
     .click({ timeout: 60 * 1000 });
 
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(canEditUserPage);
+
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -1061,6 +1064,9 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
     .locator(`:text("${testPermissionFile}")`)
     .first()
     .click({ timeout: 60 * 1000 });
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(canViewUserPage);
 
   //--------------------------------
   // Assert:

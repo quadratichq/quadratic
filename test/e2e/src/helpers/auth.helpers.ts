@@ -10,7 +10,7 @@ import { cleanUpFiles } from './file.helpers';
 export const skipFeatureWalkthrough = async (page: Page) => {
   try {
     const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
-    
+
     // Wait for dialog to appear (with a reasonable timeout)
     // Use waitFor to actively wait for it, rather than just checking visibility
     try {
@@ -19,19 +19,19 @@ export const skipFeatureWalkthrough = async (page: Page) => {
       // Dialog didn't appear, nothing to skip
       return;
     }
-    
+
     // Dialog is visible, now click skip
     const skipButton = page.getByRole('button', { name: /Skip tour/i });
-    
+
     // Wait for skip button to be visible and ready
     await skipButton.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Click with force to bypass pointer event interception
     await skipButton.click({ timeout: 10000, force: true });
-    
+
     // Wait for the dialog to be completely removed/hidden
     await walkthroughDialog.waitFor({ state: 'hidden', timeout: 15000 });
-    
+
     // Additional wait to ensure the dialog is fully dismissed and no longer intercepting events
     await page.waitForTimeout(500);
   } catch (error) {
@@ -47,15 +47,15 @@ export const skipFeatureWalkthrough = async (page: Page) => {
  */
 export const ensureFeatureWalkthroughDismissed = async (page: Page) => {
   const walkthroughDialog = page.locator('[aria-label="Feature walkthrough"]');
-  
+
   // Check if dialog is currently visible
   const isVisible = await walkthroughDialog.isVisible({ timeout: 2000 }).catch(() => false);
-  
+
   if (isVisible) {
     // Dialog is present, skip it
     await skipFeatureWalkthrough(page);
   }
-  
+
   // Wait a moment to ensure any dismissal animations complete
   await page.waitForTimeout(300);
 };
@@ -70,6 +70,24 @@ export const assertDashboardLoaded = async (page: Page, options: { email: string
   await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
   await expect(page).toHaveTitle(/Files - Quadratic/);
   await expect(page.getByRole(`heading`, { name: `Files`, exact: true })).toBeVisible();
+};
+
+/**
+ * Dismisses the "Getting started with your team" onboarding dialog if it appears.
+ * This dialog shows for new team members with onboarding steps.
+ */
+export const dismissGettingStartedDialog = async (page: Page) => {
+  try {
+    const gettingStartedDialog = page.locator('h3:has-text("Getting started with your team")');
+    if (await gettingStartedDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+      // Click the Dismiss button
+      await page.getByRole('button', { name: 'Dismiss' }).click({ timeout: 5000 });
+      // Wait for the dialog to close
+      await gettingStartedDialog.waitFor({ state: 'hidden', timeout: 5000 });
+    }
+  } catch {
+    // Dialog not present or couldn't be closed, continue silently
+  }
 };
 
 /**
