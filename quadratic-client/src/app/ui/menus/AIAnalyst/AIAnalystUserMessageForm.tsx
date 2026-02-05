@@ -7,6 +7,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
@@ -15,7 +16,8 @@ import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubm
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useState } from 'react';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { forwardRef, memo, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
@@ -31,11 +33,33 @@ export const AIAnalystUserMessageForm = memo(
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
+    // Listen for connection selection events (from connections menu)
+    useEffect(() => {
+      const handleSelectConnection = (connectionUuid: string, connectionType: string, connectionName: string) => {
+        setContext((prev) => ({
+          ...prev,
+          connection: {
+            type: connectionType as ConnectionType,
+            id: connectionUuid,
+            name: connectionName,
+          },
+        }));
+      };
+
+      events.on('aiAnalystSelectConnection', handleSelectConnection);
+      return () => {
+        events.off('aiAnalystSelectConnection', handleSelectConnection);
+      };
+    }, []);
+
     const handleSubmit = useRecoilCallback(
       ({ snapshot }) =>
         async ({ content, context, importFiles }: SubmitPromptArgs) => {
           const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
-          trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
+          trackEvent('[AIAnalyst].submitPrompt', {
+            userMessageCountUponSubmit: userMessagesCount,
+            language: context.connection?.type,
+          });
 
           submitPrompt({
             messageSource: 'User',
