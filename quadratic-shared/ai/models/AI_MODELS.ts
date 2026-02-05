@@ -52,8 +52,8 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
-    ...AI_RATES.claude_opus_4_6_20260201_rate,
-    model: 'claude-opus-4-6@20260201',
+    ...AI_RATES.claude_opus_4_6_20260205_rate,
+    model: 'claude-opus-4-6@20260205',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -168,9 +168,9 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-6@20260201:thinking-toggle-off': {
-    ...AI_RATES.claude_opus_4_6_20260201_rate,
-    model: 'claude-opus-4-6@20260201',
+  'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-off': {
+    ...AI_RATES.claude_opus_4_6_20260205_rate,
+    model: 'claude-opus-4-6@20260205',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-off',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -185,9 +185,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-6@20260201:thinking-toggle-on': {
-    ...AI_RATES.claude_opus_4_6_20260201_rate,
-    model: 'claude-opus-4-6@20260201',
+  'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-on': {
+    ...AI_RATES.claude_opus_4_6_20260205_rate,
+    model: 'claude-opus-4-6@20260205',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -202,9 +202,9 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-opus-4-6@20260201': {
-    ...AI_RATES.claude_opus_4_6_20260201_rate,
-    model: 'claude-opus-4-6@20260201',
+  'vertexai-anthropic:claude-opus-4-6@20260205': {
+    ...AI_RATES.claude_opus_4_6_20260205_rate,
+    model: 'claude-opus-4-6@20260205',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -553,8 +553,8 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
   },
   'anthropic:claude-opus-4.6:thinking-toggle-off': {
-    ...AI_RATES.claude_opus_4_6_20260201_rate,
-    model: 'claude-opus-4-6-20260201',
+    ...AI_RATES.claude_opus_4_6_20260205_rate,
+    model: 'claude-opus-4-6-20260205',
     backupModelKey: 'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -570,8 +570,8 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
   },
   'anthropic:claude-opus-4.6:thinking-toggle-on': {
-    ...AI_RATES.claude_opus_4_6_20260201_rate,
-    model: 'claude-opus-4-6-20260201',
+    ...AI_RATES.claude_opus_4_6_20260205_rate,
+    model: 'claude-opus-4-6-20260205',
     backupModelKey: 'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
