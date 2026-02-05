@@ -94,7 +94,19 @@ export default function QuadraticUI() {
       'out of memory',
       'memory allocation',
     ];
-    return allocationPatterns.some((pattern) => errorString.includes(pattern));
+    if (allocationPatterns.some((pattern) => errorString.includes(pattern))) {
+      return true;
+    }
+    // Check for cascaded OOM: __wbindgen_malloc fails as the first WASM frame
+    // This happens after initial OOM when WASM can't allocate memory for any operation
+    if (errorString.includes('unreachable')) {
+      const lines = errorString.split('\n');
+      const firstWasmFrame = lines.find((line) => line.includes('quadratic_core.wasm.'));
+      if (firstWasmFrame?.includes('__wbindgen_malloc')) {
+        return true;
+      }
+    }
+    return false;
   };
 
   // Show negative_offsets warning if present in URL (the result of an imported
