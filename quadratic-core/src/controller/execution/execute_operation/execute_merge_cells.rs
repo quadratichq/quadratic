@@ -1,10 +1,12 @@
 use crate::{
     CellValue, Pos, Rect, SheetPos, SheetRect,
     cell_values::CellValues,
+    clear_option::ClearOption,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
+    grid::{Contiguous2D, formats::SheetFormatUpdates},
 };
 
 impl GridController {
@@ -166,6 +168,99 @@ impl GridController {
             }
         }
 
+        // Consolidate formats: find the first format of each type in each merge rect and apply it to the entire rect
+        let mut formats_to_restore = Vec::new();
+        let mut formats_to_apply = SheetFormatUpdates::default();
+
+        for (x1, y1, x2, y2, value) in &rects_for_spill_check {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                let rect = Rect::new(*x1, *y1, *x2, *y2);
+
+                // Only consolidate formats when merging (value is Some(...)), not when unmerging (value is Clear)
+                let is_merging = matches!(value, ClearOption::Some(_));
+
+                if is_merging {
+                    // Capture original formats for undo
+                    let original_formats =
+                        SheetFormatUpdates::from_sheet_formatting_rect(rect, &sheet.formats, true);
+                    if !original_formats.is_default() {
+                        formats_to_restore.push(original_formats);
+                    }
+
+                    // Find the first format of each type in the range (row-major order: top to bottom, left to right)
+                    // Helper macro to find first format and set it for the entire rect
+                    macro_rules! find_and_set_first_format {
+                        ($format_field:ident) => {
+                            let mut first_value = None;
+                            'outer: for y in rect.y_range() {
+                                for x in rect.x_range() {
+                                    let pos = Pos { x, y };
+                                    if let Some(value) = sheet.formats.$format_field.get(pos) {
+                                        first_value = Some(value);
+                                        break 'outer;
+                                    }
+                                }
+                            }
+                            if let Some(value) = first_value {
+                                let mut format_data = Contiguous2D::new();
+                                format_data.set_rect(
+                                    rect.min.x,
+                                    rect.min.y,
+                                    Some(rect.max.x),
+                                    Some(rect.max.y),
+                                    Some(ClearOption::Some(value)),
+                                );
+                                formats_to_apply.$format_field = Some(format_data);
+                            }
+                        };
+                    }
+
+                    find_and_set_first_format!(align);
+                    find_and_set_first_format!(vertical_align);
+                    find_and_set_first_format!(wrap);
+                    find_and_set_first_format!(numeric_format);
+                    find_and_set_first_format!(numeric_decimals);
+                    find_and_set_first_format!(numeric_commas);
+                    find_and_set_first_format!(bold);
+                    find_and_set_first_format!(italic);
+                    find_and_set_first_format!(text_color);
+                    find_and_set_first_format!(fill_color);
+                    find_and_set_first_format!(date_time);
+                    find_and_set_first_format!(underline);
+                    find_and_set_first_format!(strike_through);
+                    find_and_set_first_format!(font_size);
+                }
+            }
+        }
+
+        // Apply the consolidated formats
+        if !formats_to_apply.is_default() {
+            let (reverse_ops, hashes, _rows, fill_bounds, has_meta_fills) =
+                sheet.set_formats_a1(&formats_to_apply);
+
+            // Add dirty hashes for re-rendering
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                if !hashes.is_empty() {
+                    let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
+                    dirty_hashes.extend(hashes);
+                }
+                if let Some(fill_bounds) = fill_bounds {
+                    transaction.add_fill_cells(sheet_id, fill_bounds);
+                }
+                if has_meta_fills {
+                    transaction.add_sheet_meta_fills(sheet_id);
+                }
+            }
+
+            // Store the format reverse operations for undo
+            for op in reverse_ops {
+                formats_to_restore.push(match op {
+                    Operation::SetCellFormatsA1 { formats, .. } => formats,
+                    _ => continue,
+                });
+            }
+        }
+
         // Check validations for the affected merge cell rects
         // This ensures that:
         // - When merging: warnings are removed from non-anchor cells, only anchor retains warning
@@ -178,10 +273,17 @@ impl GridController {
         }
 
         // Add reverse operations in the correct order:
-        // 1. First add SetCellValues operations (to restore cell values)
-        // 2. Then add SetMergeCells operation (to unmerge)
+        // 1. First add SetCellFormatsA1 operations (to restore fills)
+        // 2. Then add SetCellValues operations (to restore cell values)
+        // 3. Then add SetMergeCells operation (to unmerge)
         // When reversed during undo, SetMergeCells will execute first (unmerge),
-        // then SetCellValues will execute (restore values)
+        // then SetCellValues will execute (restore values),
+        // then SetCellFormatsA1 will execute (restore fills)
+        for formats in formats_to_restore {
+            transaction
+                .reverse_operations
+                .push(Operation::SetCellFormatsA1 { sheet_id, formats });
+        }
         for op in cell_values_to_restore {
             transaction.reverse_operations.push(op);
         }
@@ -197,6 +299,209 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{CellValue, Pos, SheetPos, a1::A1Selection, controller::GridController};
+
+    #[test]
+    fn test_merge_cells_consolidates_fills() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set different fill colors on cells in a 2x2 grid
+        // A1=red, B1=blue, A2=green, B2=yellow
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("A1", sheet_id),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("B1", sheet_id),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("A2", sheet_id),
+            Some("green".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("B2", sheet_id),
+            Some("yellow".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify initial fills
+        assert_eq!(
+            gc.sheet(sheet_id).formats.fill_color.get(pos![A1]),
+            Some("red".to_string())
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).formats.fill_color.get(pos![B1]),
+            Some("blue".to_string())
+        );
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // All cells should now have the first fill (red from A1, which is top-left)
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("red".to_string()),
+            "A1 should have red fill"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B1]),
+            Some("red".to_string()),
+            "B1 should have red fill (consolidated from A1)"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A2]),
+            Some("red".to_string()),
+            "A2 should have red fill (consolidated from A1)"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B2]),
+            Some("red".to_string()),
+            "B2 should have red fill (consolidated from A1)"
+        );
+    }
+
+    #[test]
+    fn test_merge_cells_fills_uses_first_fill_in_row_major_order() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Only set fill on B2 (not top-left)
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("B2", sheet_id),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // All cells should have the first fill found (blue from B2)
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("blue".to_string()),
+            "A1 should have blue fill"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B1]),
+            Some("blue".to_string()),
+            "B1 should have blue fill"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A2]),
+            Some("blue".to_string()),
+            "A2 should have blue fill"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B2]),
+            Some("blue".to_string()),
+            "B2 should have blue fill"
+        );
+    }
+
+    #[test]
+    fn test_merge_cells_undo_restores_fills() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set different fill colors on cells
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("A1", sheet_id),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("B1", sheet_id),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // Verify all cells have the consolidated fill
+        assert_eq!(
+            gc.sheet(sheet_id).formats.fill_color.get(pos![B1]),
+            Some("red".to_string())
+        );
+
+        // Undo the merge
+        gc.undo(1, None, false);
+
+        // Verify original fills are restored
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some("red".to_string()),
+            "A1 should have red fill restored"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B1]),
+            Some("blue".to_string()),
+            "B1 should have blue fill restored"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A2]),
+            None,
+            "A2 should have no fill restored"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![B2]),
+            None,
+            "B2 should have no fill restored"
+        );
+    }
+
+    #[test]
+    fn test_merge_cells_no_fills() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set values but no fills
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+            false,
+        );
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // All cells should have no fill
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.formats.fill_color.get(pos![A1]), None);
+        assert_eq!(sheet.formats.fill_color.get(pos![B1]), None);
+        assert_eq!(sheet.formats.fill_color.get(pos![A2]), None);
+        assert_eq!(sheet.formats.fill_color.get(pos![B2]), None);
+    }
 
     #[test]
     fn test_merge_cells_undo_restores_all_values() {
@@ -410,5 +715,149 @@ mod tests {
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Number(4.into()))
         );
+    }
+
+    #[test]
+    fn test_merge_cells_consolidates_bold() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set bold on A1 only
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("A1", sheet_id),
+            Some(true),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify initial state
+        assert_eq!(gc.sheet(sheet_id).formats.bold.get(pos![A1]), Some(true));
+        assert_eq!(gc.sheet(sheet_id).formats.bold.get(pos![B1]), None);
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // All cells should now have bold (from A1)
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.formats.bold.get(pos![A1]), Some(true), "A1 should be bold");
+        assert_eq!(sheet.formats.bold.get(pos![B1]), Some(true), "B1 should be bold");
+        assert_eq!(sheet.formats.bold.get(pos![A2]), Some(true), "A2 should be bold");
+        assert_eq!(sheet.formats.bold.get(pos![B2]), Some(true), "B2 should be bold");
+
+        // Undo the merge
+        gc.undo(1, None, false);
+
+        // Verify original state is restored
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.formats.bold.get(pos![A1]), Some(true), "A1 should still be bold");
+        assert_eq!(sheet.formats.bold.get(pos![B1]), None, "B1 should not be bold");
+        assert_eq!(sheet.formats.bold.get(pos![A2]), None, "A2 should not be bold");
+        assert_eq!(sheet.formats.bold.get(pos![B2]), None, "B2 should not be bold");
+    }
+
+    #[test]
+    fn test_merge_cells_consolidates_text_color() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set text_color on B1 only (not top-left)
+        gc.set_text_color(
+            &A1Selection::test_a1_sheet_id("B1", sheet_id),
+            Some("blue".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Verify initial state
+        assert_eq!(gc.sheet(sheet_id).formats.text_color.get(pos![A1]), None);
+        assert_eq!(
+            gc.sheet(sheet_id).formats.text_color.get(pos![B1]),
+            Some("blue".to_string())
+        );
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // All cells should now have blue text (first found in row-major order)
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A1]),
+            Some("blue".to_string()),
+            "A1 should have blue text"
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![B1]),
+            Some("blue".to_string()),
+            "B1 should have blue text"
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A2]),
+            Some("blue".to_string()),
+            "A2 should have blue text"
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![B2]),
+            Some("blue".to_string()),
+            "B2 should have blue text"
+        );
+    }
+
+    #[test]
+    fn test_merge_cells_consolidates_multiple_formats() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set different formats on different cells
+        // A1: bold, B1: italic, A2: fill_color
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("A1", sheet_id),
+            Some(true),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_italic(
+            &A1Selection::test_a1_sheet_id("B1", sheet_id),
+            Some(true),
+            None,
+            false,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("A2", sheet_id),
+            Some("green".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
+
+        // Merge cells A1:B2
+        let selection = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection, None, false);
+
+        // All cells should have all formats consolidated
+        let sheet = gc.sheet(sheet_id);
+        
+        // Bold from A1 should be applied to all
+        assert_eq!(sheet.formats.bold.get(pos![A1]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![B1]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![A2]), Some(true));
+        assert_eq!(sheet.formats.bold.get(pos![B2]), Some(true));
+
+        // Italic from B1 (first in row-major order) should be applied to all
+        assert_eq!(sheet.formats.italic.get(pos![A1]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![B1]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![A2]), Some(true));
+        assert_eq!(sheet.formats.italic.get(pos![B2]), Some(true));
+
+        // Fill from A2 (first in row-major order) should be applied to all
+        assert_eq!(sheet.formats.fill_color.get(pos![A1]), Some("green".to_string()));
+        assert_eq!(sheet.formats.fill_color.get(pos![B1]), Some("green".to_string()));
+        assert_eq!(sheet.formats.fill_color.get(pos![A2]), Some("green".to_string()));
+        assert_eq!(sheet.formats.fill_color.get(pos![B2]), Some("green".to_string()));
     }
 }
