@@ -1,3 +1,4 @@
+import { ensureHttpProtocol } from '@/app/helpers/links';
 import { WebBrowserIcon } from '@/shared/components/Icons';
 import type { ImgHTMLAttributes } from 'react';
 import React, { forwardRef, memo } from 'react';
@@ -15,8 +16,7 @@ interface FaviconProps extends ImgHTMLAttributes<HTMLImageElement> {
 
 const parseDomainFromUrl = (url: string): string | null => {
   try {
-    const urlWithProtocol = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-    return new URL(urlWithProtocol).toString();
+    return new URL(ensureHttpProtocol(url)).toString();
   } catch (error) {
     console.error('Error parsing domain', error);
     return null;
