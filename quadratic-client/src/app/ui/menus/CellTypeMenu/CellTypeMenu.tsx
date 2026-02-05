@@ -7,8 +7,8 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
-import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
@@ -149,7 +149,13 @@ export const CellTypeMenu = memo(() => {
   return (
     <CommandDialog
       dialogProps={{ open: true, onOpenChange: close }}
-      commandProps={{}}
+      commandProps={{
+        // Custom filter to maintain DOM order when search is empty
+        filter: (value, search) => {
+          if (!search) return 1; // Same score for all → DOM order preserved
+          return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+        },
+      }}
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
