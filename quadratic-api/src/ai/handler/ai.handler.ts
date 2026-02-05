@@ -316,7 +316,7 @@ export const handleAIRequest = async ({
 
     // Create user-friendly error message
     const userErrorMessage = isContextLengthError
-      ? "Your conversation is too long for the AI model. Try starting a new chat to clear the model's context."
+      ? "Your conversation is too long for the AI model's context window."
       : error instanceof Error
         ? error.message
         : 'An unexpected error occurred. Please try again.';
@@ -330,13 +330,21 @@ export const handleAIRequest = async ({
       isOnPaidPlan,
       exceededBillingLimit,
       error: true,
+      errorType: isContextLengthError ? 'context_length' : 'general',
     };
     const options = getModelOptions(modelKey, args);
-    if (!options.stream || !response?.headersSent) {
-      response?.json(responseMessage);
-    } else {
+    // Send response in the format the client expects based on model streaming config
+    if (options.stream) {
+      // If headers not sent yet, set them for SSE
+      if (!response?.headersSent) {
+        response?.setHeader('Content-Type', 'text/event-stream');
+        response?.setHeader('Cache-Control', 'no-cache');
+        response?.setHeader('Connection', 'keep-alive');
+      }
       response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response?.end();
+    } else {
+      response?.json(responseMessage);
     }
   }
 };
