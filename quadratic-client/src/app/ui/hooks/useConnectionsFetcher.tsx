@@ -2,7 +2,11 @@ import type { GetConnections } from '@/routes/api.connections';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect, useMemo, useRef } from 'react';
-import { useFetcher, type FetcherWithComponents } from 'react-router';
+import { useFetcher } from 'react-router';
+
+// Module-level tracking to prevent N+1 API calls when multiple components
+// use this hook simultaneously. Maps teamUuid to whether a fetch is in progress.
+const fetchInProgress = new Map<string, boolean>();
 
 /**
  * The data for this accessed in various places in the app (cell type menu,
@@ -15,16 +19,40 @@ export const useConnectionsFetcher = () => {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
-  const fetcherRef = useRef<FetcherWithComponents<GetConnections>>(fetcher);
+
+  // Track if this instance initiated the fetch (to clean up the flag)
+  const initiatedFetch = useRef(false);
 
   // Fetch on the initial use of the hook, but only if the user has permission
-  // in the current team
+  // in the current team. Uses module-level tracking to prevent duplicate fetches
+  // when multiple components mount simultaneously.
   const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
   useEffect(() => {
-    if (permissionsHasTeamEdit && fetcherRef.current.state === 'idle' && fetcherRef.current.data === undefined) {
-      fetcherRef.current.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
+    const shouldFetch =
+      permissionsHasTeamEdit &&
+      fetcher.state === 'idle' &&
+      fetcher.data === undefined &&
+      !fetchInProgress.get(teamUuid);
+
+    if (shouldFetch) {
+      fetchInProgress.set(teamUuid, true);
+      initiatedFetch.current = true;
+      fetcher.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
-  }, [teamUuid, permissionsHasTeamEdit]);
+  }, [teamUuid, permissionsHasTeamEdit, fetcher]);
+
+  // Clear the fetch-in-progress flag when data arrives or on unmount
+  useEffect(() => {
+    if (fetcher.data !== undefined && initiatedFetch.current) {
+      fetchInProgress.delete(teamUuid);
+      initiatedFetch.current = false;
+    }
+    return () => {
+      if (initiatedFetch.current) {
+        fetchInProgress.delete(teamUuid);
+      }
+    };
+  }, [fetcher.data, teamUuid]);
 
   const connections = useMemo(() => (fetcher.data ? fetcher.data.connections : []), [fetcher.data]);
   const staticIps = useMemo(
