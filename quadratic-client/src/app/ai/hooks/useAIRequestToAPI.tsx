@@ -110,12 +110,18 @@ export function useAIRequestToAPI() {
               const lines = chunk.split('\n');
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
+                  const data = line.slice(6).trim();
+                  // Skip empty data chunks (common in SSE streams)
+                  if (!data) continue;
+
                   try {
-                    const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(line.slice(6)));
+                    const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(data));
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {
-                    console.warn('Error parsing AI response: ', { error, line });
+                    // Only log actual parsing errors, not empty chunks
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    console.warn(`Error parsing AI response: ${errorMessage}`, { data });
                   }
                 }
               }
@@ -139,10 +145,9 @@ export function useAIRequestToAPI() {
                 aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                 return true;
               } catch (error) {
-                console.error('[AI Tool Filter] Filtering out invalid tool call:', {
-                  name: toolCall.name,
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error(`[AI Tool Filter] Filtering out invalid tool call "${toolCall.name}": ${errorMessage}`, {
                   arguments: toolCall.arguments,
-                  error,
                 });
                 return false;
               }
