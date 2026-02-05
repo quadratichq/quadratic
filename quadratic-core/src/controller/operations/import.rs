@@ -1884,6 +1884,30 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
 
+        // Debug: check what's at E3 (5, 3)
+        println!("E3 cell_value: {:?}", sheet.cell_value((5, 3).into()));
+        println!("E3 display_value: {:?}", sheet.display_value((5, 3).into()));
+        println!("E3 code_cell: {:?}", sheet.data_tables.get_from_pos((5, 3).into()));
+        println!("E3 merge_anchor: {:?}", sheet.merge_cells.get_anchor((5, 3).into()));
+        println!(
+            "D3 (4, 3) cell_value: {:?}",
+            sheet.cell_value((4, 3).into())
+        );
+        println!(
+            "D3 (4, 3) display_value: {:?}",
+            sheet.display_value((4, 3).into())
+        );
+        // Check cells around E3 for context
+        for row in 1..=5 {
+            for col in 4..=6 {
+                let pos = crate::Pos { x: col, y: row };
+                let cv = sheet.cell_value(pos);
+                let merge = sheet.merge_cells.get_anchor(pos);
+                let dt = sheet.data_tables.get_from_pos(pos);
+                println!("Cell ({}, {}): value={:?}, merge_anchor={:?}, has_data_table={}", col, row, cv, merge, dt.is_some());
+            }
+        }
+
         assert_code_language(
             &gc,
             pos![sheet_id!4, 3],
