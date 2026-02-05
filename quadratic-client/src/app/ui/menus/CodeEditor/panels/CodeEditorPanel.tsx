@@ -54,7 +54,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
           saveAndRunCell();
         }
       },
-    [editorInst, saveAndRunCell]
+    [editorInst, saveAndRunCell, connectionInfo?.kind]
   );
 
   const schemaBrowser =
