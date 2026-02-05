@@ -56,7 +56,10 @@ export const AIAnalystUserMessageForm = memo(
       ({ snapshot }) =>
         async ({ content, context, importFiles }: SubmitPromptArgs) => {
           const userMessagesCount = await snapshot.getPromise(aiAnalystCurrentChatUserMessagesCountAtom);
-          trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
+          trackEvent('[AIAnalyst].submitPrompt', {
+            userMessageCountUponSubmit: userMessagesCount,
+            language: context.connection?.type,
+          });
 
           submitPrompt({
             messageSource: 'User',
