@@ -130,6 +130,11 @@ export const CellTypeMenu = memo(() => {
     (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
       trackEvent('[CellTypeMenu].selectConnection', { type: connectionType });
 
+      if (includeLanguages) {
+        openEditor({ Connection: { kind: connectionType, id: connectionUuid } });
+        return;
+      }
+
       // Close the menu
       setShowCellTypeMenu(false);
 
@@ -143,7 +148,7 @@ export const CellTypeMenu = memo(() => {
       // Focus the AI analyst input
       setTimeout(focusAIAnalyst, 100);
     },
-    [setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
+    [includeLanguages, openEditor, setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
 
   return (
