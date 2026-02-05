@@ -223,6 +223,7 @@ function ListItems({
 
                   {showDashboardActions && (
                     <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
                     >
