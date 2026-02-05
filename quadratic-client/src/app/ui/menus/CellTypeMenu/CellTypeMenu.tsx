@@ -117,12 +117,12 @@ export const CellTypeMenu = memo(() => {
 
   const addConnection = useCallback(() => {
     setShowCellTypeMenu(false);
-    setShowConnectionsMenu('new');
+    setShowConnectionsMenu(true);
   }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
   const manageConnections = useCallback(() => {
     setShowCellTypeMenu(false);
-    setShowConnectionsMenu(true);
+    setShowConnectionsMenu({ initialView: 'list' });
   }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
   const selectConnection = useCallback(

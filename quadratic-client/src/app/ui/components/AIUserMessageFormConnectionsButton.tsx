@@ -123,7 +123,7 @@ export const AIUserMessageFormConnectionsButton = memo(
       ({ set }) =>
         () => {
           trackEvent('[AIConnectionsPicker].addConnection');
-          set(editorInteractionStateShowConnectionsMenuAtom, 'new');
+          set(editorInteractionStateShowConnectionsMenuAtom, true);
         },
       []
     );
