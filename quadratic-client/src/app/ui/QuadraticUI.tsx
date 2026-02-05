@@ -83,15 +83,18 @@ export default function QuadraticUI() {
   }, []);
 
   // Check if error is likely an out-of-memory error from WASM
+  // We check the stack trace for allocation-related patterns since "unreachable" is generic
   const isOutOfMemoryError = (error: Error | unknown): boolean => {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    // WASM allocation failures result in "unreachable" RuntimeError
-    // Also check for explicit memory-related messages
-    return (
-      errorMessage.includes('unreachable') ||
-      errorMessage.includes('out of memory') ||
-      errorMessage.includes('memory access out of bounds')
-    );
+    const errorString = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+    // Check for allocation-related patterns in the stack trace
+    const allocationPatterns = [
+      'alloc::raw_vec::handle_error',
+      'alloc::raw_vec::RawVec',
+      'alloc::alloc::handle_alloc_error',
+      'out of memory',
+      'memory allocation',
+    ];
+    return allocationPatterns.some((pattern) => errorString.includes(pattern));
   };
 
   // Show negative_offsets warning if present in URL (the result of an imported
