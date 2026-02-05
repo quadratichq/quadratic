@@ -860,4 +860,182 @@ mod tests {
         assert_eq!(sheet.formats.fill_color.get(pos![A2]), Some("green".to_string()));
         assert_eq!(sheet.formats.fill_color.get(pos![B2]), Some("green".to_string()));
     }
+
+    #[test]
+    fn test_merge_two_merged_cells_with_partial_selection() {
+        use crate::a1::A1Context;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two merged cells: A1:B2 and C1:D2
+        let selection1 = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection1, None, false);
+
+        let selection2 = A1Selection::test_a1_sheet_id("C1:D2", sheet_id);
+        gc.merge_cells(selection2, None, false);
+
+        // Verify both merged cells exist
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 1, y: 1 })); // A1
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 2, y: 1 })); // B1
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 3, y: 1 })); // C1
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 4, y: 1 })); // D1
+
+        // Simulate the user's scenario:
+        // 1. Click on A1 (inside first merged cell)
+        // 2. Shift+click on D1 (inside second merged cell, but NOT D2)
+        // This should create a selection that includes both full merged cells
+
+        // Create a selection starting at A1
+        let mut selection = A1Selection::test_a1_sheet_id("A1", sheet_id);
+
+        // Simulate shift+click at D1 (column 4, row 1) using select_to
+        // This is what happens when the user shift+clicks
+        let context = A1Context::default();
+        selection.select_to(4, 1, false, &context, &sheet.merge_cells);
+
+        // The selection should have expanded to include both full merged cells
+        // It should be A1:D2 (not just A1:D1)
+        let ranges = &selection.ranges;
+        assert_eq!(ranges.len(), 1, "Should have exactly one range");
+
+        if let crate::a1::CellRefRange::Sheet { range } = &ranges[0] {
+            let rect = range.to_rect().expect("Should be a finite range");
+            assert_eq!(
+                rect.min,
+                Pos { x: 1, y: 1 },
+                "Selection should start at A1"
+            );
+            assert_eq!(
+                rect.max,
+                Pos { x: 4, y: 2 },
+                "Selection should end at D2, including full extent of both merged cells. Got: {:?}",
+                rect
+            );
+        } else {
+            panic!("Expected a Sheet range");
+        }
+    }
+
+    /// Test clicking inside a merged cell (not at anchor) and shift-clicking 
+    /// inside another merged cell (not at bottom-right).
+    /// This simulates: click on B2 (inside A1:B2), shift+click on D1 (inside C1:D2)
+    #[test]
+    fn test_merge_cells_selection_from_inside_merged_cells() {
+        use crate::a1::A1Context;
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two merged cells: A1:B2 and C1:D2
+        let selection1 = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection1, None, false);
+
+        let selection2 = A1Selection::test_a1_sheet_id("C1:D2", sheet_id);
+        gc.merge_cells(selection2, None, false);
+
+        // Verify both merged cells exist
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 1, y: 1 })); // A1
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 2, y: 2 })); // B2
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 3, y: 1 })); // C1
+        assert!(sheet.merge_cells.is_merge_cell(Pos { x: 4, y: 1 })); // D1
+
+        // Simulate clicking inside the first merged cell (B2) - not at anchor
+        // This is what move_to does: places cursor at B2
+        let mut selection = A1Selection::test_a1_sheet_id("B2", sheet_id);
+        assert_eq!(selection.cursor, Pos { x: 2, y: 2 }, "Cursor should be at B2");
+
+        // Now simulate shift+click at D1 (inside second merged cell, but NOT D2)
+        let context = A1Context::default();
+        selection.select_to(4, 1, false, &context, &sheet.merge_cells);
+
+        // The selection should have expanded to include both FULL merged cells
+        // Even though we clicked on B2 and D1, the selection should be A1:D2
+        let ranges = &selection.ranges;
+        assert_eq!(ranges.len(), 1, "Should have exactly one range");
+
+        if let crate::a1::CellRefRange::Sheet { range } = &ranges[0] {
+            let rect = range.to_rect().expect("Should be a finite range");
+            // The selection should cover the full extent of both merged cells
+            assert_eq!(
+                rect.min,
+                Pos { x: 1, y: 1 },
+                "Selection should start at A1 (top-left of first merged cell). Got: {:?}",
+                rect
+            );
+            assert_eq!(
+                rect.max,
+                Pos { x: 4, y: 2 },
+                "Selection should end at D2 (bottom-right of second merged cell). Got: {:?}",
+                rect
+            );
+        } else {
+            panic!("Expected a Sheet range");
+        }
+    }
+
+    /// Test that the merge operation itself expands to include overlapping merged cells.
+    /// This tests the scenario where the selection was NOT expanded (e.g., created programmatically
+    /// or through some code path that doesn't call select_to with merge cells).
+    #[test]
+    fn test_merge_operation_expands_for_overlapping_merged_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two merged cells: A1:B2 and C1:D2
+        let selection1 = A1Selection::test_a1_sheet_id("A1:B2", sheet_id);
+        gc.merge_cells(selection1, None, false);
+
+        let selection2 = A1Selection::test_a1_sheet_id("C1:D2", sheet_id);
+        gc.merge_cells(selection2, None, false);
+
+        // Verify both merged cells exist and have correct anchors
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.merge_cells.get_anchor(Pos { x: 1, y: 1 }), Some(Pos { x: 1, y: 1 })); // A1 anchor
+        assert_eq!(sheet.merge_cells.get_anchor(Pos { x: 2, y: 2 }), Some(Pos { x: 1, y: 1 })); // B2 -> A1
+        assert_eq!(sheet.merge_cells.get_anchor(Pos { x: 3, y: 1 }), Some(Pos { x: 3, y: 1 })); // C1 anchor
+        assert_eq!(sheet.merge_cells.get_anchor(Pos { x: 4, y: 2 }), Some(Pos { x: 3, y: 1 })); // D2 -> C1
+
+        // Create a selection that only partially overlaps with both merged cells
+        // This simulates a scenario where the selection was NOT expanded properly
+        // (e.g., A1:D1 which only covers row 1 of both merged cells)
+        let partial_selection = A1Selection::test_a1_sheet_id("A1:D1", sheet_id);
+        
+        // Call merge cells with this partial selection
+        gc.merge_cells(partial_selection, None, false);
+
+        // After merging, ALL cells in the resulting merge should have the SAME anchor (A1)
+        // If the merge operation properly expanded to include the full merged cells,
+        // then D2 should also have anchor A1, not C1
+        let sheet = gc.sheet(sheet_id);
+
+        // Verify ALL cells A1:D2 have the SAME anchor (A1)
+        let expected_anchor = Pos { x: 1, y: 1 }; // A1
+        for y in 1..=2 {
+            for x in 1..=4 {
+                let pos = Pos { x, y };
+                let anchor = sheet.merge_cells.get_anchor(pos);
+                assert_eq!(
+                    anchor,
+                    Some(expected_anchor),
+                    "Cell at {:?} should have anchor A1 ({:?}), but has anchor {:?}",
+                    pos,
+                    expected_anchor,
+                    anchor
+                );
+            }
+        }
+
+        // Also verify the merge rect from A1 covers the entire region
+        let merge_rect = sheet.merge_cells.get_merge_cell_rect(Pos { x: 1, y: 1 });
+        assert!(merge_rect.is_some(), "A1 should be part of a merged cell");
+        let merge_rect = merge_rect.unwrap();
+        assert_eq!(
+            merge_rect,
+            crate::Rect::new(1, 1, 4, 2),
+            "Merge rect from A1 should be A1:D2"
+        );
+    }
 }

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     ClearOption, Pos, Rect,
     grid::{Contiguous2D, Sheet},
@@ -75,13 +77,21 @@ impl MergeCells {
     }
 
     /// Returns the rects that are part of merged cells within a given rect.
-    /// Note this may include rects that are outside the given rect. Use
-    /// rect.min to find the anchor for the merged cell.
+    /// Returns the FULL merged cell rects, even if only a portion of the
+    /// merged cell overlaps with the query rect.
     pub fn get_merge_cells(&self, rect: Rect) -> Vec<Rect> {
-        self.merge_cells
+        // First, find all unique anchors for cells within the rect
+        let anchors: HashSet<Pos> = self
+            .merge_cells
             .nondefault_rects_in_rect_combined(rect)
             .into_iter()
-            .map(|(rect, _)| rect)
+            .filter_map(|(_, anchor)| anchor)
+            .collect();
+
+        // Then, get the full merged cell rect for each anchor
+        anchors
+            .into_iter()
+            .filter_map(|anchor| self.get_merge_cell_rect(anchor))
             .collect()
     }
 
@@ -284,5 +294,49 @@ mod tests {
 
         let rect = merge_cells.get_merge_cell_rect(pos![H2]);
         assert_eq!(rect, None);
+    }
+
+    /// Tests that get_merge_cells returns the FULL merged cell rect even when
+    /// only a portion of the merged cell overlaps with the query rect.
+    /// This is the bug scenario: B8:B9 and C11:D12 merged, query B8:C11
+    /// should return both full merged cells including C11:D12 (not C11:C12).
+    #[test]
+    fn test_get_merge_cells_returns_full_rect_when_partial_overlap() {
+        let mut merge_cells = MergeCells::default();
+
+        // Create merged cells B8:B9 and C11:D12
+        merge_cells.merge_cells(Rect::test_a1("B8:B9"));
+        merge_cells.merge_cells(Rect::test_a1("C11:D12"));
+
+        // Query with rect B8:C11 (only overlaps with C11 of the C11:D12 merge)
+        let result = merge_cells.get_merge_cells(Rect::test_a1("B8:C11"));
+
+        // Should return BOTH full merged cell rects
+        assert_eq!(result.len(), 2, "Should find both merged cells");
+        assert!(
+            result.contains(&Rect::test_a1("B8:B9")),
+            "Should include B8:B9"
+        );
+        assert!(
+            result.contains(&Rect::test_a1("C11:D12")),
+            "Should include full C11:D12, not just C11:C12"
+        );
+    }
+
+    /// Test that get_merge_cells returns the full rect even when query
+    /// only touches the corner of a merged cell.
+    #[test]
+    fn test_get_merge_cells_corner_touch() {
+        let mut merge_cells = MergeCells::default();
+
+        // Create a merged cell C3:E5
+        merge_cells.merge_cells(Rect::test_a1("C3:E5"));
+
+        // Query with A1:C3 (only touches corner C3)
+        let result = merge_cells.get_merge_cells(Rect::test_a1("A1:C3"));
+
+        // Should return the full merged cell rect
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], Rect::test_a1("C3:E5"));
     }
 }
