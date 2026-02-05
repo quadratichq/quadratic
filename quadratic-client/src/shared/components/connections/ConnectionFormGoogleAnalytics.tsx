@@ -1,5 +1,5 @@
-import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
+import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -57,7 +57,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
-        <p className="pb-2 text-sm text-muted-foreground">
+        <p className="pb-2 text-sm">
           Find your Property ID in Google Analytics under Admin → Property Settings.{' '}
           <a
             href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}

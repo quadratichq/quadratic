@@ -56,7 +56,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
-        <p className="pb-2 text-sm text-muted-foreground">
+        <p className="pb-2 text-sm">
           Find your Project ID and API secret in your Mixpanel project's Settings → Access Keys.{' '}
           <a
             href={DOCUMENTATION_CONNECTIONS_MIXPANEL_URL}
