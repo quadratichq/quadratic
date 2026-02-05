@@ -1,17 +1,18 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { VITE_WORKOS_CLIENT_ID } from '@/env-vars';
+import { VITE_AUTH_TYPE, VITE_WORKOS_CLIENT_ID } from '@/env-vars';
 import { ROUTES } from '@/shared/constants/routes';
 import { captureEvent } from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
 
-// verify all Workos env variables are set
-if (!VITE_WORKOS_CLIENT_ID) {
+// verify all Workos env variables are set (only when Workos auth is enabled)
+if (VITE_AUTH_TYPE === 'workos' && !VITE_WORKOS_CLIENT_ID) {
   const message = 'Workos variables are not configured correctly.';
   captureEvent({
     message,
     level: 'fatal',
   });
+  throw new Error(message);
 }
 
 // Helper function to extract the last two parts of a hostname

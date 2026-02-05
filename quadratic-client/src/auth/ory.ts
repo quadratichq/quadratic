@@ -1,17 +1,18 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { VITE_ORY_HOST } from '@/env-vars';
+import { VITE_AUTH_TYPE, VITE_ORY_HOST } from '@/env-vars';
 import type { Session } from '@ory/kratos-client';
 import { Configuration, FrontendApi } from '@ory/kratos-client';
 import { captureEvent } from '@sentry/react';
 
-// verify all Ory env variables are set
-if (!VITE_ORY_HOST) {
+// verify all Ory env variables are set (only when Ory auth is enabled)
+if (VITE_AUTH_TYPE === 'ory' && !VITE_ORY_HOST) {
   const message = 'Ory variables are not configured correctly.';
   captureEvent({
     message,
     level: 'fatal',
   });
+  throw new Error(message);
 }
 
 const config = new Configuration({
