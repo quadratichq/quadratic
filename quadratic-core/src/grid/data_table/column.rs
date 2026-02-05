@@ -44,15 +44,15 @@ impl DataTable {
             let mut sorted_column = vec![CellValue::Blank; column_len];
             for (display_index, row_index) in display_buffer.iter().enumerate() {
                 let row_idx = *row_index as usize;
-                // Skip invalid indices to prevent panics from inconsistent display_buffer
-                if display_index < column_len && row_idx < column_len {
-                    sorted_column[display_index] = std::mem::take(&mut column[row_idx]);
-                } else {
-                    dbgjs!(format!(
+                if display_index >= column_len || row_idx >= column_len {
+                    return Err(anyhow::anyhow!(
                         "display_buffer inconsistent with column length: display_index={}, row_index={}, column_len={}",
-                        display_index, row_idx, column_len
+                        display_index,
+                        row_idx,
+                        column_len
                     ));
                 }
+                sorted_column[display_index] = std::mem::take(&mut column[row_idx]);
             }
             column = sorted_column;
         }
