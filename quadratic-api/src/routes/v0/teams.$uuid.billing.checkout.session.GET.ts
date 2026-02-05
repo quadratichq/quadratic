@@ -10,6 +10,7 @@ import { createCheckoutSession, createCustomer, getProPriceId, getBusinessPriceI
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { getIsOnPaidPlan } from '../../utils/billing';
+import logger from '../../utils/logger';
 
 const schema = z.object({
   params: z.object({
@@ -76,12 +77,34 @@ async function handler(
     priceId = await getProPriceId();
   }
 
-  const session = await createCheckoutSession(uuid, priceId, redirectSuccess, redirectCancel, plan);
+  logger.info('Creating checkout session', {
+    teamUuid: uuid,
+    plan,
+    priceId,
+  });
 
-  if (!session.url) {
-    return res.status(500).json({ error: { message: 'Failed to create checkout session' } });
+  try {
+    const session = await createCheckoutSession(uuid, priceId, redirectSuccess, redirectCancel, plan);
+
+    if (!session.url) {
+      return res.status(500).json({ error: { message: 'Failed to create checkout session' } });
+    }
+
+    const data: ApiTypes['/v0/teams/:uuid/billing/checkout/session.GET.response'] = { url: session.url };
+    return res.status(200).json(data);
+  } catch (error: any) {
+    logger.error('Error creating checkout session', {
+      error: error.message,
+      stripeError: error.type,
+      code: error.code,
+      teamUuid: uuid,
+      plan,
+      priceId,
+    });
+    return res.status(500).json({
+      error: {
+        message: error.message || 'Failed to create checkout session',
+      },
+    });
   }
-
-  const data: ApiTypes['/v0/teams/:uuid/billing/checkout/session.GET.response'] = { url: session.url };
-  return res.status(200).json(data);
 }

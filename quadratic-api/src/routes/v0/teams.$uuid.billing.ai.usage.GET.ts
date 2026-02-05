@@ -5,6 +5,7 @@ import {
   BillingAIUsageForCurrentMonth,
   BillingAIUsageLimitExceeded,
   BillingAIUsageMonthlyForUserInTeam,
+  getCurrentMonthAiMessagesForTeam,
 } from '../../billing/AIUsageHelpers';
 import {
   getCurrentMonthAiCostForTeam,
@@ -79,6 +80,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
       const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage);
 
+      // Get team-level message usage and limit
+      const teamCurrentMonthMessages = await getCurrentMonthAiMessagesForTeam(team.id);
+      const userCount = await dbClient.userTeamRole.count({
+        where: {
+          teamId: team.id,
+        },
+      });
+      const teamMessageLimit = (BILLING_AI_USAGE_LIMIT ?? 0) * userCount;
+
       return res.status(200).json({
         exceededBillingLimit,
         billingLimit: BILLING_AI_USAGE_LIMIT,
@@ -88,6 +98,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
         monthlyAiAllowance: null,
         remainingAllowance: null,
         teamMonthlyBudgetLimit: null,
+        teamCurrentMonthCost: null,
+        teamCurrentMonthMessages: teamCurrentMonthMessages,
+        teamMessageLimit: teamMessageLimit,
         userMonthlyBudgetLimit: null,
         allowOveragePayments: false,
       });
@@ -127,6 +140,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     }
   }
 
+  // For FREE plan, get team-level message data
+  let teamCurrentMonthMessages: number | null = null;
+  let teamMessageLimit: number | null = null;
+  if (isFree) {
+    teamCurrentMonthMessages = await getCurrentMonthAiMessagesForTeam(team.id);
+    const userCount = await dbClient.userTeamRole.count({
+      where: {
+        teamId: team.id,
+      },
+    });
+    teamMessageLimit = (BILLING_AI_USAGE_LIMIT ?? 0) * userCount;
+  }
+
   const data = {
     exceededBillingLimit: finalExceededBillingLimit,
     billingLimit: isFree ? BILLING_AI_USAGE_LIMIT : null,
@@ -137,6 +163,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     remainingAllowance,
     teamMonthlyBudgetLimit,
     teamCurrentMonthCost: teamMonthlyBudgetLimit ? teamCurrentMonthCost : null,
+    teamCurrentMonthMessages: isFree ? teamCurrentMonthMessages : null,
+    teamMessageLimit: isFree ? teamMessageLimit : null,
     userMonthlyBudgetLimit: userBudgetLimit?.limit ?? null,
     userCurrentMonthCost: userBudgetLimit ? currentMonthAiCost : null,
     allowOveragePayments: teamWithBudget.allowOveragePayments || false,

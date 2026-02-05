@@ -27,7 +27,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
   Link,
@@ -229,6 +229,7 @@ export const Component = memo(() => {
   const { setIsOnPaidPlan } = useIsOnPaidPlan();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
+  const hasProcessedSubscriptionSuccess = useRef(false);
 
   useEffect(() => {
     setIsOnPaidPlan(isOnPaidPlan);
@@ -260,7 +261,8 @@ export const Component = memo(() => {
   }, [fileTimezone, filePermissions, fileUuid]);
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
-    if (searchParams.get('subscription') === 'created') {
+    if (searchParams.get('subscription') === 'created' && !hasProcessedSubscriptionSuccess.current) {
+      hasProcessedSubscriptionSuccess.current = true;
       trackEvent('[Billing].success', { team_uuid: teamUuid });
       addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
       const newSearchParams = new URLSearchParams(searchParams);

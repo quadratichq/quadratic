@@ -5,17 +5,16 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
+import { TeamAIUsage } from '@/shared/components/SettingsTabs/TeamAIUsage';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI, PRICING_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { PieChartIcon } from '@radix-ui/react-icons';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -95,7 +94,6 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  const latestUsage = useMemo(() => billing.usage[0] || { ai_messages: 0 }, [billing.usage]);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
   const canManageBilling = useMemo(() => teamPermissions.includes('TEAM_MANAGE'), [teamPermissions]);
   const planType = useMemo(() => billing.planType, [billing.planType]);
@@ -137,19 +135,9 @@ export const Component = () => {
               planType={planType}
             />
 
-            <p className="pt-2 text-sm text-muted-foreground">
-              Learn more on our{' '}
-              <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-                pricing page
-                <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
-              </a>
-            </p>
-          </div>
-          <SettingsRow>
-            <Type variant="body2" className="font-bold">
-              Current usage
-            </Type>
+            {/* Current Usage */}
             <div>
+              <h4 className="mb-3 text-sm font-semibold">Current usage</h4>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">
@@ -162,50 +150,22 @@ export const Component = () => {
                       )
                     </span>
                   </span>
-
-                  <div className="flex items-start gap-2">
-                    <span className="w-4 text-left font-medium">{users.length}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">Your AI messages</span>
-                    <Dialog>
-                      <DialogTrigger>
-                        <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                      </DialogTrigger>
-                      <DialogContent aria-describedby={undefined}>
-                        <DialogHeader>
-                          <DialogTitle>Usage history</DialogTitle>
-                        </DialogHeader>
-                        <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
-                        <div className="space-y-3">
-                          {billing.usage.map((usage) => (
-                            <div key={usage.month} className="flex justify-between">
-                              <span>
-                                {(function formatDate(dateStr: string) {
-                                  const [year, month] = dateStr.split('-');
-                                  const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                  return date.toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    year: 'numeric',
-                                  });
-                                })(usage.month)}
-                              </span>
-                              <span>{usage.ai_messages}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
-                  </div>
+                  <span className="text-sm font-medium">{users.length}</span>
                 </div>
               </div>
             </div>
-          </SettingsRow>
+
+            {/* AI Usage */}
+            <TeamAIUsage />
+
+            <p className="pt-2 text-sm text-muted-foreground">
+              Learn more on our{' '}
+              <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                pricing page
+                <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
+              </a>
+            </p>
+          </div>
           <SettingsRow>
             <Type variant="body2" className="font-bold">
               Privacy

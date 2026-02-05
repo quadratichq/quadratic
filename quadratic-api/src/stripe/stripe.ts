@@ -3,7 +3,7 @@ import { SubscriptionStatus } from '@prisma/client';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
 import { trackEvent } from '../analytics/mixpanel';
-import { PlanType } from '../billing/planHelpers';
+import { PlanType, getMonthlyAiAllowancePerUser } from '../billing/planHelpers';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';
@@ -12,6 +12,10 @@ import type { DecryptedTeam } from '../utils/teams';
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
 });
+
+// Stripe price lookup keys
+const STRIPE_LOOKUP_KEY_PRO = 'team_monthly_ai';
+const STRIPE_LOOKUP_KEY_BUSINESS = 'team_monthly_business';
 
 const getTeamSeatQuantity = async (teamId: number) => {
   return dbClient.userTeamRole.count({
@@ -121,6 +125,8 @@ export const createCheckoutSession = async (
     finalPlanType = priceId === proPriceId ? 'pro' : 'business';
   }
 
+  // Both Pro and Business plans are now monthly recurring subscriptions
+  // Set quantity based on number of users on the team
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
     line_items: [
@@ -143,28 +149,28 @@ export const createCheckoutSession = async (
 
 export const getProPriceId = async () => {
   const prices = await stripe.prices.list({
+    lookup_keys: [STRIPE_LOOKUP_KEY_PRO],
     active: true,
   });
 
-  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_ai');
-  if (data.length === 0) {
-    throw new Error('No Pro plan price found (lookup_key: team_monthly_ai)');
+  if (prices.data.length === 0) {
+    throw new Error(`No Pro plan price found (lookup_key: ${STRIPE_LOOKUP_KEY_PRO})`);
   }
 
-  return data[0].id;
+  return prices.data[0].id;
 };
 
 export const getBusinessPriceId = async () => {
   const prices = await stripe.prices.list({
+    lookup_keys: [STRIPE_LOOKUP_KEY_BUSINESS],
     active: true,
   });
 
-  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_business');
-  if (data.length === 0) {
-    throw new Error('No Business plan price found');
+  if (prices.data.length === 0) {
+    throw new Error(`No Business plan price found (lookup_key: ${STRIPE_LOOKUP_KEY_BUSINESS})`);
   }
 
-  return data[0].id;
+  return prices.data[0].id;
 };
 
 // Legacy function for backwards compatibility - defaults to Pro
@@ -213,20 +219,24 @@ export const updateTeamStatus = async (
 
   // Determine plan type: use metadata if available, otherwise default to PRO for active subscriptions
   let planType: PlanType | null = null;
-  let monthlyAiAllowancePerUser: number | null = null;
 
   if (stripeSubscriptionStatus === SubscriptionStatus.ACTIVE) {
     if (planTypeFromMetadata === PlanType.BUSINESS) {
       planType = PlanType.BUSINESS;
-      monthlyAiAllowancePerUser = 40; // $40/user for Business
     } else {
       planType = PlanType.PRO;
-      monthlyAiAllowancePerUser = 20; // $20/user for Pro
     }
   } else {
     // No active subscription = FREE
     planType = PlanType.FREE;
-    monthlyAiAllowancePerUser = 0;
+  }
+
+  // Get monthly AI allowance based on plan type (uses shared logic from planHelpers)
+  let monthlyAiAllowancePerUser: number | null = null;
+  if (planType !== null) {
+    // Create a temporary team object to pass to getMonthlyAiAllowancePerUser
+    const tempTeam = { planType } as Team;
+    monthlyAiAllowancePerUser = await getMonthlyAiAllowancePerUser(tempTeam);
   }
 
   // Use a transaction to get old data and update atomically

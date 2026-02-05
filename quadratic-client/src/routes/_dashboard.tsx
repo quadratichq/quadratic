@@ -178,10 +178,12 @@ export const Component = () => {
   } = useDashboardRouteLoaderData();
   const canManageBilling = teamPermissions.includes('TEAM_MANAGE');
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+  const hasProcessedSubscriptionSuccess = useRef(false);
 
   // Handle subscription success: show toast and clean up URL params
   useEffect(() => {
-    if (searchParams.get('subscription') === 'created') {
+    if (searchParams.get('subscription') === 'created' && !hasProcessedSubscriptionSuccess.current) {
+      hasProcessedSubscriptionSuccess.current = true;
       trackEvent('[Billing].success', { team_uuid: activeTeamUuid });
       addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
       const newSearchParams = new URLSearchParams(searchParams);

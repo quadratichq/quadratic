@@ -104,6 +104,20 @@ export const apiClient = {
 
         return data;
       },
+      async updateOverage(uuid: string, allowOveragePayments: boolean) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/overage`,
+          { method: 'PATCH', body: JSON.stringify({ allowOveragePayments }) },
+          ApiSchemas['/v0/teams/:uuid/billing/overage.PATCH.response']
+        );
+      },
+      async updateBudget(uuid: string, teamMonthlyBudgetLimit: number | null) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/budget`,
+          { method: 'PATCH', body: JSON.stringify({ teamMonthlyBudgetLimit }) },
+          ApiSchemas['/v0/teams/:uuid/billing/budget.PATCH.response']
+        );
+      },
     },
     files: {
       deleted: {

@@ -1,3 +1,4 @@
+import { CancellationDialog } from '@/components/CancellationDialog';
 import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { CheckIcon } from '@/shared/components/Icons';
@@ -133,21 +134,25 @@ export const BillingPlans = ({
         )}
         showCurrentPlanBadge={isFree}
       >
-        {isPro && (
-          <Button
-            disabled={!canManageBilling}
-            variant="outline"
-            className="mt-4 w-full"
-            onClick={() => {
-              trackEvent('[Billing].downgradeToFreeClicked', { eventSource });
-              navigate(ROUTES.TEAM_BILLING_MANAGE(teamUuid));
-            }}
-            data-testid="billing-downgrade-to-free-button"
-          >
-            Downgrade
-          </Button>
+        {(isPro || isBusiness) && (
+          <CancellationDialog
+            teamUuid={teamUuid}
+            trigger={
+              <Button
+                disabled={!canManageBilling}
+                variant="outline"
+                className="mt-4 w-full"
+                onClick={() => {
+                  trackEvent('[Billing].downgradeToFreeClicked', { eventSource });
+                }}
+                data-testid="billing-downgrade-to-free-button"
+              >
+                Downgrade
+              </Button>
+            }
+          />
         )}
-        {!canManageBilling && isPro && (
+        {!canManageBilling && (isPro || isBusiness) && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Only the team owner can edit billing info.
             <br />

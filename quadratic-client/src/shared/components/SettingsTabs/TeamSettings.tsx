@@ -6,14 +6,14 @@ import { ROUTES } from '@/shared/constants/routes';
 import { PRICING_URL } from '@/shared/constants/urls';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { PieChartIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFetcher, useSubmit } from 'react-router';
+import { BusinessPlanSettings } from './BusinessPlanSettings';
+import { TeamAIUsage } from './TeamAIUsage';
 
 export function TeamSettings() {
   const { teamData } = useTeamData();
@@ -65,7 +65,6 @@ export function TeamSettings() {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  const latestUsage = useMemo(() => billing?.usage[0] || { ai_messages: 0 }, [billing?.usage]);
   const isOnPaidPlan = useMemo(() => billing?.status === 'ACTIVE', [billing?.status]);
   const canManageBilling = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
   const planType = useMemo(() => billing?.planType, [billing?.planType]);
@@ -142,42 +141,14 @@ export function TeamSettings() {
                 <span className="text-sm">Team members</span>
                 <span className="text-sm font-medium">{users.length}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Your AI messages</span>
-                  <Dialog>
-                    <DialogTrigger>
-                      <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                    </DialogTrigger>
-                    <DialogContent aria-describedby={undefined}>
-                      <DialogHeader>
-                        <DialogTitle>Usage history</DialogTitle>
-                      </DialogHeader>
-                      <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
-                      <div className="space-y-3">
-                        {billing.usage.map((usage) => (
-                          <div key={usage.month} className="flex justify-between">
-                            <span>
-                              {(function formatDate(dateStr: string) {
-                                const [year, month] = dateStr.split('-');
-                                const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                return date.toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  year: 'numeric',
-                                });
-                              })(usage.month)}
-                            </span>
-                            <span>{usage.ai_messages}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                <span className="text-sm font-medium">{latestUsage.ai_messages}</span>
-              </div>
             </div>
           </div>
+
+          {/* Business Plan Settings (on-demand usage and spending limit) */}
+          <BusinessPlanSettings />
+
+          {/* AI Usage */}
+          <TeamAIUsage />
 
           <p className="pt-2 text-sm text-muted-foreground">
             Learn more on our{' '}

@@ -184,7 +184,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <div className="flex gap-2">
               <RocketIcon className="h-5 w-5 text-primary" />
               <div className="flex flex-col">
-                <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                <span className="font-semibold">Upgrade Plan</span>
                 <span className="text-muted-foreground">Get more AI messages, unlimited files, and more.</span>
               </div>
             </div>
@@ -198,7 +198,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                 setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
               }}
             >
-              Upgrade to Pro
+              Upgrade
             </Button>
           </div>
         )}

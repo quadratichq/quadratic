@@ -64,3 +64,27 @@ export const BillingAIUsageForCurrentMonth = (monthlyUsage: AIMessageUsage[]) =>
 export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]) => {
   return BillingAIUsageForCurrentMonth(monthlyUsage) >= (BILLING_AI_USAGE_LIMIT ?? Infinity);
 };
+
+/**
+ * Gets the total AI message usage for all users in a team for the current month
+ * @param teamId The ID of the team to get the usage for
+ * @returns The total number of AI messages used by all users in the team in the current month
+ */
+export const getCurrentMonthAiMessagesForTeam = async (teamId: number): Promise<number> => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const result = await dbClient.$queryRaw<[{ count: bigint }]>`
+    SELECT COUNT(acm.id)::bigint as count
+    FROM "AnalyticsAIChatMessage" acm
+    JOIN "AnalyticsAIChat" ac ON ac.id = acm.chat_id
+    JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
+    WHERE ac.created_date >= ${startOfMonth}
+    AND ac.created_date <= ${endOfMonth}
+    AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
+    AND acm.message_type = 'user_prompt'
+  `;
+
+  return Number(result[0]?.count ?? 0);
+};

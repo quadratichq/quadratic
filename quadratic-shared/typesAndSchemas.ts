@@ -693,6 +693,8 @@ export const ApiSchemas = {
     remainingAllowance: z.number().nullable().optional(),
     teamMonthlyBudgetLimit: z.number().nullable().optional(),
     teamCurrentMonthCost: z.number().nullable().optional(),
+    teamCurrentMonthMessages: z.number().nullable().optional(),
+    teamMessageLimit: z.number().nullable().optional(),
     userMonthlyBudgetLimit: z.number().nullable().optional(),
     userCurrentMonthCost: z.number().nullable().optional(),
     allowOveragePayments: z.boolean().optional(),

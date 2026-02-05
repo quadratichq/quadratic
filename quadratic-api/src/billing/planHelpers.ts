@@ -65,7 +65,10 @@ export const isFreePlan = async (team: Team | DecryptedTeam): Promise<boolean> =
 export const getMonthlyAiAllowancePerUser = async (team: Team | DecryptedTeam): Promise<number> => {
   const teamWithAllowance = team as Team & { monthlyAiAllowancePerUser?: number | null };
   // If explicitly set on team, use that
-  if (teamWithAllowance.monthlyAiAllowancePerUser !== null && teamWithAllowance.monthlyAiAllowancePerUser !== undefined) {
+  if (
+    teamWithAllowance.monthlyAiAllowancePerUser !== null &&
+    teamWithAllowance.monthlyAiAllowancePerUser !== undefined
+  ) {
     return teamWithAllowance.monthlyAiAllowancePerUser;
   }
 
@@ -156,10 +159,7 @@ export const getCurrentMonthAiCostForUser = async (teamId: number, userId: numbe
  * Check if a user has exceeded their monthly AI allowance.
  * For FREE plan, this always returns false (uses message limit instead).
  */
-export const hasExceededAllowance = async (
-  team: Team | DecryptedTeam,
-  userId: number
-): Promise<boolean> => {
+export const hasExceededAllowance = async (team: Team | DecryptedTeam, userId: number): Promise<boolean> => {
   const planType = await getPlanType(team);
   if (planType === PlanType.FREE) {
     return false; // Free plan uses message limit, not allowance
@@ -196,10 +196,7 @@ export const hasTeamExceededAllowance = async (team: Team | DecryptedTeam): Prom
  * Get user's monthly budget limit for a team.
  * Returns null if no limit is set.
  */
-export const getUserBudgetLimit = async (
-  teamId: number,
-  userId: number
-): Promise<{ limit: number } | null> => {
+export const getUserBudgetLimit = async (teamId: number, userId: number): Promise<{ limit: number } | null> => {
   const budgetLimit = await (dbClient as any).userBudgetLimit.findUnique({
     where: {
       userId_teamId: {
@@ -223,10 +220,7 @@ export const getUserBudgetLimit = async (
  * Returns false if no budget limit is set.
  * Budgets automatically reset on the 1st of each month since costs are filtered by calendar month.
  */
-export const hasExceededUserBudget = async (
-  teamId: number,
-  userId: number
-): Promise<boolean> => {
+export const hasExceededUserBudget = async (teamId: number, userId: number): Promise<boolean> => {
   const budgetLimit = await getUserBudgetLimit(teamId, userId);
   if (!budgetLimit) {
     return false; // No budget limit set
@@ -243,10 +237,10 @@ export const hasExceededUserBudget = async (
  * Budgets automatically reset on the 1st of each month since costs are filtered by calendar month.
  */
 export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise<boolean> => {
-  const teamWithBudget = team as Team & { 
+  const teamWithBudget = team as Team & {
     teamMonthlyBudgetLimit?: number | null;
   };
-  
+
   if (!teamWithBudget.teamMonthlyBudgetLimit) {
     return false; // No budget limit set
   }
