@@ -82,6 +82,18 @@ export default function QuadraticUI() {
     };
   }, []);
 
+  // Check if error is likely an out-of-memory error from WASM
+  const isOutOfMemoryError = (error: Error | unknown): boolean => {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // WASM allocation failures result in "unreachable" RuntimeError
+    // Also check for explicit memory-related messages
+    return (
+      errorMessage.includes('unreachable') ||
+      errorMessage.includes('out of memory') ||
+      errorMessage.includes('memory access out of bounds')
+    );
+  };
+
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
   useEffect(() => {
@@ -104,10 +116,15 @@ export default function QuadraticUI() {
   useRemoveInitialLoadingUI();
 
   if (error) {
+    const isOOM = isOutOfMemoryError(error.error);
     return (
       <EmptyPage
-        title="Quadratic crashed"
-        description="Something went wrong. Our team has been notified of this issue. Please reload the application to continue."
+        title={isOOM ? 'Out of memory' : 'Quadratic crashed'}
+        description={
+          isOOM
+            ? 'Your browser ran out of memory. This can happen with large files or complex operations. Try reloading and working with smaller datasets, or contact support if you need help.'
+            : 'Something went wrong. Our team has been notified of this issue. Please reload the application to continue.'
+        }
         Icon={CrossCircledIcon}
         actions={<Button onClick={() => window.location.reload()}>Reload</Button>}
         error={error.error}
