@@ -1,13 +1,13 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
+import { CloseIcon, EditIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
   ConnectionsListConnection,
-  NavigateToCreateView,
   NavigateToView,
+  OnConnectionSelectedCallback,
 } from '@/shared/components/connections/Connections';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { timeAgo } from '@/shared/utils/timeAgo';
@@ -24,11 +24,11 @@ type Props = {
   connections: ConnectionsListConnection[];
   teamUuid: string;
   connectionsAreLoading?: boolean;
-  handleNavigateToCreateView: NavigateToCreateView;
-  handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
   handleNavigateToNewView: () => void;
+  /** Called when an existing connection is selected from the list (in-app only) */
+  onConnectionSelected?: OnConnectionSelectedCallback;
 };
 
 export const ConnectionsList = ({
@@ -36,10 +36,9 @@ export const ConnectionsList = ({
   connectionsAreLoading,
   teamUuid,
   handleNavigateToNewView,
-  handleNavigateToCreateView,
-  handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
+  onConnectionSelected,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
 
@@ -87,9 +86,9 @@ export const ConnectionsList = ({
             filterQuery={filterQuery}
             items={connections}
             teamUuid={teamUuid}
-            handleNavigateToDetailsView={handleNavigateToDetailsView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleShowConnectionDemo={handleShowConnectionDemo}
+            onConnectionSelected={onConnectionSelected}
           />
         ) : (
           <EmptyState
@@ -122,18 +121,18 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
-  handleNavigateToDetailsView,
   handleNavigateToEditView,
   handleShowConnectionDemo,
   items,
   teamUuid,
+  onConnectionSelected,
 }: {
   filterQuery: string;
-  handleNavigateToDetailsView: Props['handleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
   teamUuid: string;
+  onConnectionSelected?: Props['onConnectionSelected'];
 }) {
   const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
 
@@ -147,9 +146,9 @@ function ListItems({
     <div className="relative -mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo, syncedConnectionUpdatedDate }, i) => {
         const isNavigable = !(disabled || isDemo);
-        const showSecondaryAction = !isApp && !disabled;
         const showIconHideDemo = !disabled && isDemo;
-        const showIconBrowseSchema = !isApp && !disabled && !isDemo;
+        // On dashboard, show "Open in spreadsheet" and "Edit connection" buttons
+        const showDashboardActions = !isApp && !disabled && !isDemo;
 
         return (
           <div className="group" key={uuid}>
@@ -157,40 +156,83 @@ function ListItems({
               className={cn(
                 'relative flex w-full items-center gap-1',
                 disabled && 'cursor-not-allowed opacity-50',
-                isNavigable && 'group-hover:bg-accent',
-                showSecondaryAction && 'pr-12'
+                // Only show hover state in app, not on dashboard
+                isApp && isNavigable && 'group-hover:bg-accent'
               )}
             >
-              <button
-                onClick={() => {
-                  handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-                }}
-                disabled={!isNavigable}
-                key={uuid}
-                className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}
-              >
-                <div className="flex h-6 w-6 items-center justify-center">
-                  <LanguageIcon language={type} />
-                </div>
+              {isApp ? (
+                // In-app: clickable row - if onConnectionSelected is provided, use it; otherwise edit view
+                <button
+                  onClick={() => {
+                    if (onConnectionSelected) {
+                      onConnectionSelected(uuid, type, name);
+                    } else {
+                      handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+                    }
+                  }}
+                  disabled={!isNavigable}
+                  key={uuid}
+                  className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}
+                >
+                  <div className="flex h-6 w-6 items-center justify-center">
+                    <LanguageIcon language={type} />
+                  </div>
 
-                <div className="flex w-full min-w-0 flex-grow flex-col text-left">
-                  <span data-testid={`connection-name-${name}`} className="truncate text-sm">
-                    {name}
-                  </span>
+                  <div className="flex w-full min-w-0 flex-grow flex-col text-left">
+                    <span data-testid={`connection-name-${name}`} className="truncate text-sm">
+                      {name}
+                    </span>
 
-                  {isDemo ? (
-                    <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
-                  ) : syncedConnectionUpdatedDate !== undefined ? (
-                    <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                      <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} createdDate={createdDate} />
-                    </time>
-                  ) : (
-                    <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                      Created {timeAgo(createdDate)}
-                    </time>
+                    {isDemo ? (
+                      <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                    ) : syncedConnectionUpdatedDate !== undefined ? (
+                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                        <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} createdDate={createdDate} />
+                      </time>
+                    ) : (
+                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                        Created {timeAgo(createdDate)}
+                      </time>
+                    )}
+                  </div>
+                </button>
+              ) : (
+                // Dashboard: non-clickable row with action buttons
+                <div className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}>
+                  <div className="flex h-6 w-6 items-center justify-center">
+                    <LanguageIcon language={type} />
+                  </div>
+
+                  <div className="flex w-full min-w-0 flex-grow flex-col text-left">
+                    <span data-testid={`connection-name-${name}`} className="truncate text-sm">
+                      {name}
+                    </span>
+
+                    {isDemo ? (
+                      <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                    ) : syncedConnectionUpdatedDate !== undefined ? (
+                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                        <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} createdDate={createdDate} />
+                      </time>
+                    ) : (
+                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                        Created {timeAgo(createdDate)}
+                      </time>
+                    )}
+                  </div>
+
+                  {showDashboardActions && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
+                    >
+                      <EditIcon />
+                      Edit
+                    </Button>
                   )}
                 </div>
-              </button>
+              )}
 
               {showIconHideDemo && (
                 <TooltipPopover label="Remove connection">
@@ -205,19 +247,6 @@ function ListItems({
                     }}
                   >
                     <CloseIcon />
-                  </Button>
-                </TooltipPopover>
-              )}
-
-              {showIconBrowseSchema && (
-                <TooltipPopover label="Browse schema">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 rounded p-2 text-muted-foreground hover:bg-background"
-                    onClick={() => handleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type })}
-                  >
-                    <ExploreSchemaIcon />
                   </Button>
                 </TooltipPopover>
               )}
