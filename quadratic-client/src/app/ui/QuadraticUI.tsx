@@ -54,6 +54,33 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
+// Check if error is likely an out-of-memory error from WASM
+// We check the stack trace for allocation-related patterns since "unreachable" is generic
+const isOutOfMemoryError = (error: Error | unknown): boolean => {
+  const errorString = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+  // Check for allocation-related patterns in the stack trace
+  const allocationPatterns = [
+    'alloc::raw_vec::handle_error',
+    'alloc::raw_vec::RawVec',
+    'alloc::alloc::handle_alloc_error',
+    'out of memory',
+    'memory allocation',
+  ];
+  if (allocationPatterns.some((pattern) => errorString.includes(pattern))) {
+    return true;
+  }
+  // Check for cascaded OOM: __wbindgen_malloc fails as the first WASM frame
+  // This happens after initial OOM when WASM can't allocate memory for any operation
+  if (errorString.includes('unreachable')) {
+    const lines = errorString.split('\n');
+    const firstWasmFrame = lines.find((line) => line.includes('quadratic_core.wasm.'));
+    if (firstWasmFrame?.includes('__wbindgen_malloc')) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export default function QuadraticUI() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const navigation = useNavigation();
@@ -81,33 +108,6 @@ export default function QuadraticUI() {
       events.off('coreError', handleError);
     };
   }, []);
-
-  // Check if error is likely an out-of-memory error from WASM
-  // We check the stack trace for allocation-related patterns since "unreachable" is generic
-  const isOutOfMemoryError = (error: Error | unknown): boolean => {
-    const errorString = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
-    // Check for allocation-related patterns in the stack trace
-    const allocationPatterns = [
-      'alloc::raw_vec::handle_error',
-      'alloc::raw_vec::RawVec',
-      'alloc::alloc::handle_alloc_error',
-      'out of memory',
-      'memory allocation',
-    ];
-    if (allocationPatterns.some((pattern) => errorString.includes(pattern))) {
-      return true;
-    }
-    // Check for cascaded OOM: __wbindgen_malloc fails as the first WASM frame
-    // This happens after initial OOM when WASM can't allocate memory for any operation
-    if (errorString.includes('unreachable')) {
-      const lines = errorString.split('\n');
-      const firstWasmFrame = lines.find((line) => line.includes('quadratic_core.wasm.'));
-      if (firstWasmFrame?.includes('__wbindgen_malloc')) {
-        return true;
-      }
-    }
-    return false;
-  };
 
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)

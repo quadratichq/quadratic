@@ -46,11 +46,15 @@ impl Span {
         s.get(..start)
             .map(|slice| slice.matches('\n').count() + 1)
             .unwrap_or_else(|| {
+                // Show a truncated preview of the string for debugging
+                let preview: String = s.chars().take(100).collect();
+                let suffix = if s.len() > 100 { "..." } else { "" };
                 dbgjs!(format!(
-                    "Invalid span start {} for string of length {}: {:?}",
+                    "Invalid span start {} for string of length {}: {:?}{}",
                     start,
                     s.len(),
-                    s
+                    preview,
+                    suffix
                 ));
                 1
             })

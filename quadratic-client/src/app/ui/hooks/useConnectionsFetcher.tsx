@@ -48,11 +48,14 @@ export const useConnectionsFetcher = () => {
       initiatedFetch.current = false;
     }
     return () => {
-      if (initiatedFetch.current) {
+      // Only clear the flag if this instance initiated the fetch AND the fetch
+      // has completed (idle state). If still in progress, keep the flag so other
+      // components don't trigger duplicate fetches.
+      if (initiatedFetch.current && fetcher.state === 'idle') {
         fetchInProgress.delete(teamUuid);
       }
     };
-  }, [fetcher.data, teamUuid]);
+  }, [fetcher.data, fetcher.state, teamUuid]);
 
   const connections = useMemo(() => (fetcher.data ? fetcher.data.connections : []), [fetcher.data]);
   const staticIps = useMemo(
