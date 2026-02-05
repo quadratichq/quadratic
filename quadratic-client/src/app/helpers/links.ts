@@ -1,12 +1,24 @@
+/**
+ * Checks if a URL starts with http:// or https://
+ */
+export function hasHttpProtocol(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+/**
+ * Ensures a URL has an http/https protocol, adding https:// if missing
+ */
+export function ensureHttpProtocol(url: string): string {
+  return hasHttpProtocol(url) ? url : `https://${url}`;
+}
+
 function getUrlToOpen(link: string): string {
-  if (link.match(/^https?:\/\//i)) {
-    // URL already starts with http:// or https://
+  if (hasHttpProtocol(link)) {
     return link;
   } else if (link.startsWith('/')) {
     // URL starts with /, it is a relative path
     return link;
   } else {
-    // URL doesn't have a protocol, prepend https://
     return `https://${link}`;
   }
 }
