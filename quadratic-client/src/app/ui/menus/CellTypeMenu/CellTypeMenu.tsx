@@ -7,6 +7,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
+import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -138,6 +139,9 @@ export const CellTypeMenu = memo(() => {
 
       // Emit event to set the connection context in AI chat
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
+
+      // Focus the AI analyst input
+      setTimeout(focusAIAnalyst, 100);
     },
     [setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
