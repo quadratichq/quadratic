@@ -2,11 +2,12 @@ import type {
   CategorizedEmptyChatPromptSuggestions,
   SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import { aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { aiAnalystImportFileTypes, importFilesToSheet, uploadFile } from '@/app/helpers/files';
+import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { EmptyChatSection, SuggestionButton } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -18,6 +19,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -105,6 +107,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
 
   // Connections data
   const { connections } = useConnectionsFetcher();
+  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
 
   // Get suggestions from centralized state (synced by useEmptyChatSuggestionsSync in QuadraticUI)
   const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
@@ -145,11 +148,19 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   }, [totalPages]);
 
   const handleSelectConnection = useCallback(
-    (connectionUuid: string, connectionName: string) => {
+    (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
       trackEvent('[AIAnalyst].selectConnectionFromSuggestions');
-      submit(`Show me what tables are available in my "${connectionName}" connection`);
+
+      // Open the schema viewer for this connection
+      setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+
+      // Add the connection as context in AI chat (without auto-submitting a prompt)
+      events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
+
+      // Focus the AI analyst input
+      setTimeout(focusAIAnalyst, 100);
     },
-    [submit]
+    [setAIAnalystActiveSchemaConnectionUuid]
   );
 
   const handleChooseFile = useCallback(async () => {
@@ -306,7 +317,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
                 key={connection.uuid}
                 icon={<LanguageIcon language={connection.type} />}
                 text={connection.name}
-                onClick={() => handleSelectConnection(connection.uuid, connection.name)}
+                onClick={() => handleSelectConnection(connection.uuid, connection.type, connection.name)}
               />
             ))}
           </EmptyChatSection>

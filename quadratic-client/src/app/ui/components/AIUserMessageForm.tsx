@@ -590,14 +590,7 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-            {isAnalyst && (
-              <AIUserMessageFormConnectionsButton
-                disabled={disabled}
-                context={context}
-                setContext={setContext}
-                textareaRef={textareaRef}
-              />
-            )}
+            {isAnalyst && <AIUserMessageFormConnectionsButton disabled={disabled} textareaRef={textareaRef} />}
             {isAnalyst && (
               <TooltipPopover label="Reference sheet data" fastMode={true}>
                 <Button

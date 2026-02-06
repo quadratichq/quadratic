@@ -191,6 +191,7 @@ interface EventTypes {
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
   aiAnalystSelectConnection: (connectionUuid: string, connectionType: string, connectionName: string) => void;
+  aiAnalystUnselectConnection: () => void;
 
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;

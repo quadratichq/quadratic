@@ -34,7 +34,7 @@ export const AIAnalystUserMessageForm = memo(
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
-    // Listen for connection selection events (from connections menu)
+    // Listen for connection selection/unselection events (from connections menus)
     useEffect(() => {
       const handleSelectConnection = (connectionUuid: string, connectionType: string, connectionName: string) => {
         setContext((prev) => ({
@@ -47,9 +47,18 @@ export const AIAnalystUserMessageForm = memo(
         }));
       };
 
+      const handleUnselectConnection = () => {
+        setContext((prev) => ({
+          ...prev,
+          connection: undefined,
+        }));
+      };
+
       events.on('aiAnalystSelectConnection', handleSelectConnection);
+      events.on('aiAnalystUnselectConnection', handleUnselectConnection);
       return () => {
         events.off('aiAnalystSelectConnection', handleSelectConnection);
+        events.off('aiAnalystUnselectConnection', handleUnselectConnection);
       };
     }, []);
 
