@@ -134,12 +134,14 @@ impl MergeCells {
     /// - Merges entirely before the column: no change
     /// - Merges entirely at/after the column: shift right by 1
     /// - Merges spanning the column: expand by 1
-    pub fn insert_column(&mut self, column: i64) {
+    ///
+    /// Returns all affected rects (old and new positions) for dirty tracking.
+    pub fn insert_column(&mut self, column: i64) -> Vec<Rect> {
         // Collect all merge rects before modification
         let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
 
         if merge_rects.is_empty() {
-            return;
+            return vec![];
         }
 
         // Clear all existing merges
@@ -148,6 +150,7 @@ impl MergeCells {
         }
 
         // Re-create merges with adjusted positions
+        let mut affected_rects = merge_rects.clone();
         for rect in merge_rects {
             let new_rect = if rect.max.x < column {
                 // Merge is entirely before the insertion point - no change
@@ -160,19 +163,23 @@ impl MergeCells {
                 Rect::new(rect.min.x, rect.min.y, rect.max.x + 1, rect.max.y)
             };
             self.merge_cells(new_rect);
+            affected_rects.push(new_rect);
         }
+        affected_rects
     }
 
     /// Adjusts merge cells when a column is removed.
     /// - Merges entirely before the column: no change
     /// - Merges entirely after the column: shift left by 1
     /// - Merges spanning the column: shrink by 1 (or delete if becomes empty)
-    pub fn remove_column(&mut self, column: i64) {
+    ///
+    /// Returns all affected rects (old and new positions) for dirty tracking.
+    pub fn remove_column(&mut self, column: i64) -> Vec<Rect> {
         // Collect all merge rects before modification
         let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
 
         if merge_rects.is_empty() {
-            return;
+            return vec![];
         }
 
         // Clear all existing merges
@@ -181,6 +188,7 @@ impl MergeCells {
         }
 
         // Re-create merges with adjusted positions
+        let mut affected_rects = merge_rects.clone();
         for rect in merge_rects {
             if rect.max.x < column {
                 // Merge is entirely before the deletion point - no change
@@ -189,28 +197,33 @@ impl MergeCells {
                 // Merge is entirely after the deletion point - shift left
                 let new_rect = Rect::new(rect.min.x - 1, rect.min.y, rect.max.x - 1, rect.max.y);
                 self.merge_cells(new_rect);
+                affected_rects.push(new_rect);
             } else {
                 // Deletion is inside the merge - shrink
                 // Only re-create if the merge still has width > 0
                 if rect.max.x > rect.min.x {
                     let new_rect = Rect::new(rect.min.x, rect.min.y, rect.max.x - 1, rect.max.y);
                     self.merge_cells(new_rect);
+                    affected_rects.push(new_rect);
                 }
                 // If min.x == max.x, the merge is deleted (single column merge removed)
             }
         }
+        affected_rects
     }
 
     /// Adjusts merge cells when a row is inserted.
     /// - Merges entirely before the row: no change
     /// - Merges entirely at/after the row: shift down by 1
     /// - Merges spanning the row: expand by 1
-    pub fn insert_row(&mut self, row: i64) {
+    ///
+    /// Returns all affected rects (old and new positions) for dirty tracking.
+    pub fn insert_row(&mut self, row: i64) -> Vec<Rect> {
         // Collect all merge rects before modification
         let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
 
         if merge_rects.is_empty() {
-            return;
+            return vec![];
         }
 
         // Clear all existing merges
@@ -219,6 +232,7 @@ impl MergeCells {
         }
 
         // Re-create merges with adjusted positions
+        let mut affected_rects = merge_rects.clone();
         for rect in merge_rects {
             let new_rect = if rect.max.y < row {
                 // Merge is entirely before the insertion point - no change
@@ -231,19 +245,23 @@ impl MergeCells {
                 Rect::new(rect.min.x, rect.min.y, rect.max.x, rect.max.y + 1)
             };
             self.merge_cells(new_rect);
+            affected_rects.push(new_rect);
         }
+        affected_rects
     }
 
     /// Adjusts merge cells when a row is removed.
     /// - Merges entirely before the row: no change
     /// - Merges entirely after the row: shift up by 1
     /// - Merges spanning the row: shrink by 1 (or delete if becomes empty)
-    pub fn remove_row(&mut self, row: i64) {
+    ///
+    /// Returns all affected rects (old and new positions) for dirty tracking.
+    pub fn remove_row(&mut self, row: i64) -> Vec<Rect> {
         // Collect all merge rects before modification
         let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
 
         if merge_rects.is_empty() {
-            return;
+            return vec![];
         }
 
         // Clear all existing merges
@@ -252,6 +270,7 @@ impl MergeCells {
         }
 
         // Re-create merges with adjusted positions
+        let mut affected_rects = merge_rects.clone();
         for rect in merge_rects {
             if rect.max.y < row {
                 // Merge is entirely before the deletion point - no change
@@ -260,16 +279,19 @@ impl MergeCells {
                 // Merge is entirely after the deletion point - shift up
                 let new_rect = Rect::new(rect.min.x, rect.min.y - 1, rect.max.x, rect.max.y - 1);
                 self.merge_cells(new_rect);
+                affected_rects.push(new_rect);
             } else {
                 // Deletion is inside the merge - shrink
                 // Only re-create if the merge still has height > 0
                 if rect.max.y > rect.min.y {
                     let new_rect = Rect::new(rect.min.x, rect.min.y, rect.max.x, rect.max.y - 1);
                     self.merge_cells(new_rect);
+                    affected_rects.push(new_rect);
                 }
                 // If min.y == max.y, the merge is deleted (single row merge removed)
             }
         }
+        affected_rects
     }
 }
 
@@ -285,7 +307,11 @@ impl Sheet {
             &self.merge_cells,
         ) {
             Ok(merge_cells) => {
-                crate::wasm_bindings::js::jsMergeCells(self.id.to_string(), merge_cells);
+                crate::wasm_bindings::js::jsMergeCells(
+                    self.id.to_string(),
+                    merge_cells,
+                    vec![],
+                );
             }
             Err(e) => {
                 dbgjs!(format!(

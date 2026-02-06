@@ -41,7 +41,15 @@ impl GridController {
             .merge_cells
             .merge_cells_update(merge_cells_updates.clone());
 
-        transaction.merge_cells_updates.insert(sheet_id);
+        // Track affected hash positions so the render worker only invalidates
+        // the specific hashes that overlap with the merge change.
+        let merge_hashes = transaction.merge_cells_updates.entry(sheet_id).or_default();
+        for (x1, y1, x2, y2, _) in &rects_for_spill_check {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                let rect = Rect::new(*x1, *y1, *x2, *y2);
+                merge_hashes.extend(rect.to_hashes());
+            }
+        }
 
         // Check if any cells within the merge range have borders set
         // Only signal border update if borders exist (since merging/unmerging affects border rendering)

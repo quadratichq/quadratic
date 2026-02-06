@@ -77,7 +77,7 @@ impl Sheet {
         }
 
         let mut data_tables = IndexMap::new();
-        if let Some(bounds) = sheet_bounds {
+        let merge_rects = if let Some(bounds) = sheet_bounds {
             let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
             let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
                 &bounds,
@@ -88,7 +88,15 @@ impl Sheet {
                 &mut values,
             );
             data_tables.extend(data_tables_in_rect);
-        }
+            let rects = self.merge_cells.get_merge_cells(bounds);
+            if rects.is_empty() {
+                None
+            } else {
+                Some(rects)
+            }
+        } else {
+            None
+        };
 
         Clipboard {
             origin,
@@ -103,6 +111,7 @@ impl Sheet {
                 .validations
                 .to_clipboard(selection, &origin, a1_context),
             data_tables,
+            merge_rects,
             operation: clipboard_operation,
         }
     }
@@ -396,7 +405,7 @@ mod tests {
             false,
         );
 
-        // Verify the pasted cell has "hello" (the anchor's value)
+        // Pasted merge is D9:D10; value is written at D10 (paste position).
         let sheet = gc.sheet(sheet_id);
         let pasted_value = sheet.cell_value(pos![D10]);
         assert_eq!(pasted_value, Some(CellValue::Text("hello".to_string())));

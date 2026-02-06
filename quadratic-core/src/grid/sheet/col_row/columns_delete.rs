@@ -132,9 +132,9 @@ impl Sheet {
         self.borders.remove_column(column);
         transaction.sheet_borders.insert(self.id);
 
-        // update merge cells
-        self.merge_cells.remove_column(column);
-        transaction.merge_cells_updates.insert(self.id);
+        // update merge cells and track affected hashes for re-rendering
+        let affected_rects = self.merge_cells.remove_column(column);
+        transaction.add_merge_cells_dirty_hashes(self.id, &affected_rects);
 
         self.columns.remove_column(column);
 
@@ -473,7 +473,7 @@ mod tests {
         assert_eq!(rects[0], Rect::test_a1("C2:D4"));
 
         // Verify transaction has merge_cells_updates marked
-        assert!(transaction.merge_cells_updates.contains(&sheet.id));
+        assert!(transaction.merge_cells_updates.contains_key(&sheet.id));
     }
 
     #[test]
