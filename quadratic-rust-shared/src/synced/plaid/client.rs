@@ -457,6 +457,7 @@ impl SyncedClient for PlaidClient {
         match stream {
             "transactions" => {
                 let items = self.get_transactions(start_date, end_date).await?;
+                println!("items: {:?}", items);
                 process_time_series(items, stream, start_date, end_date).map(Some)
             }
             "investments" => match self.get_investment_transactions(start_date, end_date).await {

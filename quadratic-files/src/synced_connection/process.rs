@@ -30,23 +30,41 @@ use crate::{
 const CHUNK_SIZE: u32 = 30; // 30 days
 
 /// Process all connections.
+/// Each connection type is processed independently; failures in one type do not
+/// prevent processing of others. Errors are logged but do not abort the sync.
 /// TODO(ddimaria): make this more dynamic
 pub(crate) async fn process_all_synced_connections(
     state: Arc<State>,
     sync_kind: SyncKind,
 ) -> Result<()> {
-    process_synced_connections::<MixpanelConnection>(state.clone(), sync_kind.clone(), "MIXPANEL")
-        .await?;
+    if let Err(e) = process_synced_connections::<MixpanelConnection>(
+        state.clone(),
+        sync_kind.clone(),
+        "MIXPANEL",
+    )
+    .await
+    {
+        tracing::error!("Error syncing MIXPANEL connections (continuing with other types): {e}");
+    }
 
-    process_synced_connections::<GoogleAnalyticsConnection>(
+    if let Err(e) = process_synced_connections::<GoogleAnalyticsConnection>(
         state.clone(),
         sync_kind.clone(),
         "GOOGLE_ANALYTICS",
     )
-    .await?;
+    .await
+    {
+        tracing::error!(
+            "Error syncing GOOGLE_ANALYTICS connections (continuing with other types): {e}"
+        );
+    }
 
-    process_synced_connections::<PlaidConnection>(state.clone(), sync_kind.clone(), "PLAID")
-        .await?;
+    if let Err(e) =
+        process_synced_connections::<PlaidConnection>(state.clone(), sync_kind.clone(), "PLAID")
+            .await
+    {
+        tracing::error!("Error syncing PLAID connections (continuing with other types): {e}");
+    }
 
     Ok(())
 }

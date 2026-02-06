@@ -33,12 +33,15 @@ use crate::{parquet::utils::record_batch_to_parquet_bytes, synced::SyncedClient}
 pub struct GoogleAnalyticsConfig {
     // GA4 property ID (format: "properties/123456789")
     pub property_id: String,
+    #[serde(default)]
     pub service_account_configuration: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct GoogleAnalyticsConnection {
     pub property_id: String,
+    /// Service account JSON key. Defaults to empty if missing (e.g. legacy/invalid config).
+    #[serde(default)]
     pub service_account_configuration: String,
     pub start_date: NaiveDate,
 }
@@ -62,6 +65,13 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     async fn to_client(&self, _environment: Environment) -> Result<Box<dyn SyncedClient>> {
+        if self.service_account_configuration.is_empty() {
+            return Err(SharedError::Synced(
+                "Google Analytics connection is missing service_account_configuration. \
+                Please update the connection in settings."
+                    .to_string(),
+            ));
+        }
         let client = GoogleAnalyticsClient::new(
             self.service_account_configuration.clone(),
             self.property_id.clone(),
