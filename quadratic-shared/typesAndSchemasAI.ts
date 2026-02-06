@@ -23,7 +23,7 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-sonnet-4-5@20250929',
   'claude-haiku-4-5@20251001',
   'claude-opus-4-5@20251101',
-  'claude-opus-4-6@20260205',
+  'claude-opus-4-6',
 ]);
 const VertexAIModelSchema = z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
@@ -36,7 +36,7 @@ const AnthropicModelSchema = z.enum([
   'claude-sonnet-4-5-20250929',
   'claude-haiku-4-5-20251001',
   'claude-opus-4-5-20251101',
-  'claude-opus-4-6-20260205',
+  'claude-opus-4-6',
 ]);
 const OpenAIModelSchema = z.enum([
   'gpt-5-codex',

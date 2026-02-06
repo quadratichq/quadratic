@@ -53,7 +53,7 @@ export const MODELS_CONFIGURATION: {
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
     ...AI_RATES.claude_opus_4_6_20260205_rate,
-    model: 'claude-opus-4-6@20260205',
+    model: 'claude-opus-4-6',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -170,7 +170,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-off': {
     ...AI_RATES.claude_opus_4_6_20260205_rate,
-    model: 'claude-opus-4-6@20260205',
+    model: 'claude-opus-4-6',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-off',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -187,7 +187,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-on': {
     ...AI_RATES.claude_opus_4_6_20260205_rate,
-    model: 'claude-opus-4-6@20260205',
+    model: 'claude-opus-4-6',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -204,7 +204,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-opus-4-6@20260205': {
     ...AI_RATES.claude_opus_4_6_20260205_rate,
-    model: 'claude-opus-4-6@20260205',
+    model: 'claude-opus-4-6',
     backupModelKey: 'anthropic:claude-opus-4.6:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -554,7 +554,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-opus-4.6:thinking-toggle-off': {
     ...AI_RATES.claude_opus_4_6_20260205_rate,
-    model: 'claude-opus-4-6-20260205',
+    model: 'claude-opus-4-6',
     backupModelKey: 'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
@@ -571,7 +571,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-opus-4.6:thinking-toggle-on': {
     ...AI_RATES.claude_opus_4_6_20260205_rate,
-    model: 'claude-opus-4-6-20260205',
+    model: 'claude-opus-4-6',
     backupModelKey: 'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on',
     displayName: 'Opus 4.6',
     displayProvider: 'Claude',
