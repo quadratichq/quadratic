@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/moveInvalid';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -54,7 +55,7 @@ export class PointerCellMoving {
 
   // Starts a table move.
   tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
-    if (this.state) return false;
+    if (this.state || inlineEditorHandler.isOpen()) return false;
     this.startCell = new Point(column, row);
     const offset = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
     this.movingCells = {
@@ -71,7 +72,8 @@ export class PointerCellMoving {
   };
 
   pointerDown = (e: FederatedPointerEvent): boolean => {
-    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || e.button === 1) return false;
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || e.button === 1 || inlineEditorHandler.isOpen())
+      return false;
 
     if (this.state === 'hover' && this.movingCells && e.button === 0) {
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
@@ -182,6 +184,11 @@ export class PointerCellMoving {
   };
 
   private pointerMoveHover = (world: Point): boolean => {
+    if (inlineEditorHandler.isOpen()) {
+      this.reset();
+      return false;
+    }
+
     // Ignore cursor interactions when the mouse is over the grid headings
     // to allow column/row resizing to work properly
     if (content.headings.intersectsHeadings(world)) {
