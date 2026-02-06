@@ -114,8 +114,9 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "moveTo")]
-    pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
-        self.selection.move_to(x as i64, y as i64, append);
+    pub fn move_to(&mut self, x: u32, y: u32, append: bool, merge_cells: &JsMergeCells) {
+        self.selection
+            .move_to(x as i64, y as i64, append, merge_cells.get_merge_cells());
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]

@@ -1,4 +1,5 @@
 use crate::a1::{A1Context, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef};
+use crate::grid::sheet::merge_cells::MergeCells;
 
 use super::*;
 
@@ -348,7 +349,7 @@ mod tests {
         assert_eq!(selection.cursor, pos!(C5));
 
         // clear the table selection so we don't select twice and toggle headers
-        selection.move_to(1, 1, false);
+        selection.move_to(1, 1, false, &MergeCells::default());
 
         selection.select_table("Table1", None, &context, 2, false, false);
         assert_eq!(selection.cursor, pos!(B5));

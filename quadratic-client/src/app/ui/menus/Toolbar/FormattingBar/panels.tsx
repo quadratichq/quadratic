@@ -112,7 +112,6 @@ export const TextFormatting = memo(
         activeColor={props.formatSummary?.textColor ?? undefined}
         hideLabel={props.hideLabel}
       />
-      <FormatButton action={Action.InsertHyperlink} actionArgs={undefined} hideLabel={props.hideLabel} />
       <FormatSeparator />
     </div>
   ))
