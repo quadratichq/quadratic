@@ -457,7 +457,6 @@ impl SyncedClient for PlaidClient {
         match stream {
             "transactions" => {
                 let items = self.get_transactions(start_date, end_date).await?;
-                println!("items: {:?}", items);
                 process_time_series(items, stream, start_date, end_date).map(Some)
             }
             "investments" => match self.get_investment_transactions(start_date, end_date).await {
@@ -566,6 +565,61 @@ fn is_today(date: NaiveDate) -> bool {
     date == today
 }
 
+/// Flatten items into serialized JSON string records.
+///
+/// Handles both:
+/// - Object of arrays (e.g., `{credit: [...], mortgage: [...]}`) — adds a `{stream}_type` column
+/// - Flat arrays — flattens each item directly
+///
+/// Optionally prepends a `date` column to each record.
+fn flatten_to_records(
+    data: &serde_json::Value,
+    stream: &str,
+    date_str: Option<&str>,
+) -> Result<Vec<String>> {
+    let mut records = Vec::new();
+
+    let items_with_type: Vec<(Option<&str>, &serde_json::Value)> = match data {
+        serde_json::Value::Object(obj) => obj
+            .iter()
+            .flat_map(|(item_type, items)| {
+                items.as_array().into_iter().flat_map(move |array| {
+                    array
+                        .iter()
+                        .map(move |item| (Some(item_type.as_str()), item))
+                })
+            })
+            .collect(),
+        serde_json::Value::Array(items) => items.iter().map(|item| (None, item)).collect(),
+        _ => return Ok(records),
+    };
+
+    for (item_type, item) in items_with_type {
+        let flattened = flatten_to_json(item, true);
+
+        let mut ordered = serde_json::Map::new();
+        if let Some(date) = date_str {
+            ordered.insert(
+                "date".to_string(),
+                serde_json::Value::String(date.to_string()),
+            );
+        }
+        ordered.extend(flattened);
+        if let Some(t) = item_type {
+            ordered.insert(
+                format!("{}_type", stream.trim_end_matches('s')),
+                serde_json::Value::String(t.to_string()),
+            );
+        }
+
+        let json_str = serde_json::to_string(&ordered)
+            .map_err(|e| SharedError::Synced(format!("Failed to serialize {}: {}", stream, e)))?;
+        records.push(json_str);
+    }
+
+    Ok(records)
+}
+
 /// Process time-series data (transactions, investments) - group by date
 fn process_time_series(
     items: Vec<serde_json::Value>,
@@ -594,17 +648,20 @@ fn process_time_series(
         current += Duration::days(1);
     }
 
-    // Group items by date
-    for item in &items {
+    // Group items by date, then flatten each group
+    let mut date_groups: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
+    for item in items {
         let date_key = item
             .get("date")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown")
             .to_string();
-        let flattened = flatten_to_json(item, false);
-        let json_str = serde_json::to_string(&flattened)
-            .map_err(|e| SharedError::Synced(format!("Failed to serialize {}: {}", stream, e)))?;
-        grouped.entry(date_key).or_default().push(json_str);
+        date_groups.entry(date_key).or_default().push(item);
+    }
+
+    for (date_key, date_items) in date_groups {
+        let records = flatten_to_records(&serde_json::Value::Array(date_items), stream, None)?;
+        grouped.entry(date_key).or_default().extend(records);
     }
 
     let days_with_data = grouped.values().filter(|v| !v.is_empty()).count();
@@ -630,39 +687,8 @@ fn process_snapshot(
 ) -> Result<HashMap<String, Bytes>> {
     use crate::parquet::json::grouped_json_to_parquet;
 
-    let mut records = Vec::new();
     let date_str = date.format(DATE_FORMAT).to_string();
-
-    // Flatten nested object structure (e.g., liabilities.credit, liabilities.mortgage)
-    if let Some(obj) = data.as_object() {
-        for (item_type, items) in obj {
-            if let Some(array) = items.as_array() {
-                for item in array {
-                    let flattened = flatten_to_json(item, false);
-
-                    // Create new map with date first, then extend with other fields
-                    let mut ordered = serde_json::Map::new();
-                    ordered.insert(
-                        "date".to_string(),
-                        serde_json::Value::String(date_str.clone()),
-                    );
-                    ordered.extend(flattened);
-
-                    // Add liability type (e.g., credit, mortgage, student)
-                    ordered.insert(
-                        format!("{}_type", stream.trim_end_matches('s')),
-                        serde_json::Value::String(item_type.clone()),
-                    );
-
-                    let json_str = serde_json::to_string(&ordered).map_err(|e| {
-                        SharedError::Synced(format!("Failed to serialize {}: {}", stream, e))
-                    })?;
-
-                    records.push(json_str);
-                }
-            }
-        }
-    }
+    let records = flatten_to_records(&data, stream, Some(&date_str))?;
 
     if records.is_empty() {
         tracing::warn!("No {} found", stream);
