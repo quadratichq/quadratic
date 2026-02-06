@@ -215,7 +215,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   const hasConnections = connections.length > 1;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-3">
+    <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-1">
       <div className="flex w-full flex-col items-center gap-5">
         <div className="flex w-full max-w-lg flex-col items-center gap-2">
           {/* Import Data Section */}
