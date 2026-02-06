@@ -319,7 +319,7 @@ export const MODELS_CONFIGURATION: {
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
-    backupModelKey: 'azure-openai:gpt-5-codex',
+    backupModelKey: 'azure-openai:gpt-5.2-codex',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -336,7 +336,7 @@ export const MODELS_CONFIGURATION: {
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on': {
     ...AI_RATES.claude_sonnet_4_5_20250926_rate,
     model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
-    backupModelKey: 'azure-openai:gpt-5-codex',
+    backupModelKey: 'azure-openai:gpt-5.2-codex',
     displayName: 'Sonnet 4.5',
     displayProvider: 'Claude',
     temperature: 1,
@@ -502,10 +502,10 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     imageSupport: true,
   },
-  'openai:gpt-5-codex': {
-    model: 'gpt-5-codex',
+  'openai:gpt-5.2-codex': {
+    model: 'gpt-5.2-codex',
     backupModelKey: 'vertexai:gemini-2.5-pro',
-    displayName: 'GPT-5-Codex',
+    displayName: 'GPT-5.2-Codex',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,
@@ -601,10 +601,10 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 2.5,
     rate_per_million_cache_write_tokens: 0,
   },
-  'azure-openai:gpt-5-codex': {
-    model: 'gpt-5-codex',
-    backupModelKey: 'openai:gpt-5-codex',
-    displayName: 'GPT-5-Codex',
+  'azure-openai:gpt-5.2-codex': {
+    model: 'gpt-5.2-codex',
+    backupModelKey: 'openai:gpt-5.2-codex',
+    displayName: 'GPT-5.2-Codex',
     displayProvider: 'OpenAI',
     temperature: 1,
     max_tokens: 128000,

@@ -37,13 +37,13 @@ const AnthropicModelSchema = z.enum([
   'claude-opus-4-5-20251101',
 ]);
 const OpenAIModelSchema = z.enum([
-  'gpt-5-codex',
+  'gpt-5.2-codex',
   'gpt-5.2-2025-12-12',
   'gpt-4.1-2025-04-14',
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
-const AzureOpenAIModelSchema = z.enum(['gpt-5-codex', 'gpt-5.2', 'gpt-4.1', 'gpt-4.1-mini', 'o3']);
+const AzureOpenAIModelSchema = z.enum(['gpt-5.2-codex', 'gpt-5.2', 'gpt-4.1', 'gpt-4.1-mini', 'o3']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum([
   'Qwen/Qwen3-Coder-480B-A35B-Instruct',
@@ -125,7 +125,7 @@ const AnthropicModelKeySchema = z.enum([
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
-  'openai:gpt-5-codex',
+  'openai:gpt-5.2-codex',
   'openai:gpt-5.2-2025-12-12',
   'openai:gpt-4.1-2025-04-14',
   'openai:o4-mini-2025-04-16',
@@ -134,7 +134,7 @@ const OpenAIModelKeySchema = z.enum([
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const AzureOpenAIModelKeySchema = z.enum([
-  'azure-openai:gpt-5-codex',
+  'azure-openai:gpt-5.2-codex',
   'azure-openai:gpt-5.2',
   'azure-openai:gpt-4.1',
   'azure-openai:gpt-4.1-mini',
