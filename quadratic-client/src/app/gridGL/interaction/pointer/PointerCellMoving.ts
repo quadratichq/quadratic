@@ -7,6 +7,7 @@ import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/mo
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -219,6 +220,19 @@ export class PointerCellMoving {
     }
     if (!rectangle) return false;
 
+    // Expand to full merged cell when selection is a single cell inside a merge
+    if (!colsHover && !rowsHover && rectangle.width === 1 && rectangle.height === 1) {
+      const mergeRect = sheets.sheet.getMergeCellRect(rectangle.left, rectangle.top);
+      if (mergeRect) {
+        rectangle = new Rectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      }
+    }
+
     const column = rectangle.left;
     const row = rectangle.top;
 
@@ -295,15 +309,27 @@ export class PointerCellMoving {
           return true;
         }
 
-        quadraticCore.moveCells(
-          rectToSheetRect(rectangle, sheets.current),
-          this.movingCells.toColumn ?? 0,
-          this.movingCells.toRow ?? 0,
-          sheets.current,
-          this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
-          this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
-          false
-        );
+        const toColumn = this.movingCells.toColumn ?? 0;
+        const toRow = this.movingCells.toRow ?? 0;
+        const width = this.movingCells.width ?? 1;
+        const height = this.movingCells.height ?? 1;
+        const sheetId = sheets.current;
+
+        quadraticCore
+          .moveCells(
+            rectToSheetRect(rectangle, sheetId),
+            toColumn,
+            toRow,
+            sheetId,
+            this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
+            this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
+            false
+          )
+          .then(() => {
+            const rangeStr = `${xyToA1(toColumn, toRow)}:${xyToA1(toColumn + width - 1, toRow + height - 1)}`;
+            const selection = sheets.stringToSelection(rangeStr, sheetId);
+            events.emit('setCursor', selection.save());
+          });
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
         if (

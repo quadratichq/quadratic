@@ -11,11 +11,13 @@ import type {
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import { userDateToNumber, userTimeToNumber } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { z } from 'zod';
 
 // Helper functions for converting validations to text
 
@@ -199,6 +201,19 @@ const getSelectionFromString = (selection: string, sheetId: string): A1Selection
 
 const getSheetFromSheetName = (sheetName: string | null | undefined): Sheet => {
   return sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
+};
+
+const updateAICursorForSelection = (selection: string, sheetName: string | null | undefined): void => {
+  try {
+    const sheetId = sheetName
+      ? (sheets.getSheetByName(sheetName)?.id ?? sheets.current)
+      : sheets.current;
+    const jsSelection = sheets.stringToSelection(selection, sheetId);
+    const selectionString = jsSelection.save();
+    aiUser.updateSelection(selectionString, sheetId);
+  } catch (e) {
+    console.warn('Failed to update AI user selection:', e);
+  }
 };
 
 // Implementation functions
@@ -565,7 +580,7 @@ type ValidationToolActions = {
     | AITool.AddTextValidation
     | AITool.AddNumberValidation
     | AITool.AddDateTimeValidation
-    | AITool.RemoveValidations]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
+    | AITool.RemoveValidations]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
 };
 
 // Exported action handlers
@@ -581,6 +596,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.AddMessage]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await addMessageToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -589,6 +605,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.AddLogicalValidation]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await addLogicalValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -597,6 +614,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.AddListValidation]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await addListValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -605,6 +623,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.AddTextValidation]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await addTextValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -613,6 +632,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.AddNumberValidation]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await addNumberValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -621,6 +641,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.AddDateTimeValidation]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await addDateTimeValidationToolCall(args);
       return [createTextContent(text)];
     } catch (e) {
@@ -629,6 +650,7 @@ export const validationToolsActions: ValidationToolActions = {
   },
   [AITool.RemoveValidations]: async (args) => {
     try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
       const text = await removeValidationsToolCall(args);
       return [createTextContent(text)];
     } catch (e) {

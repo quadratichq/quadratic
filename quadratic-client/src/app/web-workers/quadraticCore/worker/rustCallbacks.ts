@@ -68,7 +68,7 @@ declare var self: WorkerGlobalScope &
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
     sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
-    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array) => void;
+    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array, dirtyHashes: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
   };
 
@@ -270,8 +270,8 @@ export const jsTimestamp = (): bigint => {
   return BigInt(Date.now());
 };
 
-export const jsMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
+export const jsMergeCells = (sheetId: string, mergeCells: Uint8Array, dirtyHashes: Uint8Array) => {
   const clientCopy = new Uint8Array(mergeCells);
   self.sendMergeCells(sheetId, clientCopy);
-  self.sendMergeCellsRender(sheetId, mergeCells);
+  self.sendMergeCellsRender(sheetId, mergeCells, dirtyHashes);
 };

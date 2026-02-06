@@ -8,6 +8,7 @@ import {
   showAIAnalystAtom,
   waitingOnMessageIndexAtom,
 } from '@/app/ai/atoms/aiAnalystAtoms';
+import { events } from '@/app/events/events';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
@@ -17,7 +18,8 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom, useAtomValue } from 'jotai';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useCallback, useState } from 'react';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { forwardRef, memo, useCallback, useEffect, useState } from 'react';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
 const IMPORT_FILE_TYPES = ['.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
@@ -32,10 +34,31 @@ export const AIAnalystUserMessageForm = memo(
     const waitingOnMessageIndex = useAtomValue(waitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
+    useEffect(() => {
+      const handleSelectConnection = (connectionUuid: string, connectionType: string, connectionName: string) => {
+        setContext((prev) => ({
+          ...prev,
+          connection: {
+            type: connectionType as ConnectionType,
+            id: connectionUuid,
+            name: connectionName,
+          },
+        }));
+      };
+
+      events.on('aiAnalystSelectConnection', handleSelectConnection);
+      return () => {
+        events.off('aiAnalystSelectConnection', handleSelectConnection);
+      };
+    }, []);
+
     const handleSubmit = useCallback(
       async ({ content, context, importFiles }: SubmitPromptArgs) => {
         const userMessagesCount = aiStore.get(currentChatUserMessagesCountAtom);
-        trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
+        trackEvent('[AIAnalyst].submitPrompt', {
+          userMessageCountUponSubmit: userMessagesCount,
+          language: context.connection?.type,
+        });
 
         submitPrompt({
           messageSource: 'User',

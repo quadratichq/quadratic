@@ -42,6 +42,7 @@ impl GridController {
         self.send_content_cache(transaction);
         self.send_offsets_modified(transaction);
         self.send_code_cells(transaction);
+        self.send_merge_cells(transaction);
         self.process_visible_dirty_hashes(transaction);
         self.process_remaining_dirty_hashes(transaction);
         self.send_validations(transaction);
@@ -50,7 +51,6 @@ impl GridController {
         self.send_fills(transaction);
         self.send_undo_redo();
         self.send_set_cursor(transaction);
-        self.send_merge_cells(transaction);
     }
 
     pub(crate) fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
@@ -739,11 +739,18 @@ impl GridController {
             return;
         }
 
-        for sheet_id in transaction.merge_cells_updates.iter() {
+        for (sheet_id, dirty_hashes) in transaction.merge_cells_updates.iter() {
             if let Some(sheet) = self.try_sheet(*sheet_id) {
                 match serialize(&SerializationFormat::Bincode, &sheet.merge_cells) {
                     Ok(merge_cells) => {
-                        crate::wasm_bindings::js::jsMergeCells(sheet_id.to_string(), merge_cells);
+                        let hashes: Vec<Pos> = dirty_hashes.iter().copied().collect();
+                        let dirty_hashes_json =
+                            serde_json::to_vec(&hashes).unwrap_or_default();
+                        crate::wasm_bindings::js::jsMergeCells(
+                            sheet_id.to_string(),
+                            merge_cells,
+                            dirty_hashes_json,
+                        );
                     }
                     Err(e) => {
                         dbgjs!(format!(
