@@ -41,7 +41,23 @@ impl Span {
     }
     /// Returns the line number of the start of the span
     pub fn line_number_of_str(self, s: &str) -> usize {
-        s[..self.start as usize].matches('\n').count() + 1
+        let start = self.start as usize;
+        // Use s.get() to safely handle out-of-bounds or non-UTF-8-boundary indices
+        s.get(..start)
+            .map(|slice| slice.matches('\n').count() + 1)
+            .unwrap_or_else(|| {
+                // Show a truncated preview of the string for debugging
+                let preview: String = s.chars().take(100).collect();
+                let suffix = if s.len() > 100 { "..." } else { "" };
+                dbgjs!(format!(
+                    "Invalid span start {} for string of length {}: {:?}{}",
+                    start,
+                    s.len(),
+                    preview,
+                    suffix
+                ));
+                1
+            })
     }
 }
 impl<T> From<Spanned<T>> for Span {

@@ -55,6 +55,62 @@ export interface HandleAIRequestArgs {
   response?: Response;
   signal?: AbortSignal;
 }
+
+/**
+ * Detect if an error is related to the prompt being too long / exceeding context window.
+ * Different AI providers return this error in different formats:
+ * - Anthropic: status 413, or 400 with message "Prompt is too long"
+ * - OpenAI: status 400 with code "context_length_exceeded"
+ * - Google/Vertex: various message patterns
+ * - Bedrock: wrapped errors with similar patterns
+ */
+function isPromptTooLongError(error: unknown): boolean {
+  if (!error) return false;
+
+  const errorObj = error as Record<string, unknown>;
+
+  // Check for HTTP 413 status (Request Entity Too Large)
+  if (errorObj.status === 413 || errorObj.statusCode === 413) {
+    return true;
+  }
+
+  // OpenAI uses 'code' field for specific error types
+  if (errorObj.code === 'context_length_exceeded') {
+    return true;
+  }
+
+  // Anthropic/others use 'type' field
+  if (errorObj.type === 'request_too_large') {
+    return true;
+  }
+
+  // Check nested error structure (some SDKs wrap errors)
+  const nestedError = errorObj.error as Record<string, unknown> | undefined;
+  if (nestedError) {
+    const nestedType = nestedError.type;
+    const nestedMessage = String(nestedError.message ?? '').toLowerCase();
+
+    if (nestedType === 'request_too_large') {
+      return true;
+    }
+
+    if (nestedType === 'invalid_request_error' && nestedMessage.includes('prompt is too long')) {
+      return true;
+    }
+  }
+
+  // Fallback: check error message for common patterns (less reliable but catches edge cases)
+  const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const contextPatterns = [
+    'prompt is too long',
+    'context_length_exceeded',
+    'maximum context length',
+    'too many tokens',
+  ];
+
+  return contextPatterns.some((pattern) => errorMessage.includes(pattern));
+}
+
 export const handleAIRequest = async ({
   modelKey,
   args,
@@ -208,16 +264,25 @@ export const handleAIRequest = async ({
       return;
     }
 
-    logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, error);
+    // Check if this is a context length / prompt too long error
+    // These are expected user errors - log at info/warning level, not error
+    const isContextLengthError = isPromptTooLongError(error);
 
-    Sentry.captureException(error, {
-      level: 'error',
-      extra: {
-        context: 'Error in handleAIRequest',
-        modelKey,
-      },
-    });
+    if (isContextLengthError) {
+      // Don't capture to Sentry yet - wait to see if backup model succeeds
+      logger.info(`[handleAIRequest] Prompt too long for model ${modelKey}, will try backup if available`);
+    } else {
+      logger.error(`[handleAIRequest] Error in handleAIRequest ${modelKey}`, error);
+      Sentry.captureException(error, {
+        level: 'error',
+        extra: {
+          context: 'Error in handleAIRequest',
+          modelKey,
+        },
+      });
+    }
 
+    // Try backup model in production - backup may have larger context window
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
       const options = getModelOptions(modelKey, args);
 
@@ -238,34 +303,48 @@ export const handleAIRequest = async ({
       }
     }
 
+    // If we reach here with a context length error, backup also failed or wasn't available
+    if (isContextLengthError) {
+      Sentry.captureException(error, {
+        level: 'warning',
+        extra: {
+          context: 'Prompt too long - all models exhausted',
+          modelKey,
+        },
+      });
+    }
+
+    // Create user-friendly error message
+    const userErrorMessage = isContextLengthError
+      ? "Your conversation is too long for the AI model's context window."
+      : error instanceof Error
+        ? error.message
+        : 'An unexpected error occurred. Please try again.';
+
     const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
       role: 'assistant',
-      content: [
-        createTextContent(
-          JSON.stringify(
-            error instanceof Error
-              ? {
-                  name: error.name,
-                  message: error.message,
-                  stack: error.stack,
-                }
-              : error
-          )
-        ),
-      ],
+      content: [createTextContent(userErrorMessage)],
       contextType: 'userPrompt',
       toolCalls: [],
       modelKey,
       isOnPaidPlan,
       exceededBillingLimit,
       error: true,
+      errorType: isContextLengthError ? 'context_length' : 'general',
     };
     const options = getModelOptions(modelKey, args);
-    if (!options.stream || !response?.headersSent) {
-      response?.json(responseMessage);
-    } else {
+    // Send response in the format the client expects based on model streaming config
+    if (options.stream) {
+      // If headers not sent yet, set them for SSE
+      if (!response?.headersSent) {
+        response?.setHeader('Content-Type', 'text/event-stream');
+        response?.setHeader('Cache-Control', 'no-cache');
+        response?.setHeader('Connection', 'keep-alive');
+      }
       response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
       response?.end();
+    } else {
+      response?.json(responseMessage);
     }
   }
 };

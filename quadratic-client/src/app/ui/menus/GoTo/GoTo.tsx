@@ -229,10 +229,12 @@ const CommandItemGoto = memo(
 
 export function tableNameToRange(tableName: string) {
   let range = '';
+
   try {
     range = sheets.convertTableToRange(tableName, sheets.current);
-  } catch (e) {
-    console.error('Error getting table name range in useGetMentions.tsx', e);
+  } catch {
+    // Expected during navigation when sheet context changes - silently return empty string
   }
+
   return range;
 }

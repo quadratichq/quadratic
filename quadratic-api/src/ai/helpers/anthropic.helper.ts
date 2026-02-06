@@ -39,7 +39,13 @@ import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images, PDFs, files)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .map((content) => {
       if (isContentImage(content)) {
         const imageBlockParam: ImageBlockParam = {
@@ -85,7 +91,13 @@ function convertContent(content: Content): Array<ContentBlockParam> {
 
 function convertToolResultContent(content: ToolResultContent): Array<TextBlockParam | ImageBlockParam> {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .map((content) => {
       if (isContentImage(content)) {
         const imageBlockParam: ImageBlockParam = {
