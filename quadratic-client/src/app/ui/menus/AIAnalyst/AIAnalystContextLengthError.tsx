@@ -23,7 +23,7 @@ export const AIAnalystContextLengthError = memo(({ message }: AIAnalystContextLe
   }, [setCurrentChat]);
 
   return (
-    <div className="flex min-w-0 select-none flex-col gap-2 rounded border border-border p-3 text-sm">
+    <div className="-mx-2 flex min-w-0 select-none flex-col gap-2 rounded border border-border p-3 text-sm">
       <div className="flex items-center gap-2">
         <WarningIcon className="shrink-0" />
         <span className="font-medium">{message}</span>
