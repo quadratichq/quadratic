@@ -89,7 +89,7 @@ class RenderText {
         // Apply any pending merge cells for this sheet
         const pendingMergeCells = this.pendingMergeCells.get(sheetId);
         if (pendingMergeCells) {
-          cellsLabels.updateMergeCells(pendingMergeCells);
+          cellsLabels.updateMergeCells(pendingMergeCells, []);
           this.pendingMergeCells.delete(sheetId);
         }
       }
@@ -216,7 +216,7 @@ class RenderText {
     // Apply any pending merge cells for this sheet
     const pendingMergeCells = this.pendingMergeCells.get(sheetInfo.sheet_id);
     if (pendingMergeCells) {
-      cellsLabels.updateMergeCells(pendingMergeCells);
+      cellsLabels.updateMergeCells(pendingMergeCells, []);
       this.pendingMergeCells.delete(sheetInfo.sheet_id);
     }
   }
@@ -255,7 +255,7 @@ class RenderText {
     this.updateViewportBuffer();
   }
 
-  updateMergeCells(sheetId: string, mergeCells: JsMergeCells) {
+  updateMergeCells(sheetId: string, mergeCells: JsMergeCells, dirtyHashesUint8Array: Uint8Array) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) {
       // Sheet may not be initialized yet - queue merge cells to apply when sheet is ready
@@ -266,7 +266,8 @@ class RenderText {
       this.pendingMergeCells.set(sheetId, mergeCells);
       return;
     }
-    cellsLabels.updateMergeCells(mergeCells);
+    const dirtyHashes = fromUint8Array<{ x: number; y: number }[]>(dirtyHashesUint8Array);
+    cellsLabels.updateMergeCells(mergeCells, dirtyHashes);
   }
 
   showLabel(sheetId: string, x: number, y: number, show: boolean) {

@@ -101,6 +101,7 @@ export interface CoreRenderMergeCells {
   type: 'coreRenderMergeCells';
   sheetId: string;
   mergeCells: Uint8Array;
+  dirtyHashes: Uint8Array;
 }
 
 export type CoreRenderMessage =

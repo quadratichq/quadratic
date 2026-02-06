@@ -6,7 +6,7 @@ import {
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { apiClient } from '@/shared/api/apiClient';
-import { CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
+import { AddIcon, CheckIcon, DatabaseIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -86,8 +86,10 @@ const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: Co
   return (
     <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-4" disabled={isSyncing}>
       <LanguageIcon language={connection.type} className="flex-shrink-0" />
-      <span className="truncate">{connection.name}</span>
-      {isSyncing && <span className="ml-2 text-xs text-muted-foreground">(syncing)</span>}
+      <span className="flex items-center truncate">
+        <span className="truncate">{connection.name}</span>
+        {isSyncing && <span className="ml-1 text-xs text-muted-foreground">(syncing)</span>}
+      </span>
       <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
     </DropdownMenuItem>
   );
@@ -117,6 +119,15 @@ export const AIUserMessageFormConnectionsButton = memo(
       [textareaRef]
     );
 
+    const handleAddConnection = useRecoilCallback(
+      ({ set }) =>
+        () => {
+          trackEvent('[AIConnectionsPicker].addConnection');
+          set(editorInteractionStateShowConnectionsMenuAtom, 'new');
+        },
+      []
+    );
+
     const handleManageConnections = useRecoilCallback(
       ({ set }) =>
         () => {
@@ -140,8 +151,8 @@ export const AIUserMessageFormConnectionsButton = memo(
         }
 
         // Otherwise set it as the newly selected connection
-        trackEvent('[AIConnectionsPicker].selectConnection');
         const connection = connections.find((connection) => connection.uuid === connectionUuid);
+        trackEvent('[AIConnectionsPicker].selectConnection', { language: connection?.type });
         if (connection === undefined) {
           Sentry.captureException(new Error('A connection that was picked in the UI is not stored in local state.'));
           return;
@@ -173,9 +184,13 @@ export const AIUserMessageFormConnectionsButton = memo(
 
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">Connections</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleAddConnection} className="gap-4">
+            <AddIcon className="flex-shrink-0 text-muted-foreground" />
+            <span className="truncate">Add connection</span>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleManageConnections} className="gap-4">
             <SettingsIcon className="flex-shrink-0 text-muted-foreground" />
-            <span className="truncate">Add or manage connections</span>
+            <span className="truncate">Manage connections</span>
           </DropdownMenuItem>
 
           {connections.length > 0 && (

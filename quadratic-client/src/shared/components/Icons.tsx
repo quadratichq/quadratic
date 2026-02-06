@@ -484,6 +484,10 @@ export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
 };
 
+export const GroupOffIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_off</Icon>;
+};
+
 export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
 };
@@ -558,6 +562,10 @@ export const MoreVertIcon: IconComponent = (props) => {
 
 export const MoreHorizIcon: IconComponent = (props) => {
   return <Icon {...props}>more_horiz</Icon>;
+};
+
+export const MoveItemIcon: IconComponent = (props) => {
+  return <Icon {...props}>move_item</Icon>;
 };
 
 export const Number123Icon: IconComponent = (props) => {
@@ -822,6 +830,10 @@ export const LightedBulbIcon: IconComponent = (props) => {
 
 export const PublicIcon: IconComponent = (props) => {
   return <Icon {...props}>public</Icon>;
+};
+
+export const PublicOffIcon: IconComponent = (props) => {
+  return <Icon {...props}>public_off</Icon>;
 };
 
 export const SheetComeFromIcon: IconComponent = (props) => {
