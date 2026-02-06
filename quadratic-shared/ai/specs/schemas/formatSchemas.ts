@@ -69,10 +69,24 @@ export const formatToolsSpecs: { [K in keyof typeof formatToolsArgsSchemas]: AIT
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
-IMPORTANT: When formatting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A".\n
-Each format entry must have at least one non-null format to set.\n
-You can set bold, italic, underline, strike through, text/fill colors, alignment, wrapping, numeric formats, date formats, and font size.\n
+Each format entry requires a selection and at least one format property to set.\n
+IMPORTANT: When formatting table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures formatting applies correctly as the table grows or shrinks.\n
+Here are the formats you can set in each entry:\n
+- bold, italics, underline, or strike through\n
+- text color and fill color using hex format, for example, #FF0000 for red. To remove colors, set to an empty string.\n
+- horizontal alignment, this can be one of "left", "center", "right"\n
+- vertical alignment, this can be one of "top", "middle", "bottom"\n
+- wrapping, this can be one of "wrap", "clip", "overflow"\n
+- numeric_commas, adds or removes commas from numbers\n
+- number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
+- currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
+- date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
+- font_size, the size of the font in points (default is 10)\n
+To clear/remove a format, set the value to null (or empty string for colors). Omit fields you don't want to change.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
+Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
+Example: To format an entire table column as currency, use: { "formats": [{ "selection": "Sales_Data[Revenue]", "number_type": "currency", "currency_symbol": "$" }] }\n
+You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n
 `,
     parameters: {
       type: 'object',
@@ -184,35 +198,19 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
       additionalProperties: false,
     },
     responseSchema: formatToolsArgsSchemas[AITool.SetTextFormats],
-    prompt: `The set_text_formats tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
-Each format entry requires a selection and at least one format property to set.\n
-IMPORTANT: When formatting table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures formatting applies correctly as the table grows or shrinks.\n
-Here are the formats you can set in each entry:\n
-- bold, italics, underline, or strike through\n
-- text color and fill color using hex format, for example, #FF0000 for red. To remove colors, set to an empty string.\n
-- horizontal alignment, this can be one of "left", "center", "right"\n
-- vertical alignment, this can be one of "top", "middle", "bottom"\n
-- wrapping, this can be one of "wrap", "clip", "overflow"\n
-- numeric_commas, adds or removes commas from numbers\n
-- number_type, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.\n
-- currency_symbol, if number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR\n
-- date_time, formats a date time value using Rust's chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"\n
-- font_size, the size of the font in points (default is 10)\n
-To clear/remove a format, set the value to null (or empty string for colors). Omit fields you don't want to change.\n
-Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
-Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
-Example: To format an entire table column as currency, use: { "formats": [{ "selection": "Sales_Data[Revenue]", "number_type": "currency", "currency_symbol": "$" }] }\n
-You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.GetTextFormats]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+When checking formats on table columns, use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges, column references like "A", or infinite ranges like "A3:A".\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
-If there are multiple pages of formatting information, use the page parameter to get the next set of results.\n
+If too large, the results will include page information:\n
+- If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+- Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
 `,
     parameters: {
       type: 'object',
@@ -236,16 +234,6 @@ If there are multiple pages of formatting information, use the page parameter to
       additionalProperties: false,
     },
     responseSchema: formatToolsArgsSchemas[AITool.GetTextFormats],
-    prompt: `
-The get_text_formats tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
-When checking formats on table columns, use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges, column references like "A", or infinite ranges like "A3:A".\n
-Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
-It should be used to find formatting within a sheet's formatting bounds.\n
-It returns a string representation of the formatting information of the cells in the selection.\n
-If too large, the results will include page information:\n
-- If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-- Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
-`,
   },
   [AITool.SetBorders]: {
     sources: ['AIAnalyst'],
@@ -253,6 +241,10 @@ If too large, the results will include page information:\n
     description: `
 This tool sets the borders in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
+The selection is a range of cells, for example: A1:D1.\n
+The color must be a valid CSS color string.\n
+The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
+The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
 `,
     parameters: {
       type: 'object',
@@ -303,21 +295,15 @@ The border selection to set the borders on. This must be one of the following: a
       additionalProperties: false,
     },
     responseSchema: formatToolsArgsSchemas[AITool.SetBorders],
-    prompt: `
-This tool sets the borders in a sheet.\n
-It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
-The selection is a range of cells, for example: A1:D1.\n
-The color must be a valid CSS color string.\n
-The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
-The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
-`,
   },
   [AITool.MergeCells]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool merges cells in a sheet.\n
-It requires the sheet name and a selection (in A1 notation) of cells to merge. The selection must be a range of cells (not a single cell).\n
+It requires the sheet name and a selection (in A1 notation) of cells to merge.\n
+The selection must be a range of cells (not a single cell), for example: A1:D1.\n
+When cells are merged, all cell values except the top-left cell will be cleared, and the merged cell will display the value from the top-left cell.\n
 `,
     parameters: {
       type: 'object',
@@ -336,19 +322,15 @@ It requires the sheet name and a selection (in A1 notation) of cells to merge. T
       additionalProperties: false,
     },
     responseSchema: formatToolsArgsSchemas[AITool.MergeCells],
-    prompt: `
-This tool merges cells in a sheet.\n
-It requires the sheet name and a selection (in A1 notation) of cells to merge.\n
-The selection must be a range of cells (not a single cell), for example: A1:D1.\n
-When cells are merged, all cell values except the top-left cell will be cleared, and the merged cell will display the value from the top-left cell.\n
-`,
   },
   [AITool.UnmergeCells]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool unmerges cells in a sheet.\n
-It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge. The selection can be a single cell or a range of cells.\n
+It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge.\n
+The selection can be a single cell or a range of cells, for example: A1 or A1:D1.\n
+All merged cells that overlap with the selection will be unmerged, splitting them back into individual cells.\n
 `,
     parameters: {
       type: 'object',
@@ -367,11 +349,5 @@ It requires the sheet name and a selection (in A1 notation) that contains merged
       additionalProperties: false,
     },
     responseSchema: formatToolsArgsSchemas[AITool.UnmergeCells],
-    prompt: `
-This tool unmerges cells in a sheet.\n
-It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge.\n
-The selection can be a single cell or a range of cells, for example: A1 or A1:D1.\n
-All merged cells that overlap with the selection will be unmerged, splitting them back into individual cells.\n
-`,
   },
 } as const;

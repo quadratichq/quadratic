@@ -1,8 +1,6 @@
-import { AgentType, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
+import { AgentType } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AILanguagePreferences, AIModelKey, AISource, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AILanguagePreferences, AISource, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
 
 import { A1Docs } from '../docs/A1Docs';
@@ -145,18 +143,7 @@ export const getQuadraticContext = (source: AISource, agentType?: AgentType): Ch
   return getMainAgentContext(source);
 };
 
-export const getToolUseContext = (source: AISource, modelKey: AIModelKey, agentType?: AgentType): ChatMessage[] => {
-  const aiModelMode = MODELS_CONFIGURATION[modelKey].mode;
-  // Default to MainAgent if no agent type specified
-  const effectiveAgentType = agentType ?? AgentType.MainAgent;
-
-  // Debug: Log which tools are being filtered
-  const allTools = Object.keys(aiToolsSpec);
-  const filteredTools = allTools.filter((toolName) => !isToolAllowedForAgent(effectiveAgentType, toolName as AITool));
-  if (filteredTools.length > 0) {
-    console.log(`[getToolUseContext] Filtering tools for ${effectiveAgentType}: ${filteredTools.join(', ')}`);
-  }
-
+export const getToolUseContext = (source: AISource): ChatMessage[] => {
   return [
     {
       role: 'user',
@@ -175,19 +162,6 @@ ${
       ? 'Use only one tool in a single response.\n'
       : ''
 }
-
-${Object.entries(aiToolsSpec)
-  .filter(([toolName, { sources, aiModelModes }]) => {
-    // Filter by source and model mode
-    if (!sources.includes(source) || !aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    // Filter by agent type
-    return isToolAllowedForAgent(effectiveAgentType, toolName as AITool);
-  })
-  .map(([name, { prompt }]) => `#${name}\n${prompt}`)
-  .join('\n\n')}
-
 `),
       ],
       contextType: 'toolUse',

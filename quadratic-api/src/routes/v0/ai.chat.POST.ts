@@ -148,7 +148,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     console.log(
       `[AI.Chat] Building tool context with agentType: ${args.agentType ?? 'undefined (defaulting to MainAgent)'}`
     );
-    const toolUseContext = getToolUseContext(source, modelKey, args.agentType);
+    const toolUseContext = getToolUseContext(source);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
