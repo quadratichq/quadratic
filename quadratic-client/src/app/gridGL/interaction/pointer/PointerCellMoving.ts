@@ -219,6 +219,19 @@ export class PointerCellMoving {
     }
     if (!rectangle) return false;
 
+    // Expand to full merged cell when selection is a single cell inside a merge
+    if (!colsHover && !rowsHover && rectangle.width === 1 && rectangle.height === 1) {
+      const mergeRect = sheets.sheet.getMergeCellRect(rectangle.left, rectangle.top);
+      if (mergeRect) {
+        rectangle = new Rectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      }
+    }
+
     const column = rectangle.left;
     const row = rectangle.top;
 

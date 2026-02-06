@@ -5,6 +5,8 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::{clipboard::PasteSpecial, operation::Operation},
     },
+    grid::sheet::merge_cells::MergeCellsUpdate,
+    ClearOption, Rect,
 };
 
 impl GridController {
@@ -16,18 +18,34 @@ impl GridController {
             rows,
         } = op
         {
-            // we replace the MoveCells operation with a series of cut/paste
-            // operations so we don't have to reimplement it. There's definitely
-            // a more efficient way to do this. todo: when rewriting the data
-            // store, we should implement higher-level functions that would more
-            // easily implement cut/paste/move without resorting to this
-            // approach.
             let selection = if columns {
                 A1Selection::cols(source.sheet_id, source.min.x, source.max.x)
             } else if rows {
                 A1Selection::rows(source.sheet_id, source.min.y, source.max.y)
             } else {
                 A1Selection::from_rect(source)
+            };
+
+            let source_rect = Rect::new(source.min.x, source.min.y, source.max.x, source.max.y);
+            let dest_rect = Rect::new(
+                dest.x,
+                dest.y,
+                dest.x + (source.max.x - source.min.x),
+                dest.y + (source.max.y - source.min.y),
+            );
+
+            let (was_merged_move, existing_merges_at_dest) = if !columns && !rows {
+                let sheet = self.try_sheet(source.sheet_id);
+                let was_merged = sheet.map_or(false, |sheet| {
+                    let merged = sheet.merge_cells.get_merge_cells(source_rect);
+                    merged.len() == 1 && merged[0] == source_rect
+                });
+                let existing = sheet
+                    .map(|sheet| sheet.merge_cells.get_merge_cells(dest_rect))
+                    .unwrap_or_default();
+                (was_merged, existing)
+            } else {
+                (false, vec![])
             };
 
             if let Ok((clipboard, mut ops)) = self.cut_to_clipboard_operations(&selection, false) {
@@ -44,6 +62,70 @@ impl GridController {
                     }
                     Err(_) => return,
                 }
+
+                if was_merged_move {
+                    let sheet_id = source.sheet_id;
+                    transaction.merge_cells_updates.insert(sheet_id);
+
+                    let mut unmerge_source = MergeCellsUpdate::default();
+                    unmerge_source.set_rect(
+                        source_rect.min.x,
+                        source_rect.min.y,
+                        Some(source_rect.max.x),
+                        Some(source_rect.max.y),
+                        Some(ClearOption::Clear),
+                    );
+                    ops.push(Operation::SetMergeCells {
+                        sheet_id,
+                        merge_cells_updates: unmerge_source,
+                    });
+
+                    if existing_merges_at_dest.is_empty() {
+                        let mut merge_dest = MergeCellsUpdate::default();
+                        merge_dest.set_rect(
+                            dest_rect.min.x,
+                            dest_rect.min.y,
+                            Some(dest_rect.max.x),
+                            Some(dest_rect.max.y),
+                            Some(ClearOption::Some(dest_rect.min)),
+                        );
+                        ops.push(Operation::SetMergeCells {
+                            sheet_id,
+                            merge_cells_updates: merge_dest,
+                        });
+                    } else {
+                        let combined = existing_merges_at_dest
+                            .iter()
+                            .fold(dest_rect, |acc, r| acc.union(r));
+                        for existing_rect in &existing_merges_at_dest {
+                            let mut unmerge = MergeCellsUpdate::default();
+                            unmerge.set_rect(
+                                existing_rect.min.x,
+                                existing_rect.min.y,
+                                Some(existing_rect.max.x),
+                                Some(existing_rect.max.y),
+                                Some(ClearOption::Clear),
+                            );
+                            ops.push(Operation::SetMergeCells {
+                                sheet_id,
+                                merge_cells_updates: unmerge,
+                            });
+                        }
+                        let mut merge_combined = MergeCellsUpdate::default();
+                        merge_combined.set_rect(
+                            combined.min.x,
+                            combined.min.y,
+                            Some(combined.max.x),
+                            Some(combined.max.y),
+                            Some(ClearOption::Some(combined.min)),
+                        );
+                        ops.push(Operation::SetMergeCells {
+                            sheet_id,
+                            merge_cells_updates: merge_combined,
+                        });
+                    }
+                }
+
                 transaction.operations.extend(ops);
             }
         }
