@@ -204,112 +204,114 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   const hasConnections = connections.length > 1;
 
   return (
-    <div className="absolute -left-1 -right-1 top-[40%] flex -translate-y-1/2 flex-col items-center gap-10 px-4">
-      <div className="flex w-full max-w-lg flex-col items-center gap-2">
-        {/* Import Data Section */}
-        <div className="flex w-full flex-col items-center gap-3">
-          <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-7 py-10">
-            <div className="mb-3 flex items-center justify-center gap-1">
-              <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
-              <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+    <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-3">
+      <div className="flex w-full flex-col items-center gap-5">
+        <div className="flex w-full max-w-lg flex-col items-center gap-2">
+          {/* Import Data Section */}
+          <div className="flex w-full flex-col items-center gap-3">
+            <div className="flex w-full flex-col items-center rounded-lg border-2 border-dashed border-border px-7 py-10">
+              <div className="mb-3 flex items-center justify-center gap-1">
+                <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
+                <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
+              </div>
+              <p className="text-sm">Excel, CSV, PDF, PQT, & images</p>
+              <p className="text-xs text-muted-foreground">
+                Drag and drop, or{' '}
+                <button
+                  onClick={handleChooseFile}
+                  className="h-auto p-0 text-xs font-normal text-muted-foreground underline hover:text-foreground"
+                >
+                  choose a file…
+                </button>
+              </p>
             </div>
-            <p className="text-sm">Excel, CSV, PDF, PQT, & images</p>
-            <p className="text-xs text-muted-foreground">
-              Drag and drop, or{' '}
-              <button
-                onClick={handleChooseFile}
-                className="h-auto p-0 text-xs font-normal text-muted-foreground underline hover:text-foreground"
-              >
-                choose a file…
-              </button>
-            </p>
           </div>
+
+          {!hasConnections && (
+            <div className="flex w-full flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm">
+              <div className="flex items-center gap-3 pt-3">
+                <LanguageIcon language="POSTGRES" className="h-7 w-7" />
+                <LanguageIcon language="MIXPANEL" className="h-7 w-7" />
+                <LanguageIcon language="SNOWFLAKE" className="h-7 w-7" />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="font-normal">
+                    Connect your data…
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right">
+                  <AddConnectionMenuItems onAddConnection={() => {}} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
 
-        {!hasConnections && (
-          <div className="flex w-full flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm">
-            <div className="flex items-center gap-3 pt-3">
-              <LanguageIcon language="POSTGRES" className="h-7 w-7" />
-              <LanguageIcon language="MIXPANEL" className="h-7 w-7" />
-              <LanguageIcon language="SNOWFLAKE" className="h-7 w-7" />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="font-normal">
-                  Connect your data…
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right">
-                <AddConnectionMenuItems onAddConnection={() => {}} />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        {/* Suggestions Section */}
+        {sheetHasData && categorizedSuggestions ? (
+          <CategorizedSuggestionsSection
+            suggestions={categorizedSuggestions}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            loading={loading}
+            submit={submit}
+          />
+        ) : (
+          <EmptyChatSection header="Suggestions" isLoading={sheetHasData && loading}>
+            {defaultPromptSuggestions.map(({ prompt }, index) => (
+              <SuggestionButton
+                key={`${index}-${prompt}`}
+                icon={<PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />}
+                text={prompt}
+                onClick={() => {
+                  trackEvent('[AIAnalyst].submitExamplePrompt');
+                  submit(prompt);
+                }}
+              />
+            ))}
+          </EmptyChatSection>
+        )}
+
+        {hasConnections && (
+          <EmptyChatSection
+            header="Connections"
+            headerRight={
+              shouldPaginate ? (
+                <div className="flex items-center text-xs text-muted-foreground">
+                  {paginationLabel}
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    className="ml-1"
+                    onClick={handlePrevPage}
+                    disabled={connectionPage === 0}
+                  >
+                    <ChevronLeftIcon />
+                  </Button>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={handleNextPage}
+                    disabled={connectionPage === totalPages - 1}
+                  >
+                    <ChevronRightIcon />
+                  </Button>
+                </div>
+              ) : undefined
+            }
+          >
+            {visibleConnections.map((connection) => (
+              <SuggestionButton
+                key={connection.uuid}
+                icon={<LanguageIcon language={connection.type} />}
+                text={connection.name}
+                onClick={() => handleSelectConnection(connection.uuid, connection.name)}
+              />
+            ))}
+          </EmptyChatSection>
         )}
       </div>
-
-      {/* Suggestions Section */}
-      {sheetHasData && categorizedSuggestions ? (
-        <CategorizedSuggestionsSection
-          suggestions={categorizedSuggestions}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-          loading={loading}
-          submit={submit}
-        />
-      ) : (
-        <EmptyChatSection header="Suggestions" isLoading={sheetHasData && loading}>
-          {defaultPromptSuggestions.map(({ prompt }, index) => (
-            <SuggestionButton
-              key={`${index}-${prompt}`}
-              icon={<PromptIcon className="flex-shrink-0 text-muted-foreground opacity-50" />}
-              text={prompt}
-              onClick={() => {
-                trackEvent('[AIAnalyst].submitExamplePrompt');
-                submit(prompt);
-              }}
-            />
-          ))}
-        </EmptyChatSection>
-      )}
-
-      {hasConnections && (
-        <EmptyChatSection
-          header="Connections"
-          headerRight={
-            shouldPaginate ? (
-              <div className="flex items-center text-xs text-muted-foreground">
-                {paginationLabel}
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  className="ml-1"
-                  onClick={handlePrevPage}
-                  disabled={connectionPage === 0}
-                >
-                  <ChevronLeftIcon />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={handleNextPage}
-                  disabled={connectionPage === totalPages - 1}
-                >
-                  <ChevronRightIcon />
-                </Button>
-              </div>
-            ) : undefined
-          }
-        >
-          {visibleConnections.map((connection) => (
-            <SuggestionButton
-              key={connection.uuid}
-              icon={<LanguageIcon language={connection.type} />}
-              text={connection.name}
-              onClick={() => handleSelectConnection(connection.uuid, connection.name)}
-            />
-          ))}
-        </EmptyChatSection>
-      )}
     </div>
   );
 });

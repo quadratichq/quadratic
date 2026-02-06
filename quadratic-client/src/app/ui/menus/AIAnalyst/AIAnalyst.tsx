@@ -139,8 +139,12 @@ export const AIAnalyst = memo(() => {
 
         <div
           className={cn(
-            'h-full w-full',
-            showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
+            'grid h-full w-full',
+            showChatHistory
+              ? 'grid-rows-[auto_1fr]'
+              : messagesCount === 0
+                ? 'grid-rows-[auto_auto_1fr]'
+                : 'grid-rows-[auto_1fr_auto]'
           )}
         >
           <AIAnalystHeader textareaRef={textareaRef} />
@@ -153,12 +157,15 @@ export const AIAnalyst = memo(() => {
 
               <div
                 className={cn(
-                  'grid pt-0.5',
-                  messagesCount === 0 ? 'grid-rows-[auto_1fr_auto_auto]' : 'relative grid-rows-[auto_auto]'
+                  'pt-0.5',
+                  messagesCount === 0 ? 'flex min-h-0 flex-col' : 'relative grid grid-rows-[auto_auto]'
                 )}
               >
                 <AIPendingChanges />
-                <div className="px-2 pb-2" data-walkthrough="ai-chat-input">
+                <div
+                  className={cn('px-2 pb-2', messagesCount === 0 && 'flex min-h-0 flex-1 flex-col')}
+                  data-walkthrough="ai-chat-input"
+                >
                   <AIAnalystUserMessageForm
                     ref={textareaRef}
                     autoFocusRef={autoFocusRef}
