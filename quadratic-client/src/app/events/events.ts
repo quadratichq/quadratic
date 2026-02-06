@@ -191,6 +191,7 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystSelectConnection: (connectionUuid: string, connectionType: string, connectionName: string) => void;
 
   mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
 
