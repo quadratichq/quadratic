@@ -124,7 +124,11 @@ extern "C" {
 
     pub fn jsTimestamp() -> u64;
 
-    pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8> /* MergeCells */);
+    pub fn jsMergeCells(
+        sheet_id: String,
+        merge_cells: Vec<u8>,      /* MergeCells */
+        dirty_hashes: Vec<u8>,     /* JSON Vec<Pos> of affected hash positions */
+    );
 }
 
 #[cfg(test)]
@@ -588,6 +592,9 @@ pub fn jsTimestamp() -> u64 {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8> /* MergeCells */) {
-    js_call("jsMergeCells", format!("{sheet_id},{merge_cells:?}"));
+pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8>, dirty_hashes: Vec<u8>) {
+    js_call(
+        "jsMergeCells",
+        format!("{sheet_id},{merge_cells:?},{dirty_hashes:?}"),
+    );
 }

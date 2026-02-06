@@ -98,9 +98,17 @@ export class CellsLabels {
     }
   }
 
-  updateMergeCells(mergeCells: JsMergeCells) {
+  updateMergeCells(mergeCells: JsMergeCells, dirtyHashes: { x: number; y: number }[]) {
     this.mergeCells.free();
     this.mergeCells = mergeCells;
+
+    for (const pos of dirtyHashes) {
+      const key = this.getHashKey(pos.x, pos.y);
+      const hash = this.cellsTextHash.get(key);
+      if (hash && hash.loaded && !hash.dirty) {
+        hash.dirty = true;
+      }
+    }
   }
 
   getCellOffsets(x: number, y: number) {

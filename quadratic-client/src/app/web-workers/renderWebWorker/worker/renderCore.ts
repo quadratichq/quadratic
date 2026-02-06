@@ -86,7 +86,11 @@ class RenderCore {
         break;
 
       case 'coreRenderMergeCells':
-        renderText.updateMergeCells(e.data.sheetId, JsMergeCells.createFromBytes(e.data.mergeCells));
+        renderText.updateMergeCells(
+          e.data.sheetId,
+          JsMergeCells.createFromBytes(e.data.mergeCells),
+          e.data.dirtyHashes
+        );
         break;
 
       default:
