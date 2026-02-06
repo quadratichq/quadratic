@@ -364,10 +364,12 @@ mod tests {
         let dest = pos![sheet_id!D1];
         let ops = gc.move_cells_operations(source, dest, false, false);
 
-        let mut transaction = PendingTransaction::default();
-        transaction.transaction_name = TransactionName::MoveCells;
-        transaction.source = TransactionSource::User;
-        transaction.operations = ops.into_iter().collect::<VecDeque<_>>();
+        let mut transaction = PendingTransaction {
+            transaction_name: TransactionName::MoveCells,
+            source: TransactionSource::User,
+            operations: ops.into_iter().collect::<VecDeque<_>>(),
+            ..Default::default()
+        };
 
         gc.start_transaction(&mut transaction);
 

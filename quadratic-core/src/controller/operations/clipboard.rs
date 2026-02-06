@@ -1067,11 +1067,11 @@ impl GridController {
         let (max_x, max_y, cell_value_width, cell_value_height) =
             Self::get_max_paste_area(insert_at, end_pos, clipboard.w, clipboard.h);
 
-        let paste_rect = Rect::from_numbers(
+        let _paste_rect = Rect::from_numbers(
             insert_at.x,
             insert_at.y,
-            cell_value_width as i64,
-            cell_value_height as i64,
+            cell_value_width,
+            cell_value_height,
         );
 
         // The actual area that will receive pasted data includes all tiled
@@ -1269,34 +1269,34 @@ impl GridController {
             // Add operations for values redirected to anchor cells outside paste area
             ops.extend(merge_cell_ops);
 
-            if !matches!(special, PasteSpecial::Values) {
-                if let Some(merge_rects) = &clipboard.merge_rects {
-                    for tile_start_x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
-                        for tile_start_y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
-                            let dx = tile_start_x - clipboard.origin.x;
-                            let dy = tile_start_y - clipboard.origin.y;
-                            for rect in merge_rects {
-                                let dest_min = Pos {
-                                    x: rect.min.x + dx,
-                                    y: rect.min.y + dy,
-                                };
-                                let dest_max = Pos {
-                                    x: rect.max.x + dx,
-                                    y: rect.max.y + dy,
-                                };
-                                let mut merge_update = MergeCellsUpdate::default();
-                                merge_update.set_rect(
-                                    dest_min.x,
-                                    dest_min.y,
-                                    Some(dest_max.x),
-                                    Some(dest_max.y),
-                                    Some(ClearOption::Some(dest_min)),
-                                );
-                                ops.push(Operation::SetMergeCells {
-                                    sheet_id: selection.sheet_id,
-                                    merge_cells_updates: merge_update,
-                                });
-                            }
+            if !matches!(special, PasteSpecial::Values)
+                && let Some(merge_rects) = &clipboard.merge_rects
+            {
+                for tile_start_x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
+                    for tile_start_y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
+                        let dx = tile_start_x - clipboard.origin.x;
+                        let dy = tile_start_y - clipboard.origin.y;
+                        for rect in merge_rects {
+                            let dest_min = Pos {
+                                x: rect.min.x + dx,
+                                y: rect.min.y + dy,
+                            };
+                            let dest_max = Pos {
+                                x: rect.max.x + dx,
+                                y: rect.max.y + dy,
+                            };
+                            let mut merge_update = MergeCellsUpdate::default();
+                            merge_update.set_rect(
+                                dest_min.x,
+                                dest_min.y,
+                                Some(dest_max.x),
+                                Some(dest_max.y),
+                                Some(ClearOption::Some(dest_min)),
+                            );
+                            ops.push(Operation::SetMergeCells {
+                                sheet_id: selection.sheet_id,
+                                merge_cells_updates: merge_update,
+                            });
                         }
                     }
                 }
