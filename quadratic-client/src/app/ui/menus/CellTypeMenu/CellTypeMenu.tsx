@@ -1,3 +1,4 @@
+import { aiAnalystActiveSchemaConnectionUuidAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
@@ -5,12 +6,14 @@ import {
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { apiClient } from '@/shared/api/apiClient';
-import { SettingsIcon } from '@/shared/components/Icons';
+import { AddIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -24,7 +27,11 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  isSyncedConnectionType,
+  type ConnectionList,
+  type ConnectionType,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -62,6 +69,8 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 export const CellTypeMenu = memo(() => {
   const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { connections } = useConnectionsFetcher();
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
@@ -107,15 +116,51 @@ export const CellTypeMenu = memo(() => {
     [setCodeEditorState, setShowCellTypeMenu]
   );
 
+  const addConnection = useCallback(() => {
+    setShowCellTypeMenu(false);
+    setShowConnectionsMenu('new');
+  }, [setShowCellTypeMenu, setShowConnectionsMenu]);
+
   const manageConnections = useCallback(() => {
     setShowCellTypeMenu(false);
     setShowConnectionsMenu(true);
   }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
+  const selectConnection = useCallback(
+    (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
+      trackEvent('[CellTypeMenu].selectConnection', { type: connectionType });
+
+      if (includeLanguages) {
+        openEditor({ Connection: { kind: connectionType, id: connectionUuid } });
+        return;
+      }
+
+      // Close the menu
+      setShowCellTypeMenu(false);
+
+      // Open the AI analyst panel with schema viewer
+      setShowAIAnalyst(true);
+      setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
+
+      // Emit event to set the connection context in AI chat
+      events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
+
+      // Focus the AI analyst input
+      setTimeout(focusAIAnalyst, 100);
+    },
+    [includeLanguages, openEditor, setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
+  );
+
   return (
     <CommandDialog
       dialogProps={{ open: true, onOpenChange: close }}
-      commandProps={{}}
+      commandProps={{
+        // Custom filter to maintain DOM order when search is empty
+        filter: (value, search) => {
+          if (!search) return 1; // Same score for all → DOM order preserved
+          return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+        },
+      }}
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
@@ -149,12 +194,17 @@ export const CellTypeMenu = memo(() => {
                 connection={connection}
                 teamUuid={teamUuid}
                 index={i}
-                onSelect={() => openEditor({ Connection: { kind: connection.type, id: connection.uuid } })}
+                onSelect={() => selectConnection(connection.uuid, connection.type, connection.name)}
               />
             ))}
 
             <CommandItemWrapper
-              name="Add or manage…"
+              name="Add connection"
+              icon={<AddIcon className="text-muted-foreground opacity-80" />}
+              onSelect={addConnection}
+            />
+            <CommandItemWrapper
+              name="Manage connections"
               icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />

@@ -77,9 +77,14 @@ class InlineEditorSpans {
           endOffset: offsets.end,
           selectedText: data.selectedText,
         };
+
+        // Check if the selection precisely matches a single hyperlink span
+        const existingUrl = this.getExactHyperlinkMatch(offsets.start, offsets.end);
+
         // Emit event for UI to show hyperlink input
         events.emit('showInlineHyperlinkInput', {
           selectedText: data.selectedText,
+          existingUrl,
         });
       }
     } else {
@@ -98,6 +103,16 @@ class InlineEditorSpans {
       }
     }
   };
+
+  /**
+   * Check if the given range precisely matches a single hyperlink span.
+   * Returns the URL if it's an exact match, undefined otherwise.
+   */
+  private getExactHyperlinkMatch(startOffset: number, endOffset: number): string | undefined {
+    // Find a hyperlink span that exactly matches the selection range
+    const exactMatch = this.spans.find((span) => span.link && span.start === startOffset && span.end === endOffset);
+    return exactMatch?.link;
+  }
 
   /**
    * Complete the pending hyperlink insertion with the given URL.
