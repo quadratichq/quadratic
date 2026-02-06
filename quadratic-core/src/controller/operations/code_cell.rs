@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, RefAdjust, SheetPos, Value,
+    CellValue, Pos, RefAdjust, SheetPos, Value,
     a1::A1Selection,
     controller::GridController,
     formulas::convert_rc_to_a1,
@@ -417,11 +417,24 @@ impl GridController {
                 .iter_rects_unbounded(&self.a1_context)
             {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
+                    // Check data_tables for code runs
                     for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
                         let parent_pos = pos.to_sheet_pos(sheet_id);
                         if !seen.contains(&parent_pos) {
                             // Push parent nodes to process before current node
                             stack.push((parent_pos, false));
+                        }
+                    }
+                    // Also check for CellValue::Code cells in the rect
+                    for y in rect.y_range() {
+                        for x in rect.x_range() {
+                            let pos = Pos { x, y };
+                            if matches!(sheet.cell_value_ref(pos), Some(CellValue::Code(_))) {
+                                let parent_pos = pos.to_sheet_pos(sheet_id);
+                                if !seen.contains(&parent_pos) {
+                                    stack.push((parent_pos, false));
+                                }
+                            }
                         }
                     }
                 }
