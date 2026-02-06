@@ -129,6 +129,148 @@ impl MergeCells {
             .nondefault_rects_all_combined()
             .map(|(rect, _)| rect)
     }
+
+    /// Adjusts merge cells when a column is inserted.
+    /// - Merges entirely before the column: no change
+    /// - Merges entirely at/after the column: shift right by 1
+    /// - Merges spanning the column: expand by 1
+    pub fn insert_column(&mut self, column: i64) {
+        // Collect all merge rects before modification
+        let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
+
+        if merge_rects.is_empty() {
+            return;
+        }
+
+        // Clear all existing merges
+        for rect in &merge_rects {
+            self.unmerge_cells(*rect);
+        }
+
+        // Re-create merges with adjusted positions
+        for rect in merge_rects {
+            let new_rect = if rect.max.x < column {
+                // Merge is entirely before the insertion point - no change
+                rect
+            } else if rect.min.x >= column {
+                // Merge is entirely at/after the insertion point - shift right
+                Rect::new(rect.min.x + 1, rect.min.y, rect.max.x + 1, rect.max.y)
+            } else {
+                // Insertion is inside the merge - expand
+                Rect::new(rect.min.x, rect.min.y, rect.max.x + 1, rect.max.y)
+            };
+            self.merge_cells(new_rect);
+        }
+    }
+
+    /// Adjusts merge cells when a column is removed.
+    /// - Merges entirely before the column: no change
+    /// - Merges entirely after the column: shift left by 1
+    /// - Merges spanning the column: shrink by 1 (or delete if becomes empty)
+    pub fn remove_column(&mut self, column: i64) {
+        // Collect all merge rects before modification
+        let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
+
+        if merge_rects.is_empty() {
+            return;
+        }
+
+        // Clear all existing merges
+        for rect in &merge_rects {
+            self.unmerge_cells(*rect);
+        }
+
+        // Re-create merges with adjusted positions
+        for rect in merge_rects {
+            if rect.max.x < column {
+                // Merge is entirely before the deletion point - no change
+                self.merge_cells(rect);
+            } else if rect.min.x > column {
+                // Merge is entirely after the deletion point - shift left
+                let new_rect = Rect::new(rect.min.x - 1, rect.min.y, rect.max.x - 1, rect.max.y);
+                self.merge_cells(new_rect);
+            } else {
+                // Deletion is inside the merge - shrink
+                // Only re-create if the merge still has width > 0
+                if rect.max.x > rect.min.x {
+                    let new_rect = Rect::new(rect.min.x, rect.min.y, rect.max.x - 1, rect.max.y);
+                    self.merge_cells(new_rect);
+                }
+                // If min.x == max.x, the merge is deleted (single column merge removed)
+            }
+        }
+    }
+
+    /// Adjusts merge cells when a row is inserted.
+    /// - Merges entirely before the row: no change
+    /// - Merges entirely at/after the row: shift down by 1
+    /// - Merges spanning the row: expand by 1
+    pub fn insert_row(&mut self, row: i64) {
+        // Collect all merge rects before modification
+        let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
+
+        if merge_rects.is_empty() {
+            return;
+        }
+
+        // Clear all existing merges
+        for rect in &merge_rects {
+            self.unmerge_cells(*rect);
+        }
+
+        // Re-create merges with adjusted positions
+        for rect in merge_rects {
+            let new_rect = if rect.max.y < row {
+                // Merge is entirely before the insertion point - no change
+                rect
+            } else if rect.min.y >= row {
+                // Merge is entirely at/after the insertion point - shift down
+                Rect::new(rect.min.x, rect.min.y + 1, rect.max.x, rect.max.y + 1)
+            } else {
+                // Insertion is inside the merge - expand
+                Rect::new(rect.min.x, rect.min.y, rect.max.x, rect.max.y + 1)
+            };
+            self.merge_cells(new_rect);
+        }
+    }
+
+    /// Adjusts merge cells when a row is removed.
+    /// - Merges entirely before the row: no change
+    /// - Merges entirely after the row: shift up by 1
+    /// - Merges spanning the row: shrink by 1 (or delete if becomes empty)
+    pub fn remove_row(&mut self, row: i64) {
+        // Collect all merge rects before modification
+        let merge_rects: Vec<Rect> = self.iter_merge_cells().collect();
+
+        if merge_rects.is_empty() {
+            return;
+        }
+
+        // Clear all existing merges
+        for rect in &merge_rects {
+            self.unmerge_cells(*rect);
+        }
+
+        // Re-create merges with adjusted positions
+        for rect in merge_rects {
+            if rect.max.y < row {
+                // Merge is entirely before the deletion point - no change
+                self.merge_cells(rect);
+            } else if rect.min.y > row {
+                // Merge is entirely after the deletion point - shift up
+                let new_rect = Rect::new(rect.min.x, rect.min.y - 1, rect.max.x, rect.max.y - 1);
+                self.merge_cells(new_rect);
+            } else {
+                // Deletion is inside the merge - shrink
+                // Only re-create if the merge still has height > 0
+                if rect.max.y > rect.min.y {
+                    let new_rect = Rect::new(rect.min.x, rect.min.y, rect.max.x, rect.max.y - 1);
+                    self.merge_cells(new_rect);
+                }
+                // If min.y == max.y, the merge is deleted (single row merge removed)
+            }
+        }
+    }
 }
 
 impl Sheet {
@@ -338,5 +480,289 @@ mod tests {
         // Should return the full merged cell rect
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], Rect::test_a1("C3:E5"));
+    }
+
+    #[test]
+    fn test_insert_column_before_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Insert column at B (column 2) - before the merge
+        merge_cells.insert_column(2);
+
+        // Merge should shift right: C2:E4 -> D2:F4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("D2:F4"));
+    }
+
+    #[test]
+    fn test_insert_column_at_merge_start() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Insert column at C (column 3) - at the merge start
+        merge_cells.insert_column(3);
+
+        // Merge should shift right: C2:E4 -> D2:F4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("D2:F4"));
+    }
+
+    #[test]
+    fn test_insert_column_inside_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Insert column at D (column 4) - inside the merge
+        merge_cells.insert_column(4);
+
+        // Merge should expand: C2:E4 -> C2:F4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:F4"));
+    }
+
+    #[test]
+    fn test_insert_column_after_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Insert column at G (column 7) - after the merge
+        merge_cells.insert_column(7);
+
+        // Merge should be unchanged
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:E4"));
+    }
+
+    #[test]
+    fn test_remove_column_before_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Remove column A (column 1) - before the merge
+        merge_cells.remove_column(1);
+
+        // Merge should shift left: C2:E4 -> B2:D4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B2:D4"));
+    }
+
+    #[test]
+    fn test_remove_column_at_merge_start() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Remove column C (column 3) - at the merge start
+        merge_cells.remove_column(3);
+
+        // Merge should shrink: C2:E4 -> C2:D4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:D4"));
+    }
+
+    #[test]
+    fn test_remove_column_inside_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Remove column D (column 4) - inside the merge
+        merge_cells.remove_column(4);
+
+        // Merge should shrink: C2:E4 -> C2:D4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:D4"));
+    }
+
+    #[test]
+    fn test_remove_column_single_column_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:C4")); // single column merge
+
+        // Remove column C (column 3) - the entire merge
+        merge_cells.remove_column(3);
+
+        // Merge should be deleted
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_column_after_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4")); // columns 3-5
+
+        // Remove column G (column 7) - after the merge
+        merge_cells.remove_column(7);
+
+        // Merge should be unchanged
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:E4"));
+    }
+
+    #[test]
+    fn test_insert_row_before_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Insert row at row 2 - before the merge
+        merge_cells.insert_row(2);
+
+        // Merge should shift down: B3:D5 -> B4:D6
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B4:D6"));
+    }
+
+    #[test]
+    fn test_insert_row_at_merge_start() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Insert row at row 3 - at the merge start
+        merge_cells.insert_row(3);
+
+        // Merge should shift down: B3:D5 -> B4:D6
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B4:D6"));
+    }
+
+    #[test]
+    fn test_insert_row_inside_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Insert row at row 4 - inside the merge
+        merge_cells.insert_row(4);
+
+        // Merge should expand: B3:D5 -> B3:D6
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B3:D6"));
+    }
+
+    #[test]
+    fn test_insert_row_after_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Insert row at row 7 - after the merge
+        merge_cells.insert_row(7);
+
+        // Merge should be unchanged
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B3:D5"));
+    }
+
+    #[test]
+    fn test_remove_row_before_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Remove row 1 - before the merge
+        merge_cells.remove_row(1);
+
+        // Merge should shift up: B3:D5 -> B2:D4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B2:D4"));
+    }
+
+    #[test]
+    fn test_remove_row_at_merge_start() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Remove row 3 - at the merge start
+        merge_cells.remove_row(3);
+
+        // Merge should shrink: B3:D5 -> B3:D4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B3:D4"));
+    }
+
+    #[test]
+    fn test_remove_row_inside_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Remove row 4 - inside the merge
+        merge_cells.remove_row(4);
+
+        // Merge should shrink: B3:D5 -> B3:D4
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B3:D4"));
+    }
+
+    #[test]
+    fn test_remove_row_single_row_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D3")); // single row merge
+
+        // Remove row 3 - the entire merge
+        merge_cells.remove_row(3);
+
+        // Merge should be deleted
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_row_after_merge() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5")); // rows 3-5
+
+        // Remove row 7 - after the merge
+        merge_cells.remove_row(7);
+
+        // Merge should be unchanged
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B3:D5"));
+    }
+
+    #[test]
+    fn test_insert_column_multiple_merges() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:C3")); // before insertion point
+        merge_cells.merge_cells(Rect::test_a1("E2:G3")); // spans insertion point
+        merge_cells.merge_cells(Rect::test_a1("I2:J3")); // after insertion point
+
+        // Insert column at F (column 6) - inside E2:G3
+        merge_cells.insert_column(6);
+
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 3);
+        assert!(rects.contains(&Rect::test_a1("B2:C3"))); // unchanged
+        assert!(rects.contains(&Rect::test_a1("E2:H3"))); // expanded
+        assert!(rects.contains(&Rect::test_a1("J2:K3"))); // shifted
+    }
+
+    #[test]
+    fn test_remove_row_multiple_merges() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:C3")); // before deletion point
+        merge_cells.merge_cells(Rect::test_a1("B5:C7")); // spans deletion point
+        merge_cells.merge_cells(Rect::test_a1("B9:C10")); // after deletion point
+
+        // Remove row 6 - inside B5:C7
+        merge_cells.remove_row(6);
+
+        let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 3);
+        assert!(rects.contains(&Rect::test_a1("B2:C3"))); // unchanged
+        assert!(rects.contains(&Rect::test_a1("B5:C6"))); // shrunk
+        assert!(rects.contains(&Rect::test_a1("B8:C9"))); // shifted
     }
 }
