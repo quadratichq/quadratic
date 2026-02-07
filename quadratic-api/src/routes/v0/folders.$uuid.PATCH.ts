@@ -137,14 +137,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     });
 
     // Cascade ownership change to all descendant folders and their files
-    if (newOwnerUserId !== undefined && descendantFolderIds.length > 0) {
-      await tx.folder.updateMany({
-        where: { id: { in: descendantFolderIds } },
-        data: { ownerUserId: newOwnerUserId },
-      });
-    }
-
-      // Update all files in this folder and its descendants
+    if (newOwnerUserId !== undefined) {
+      if (descendantFolderIds.length > 0) {
+        await tx.folder.updateMany({
+          where: { id: { in: descendantFolderIds } },
+          data: { ownerUserId: newOwnerUserId },
+        });
+      }
+      // Update all files in this folder and its descendants to match the new ownership
       const allFolderIds = [folder.id, ...descendantFolderIds];
       await tx.file.updateMany({
         where: { folderId: { in: allFolderIds }, deleted: false },

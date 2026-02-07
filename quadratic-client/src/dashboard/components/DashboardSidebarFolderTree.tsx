@@ -1,7 +1,9 @@
 import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { ChevronRightIcon, FolderIcon, FolderOpenIcon, FolderSpecialIcon } from '@/shared/components/Icons';
+import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useParams } from 'react-router';
@@ -82,12 +84,14 @@ export function DashboardSidebarFolderTree({
   filter,
   userId,
   forceShow,
+  canEditTeam,
 }: {
   teamUuid: string;
   filter: 'team' | 'private';
   userId: number;
   /** When true, the tree is shown even if the current view isn't relevant (e.g. during drag-hover reveal). */
   forceShow?: boolean;
+  canEditTeam?: boolean;
 }) {
   const {
     activeTeam: { folders },
@@ -137,6 +141,7 @@ export function DashboardSidebarFolderTree({
           depth={0}
           autoExpandedUuids={autoExpandedUuids}
           targetOwnerUserId={targetOwnerUserId}
+          canEditTeam={canEditTeam}
         />
       ))}
     </div>
@@ -149,12 +154,14 @@ function FolderTreeItem({
   depth,
   autoExpandedUuids,
   targetOwnerUserId,
+  canEditTeam,
 }: {
   node: FolderTreeNode;
   teamUuid: string;
   depth: number;
   autoExpandedUuids: Set<string>;
   targetOwnerUserId: number | null;
+  canEditTeam?: boolean;
 }) {
   const [isManuallyExpanded, setIsManuallyExpanded] = useState<boolean | null>(null);
   const { isOver: isDropTarget, onDragOver, onDragLeave, onDrop } = useDropTarget(node.uuid, targetOwnerUserId);
@@ -195,16 +202,32 @@ function FolderTreeItem({
     };
   }, [isDropTarget, hasChildren, isExpanded]);
 
+  // Indentation is icon-based. Chevron sits in the gap between parent icon and this row's icon (not to the left of parent).
+  // Root (depth 0) uses same alignment as subfolders: chevron starts where the nav link icon is (p-2 = 8px).
+  const CHEVRON_PX = 24;
+  const ROOT_OFFSET_PX = 8;
+  const iconLeftPx = ROOT_OFFSET_PX + (depth + 1) * CHEVRON_PX;
+  const chevronLeftPx = ROOT_OFFSET_PX + depth * CHEVRON_PX;
+
+  const handleCreateFile = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href = ROUTES.CREATE_FILE(teamUuid, {
+      private: node.ownerUserId !== null,
+      folderUuid: node.uuid,
+    });
+  };
+
   return (
-    <div>
+    <div className="flex flex-col gap-0.5">
       <div
         className={cn(
-          'flex items-center gap-0.5 rounded px-1.5 py-1 text-sm no-underline transition-colors',
+          'group relative flex items-center gap-0.5 rounded px-1.5 py-1 text-sm no-underline transition-colors',
           'bg-accent hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100',
           isActive && 'brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
           isDropTarget && 'border border-primary bg-primary/10'
         )}
-        style={{ paddingLeft: `${depth * 8 + 14}px` }}
+        style={{ paddingLeft: `${iconLeftPx}px` }}
         {...dragProps}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -212,9 +235,10 @@ function FolderTreeItem({
       >
         <button
           className={cn(
-            'flex shrink-0 items-center justify-center rounded p-0.5 hover:bg-accent',
+            'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
             !hasChildren && 'invisible'
           )}
+          style={{ left: `${chevronLeftPx}px` }}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -224,15 +248,32 @@ function FolderTreeItem({
           <ChevronRightIcon className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
         </button>
         <NavLink to={to} className="flex min-w-0 flex-grow items-center gap-1.5 no-underline">
-          {showChildren ? (
-            <FolderOpenIcon className="shrink-0 text-muted-foreground" />
-          ) : node.ownerUserId !== null ? (
+          {node.ownerUserId !== null ? (
             <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
           ) : (
             <FolderIcon className="shrink-0 text-muted-foreground" />
           )}
           <span className="truncate">{node.name}</span>
         </NavLink>
+        {canEditTeam && (
+          <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover:opacity-100">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="!bg-transparent text-muted-foreground hover:opacity-100"
+                  onClick={handleCreateFile}
+                >
+                  <AddIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipPortal>
+                <TooltipContent>New file</TooltipContent>
+              </TooltipPortal>
+            </Tooltip>
+          </div>
+        )}
       </div>
       {showChildren &&
         node.children.map((child) => (
@@ -243,6 +284,7 @@ function FolderTreeItem({
             depth={depth + 1}
             autoExpandedUuids={autoExpandedUuids}
             targetOwnerUserId={targetOwnerUserId}
+            canEditTeam={canEditTeam}
           />
         ))}
     </div>

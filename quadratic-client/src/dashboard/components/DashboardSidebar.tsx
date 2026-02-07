@@ -125,7 +125,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       </div>
       <div className={`flex flex-col px-3`}>
         <div className="grid gap-0.5">
-          <div className="relative">
+          <div className="group relative">
             <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} data-testid="dashboard-sidebar-team-files-link">
               <HomeIcon className={classNameIcons} />
               Home
@@ -136,37 +136,57 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               )}
             </SidebarNavLink>
           </div>
-          <SidebarOwnershipDropZone targetOwnerUserId={null} onDragReveal={() => setDragRevealTeam(true)}>
-            <SidebarNavLink to={ROUTES.TEAM_DRIVE_TEAM(activeTeamUuid)}>
-              <FolderIcon className={classNameIcons} />
-              Team Files
-            </SidebarNavLink>
+          <SidebarOwnershipDropZone
+            className="mt-3"
+            targetOwnerUserId={null}
+            onDragReveal={() => setDragRevealTeam(true)}
+          >
+            <div className="group relative">
+              <SidebarNavLink to={ROUTES.TEAM_DRIVE_TEAM(activeTeamUuid)}>
+                <FolderIcon className={classNameIcons} />
+                Team Files
+                {canEditTeam && (
+                  <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
+                    New file
+                  </SidebarNavLinkCreateButton>
+                )}
+              </SidebarNavLink>
+            </div>
           </SidebarOwnershipDropZone>
           <DashboardSidebarFolderTree
             teamUuid={activeTeamUuid}
             filter="team"
             userId={userId}
             forceShow={dragRevealTeam}
+            canEditTeam={canEditTeam}
           />
           <SidebarOwnershipDropZone targetOwnerUserId={userId} onDragReveal={() => setDragRevealPrivate(true)}>
-            <SidebarNavLink to={ROUTES.TEAM_DRIVE_PRIVATE(activeTeamUuid)}>
-              <FolderSpecialIcon className={classNameIcons} />
-              Private Files
-            </SidebarNavLink>
+            <div className="group relative">
+              <SidebarNavLink to={ROUTES.TEAM_DRIVE_PRIVATE(activeTeamUuid)}>
+                <FolderSpecialIcon className={classNameIcons} />
+                Private Files
+                {canEditTeam && (
+                  <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
+                    New file
+                  </SidebarNavLinkCreateButton>
+                )}
+              </SidebarNavLink>
+            </div>
           </SidebarOwnershipDropZone>
           <DashboardSidebarFolderTree
             teamUuid={activeTeamUuid}
             filter="private"
             userId={userId}
             forceShow={dragRevealPrivate}
+            canEditTeam={canEditTeam}
           />
           {canEditTeam && (
-            <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
+            <SidebarNavLink className="mt-3" to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
               Connections
             </SidebarNavLink>
           )}
-          <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
+          <SidebarNavLink className="mt-3" to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
             <GroupIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
@@ -289,10 +309,12 @@ function SidebarOwnershipDropZone({
   targetOwnerUserId,
   onDragReveal,
   children,
+  className,
 }: {
   targetOwnerUserId: number | null;
   onDragReveal?: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   const { isOver, onDragOver, onDragLeave, onDrop } = useOwnershipDropTarget(targetOwnerUserId);
 
@@ -314,7 +336,7 @@ function SidebarOwnershipDropZone({
 
   return (
     <div
-      className={cn('rounded', isOver && 'border border-primary bg-primary/10 [&>a]:bg-transparent')}
+      className={cn('rounded', isOver && 'border border-primary bg-primary/10 [&>a]:bg-transparent', className)}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -338,13 +360,13 @@ function SidebarNavLinkCreateButton({
   };
 
   return (
-    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
+    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon-sm"
-            className="!bg-transparent opacity-30 hover:opacity-100"
+            className="!bg-transparent text-muted-foreground hover:opacity-100"
             onClick={handleClick}
           >
             <AddIcon />

@@ -75,6 +75,7 @@ function FolderListItem({
     subfolderCount: number;
   } | null>(null);
   const [deletePreviewLoading, setDeletePreviewLoading] = useState(false);
+  const [deletePreviewError, setDeletePreviewError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [optimisticName, setOptimisticName] = useState<string | null>(null);
 
@@ -84,13 +85,14 @@ function FolderListItem({
     if (!showDeleteDialog || !folder.uuid) return;
     setDeletePreviewLoading(true);
     setDeletePreview(null);
+    setDeletePreviewError(false);
     apiClient.folders
       .getDeletePreview(folder.uuid)
       .then((data) => {
         setDeletePreview(data);
       })
       .catch(() => {
-        setDeletePreview({ files: [], subfolderCount: 0 });
+        setDeletePreviewError(true);
       })
       .finally(() => {
         setDeletePreviewLoading(false);
@@ -149,7 +151,7 @@ function FolderListItem({
             <Button
               variant="ghost"
               size="icon-sm"
-              className="shrink-0 text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100 data-[state=open]:opacity-100"
+              className="shrink-0 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -180,32 +182,37 @@ function FolderListItem({
               <div className="flex flex-col gap-2">
                 {deletePreviewLoading ? (
                   <span>Loading…</span>
+                ) : deletePreviewError ? (
+                  <p>
+                    We couldn’t load the list of files. The folder and all its contents (including any subfolders and
+                    files) will be removed. Files will be moved to the trash and can be restored from Recover deleted
+                    files.
+                  </p>
                 ) : deletePreview && deletePreview.files.length === 0 && deletePreview.subfolderCount === 0 ? (
                   <p>This will permanently remove the folder.</p>
                 ) : (
                   <>
                     <p>
-                      This will remove the folder and any subfolders. The folder cannot be recovered. The following
-                      files will be moved to the trash and can be restored from Recover deleted files.
+                      This will remove the folder and any subfolders.
+                      <br />
+                      <br />
+                      {deletePreview && deletePreview.files.length > 0 && (
+                        <>
+                          {' '}
+                          {deletePreview.files.length} file{deletePreview.files.length !== 1 ? 's' : ''} will be moved
+                          to the trash and can be restored from Recover deleted files.
+                        </>
+                      )}
                     </p>
-                    {deletePreview && (deletePreview.files.length > 0 || deletePreview.subfolderCount > 0) && (
-                      <div className="mt-1 flex flex-col gap-1">
-                        {deletePreview.subfolderCount > 0 && (
-                          <p className="text-muted-foreground">
-                            {deletePreview.subfolderCount} subfolder{deletePreview.subfolderCount !== 1 ? 's' : ''}
-                          </p>
-                        )}
-                        {deletePreview.files.length > 0 && (
-                          <div className="max-h-40 overflow-y-auto rounded border border-border bg-muted/30 p-2">
-                            <ul className="list-inside list-disc space-y-0.5 text-sm">
-                              {deletePreview.files.map((f) => (
-                                <li key={f.uuid} className="truncate">
-                                  {f.name}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                    {deletePreview && deletePreview.files.length > 0 && (
+                      <div className="max-h-52 overflow-y-auto rounded border border-border bg-muted/30 p-2">
+                        <div className="flex flex-col gap-1 text-sm">
+                          {deletePreview.files.map((f) => (
+                            <div key={f.uuid} className="truncate">
+                              {f.name}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </>

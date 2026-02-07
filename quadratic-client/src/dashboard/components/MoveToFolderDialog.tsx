@@ -1,6 +1,6 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon, FolderIcon, FolderOpenIcon, FolderSpecialIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, FolderIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -160,9 +160,7 @@ function FolderPickerItem({
           </button>
         )}
         {!hasChildren && <span className="w-5" />}
-        {isExpanded ? (
-          <FolderOpenIcon className="shrink-0 text-muted-foreground" />
-        ) : node.ownerUserId !== null ? (
+        {node.ownerUserId !== null ? (
           <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
         ) : (
           <FolderIcon className="shrink-0 text-muted-foreground" />

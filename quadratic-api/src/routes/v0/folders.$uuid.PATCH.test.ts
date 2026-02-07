@@ -129,6 +129,24 @@ describe('PATCH /v0/folders/:uuid', () => {
         .expect(404)
         .expect(expectError);
     });
+
+    it('move-only does not change file or descendant folder ownership', async () => {
+      // Create a file in the subfolder (team-owned)
+      const subfolder = await dbClient.folder.findUnique({ where: { uuid: subfolderUuid } });
+      const fileInSubfolder = await createFile({
+        data: {
+          name: 'File in Subfolder',
+          ownerTeamId: teamId,
+          creatorUserId: userOwnerId,
+          folderId: subfolder!.id,
+        },
+      });
+      // Move subfolder to sibling (no ownership change)
+      await patchFolder(subfolderUuid, { parentFolderUuid: siblingUuid }).expect(200);
+      // File should still be team-owned (ownerUserId null)
+      const fileAfter = await dbClient.file.findUnique({ where: { id: fileInSubfolder.id } });
+      expect(fileAfter!.ownerUserId).toBeNull();
+    });
   });
 
   describe('ownership cascade', () => {
