@@ -108,6 +108,7 @@ export const Component = () => {
     <div className="flex flex-grow flex-col" onDragOver={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()}>
       <DashboardHeader
         title={title}
+        titleNode={<span className="text-sm font-medium">{title}</span>}
         actions={
           (isPrivateView || canEdit) && (
             <div className="flex items-center gap-2">

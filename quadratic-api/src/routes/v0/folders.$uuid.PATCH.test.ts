@@ -130,6 +130,38 @@ describe('PATCH /v0/folders/:uuid', () => {
         .expect(expectError);
     });
 
+    it('moves a subfolder from one root to a subfolder in another root', async () => {
+      const rootXUuid = '00000000-0000-4000-8000-000000000030';
+      const rootYUuid = '00000000-0000-4000-8000-000000000032';
+      const subX1Uuid = '00000000-0000-4000-8000-000000000031';
+      const subY1Uuid = '00000000-0000-4000-8000-000000000033';
+
+      // Create two root folders, each with a subfolder
+      const rootX = await createFolder({
+        data: { name: 'Root X', uuid: rootXUuid, ownerTeamId: teamId },
+      });
+      const rootY = await createFolder({
+        data: { name: 'Root Y', uuid: rootYUuid, ownerTeamId: teamId },
+      });
+      await createFolder({
+        data: { name: 'Sub X1', uuid: subX1Uuid, ownerTeamId: teamId, parentFolderId: rootX.id },
+      });
+      const subY1 = await createFolder({
+        data: { name: 'Sub Y1', uuid: subY1Uuid, ownerTeamId: teamId, parentFolderId: rootY.id },
+      });
+
+      // Move Sub X1 from under Root X to under Sub Y1 (which is under Root Y)
+      await patchFolder(subX1Uuid, { parentFolderUuid: subY1Uuid })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.folder.parentFolderUuid).toBe(subY1Uuid);
+        });
+
+      // Verify in the database
+      const movedFolder = await dbClient.folder.findUnique({ where: { uuid: subX1Uuid } });
+      expect(movedFolder!.parentFolderId).toBe(subY1.id);
+    });
+
     it('move-only does not change file or descendant folder ownership', async () => {
       // Create a file in the subfolder (team-owned)
       const subfolder = await dbClient.folder.findUnique({ where: { uuid: subfolderUuid } });
@@ -323,6 +355,55 @@ describe('PATCH /v0/folders/:uuid', () => {
 
       // Clean up: move back to root and team
       await patchFolder(cascadeParentUuid, { parentFolderUuid: null, ownerUserId: null }).expect(200);
+    });
+
+    it('moves a subfolder from one root to a subfolder in another root with ownership cascade', async () => {
+      const privateRootUuid = '00000000-0000-4000-8000-000000000040';
+      const privateSubUuid = '00000000-0000-4000-8000-000000000041';
+
+      // Create a private root folder with a subfolder
+      const privateRoot = await createFolder({
+        data: { name: 'Private Root', uuid: privateRootUuid, ownerTeamId: teamId, ownerUserId: userOwnerId },
+      });
+      const privateSub = await createFolder({
+        data: {
+          name: 'Private Sub',
+          uuid: privateSubUuid,
+          ownerTeamId: teamId,
+          ownerUserId: userOwnerId,
+          parentFolderId: privateRoot.id,
+        },
+      });
+
+      // Create a file in the private subfolder
+      const fileInPrivateSub = await createFile({
+        data: {
+          name: 'File in Private Sub',
+          ownerTeamId: teamId,
+          creatorUserId: userOwnerId,
+          ownerUserId: userOwnerId,
+          folderId: privateSub.id,
+        },
+      });
+
+      // Move the private subfolder into the cascade child (which is currently team-owned under cascade parent).
+      // This changes ownership from private to team and re-parents into a nested subfolder of another root.
+      await patchFolder(privateSubUuid, { parentFolderUuid: cascadeChildUuid, ownerUserId: null })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.folder.parentFolderUuid).toBe(cascadeChildUuid);
+          expect(res.body.folder.ownerUserId).toBeNull();
+        });
+
+      // Verify in the database that ownership was cascaded
+      const movedFolder = await dbClient.folder.findUnique({ where: { uuid: privateSubUuid } });
+      const cascadeChild = await dbClient.folder.findUnique({ where: { uuid: cascadeChildUuid } });
+      expect(movedFolder!.parentFolderId).toBe(cascadeChild!.id);
+      expect(movedFolder!.ownerUserId).toBeNull();
+
+      // Verify file ownership was cascaded
+      const fileAfter = await dbClient.file.findUnique({ where: { id: fileInPrivateSub.id } });
+      expect(fileAfter!.ownerUserId).toBeNull();
     });
 
     it('rejects moving a folder to private under a different user', async () => {

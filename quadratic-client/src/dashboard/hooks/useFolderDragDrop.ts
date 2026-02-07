@@ -1,7 +1,8 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import type { DragEvent } from 'react';
 import { useCallback, useState } from 'react';
-import { useRevalidator } from 'react-router';
+import { useNavigate, useParams, useRevalidator } from 'react-router';
 
 export type DragPayload = {
   type: 'file' | 'folder';
@@ -133,6 +134,8 @@ export function getDragProps(payload: DragPayload) {
 export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId?: number | null) {
   const [isOver, setIsOver] = useState(false);
   const revalidator = useRevalidator();
+  const navigate = useNavigate();
+  const { teamUuid } = useParams<{ teamUuid: string }>();
 
   const onDragOver = useCallback((e: DragEvent) => {
     // Always prevent default on dragOver to stop the browser from
@@ -183,11 +186,16 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
         }
 
         revalidator.revalidate();
+
+        // After moving a folder, navigate to the target folder so the user can see the result
+        if (data.type === 'folder' && targetFolderUuid && teamUuid) {
+          navigate(ROUTES.TEAM_DRIVE_FOLDER(teamUuid, targetFolderUuid));
+        }
       } catch {
         // Failed to move - revalidation will reset the UI
       }
     },
-    [targetFolderUuid, targetOwnerUserId, revalidator]
+    [targetFolderUuid, targetOwnerUserId, revalidator, navigate, teamUuid]
   );
 
   return { isOver, onDragOver, onDragLeave, onDrop };

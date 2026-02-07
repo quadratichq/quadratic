@@ -3,7 +3,7 @@ import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
-import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon, MoreVertIcon } from '@/shared/components/Icons';
+import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   AlertDialog,
@@ -146,7 +146,7 @@ export function DashboardSidebarFolderTree({
   const targetOwnerUserId = filter === 'team' ? null : userId;
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       {tree.map((node) => (
         <FolderTreeItem
           key={node.uuid}
@@ -300,48 +300,60 @@ function FolderTreeItem({
   const row = (
     <div
       className={cn(
-        'group relative flex items-center gap-0.5 rounded px-1.5 py-1 text-sm no-underline transition-colors',
+        'group relative flex min-w-0 items-center gap-0.5 overflow-hidden rounded py-1 text-sm no-underline transition-colors',
         'bg-accent hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100',
         isActive && 'brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
-        isDropTarget && 'border border-primary bg-primary/10'
+        isDropTarget && 'border border-primary bg-primary/10',
+        'pl-3 pr-11'
       )}
-      style={{ paddingLeft: `${iconLeftPx}px` }}
+      style={{ paddingLeft: `${iconLeftPx + 12}px` }}
       {...dragProps}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       {...(canEditTeam && { onContextMenu: handleContextMenu })}
     >
-      <button
-        className={cn(
-          'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
-          !hasChildren && 'invisible'
-        )}
-        style={{ left: `${chevronLeftPx}px` }}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsManuallyExpanded(!isExpanded);
-        }}
-      >
-        <ChevronRightIcon className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
-      </button>
-      <NavLink
-        to={to}
-        className="flex min-w-0 flex-grow items-center gap-1.5 no-underline"
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
-        {node.ownerUserId !== null ? (
-          <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
-        ) : (
-          <FolderIcon className="shrink-0 text-muted-foreground" />
-        )}
-        <span className="truncate">{displayName}</span>
-      </NavLink>
+      <DropdownMenu open={contextMenuOpen} onOpenChange={handleContextMenuOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <div className="flex min-w-0 flex-grow cursor-context-menu items-center gap-0.5">
+            <button
+              className={cn(
+                'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
+                !hasChildren && 'invisible'
+              )}
+              style={{ left: `${chevronLeftPx + 12}px` }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsManuallyExpanded(!isExpanded);
+              }}
+            >
+              <ChevronRightIcon
+                className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')}
+              />
+            </button>
+            <NavLink
+              to={to}
+              className="flex min-w-0 flex-grow items-center gap-1.5 no-underline"
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+            >
+              {node.ownerUserId !== null ? (
+                <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
+              ) : (
+                <FolderIcon className="shrink-0 text-muted-foreground" />
+              )}
+              <span className="min-w-0 truncate" title={displayName}>
+                {displayName}
+              </span>
+            </NavLink>
+          </div>
+        </DropdownMenuTrigger>
+        <FolderActionsMenuContent onRename={() => setShowRename(true)} onDelete={() => setShowDeleteDialog(true)} />
+      </DropdownMenu>
       {canEditTeam && (
-        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -357,26 +369,13 @@ function FolderTreeItem({
               <TooltipContent>New file</TooltipContent>
             </TooltipPortal>
           </Tooltip>
-          <DropdownMenu open={contextMenuOpen} onOpenChange={handleContextMenuOpenChange}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="!bg-transparent text-muted-foreground hover:opacity-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <FolderActionsMenuContent onRename={() => setShowRename(true)} onDelete={() => setShowDeleteDialog(true)} />
-          </DropdownMenu>
         </div>
       )}
     </div>
   );
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       {row}
       {showChildren &&
         node.children.map((child) => (
