@@ -1,4 +1,5 @@
 import { FolderActionsMenuContent } from '@/dashboard/components/FolderActionsMenu';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
@@ -273,13 +274,12 @@ function FolderTreeItem({
   const iconLeftPx = ROOT_OFFSET_PX + (depth + 1) * CHEVRON_PX;
   const chevronLeftPx = ROOT_OFFSET_PX + depth * CHEVRON_PX;
 
+  const { createFile } = useCreateFile();
+
   const handleCreateFile = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, {
-      private: node.ownerUserId !== null,
-      folderUuid: node.uuid,
-    });
+    createFile({ isPrivate: node.ownerUserId !== null, folderUuid: node.uuid });
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {

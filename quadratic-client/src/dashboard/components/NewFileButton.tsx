@@ -3,6 +3,7 @@ import { supportedFileTypes } from '@/app/helpers/files';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import {
   AddIcon,
@@ -37,23 +38,17 @@ const stateToInsertAndRun = {
   language: 'Python' as CodeCellLanguage,
 };
 
-export function NewFileButton({
-  isPrivate: isPrivateProp,
-  folderUuid,
-}: { isPrivate?: boolean; folderUuid?: string } = {}) {
+export function NewFileButton() {
   const {
     activeTeam: {
       connections,
-      team: { uuid: teamUuid },
     },
   } = useDashboardRouteLoaderData();
+  const { teamUuid, isPrivate, folderUuid, createFile } = useCreateFile();
   const navigate = useNavigate();
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
-
-  // Use the prop if provided, otherwise default to private
-  const isPrivate = isPrivateProp ?? true;
 
   if (isMobile) {
     return null;
@@ -66,7 +61,7 @@ export function NewFileButton({
         variant="default"
         onClick={(e) => {
           e.preventDefault();
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, folderUuid });
+          createFile();
         }}
       >
         New file

@@ -1,6 +1,7 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { DashboardSidebarFolderTree } from '@/dashboard/components/DashboardSidebarFolderTree';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { useOwnershipDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -130,11 +131,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} data-testid="dashboard-sidebar-team-files-link">
               <HomeIcon className={classNameIcons} />
               <span className="min-w-0 truncate">Home</span>
-              {canEditTeam && (
-                <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
-                  New file
-                </SidebarNavLinkCreateButton>
-              )}
+              {canEditTeam && <SidebarNavLinkCreateButton>New file</SidebarNavLinkCreateButton>}
             </SidebarNavLink>
           </div>
           <SidebarOwnershipDropZone
@@ -147,7 +144,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                 <FolderIcon className={classNameIcons} />
                 <span className="min-w-0 truncate">Team Files</span>
                 {canEditTeam && (
-                  <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
+                  <SidebarNavLinkCreateButton overrideIsPrivate={false} overrideFolderUuid={null}>
                     New file
                   </SidebarNavLinkCreateButton>
                 )}
@@ -167,7 +164,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                 <FolderSpecialIcon className={classNameIcons} />
                 <span className="min-w-0 truncate">Personal Files</span>
                 {canEditTeam && (
-                  <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
+                  <SidebarNavLinkCreateButton overrideIsPrivate={true} overrideFolderUuid={null}>
                     New file
                   </SidebarNavLinkCreateButton>
                 )}
@@ -349,15 +346,22 @@ function SidebarOwnershipDropZone({
 
 function SidebarNavLinkCreateButton({
   children,
-  isPrivate,
-  teamUuid,
+  overrideIsPrivate,
+  overrideFolderUuid,
 }: {
   children: ReactNode;
-  isPrivate: boolean;
-  teamUuid: string;
+  /** When provided, forces `isPrivate` instead of deriving it from the current route. */
+  overrideIsPrivate?: boolean;
+  /** When provided, forces a specific folder (or `null` for root) instead of deriving it from the current route. */
+  overrideFolderUuid?: string | null;
 }) {
+  const { createFile } = useCreateFile();
+
   const handleClick = () => {
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    createFile({
+      ...(overrideIsPrivate !== undefined ? { isPrivate: overrideIsPrivate } : {}),
+      ...(overrideFolderUuid !== undefined ? { folderUuid: overrideFolderUuid } : {}),
+    });
   };
 
   return (

@@ -115,7 +115,7 @@ export const Component = () => {
               <Button variant="outline" onClick={() => setShowCreateFolder(true)}>
                 New folder
               </Button>
-              <NewFileButton isPrivate={isPrivateView} />
+              <NewFileButton />
             </div>
           )
         }
