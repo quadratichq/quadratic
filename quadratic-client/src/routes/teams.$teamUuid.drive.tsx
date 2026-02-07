@@ -121,7 +121,12 @@ export const Component = () => {
       />
 
       {topLevelFolders.length > 0 && (
-        <FolderListItems folders={topLevelFolders} teamUuid={teamUuid} ownerUserId={isPrivateView ? userId : null} />
+        <FolderListItems
+          folders={topLevelFolders}
+          teamUuid={teamUuid}
+          ownerUserId={isPrivateView ? userId : null}
+          canEdit={isPrivateView || canEdit}
+        />
       )}
 
       <UserFilesList files={rootFiles} teamUuid={teamUuid} hideTypeFilters />

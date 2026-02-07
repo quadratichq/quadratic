@@ -106,7 +106,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     }
   }
 
-  // Change ownership (move between team and private)
+  // Change ownership (move between team and private).
+  // Moving between Team Files and Private Files requires updating ownerUserId on this folder
+  // and recursively on all descendant folders and files; ownerTeamId stays the same (same team).
   if (newOwnerUserId !== undefined) {
     if (newOwnerUserId !== null) {
       // Moving to private: must be the requesting user
@@ -136,7 +138,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       include: { parentFolder: true },
     });
 
-    // Cascade ownership change to all descendant folders and their files
+    // Cascade ownerUserId to all descendant folders and to all files in this folder tree.
+    // This ensures moving between Team Files and Private Files updates the whole subtree.
     if (newOwnerUserId !== undefined) {
       if (descendantFolderIds.length > 0) {
         await tx.folder.updateMany({
@@ -144,7 +147,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
           data: { ownerUserId: newOwnerUserId },
         });
       }
-      // Update all files in this folder and its descendants to match the new ownership
       const allFolderIds = [folder.id, ...descendantFolderIds];
       await tx.file.updateMany({
         where: { folderId: { in: allFolderIds }, deleted: false },

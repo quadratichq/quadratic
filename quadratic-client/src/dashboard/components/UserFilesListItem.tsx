@@ -181,6 +181,7 @@ export function UserFilesListItem({
               key={uuid}
               creator={file.creator}
               name={displayName}
+              folderPath={file.folderPath}
               nameFilter={filters.fileName}
               description={description}
               hasNetworkError={Boolean(failedToDelete || failedToRename)}

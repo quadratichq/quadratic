@@ -171,7 +171,8 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
           if (data.uuid === targetFolderUuid) return;
 
           if (needsOwnershipChange) {
-            // Folder PATCH supports ownerUserId + parentFolderUuid together
+            // Moving between Team Files and Private Files: API updates ownerUserId on this
+            // folder and recursively on all descendant folders and files.
             await apiClient.folders.update(data.uuid, {
               parentFolderUuid: targetFolderUuid,
               ownerUserId: targetOwnerUserId,

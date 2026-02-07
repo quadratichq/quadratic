@@ -44,6 +44,8 @@ export type UserFilesListFile = {
   fileType: 'team' | 'private' | 'shared';
   /** Whether this file has edit restrictions due to soft file limit (free teams only). */
   requiresUpgradeToEdit?: boolean;
+  /** Folder path for the title line (e.g. "Subfolder" or "Parent/Subfolder"), one level deeper than root. */
+  folderPath?: string;
 };
 
 export function UserFilesList({

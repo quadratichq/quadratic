@@ -1,12 +1,26 @@
+import { FolderActionsMenuContent } from '@/dashboard/components/FolderActionsMenu';
 import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon } from '@/shared/components/Icons';
+import { apiClient } from '@/shared/api/apiClient';
+import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
+import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
+import { DropdownMenu, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useLocation, useNavigation, useParams } from 'react-router';
+import { NavLink, useLocation, useNavigation, useParams, useRevalidator } from 'react-router';
 
 interface FolderTreeNode {
   uuid: string;
@@ -168,8 +182,57 @@ function FolderTreeItem({
   const dragProps = getDragProps({ type: 'folder', uuid: node.uuid, ownerUserId: node.ownerUserId });
   const location = useLocation();
   const navigation = useNavigation();
+  const revalidator = useRevalidator();
   const to = ROUTES.TEAM_DRIVE_FOLDER(teamUuid, node.uuid);
   const hasChildren = node.children.length > 0;
+
+  // Context menu (right-click): reuse same options as three-dot menu; only open from right-click, not left
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const contextMenuRequestedRef = useRef(false);
+  const [showRename, setShowRename] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePreview, setDeletePreview] = useState<{
+    files: { uuid: string; name: string }[];
+    subfolderCount: number;
+  } | null>(null);
+  const [deletePreviewLoading, setDeletePreviewLoading] = useState(false);
+  const [deletePreviewError, setDeletePreviewError] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [optimisticName, setOptimisticName] = useState<string | null>(null);
+  const displayName = optimisticName ?? node.name;
+
+  useEffect(() => {
+    if (!showDeleteDialog || !node.uuid) return;
+    setDeletePreviewLoading(true);
+    setDeletePreview(null);
+    setDeletePreviewError(false);
+    apiClient.folders
+      .getDeletePreview(node.uuid)
+      .then((data) => setDeletePreview(data))
+      .catch(() => setDeletePreviewError(true))
+      .finally(() => setDeletePreviewLoading(false));
+  }, [showDeleteDialog, node.uuid]);
+
+  const handleRename = async (newName: string) => {
+    setOptimisticName(newName);
+    try {
+      await apiClient.folders.update(node.uuid, { name: newName });
+      revalidator.revalidate();
+    } catch {
+      setOptimisticName(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteDialog(false);
+    setIsDeleting(true);
+    try {
+      await apiClient.folders.delete(node.uuid);
+      revalidator.revalidate();
+    } catch {
+      setIsDeleting(false);
+    }
+  };
 
   const nextLocation = navigation.location;
   const isActive =
@@ -218,63 +281,103 @@ function FolderTreeItem({
     });
   };
 
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (!canEditTeam) return;
+    e.preventDefault();
+    contextMenuRequestedRef.current = true;
+    setContextMenuOpen(true);
+  };
+
+  const handleContextMenuOpenChange = (open: boolean) => {
+    if (open && !contextMenuRequestedRef.current) return;
+    contextMenuRequestedRef.current = false;
+    setContextMenuOpen(open);
+  };
+
+  // Optimistically hide while deleting
+  if (isDeleting) return null;
+
+  const row = (
+    <div
+      className={cn(
+        'group relative flex items-center gap-0.5 rounded px-1.5 py-1 text-sm no-underline transition-colors',
+        'bg-accent hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100',
+        isActive && 'brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
+        isDropTarget && 'border border-primary bg-primary/10'
+      )}
+      style={{ paddingLeft: `${iconLeftPx}px` }}
+      {...dragProps}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      {...(canEditTeam && { onContextMenu: handleContextMenu })}
+    >
+      <button
         className={cn(
-          'group relative flex items-center gap-0.5 rounded px-1.5 py-1 text-sm no-underline transition-colors',
-          'bg-accent hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100',
-          isActive && 'brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
-          isDropTarget && 'border border-primary bg-primary/10'
+          'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
+          !hasChildren && 'invisible'
         )}
-        style={{ paddingLeft: `${iconLeftPx}px` }}
-        {...dragProps}
+        style={{ left: `${chevronLeftPx}px` }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsManuallyExpanded(!isExpanded);
+        }}
+      >
+        <ChevronRightIcon className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
+      </button>
+      <NavLink
+        to={to}
+        className="flex min-w-0 flex-grow items-center gap-1.5 no-underline"
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
-        <button
-          className={cn(
-            'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
-            !hasChildren && 'invisible'
-          )}
-          style={{ left: `${chevronLeftPx}px` }}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsManuallyExpanded(!isExpanded);
-          }}
-        >
-          <ChevronRightIcon className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
-        </button>
-        <NavLink to={to} className="flex min-w-0 flex-grow items-center gap-1.5 no-underline">
-          {node.ownerUserId !== null ? (
-            <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
-          ) : (
-            <FolderIcon className="shrink-0 text-muted-foreground" />
-          )}
-          <span className="truncate">{node.name}</span>
-        </NavLink>
-        {canEditTeam && (
-          <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover:opacity-100">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="!bg-transparent text-muted-foreground hover:opacity-100"
-                  onClick={handleCreateFile}
-                >
-                  <AddIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipPortal>
-                <TooltipContent>New file</TooltipContent>
-              </TooltipPortal>
-            </Tooltip>
-          </div>
+        {node.ownerUserId !== null ? (
+          <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
+        ) : (
+          <FolderIcon className="shrink-0 text-muted-foreground" />
         )}
-      </div>
+        <span className="truncate">{displayName}</span>
+      </NavLink>
+      {canEditTeam && (
+        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="!bg-transparent text-muted-foreground hover:opacity-100"
+                onClick={handleCreateFile}
+              >
+                <AddIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipPortal>
+              <TooltipContent>New file</TooltipContent>
+            </TooltipPortal>
+          </Tooltip>
+          <DropdownMenu open={contextMenuOpen} onOpenChange={handleContextMenuOpenChange}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="!bg-transparent text-muted-foreground hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <FolderActionsMenuContent onRename={() => setShowRename(true)} onDelete={() => setShowDeleteDialog(true)} />
+          </DropdownMenu>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {row}
       {showChildren &&
         node.children.map((child) => (
           <FolderTreeItem
@@ -287,6 +390,79 @@ function FolderTreeItem({
             canEditTeam={canEditTeam}
           />
         ))}
+      {canEditTeam && (
+        <>
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent className="max-w-md">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete folder?</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="flex flex-col gap-2">
+                    {deletePreviewLoading ? (
+                      <span>Loading…</span>
+                    ) : deletePreviewError ? (
+                      <p>
+                        We couldn’t load the list of files. The folder and all its contents (including any subfolders
+                        and files) will be removed. Files will be moved to the trash and can be restored from Recover
+                        deleted files.
+                      </p>
+                    ) : deletePreview && deletePreview.files.length === 0 && deletePreview.subfolderCount === 0 ? (
+                      <p>This will permanently remove the folder.</p>
+                    ) : (
+                      <>
+                        <p>
+                          This will remove the folder and any subfolders.
+                          <br />
+                          <br />
+                          {deletePreview && deletePreview.files.length > 0 && (
+                            <>
+                              {' '}
+                              {deletePreview.files.length} file{deletePreview.files.length !== 1 ? 's' : ''} will be
+                              moved to the trash and can be restored from Recover deleted files.
+                            </>
+                          )}
+                        </p>
+                        {deletePreview && deletePreview.files.length > 0 && (
+                          <div className="max-h-52 overflow-y-auto rounded border border-border bg-muted/30 p-2">
+                            <div className="flex flex-col gap-1 text-sm">
+                              {deletePreview.files.map((f) => (
+                                <div key={f.uuid} className="truncate">
+                                  {f.name}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deletePreviewLoading}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    confirmDelete();
+                  }}
+                  disabled={deletePreviewLoading}
+                  variant="destructive"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          {showRename && (
+            <DialogRenameItem
+              itemLabel="Folder"
+              onClose={() => setShowRename(false)}
+              value={displayName}
+              onSave={handleRename}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }

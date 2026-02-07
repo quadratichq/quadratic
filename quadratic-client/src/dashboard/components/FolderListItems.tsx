@@ -1,3 +1,4 @@
+import { FolderActionsMenuContent } from '@/dashboard/components/FolderActionsMenu';
 import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { apiClient } from '@/shared/api/apiClient';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
@@ -14,13 +15,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
 import { Link, useRevalidator } from 'react-router';
@@ -35,11 +30,14 @@ export function FolderListItems({
   folders,
   teamUuid,
   ownerUserId,
+  canEdit,
 }: {
   folders: FolderListItemsFolder[];
   teamUuid: string;
   /** Fallback ownership for folders that don't include ownerUserId (e.g. subfolders) */
   ownerUserId?: number | null;
+  /** Whether the user can edit folder structure (create/rename/delete/move). False for team viewers. */
+  canEdit?: boolean;
 }) {
   if (folders.length === 0) return null;
 
@@ -48,7 +46,13 @@ export function FolderListItems({
       <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Folders</div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4">
         {folders.map((folder) => (
-          <FolderListItem key={folder.uuid} folder={folder} teamUuid={teamUuid} ownerUserId={ownerUserId} />
+          <FolderListItem
+            key={folder.uuid}
+            folder={folder}
+            teamUuid={teamUuid}
+            ownerUserId={ownerUserId}
+            canEdit={canEdit ?? false}
+          />
         ))}
       </div>
     </div>
@@ -59,10 +63,12 @@ function FolderListItem({
   folder,
   teamUuid,
   ownerUserId,
+  canEdit,
 }: {
   folder: FolderListItemsFolder;
   teamUuid: string;
   ownerUserId?: number | null;
+  canEdit: boolean;
 }) {
   const effectiveOwnerUserId = folder.ownerUserId ?? ownerUserId ?? null;
   const dragProps = getDragProps({ type: 'folder', uuid: folder.uuid, ownerUserId: effectiveOwnerUserId });
@@ -131,11 +137,12 @@ function FolderListItem({
 
   return (
     <>
-      <div className={cardClass} {...dragProps} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+      <div className={cardClass} {...(canEdit && { ...dragProps, onDragOver, onDragLeave, onDrop })}>
         <Link
           to={ROUTES.TEAM_DRIVE_FOLDER(teamUuid, folder.uuid)}
           draggable={false}
           className="flex min-w-0 flex-1 items-center gap-2 no-underline outline-none"
+          {...(canEdit && { onDragOver, onDragLeave, onDrop })}
         >
           <div className="flex shrink-0 items-center justify-center">
             {effectiveOwnerUserId !== null ? (
@@ -146,33 +153,24 @@ function FolderListItem({
           </div>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">{displayName}</span>
         </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="shrink-0 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              <MoreVertIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-40"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-          >
-            <DropdownMenuItem onClick={() => setShowRename(true)}>Rename</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canEdit && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                <MoreVertIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <FolderActionsMenuContent onRename={() => setShowRename(true)} onDelete={() => setShowDeleteDialog(true)} />
+          </DropdownMenu>
+        )}
       </div>
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="max-w-md">

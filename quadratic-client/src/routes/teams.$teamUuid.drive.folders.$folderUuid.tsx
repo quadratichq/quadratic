@@ -105,7 +105,11 @@ export const Component = () => {
     <div className="flex flex-grow flex-col" onDragOver={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()}>
       <DashboardHeader
         title={folder.name}
-        titleNode={<FolderBreadcrumb items={breadcrumbItems} />}
+        titleNode={
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <FolderBreadcrumb items={breadcrumbItems} />
+          </div>
+        }
         actions={
           (isPrivateFolder || canEdit) && (
             <div className="flex items-center gap-2">
@@ -119,7 +123,12 @@ export const Component = () => {
       />
 
       {subfolders.length > 0 && (
-        <FolderListItems folders={subfolders} teamUuid={teamUuid} ownerUserId={folder.ownerUserId} />
+        <FolderListItems
+          folders={subfolders}
+          teamUuid={teamUuid}
+          ownerUserId={folder.ownerUserId}
+          canEdit={isPrivateFolder || canEdit}
+        />
       )}
 
       <UserFilesList files={allFiles} teamUuid={teamUuid} hideTypeFilters />
