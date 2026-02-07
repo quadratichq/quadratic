@@ -32,7 +32,6 @@ export type DebugFlagKeys =
   | 'debugGridSettings'
   | 'debugShowMultiplayer'
   | 'debugShowVersionCheck'
-  | 'debugSaveURLState'
   | 'debugShowUILogs'
   | 'debugShowFocus'
   | 'debugWebWorkers'
@@ -168,13 +167,6 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     description: 'Show version check information',
     group: 'Misc.',
   },
-  debugSaveURLState: {
-    initial: false,
-    title: 'Save URL State',
-    description: 'Save URL state information',
-    group: 'Misc.',
-  },
-
   // UI group
   debugShowUILogs: {
     initial: false,

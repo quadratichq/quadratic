@@ -17,6 +17,7 @@ export type GridSettings = {
   presentationMode: boolean;
   showAIAnalystOnStartup: boolean;
   showScrollbars: boolean;
+  restoreFileViewState: boolean;
 };
 
 export const defaultGridSettings: GridSettings = {
@@ -28,6 +29,7 @@ export const defaultGridSettings: GridSettings = {
   presentationMode: false,
   showAIAnalystOnStartup: true,
   showScrollbars: true,
+  restoreFileViewState: false,
 };
 
 // Persist the GridSettings
@@ -37,7 +39,7 @@ const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
   const savedValue = localStorage.getItem(SETTINGS_KEY);
   if (savedValue != null) {
     const settings = JSON.parse(savedValue);
-    const newSettings = { ...settings, presentationMode: false };
+    const newSettings = { ...defaultGridSettings, ...settings, presentationMode: false };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     if (debugFlag('debugGridSettings'))
       console.log('[gridSettings] initializing with values from localStorage', newSettings);
@@ -101,6 +103,7 @@ export const showA1NotationAtom = createSelector('showA1Notation');
 export const showCodePeekAtom = createSelector('showCodePeek');
 export const presentationModeAtom = createSelector('presentationMode');
 export const showScrollbarsAtom = createSelector('showScrollbars');
+export const restoreFileViewStateAtom = createSelector('restoreFileViewState');
 
 // Custom selector for showAIAnalystOnStartup that also controls the AI panel visibility
 export const showAIAnalystOnStartupAtom = selector<boolean>({

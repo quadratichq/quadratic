@@ -3,9 +3,15 @@ import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEd
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
-import { gridSettingsAtom, presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
+import {
+  gridSettingsAtom,
+  presentationModeAtom,
+  restoreFileViewStateAtom,
+  showHeadingsAtom,
+} from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
+import { fileViewState, type FileViewStateApplier } from '@/app/fileViewState/fileViewState';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
@@ -84,6 +90,20 @@ export const PixiAppEffects = memo(() => {
   useEffect(() => {
     events.emit('pixiAppSettingsInitialized');
   }, []);
+
+  const restoreFileViewState = useRecoilValue(restoreFileViewStateAtom);
+
+  // Apply React-side saved view state (code editor, panes, AI) once setters are available
+  useEffect(() => {
+    if (!restoreFileViewState || !fileViewState.hasState) return;
+    fileViewState.applyReactState(pixiAppSettings as FileViewStateApplier);
+  }, [restoreFileViewState]);
+
+  // Start saving view state when setting is on
+  useEffect(() => {
+    if (!restoreFileViewState) return;
+    fileViewState.startSaving(pixiAppSettings);
+  }, [restoreFileViewState]);
 
   useEffect(() => {
     const handleMouseUp = () => {

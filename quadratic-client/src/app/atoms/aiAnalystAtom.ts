@@ -6,6 +6,7 @@ import {
   editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
+import { fileViewState } from '@/app/fileViewState/fileViewState';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import {
@@ -105,10 +106,15 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         // This prevents the race condition where we read the default value (true) instead of
         // the saved localStorage value
         const gridSettings = getLoadable(gridSettingsAtom).getValue();
-        const showAIAnalyst = gridSettings.showAIAnalystOnStartup;
+
+        // If file view state has saved AI visibility, use that instead of showAIAnalystOnStartup
+        const savedAiView = fileViewState.hasState ? fileViewState.state?.aiView : undefined;
+        const showAIAnalyst = savedAiView ? savedAiView.showAIAnalyst : gridSettings.showAIAnalystOnStartup;
+        const showChatHistory = savedAiView?.showChatHistory ?? false;
         setSelf({
           ...defaultAIAnalystState,
           showAIAnalyst,
+          showChatHistory,
         });
 
         const user = getLoadable(editorInteractionStateUserAtom).getValue();
@@ -121,6 +127,7 @@ export const aiAnalystAtom = atom<AIAnalystState>({
                 setSelf({
                   ...defaultAIAnalystState,
                   showAIAnalyst,
+                  showChatHistory,
                   chats,
                 });
               })
