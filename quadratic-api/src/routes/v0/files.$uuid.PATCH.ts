@@ -27,7 +27,7 @@ async function handler(
 ) {
   const {
     params: { uuid },
-    body: { name, ownerUserId, timezone },
+    body: { name, ownerUserId, timezone, folderUuid },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -37,7 +37,7 @@ async function handler(
   } = await getFile({ uuid, userId });
 
   // Can't change multiple things at once
-  const fieldsToUpdate = [name, ownerUserId, timezone].filter((field) => field !== undefined);
+  const fieldsToUpdate = [name, ownerUserId, timezone, folderUuid].filter((field) => field !== undefined);
   if (fieldsToUpdate.length > 1) {
     return res.status(400).json({ error: { message: 'You can only change one thing at a time' } });
   }
@@ -121,6 +121,37 @@ async function handler(
       throw new ApiError(500, 'Failed to move file. Make sure the specified team and user exist.');
     }
     return res.status(200).json({ ownerUserId: undefined });
+  }
+
+  //
+  // Moving to a folder?
+  //
+  if (folderUuid !== undefined) {
+    let folderId: number | null = null;
+
+    if (folderUuid !== null) {
+      const folder = await dbClient.folder.findUnique({
+        where: { uuid: folderUuid },
+      });
+      if (!folder || folder.deleted) {
+        throw new ApiError(404, 'Folder not found.');
+      }
+      // Ensure the folder belongs to the same team as the file
+      const file = await dbClient.file.findUnique({ where: { uuid } });
+      if (!file || folder.ownerTeamId !== file.ownerTeamId) {
+        throw new ApiError(400, 'Folder must belong to the same team as the file.');
+      }
+      folderId = folder.id;
+    }
+
+    const updatedFile = await dbClient.file.update({
+      where: { uuid },
+      data: { folderId },
+    });
+
+    return res.status(200).json({
+      folderUuid: folderUuid,
+    });
   }
 
   // We don't know what you're asking for

@@ -136,6 +136,12 @@ export const router = createBrowserRouter(
               <Route index loader={() => redirect('./files')} />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
               <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
+              <Route path="drive/team" lazy={() => import('./routes/teams.$teamUuid.drive')} />
+              <Route path="drive/private" lazy={() => import('./routes/teams.$teamUuid.drive')} />
+              <Route
+                path="drive/folders/:folderUuid"
+                lazy={() => import('./routes/teams.$teamUuid.drive.folders.$folderUuid')}
+              />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />

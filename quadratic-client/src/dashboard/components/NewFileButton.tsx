@@ -37,7 +37,10 @@ const stateToInsertAndRun = {
   language: 'Python' as CodeCellLanguage,
 };
 
-export function NewFileButton() {
+export function NewFileButton({
+  isPrivate: isPrivateProp,
+  folderUuid,
+}: { isPrivate?: boolean; folderUuid?: string } = {}) {
   const {
     activeTeam: {
       connections,
@@ -49,8 +52,8 @@ export function NewFileButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
 
-  // Sets the creation of new files as private by default
-  const isPrivate = true;
+  // Use the prop if provided, otherwise default to private
+  const isPrivate = isPrivateProp ?? true;
 
   if (isMobile) {
     return null;
@@ -63,7 +66,7 @@ export function NewFileButton() {
         variant="default"
         onClick={(e) => {
           e.preventDefault();
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate, folderUuid });
         }}
       >
         New file
@@ -78,7 +81,7 @@ export function NewFileButton() {
         onChange={(e) => {
           const files = e.target.files;
           if (files) {
-            handleFileImport({ files: Array.from(files), isPrivate, teamUuid });
+            handleFileImport({ files: Array.from(files), isPrivate, teamUuid, folderUuid });
           }
         }}
       />
@@ -116,6 +119,7 @@ export function NewFileButton() {
                 window.location.href = ROUTES.CREATE_FILE(teamUuid, {
                   state: stateToInsertAndRun,
                   private: isPrivate,
+                  folderUuid,
                 });
               }}
             >

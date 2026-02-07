@@ -48,11 +48,12 @@ export type UserFilesListFile = {
 
 export function UserFilesList({
   files,
-
   teamUuid,
+  hideTypeFilters,
 }: {
   files: UserFilesListFile[];
   teamUuid?: string;
+  hideTypeFilters?: boolean;
 }) {
   const { pathname } = useLocation();
   const [filters, setFilters] = useAtom(userFilesListFiltersAtom);
@@ -176,20 +177,16 @@ export function UserFilesList({
 
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
-      <div className="mb-4 flex flex-row flex-wrap items-center gap-2">
-        <FilesListSearchInput
-          value={filterValue}
-          onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
-        />
-        <UserFilesListFileTypeFilter />
-
-        <UserFilesListFiltersDropdown />
-
-        <FilesListViewToggle
-          viewPreferences={viewPreferences}
-          setViewPreferences={setViewPreferences}
-          className="xl:ml-auto"
-        />
+      <div className="mb-4 flex flex-row flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-row flex-wrap items-center gap-2">
+          <FilesListSearchInput
+            value={filterValue}
+            onChange={(fileName) => setFilters((prev) => ({ ...prev, fileName }))}
+          />
+          {!hideTypeFilters && <UserFilesListFileTypeFilter />}
+          {!hideTypeFilters && <UserFilesListFiltersDropdown />}
+        </div>
+        <FilesListViewToggle viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
       </div>
 
       <FilesListItems viewPreferences={viewPreferences}>

@@ -2,7 +2,9 @@ import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFilters
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { MoveToFolderDialog } from '@/dashboard/components/MoveToFolderDialog';
 import type { UserFilesListFile } from '@/dashboard/components/UserFilesList';
+import { getDragProps } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import type { Action as FileAction } from '@/routes/api.files.$uuid';
@@ -54,6 +56,7 @@ export function UserFilesListItem({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
+  const [showMoveToFolder, setShowMoveToFolder] = useState<boolean>(false);
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     activeTeam: {
@@ -157,135 +160,149 @@ export function UserFilesListItem({
 
   return (
     <ListItem>
-      <Link
-        key={uuid}
-        to={ROUTES.FILE({ uuid, searchParams: '' })}
-        reloadDocument
+      <div
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
+        {...getDragProps({ type: 'file', uuid })}
       >
-        <ListItemView
-          viewPreferences={viewPreferences}
-          thumbnail={thumbnail}
-          lazyLoad={lazyLoad}
-          overlay={file.requiresUpgradeToEdit ? <FileEditRestrictedBadge /> : undefined}
+        <Link
+          key={uuid}
+          to={ROUTES.FILE({ uuid, searchParams: '' })}
+          reloadDocument
+          draggable={false}
+          className="block w-full"
         >
-          <FilesListItemCore
-            key={uuid}
-            creator={file.creator}
-            name={displayName}
-            nameFilter={filters.fileName}
-            description={description}
-            hasNetworkError={Boolean(failedToDelete || failedToRename)}
+          <ListItemView
             viewPreferences={viewPreferences}
-            children={<FileTypeBadge type={fileType} />}
-            onCreatorClick={(creator) => {
-              if (creator.email) {
-                setFilters((prev) => ({
-                  ...prev,
-                  fileCreatorEmails:
-                    prev.fileCreatorEmails.length === 1 && prev.fileCreatorEmails[0] === creator.email
-                      ? []
-                      : [creator.email!],
-                }));
-              }
-            }}
-            actions={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Btn
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      viewPreferences.layout === Layout.Grid ? 'absolute right-2 top-2' : 'flex-shrink-0',
-                      'hover:border hover:bg-background hover:text-foreground hover:shadow-sm data-[state=open]:border data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:shadow-sm',
-                      'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    <MoreVertIcon className="text h-4 w-4" />
-                  </Btn>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {permissions.includes('FILE_VIEW') && (
-                    <DropdownMenuItem onClick={handleShare} data-testid="dashboard-file-actions-share">
-                      Share
-                    </DropdownMenuItem>
-                  )}
-                  {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate} data-testid="dashboard-file-actions-duplicate">
-                      Duplicate
-                    </DropdownMenuItem>
-                  )}
-                  {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={() => setOpen(true)} data-testid="dashboard-file-actions-rename">
-                      Rename
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleDownload} data-testid="dashboard-file-actions-download">
-                    Download
-                  </DropdownMenuItem>
-                  {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem
-                      data-testid="dashboard-file-actions-open-history"
-                      onClick={() => {
-                        window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
-                      }}
+            thumbnail={thumbnail}
+            lazyLoad={lazyLoad}
+            overlay={file.requiresUpgradeToEdit ? <FileEditRestrictedBadge /> : undefined}
+          >
+            <FilesListItemCore
+              key={uuid}
+              creator={file.creator}
+              name={displayName}
+              nameFilter={filters.fileName}
+              description={description}
+              hasNetworkError={Boolean(failedToDelete || failedToRename)}
+              viewPreferences={viewPreferences}
+              children={<FileTypeBadge type={fileType} />}
+              onCreatorClick={(creator) => {
+                if (creator.email) {
+                  setFilters((prev) => ({
+                    ...prev,
+                    fileCreatorEmails:
+                      prev.fileCreatorEmails.length === 1 && prev.fileCreatorEmails[0] === creator.email
+                        ? []
+                        : [creator.email!],
+                  }));
+                }
+              }}
+              actions={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Btn
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        viewPreferences.layout === Layout.Grid ? 'absolute right-2 top-2' : 'flex-shrink-0',
+                        'hover:border hover:bg-background hover:text-foreground hover:shadow-sm data-[state=open]:border data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:shadow-sm',
+                        'text-muted-foreground hover:text-foreground'
+                      )}
                     >
-                      Open history
-                    </DropdownMenuItem>
-                  )}
-                  {canMoveFiles && (
-                    <>
-                      <DropdownMenuSeparator />
-                      {!isFilePrivate && (
-                        <DropdownMenuItem
-                          data-testid="dashboard-file-actions-move-to-personal"
-                          onClick={() => {
-                            const data = getActionFileMove(userId);
-                            submit(data, {
-                              method: 'POST',
-                              action: actionUrl,
-                              encType: 'application/json',
-                              navigate: false,
-                              fetcherKey: `move-file:${uuid}`,
-                            });
-                          }}
-                        >
-                          Move to personal files
-                        </DropdownMenuItem>
-                      )}
-                      {isFilePrivate && (
-                        <DropdownMenuItem
-                          data-testid="dashboard-file-actions-move-to-team"
-                          onClick={() => {
-                            const data = getActionFileMove(null);
-                            submit(data, {
-                              method: 'POST',
-                              action: actionUrl,
-                              encType: 'application/json',
-                              navigate: false,
-                              fetcherKey: `move-file:${uuid}`,
-                            });
-                          }}
-                        >
-                          Move to team files
-                        </DropdownMenuItem>
-                      )}
-                    </>
-                  )}
-                  {permissions.includes('FILE_DELETE') && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleDelete} data-testid="dashboard-file-actions-delete">
-                        Delete
+                      <MoreVertIcon className="text h-4 w-4" />
+                    </Btn>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {permissions.includes('FILE_VIEW') && (
+                      <DropdownMenuItem onClick={handleShare} data-testid="dashboard-file-actions-share">
+                        Share
                       </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
-          />
-        </ListItemView>
-      </Link>
+                    )}
+                    {permissions.includes('FILE_EDIT') && (
+                      <DropdownMenuItem onClick={handleDuplicate} data-testid="dashboard-file-actions-duplicate">
+                        Duplicate
+                      </DropdownMenuItem>
+                    )}
+                    {permissions.includes('FILE_EDIT') && (
+                      <DropdownMenuItem onClick={() => setOpen(true)} data-testid="dashboard-file-actions-rename">
+                        Rename
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={handleDownload} data-testid="dashboard-file-actions-download">
+                      Download
+                    </DropdownMenuItem>
+                    {permissions.includes('FILE_EDIT') && (
+                      <DropdownMenuItem
+                        data-testid="dashboard-file-actions-open-history"
+                        onClick={() => {
+                          window.open(ROUTES.FILE_HISTORY(uuid), '_blank');
+                        }}
+                      >
+                        Open history
+                      </DropdownMenuItem>
+                    )}
+                    {permissions.includes('FILE_EDIT') && (
+                      <DropdownMenuItem
+                        onClick={() => setShowMoveToFolder(true)}
+                        data-testid="dashboard-file-actions-move-to-folder"
+                      >
+                        Move to folder
+                      </DropdownMenuItem>
+                    )}
+                    {canMoveFiles && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {!isFilePrivate && (
+                          <DropdownMenuItem
+                            data-testid="dashboard-file-actions-move-to-personal"
+                            onClick={() => {
+                              const data = getActionFileMove(userId);
+                              submit(data, {
+                                method: 'POST',
+                                action: actionUrl,
+                                encType: 'application/json',
+                                navigate: false,
+                                fetcherKey: `move-file:${uuid}`,
+                              });
+                            }}
+                          >
+                            Move to personal files
+                          </DropdownMenuItem>
+                        )}
+                        {isFilePrivate && (
+                          <DropdownMenuItem
+                            data-testid="dashboard-file-actions-move-to-team"
+                            onClick={() => {
+                              const data = getActionFileMove(null);
+                              submit(data, {
+                                method: 'POST',
+                                action: actionUrl,
+                                encType: 'application/json',
+                                navigate: false,
+                                fetcherKey: `move-file:${uuid}`,
+                              });
+                            }}
+                          >
+                            Move to team files
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    )}
+                    {permissions.includes('FILE_DELETE') && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleDelete} data-testid="dashboard-file-actions-delete">
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
+          </ListItemView>
+        </Link>
+      </div>
       {open && (
         <DialogRenameItem
           itemLabel={'File'}
@@ -296,6 +313,7 @@ export function UserFilesListItem({
           }}
         />
       )}
+      {showMoveToFolder && <MoveToFolderDialog fileUuid={uuid} onClose={() => setShowMoveToFolder(false)} />}
     </ListItem>
   );
 }

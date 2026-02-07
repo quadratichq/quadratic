@@ -368,6 +368,18 @@ export const FiltersIcon: IconComponent = (props) => {
   return <Icon {...props}>filter_list</Icon>;
 };
 
+export const FolderIcon: IconComponent = (props) => {
+  return <Icon {...props}>folder</Icon>;
+};
+
+export const FolderOpenIcon: IconComponent = (props) => {
+  return <Icon {...props}>folder_open</Icon>;
+};
+
+export const DriveFileMoveIcon: IconComponent = (props) => {
+  return <Icon {...props}>drive_file_move</Icon>;
+};
+
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };

@@ -1,5 +1,6 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { DashboardSidebarFolderTree } from '@/dashboard/components/DashboardSidebarFolderTree';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
@@ -15,8 +16,9 @@ import {
   EducationIcon,
   ExamplesIcon,
   ExternalLinkIcon,
-  FileIcon,
+  FolderIcon,
   GroupIcon,
+  HomeIcon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
@@ -104,8 +106,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="grid gap-0.5">
           <div className="relative">
             <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} data-testid="dashboard-sidebar-team-files-link">
-              <FileIcon className={classNameIcons} />
-              Files
+              <HomeIcon className={classNameIcons} />
+              Home
               {canEditTeam && (
                 <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
                   New file
@@ -113,6 +115,16 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               )}
             </SidebarNavLink>
           </div>
+          <SidebarNavLink to={ROUTES.TEAM_DRIVE_TEAM(activeTeamUuid)}>
+            <FolderIcon className={classNameIcons} />
+            Team Files
+          </SidebarNavLink>
+          <DashboardSidebarFolderTree teamUuid={activeTeamUuid} filter="team" />
+          <SidebarNavLink to={ROUTES.TEAM_DRIVE_PRIVATE(activeTeamUuid)}>
+            <FolderIcon className={classNameIcons} />
+            Private Files
+          </SidebarNavLink>
+          <DashboardSidebarFolderTree teamUuid={activeTeamUuid} filter="private" />
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />

@@ -126,6 +126,20 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     return res.status(404).send();
   }
 
+  // Get all folders for this team (flat list, client builds tree)
+  const dbFolders = await dbClient.folder.findMany({
+    where: {
+      ownerTeamId: team.id,
+      deleted: false,
+      // Only show folders the user has access to
+      OR: [{ ownerUserId: null }, { ownerUserId: userMakingRequestId }],
+    },
+    include: {
+      parentFolder: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+
   const dbFiles = dbTeam.File ? dbTeam.File : [];
   const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
@@ -219,6 +233,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           },
         });
         const isEditRestricted = !editableFileIds.includes(file.id);
+        const fileFolderUuid = file.folderId
+          ? dbFolders.find((f) => f.id === file.folderId)?.uuid ?? null
+          : null;
         return {
           file: {
             uuid: file.uuid,
@@ -229,6 +246,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
             thumbnail: file.thumbnail,
             creatorId: file.creatorUserId,
             hasScheduledTasks: file.ScheduledTask.length > 0,
+            folderUuid: fileFolderUuid,
           },
           userMakingRequest: {
             filePermissions: applyEditRestriction(file.id, basePermissions),
@@ -247,6 +265,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           },
         });
         const isEditRestricted = !editableFileIds.includes(file.id);
+        const fileFolderUuid = file.folderId
+          ? dbFolders.find((f) => f.id === file.folderId)?.uuid ?? null
+          : null;
         return {
           file: {
             uuid: file.uuid,
@@ -256,6 +277,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
             publicLinkAccess: file.publicLinkAccess,
             thumbnail: file.thumbnail,
             hasScheduledTasks: file.ScheduledTask.length > 0,
+            folderUuid: fileFolderUuid,
           },
           userMakingRequest: {
             filePermissions: applyEditRestriction(file.id, basePermissions),
@@ -271,6 +293,15 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       totalFiles,
       maxEditableFiles: isPaidPlan ? undefined : getFreeEditableFileLimit(),
     },
+    folders: dbFolders.map((folder) => ({
+      uuid: folder.uuid,
+      name: folder.name,
+      createdDate: folder.createdDate.toISOString(),
+      updatedDate: folder.updatedDate.toISOString(),
+      parentFolderUuid: folder.parentFolder?.uuid ?? null,
+      ownerUserId: folder.ownerUserId ?? null,
+      creatorId: folder.creatorUserId,
+    })),
   };
 
   return res.status(200).json(response);
