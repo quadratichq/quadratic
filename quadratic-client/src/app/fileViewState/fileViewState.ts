@@ -1,8 +1,7 @@
 //! Singleton that manages per-file view state persistence in IndexedDB.
 //! Supports "Restore sheet when reopening files": saves and restores
-//! selection, viewport, code editor, panes, and AI panel visibility per file.
+//! selection and viewport per file.
 
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -25,58 +24,9 @@ export interface FileViewStateSheet {
   viewport?: FileViewStateViewport;
 }
 
-export type FileViewStatePanelTab = 'console' | 'ai-assistant' | 'data-browser';
-
-export interface FileViewStateCode {
-  showCodeEditor: boolean;
-  panelBottomActiveTab: FileViewStatePanelTab;
-  sheetId: string;
-  x: number;
-  y: number;
-  language: CodeCellLanguage;
-}
-
-export interface FileViewStatePanes {
-  showValidation: boolean | string;
-  showLogs: boolean;
-}
-
-export interface FileViewStateAiView {
-  showAIAnalyst: boolean;
-  showChatHistory: boolean;
-  panelWidth?: number;
-}
-
 export interface FileViewStateData {
   sheets: Record<string, FileViewStateSheet>;
   sheetId: string;
-  code?: FileViewStateCode;
-  panes?: FileViewStatePanes;
-  aiView?: FileViewStateAiView;
-}
-
-// ---------------------------------------------------------------------------
-// Applier interface (for React state — code editor, panes, AI view)
-// ---------------------------------------------------------------------------
-
-export interface FileViewStateApplier {
-  setCodeEditorState?: (fn: (prev: object) => object) => void;
-  setEditorInteractionState?: (fn: (prev: object) => object) => void;
-  setAIAnalystState?: (fn: (prev: object) => object) => void;
-}
-
-// ---------------------------------------------------------------------------
-// Source interface (for building state from current app state)
-// ---------------------------------------------------------------------------
-
-export interface FileViewStateSource {
-  codeEditorState: {
-    showCodeEditor: boolean;
-    panelBottomActiveTab: string;
-    codeCell: { sheetId: string; pos: { x: number; y: number }; language: CodeCellLanguage };
-  };
-  editorInteractionState: { showValidation: boolean | string; showLogs: boolean };
-  aiAnalystState: { showAIAnalyst: boolean; showChatHistory: boolean };
 }
 
 // ---------------------------------------------------------------------------
@@ -92,17 +42,6 @@ const DEBOUNCE_MS = 400;
 interface FileViewStateEntry {
   fileUuid: string;
   state: FileViewStateData;
-}
-
-/** Read AI Analyst panel width from localStorage (shared with useAIAnalystPanelWidth hook). */
-function readAIAnalystPanelWidth(): number | undefined {
-  try {
-    const raw = localStorage.getItem('aiAnalystPanelWidth');
-    if (raw) return JSON.parse(raw) as number;
-  } catch {
-    // ignore
-  }
-  return undefined;
 }
 
 /** Read restoreFileViewState from localStorage (works outside React). */
@@ -205,60 +144,13 @@ class FileViewState {
     }
   }
 
-  // ---- Apply: React state (call after Recoil/Jotai setters available) -----
-
-  /**
-   * Applies code editor, panes, and AI panel state via React setters.
-   * Call from a React effect after pixiAppSettings setters are wired up.
-   */
-  applyReactState(applier: FileViewStateApplier): void {
-    const state = this.loaded;
-    if (!state) return;
-    try {
-      if (state.code && applier.setCodeEditorState) {
-        const { showCodeEditor, panelBottomActiveTab, sheetId, x, y, language } = state.code;
-        applier.setCodeEditorState((prev) => ({
-          ...prev,
-          showCodeEditor,
-          panelBottomActiveTab: panelBottomActiveTab as 'console' | 'ai-assistant' | 'data-browser',
-          codeCell: {
-            sheetId,
-            pos: { x, y },
-            language,
-            lastModified: 0,
-          },
-        }));
-      }
-      if (state.panes && applier.setEditorInteractionState) {
-        applier.setEditorInteractionState((prev) => ({
-          ...prev,
-          showValidation: state.panes!.showValidation,
-          showLogs: state.panes!.showLogs,
-        }));
-      }
-      if (state.aiView && applier.setAIAnalystState) {
-        applier.setAIAnalystState((prev) => ({
-          ...prev,
-          showAIAnalyst: state.aiView!.showAIAnalyst,
-          showChatHistory: state.aiView!.showChatHistory,
-        }));
-      }
-      // Panel width is stored in localStorage (shared with useAIAnalystPanelWidth hook)
-      if (state.aiView?.panelWidth != null) {
-        localStorage.setItem('aiAnalystPanelWidth', JSON.stringify(state.aiView.panelWidth));
-      }
-    } catch (e) {
-      console.warn('[fileViewState] Failed to apply React state:', e);
-    }
-  }
-
   // ---- Save (debounced, driven by events) ---------------------------------
 
   /**
    * Starts listening to events and saving state to IndexedDB (debounced).
    * Call from a React effect when the setting is on.
    */
-  startSaving(source: FileViewStateSource): void {
+  startSaving(): void {
     if (this.listening || !this.fileUuid || !isRestoreEnabled()) return;
     this.listening = true;
 
@@ -266,19 +158,17 @@ class FileViewState {
       if (this.saveTimeout) clearTimeout(this.saveTimeout);
       this.saveTimeout = setTimeout(() => {
         this.saveTimeout = undefined;
-        this.saveNow(source);
+        this.saveNow();
       }, DEBOUNCE_MS);
     };
 
     events.on('cursorPosition', save);
     events.on('changeSheet', save);
-    events.on('codeEditor', save);
-    events.on('validation', save);
     events.on('viewportChangedReady', save);
   }
 
   /** Force an immediate save (e.g. before navigating away). */
-  saveNow(source: FileViewStateSource): void {
+  saveNow(): void {
     if (!this.fileUuid) return;
     try {
       const stateSheets: Record<string, FileViewStateSheet> = {};
@@ -291,23 +181,6 @@ class FileViewState {
       const data: FileViewStateData = {
         sheets: stateSheets,
         sheetId: sheets.current,
-        code: {
-          showCodeEditor: source.codeEditorState.showCodeEditor,
-          panelBottomActiveTab: source.codeEditorState.panelBottomActiveTab as FileViewStatePanelTab,
-          sheetId: source.codeEditorState.codeCell.sheetId,
-          x: source.codeEditorState.codeCell.pos.x,
-          y: source.codeEditorState.codeCell.pos.y,
-          language: source.codeEditorState.codeCell.language,
-        },
-        panes: {
-          showValidation: source.editorInteractionState.showValidation,
-          showLogs: source.editorInteractionState.showLogs,
-        },
-        aiView: {
-          showAIAnalyst: source.aiAnalystState.showAIAnalyst,
-          showChatHistory: source.aiAnalystState.showChatHistory,
-          panelWidth: readAIAnalystPanelWidth(),
-        },
       };
       this.dbReady.then(() => {
         const table = this.db.table<FileViewStateEntry, string>(DB_STORE);
@@ -327,8 +200,6 @@ class FileViewState {
     if (this.saveTimeout) clearTimeout(this.saveTimeout);
     events.off('cursorPosition');
     events.off('changeSheet');
-    events.off('codeEditor');
-    events.off('validation');
     events.off('viewportChangedReady');
     this.listening = false;
     this.loaded = undefined;
