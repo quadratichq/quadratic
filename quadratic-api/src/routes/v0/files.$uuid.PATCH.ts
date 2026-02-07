@@ -128,12 +128,13 @@ async function handler(
   //
   if (folderUuid !== undefined) {
     let folderId: number | null = null;
+    let adjustedOwnerUserId: number | null | undefined = undefined; // undefined = no change
 
     if (folderUuid !== null) {
       const folder = await dbClient.folder.findUnique({
         where: { uuid: folderUuid },
       });
-      if (!folder || folder.deleted) {
+      if (!folder) {
         throw new ApiError(404, 'Folder not found.');
       }
       // Ensure the folder belongs to the same team as the file
@@ -142,15 +143,30 @@ async function handler(
         throw new ApiError(400, 'Folder must belong to the same team as the file.');
       }
       folderId = folder.id;
+
+      // Automatically adjust the file's ownership to match the target folder.
+      // Moving a team file into a private folder makes the file private,
+      // and moving a private file into a team folder makes the file a team file.
+      const folderOwner = folder.ownerUserId ?? null;
+      const fileOwner = file.ownerUserId ?? null;
+      if (folderOwner !== fileOwner) {
+        adjustedOwnerUserId = folderOwner;
+      }
     }
 
-    const updatedFile = await dbClient.file.update({
+    const data: { folderId: number | null; ownerUserId?: number | null } = { folderId };
+    if (adjustedOwnerUserId !== undefined) {
+      data.ownerUserId = adjustedOwnerUserId;
+    }
+
+    await dbClient.file.update({
       where: { uuid },
-      data: { folderId },
+      data,
     });
 
     return res.status(200).json({
       folderUuid: folderUuid,
+      ownerUserId: adjustedOwnerUserId !== undefined ? (adjustedOwnerUserId ?? undefined) : undefined,
     });
   }
 

@@ -6,14 +6,9 @@ CREATE TABLE "Folder" (
     "id" SERIAL NOT NULL,
     "uuid" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "deleted" BOOLEAN NOT NULL DEFAULT false,
-    "deleted_date" TIMESTAMP(3),
     "parent_folder_id" INTEGER,
     "owner_user_id" INTEGER,
     "owner_team_id" INTEGER NOT NULL,
-    "creator_user_id" INTEGER NOT NULL,
 
     CONSTRAINT "Folder_pkey" PRIMARY KEY ("id")
 );
@@ -44,6 +39,3 @@ ALTER TABLE "Folder" ADD CONSTRAINT "Folder_owner_user_id_fkey" FOREIGN KEY ("ow
 
 -- AddForeignKey
 ALTER TABLE "Folder" ADD CONSTRAINT "Folder_owner_team_id_fkey" FOREIGN KEY ("owner_team_id") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Folder" ADD CONSTRAINT "Folder_creator_user_id_fkey" FOREIGN KEY ("creator_user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -6,6 +6,8 @@ import { useRevalidator } from 'react-router';
 export type DragPayload = {
   type: 'file' | 'folder';
   uuid: string;
+  /** null = team item, number = private item (owner's user ID) */
+  ownerUserId: number | null;
 };
 
 /** Material Symbols icon name for each drag type */
@@ -19,7 +21,7 @@ const DRAG_ICON_NAME: Record<DragPayload['type'], string> = {
  * The element is appended off-screen so Chrome captures it, then removed next frame.
  * The offset is (0, 10) so the icon appears to the right of the cursor.
  */
-function setCustomDragImage(dataTransfer: DataTransfer, type: DragPayload['type']): void {
+function setIconDragImage(dataTransfer: DataTransfer, type: DragPayload['type']): void {
   const el = document.createElement('div');
   el.setAttribute('aria-hidden', 'true');
   el.style.cssText =
@@ -40,6 +42,53 @@ function setCustomDragImage(dataTransfer: DataTransfer, type: DragPayload['type'
 }
 
 /**
+ * Creates a small thumbnail drag-image by drawing the already-loaded thumbnail
+ * onto a `<canvas>`. This avoids the blank-image problem that occurs when a
+ * freshly-created `<img>` element hasn't decoded yet at the time `setDragImage`
+ * captures its snapshot.  Returns false if no loaded thumbnail is available,
+ * so the caller can fall back to the icon approach.
+ */
+function setThumbnailDragImage(dataTransfer: DataTransfer, sourceEl: HTMLElement): boolean {
+  const img = sourceEl.querySelector('img[alt="File thumbnail screenshot"]') as HTMLImageElement | null;
+  if (!img || !img.naturalWidth) return false;
+
+  const WIDTH = 56;
+  const HEIGHT = Math.round((WIDTH * 9) / 16); // 16:9 aspect ratio
+  const RADIUS = 4;
+  const dpr = window.devicePixelRatio || 1;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = WIDTH * dpr;
+  canvas.height = HEIGHT * dpr;
+  canvas.style.cssText = `position:fixed;left:-9999px;top:0;width:${WIDTH}px;height:${HEIGHT}px;`;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return false;
+
+  ctx.scale(dpr, dpr);
+
+  // Clip to a rounded rectangle
+  ctx.beginPath();
+  ctx.roundRect(0, 0, WIDTH, HEIGHT, RADIUS);
+  ctx.clip();
+
+  // Draw the already-loaded thumbnail synchronously
+  ctx.drawImage(img, 0, 0, WIDTH, HEIGHT);
+
+  // Thin border
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(0.5, 0.5, WIDTH - 1, HEIGHT - 1, RADIUS);
+  ctx.stroke();
+
+  document.body.appendChild(canvas);
+  dataTransfer.setDragImage(canvas, -8, 0);
+  requestAnimationFrame(() => canvas.remove());
+  return true;
+}
+
+/**
  * Creates drag start handler props for a draggable item.
  * Sets a small custom drag image so the full card/thumbnail doesn't obscure drop targets.
  *
@@ -57,7 +106,10 @@ export function getDragProps(payload: DragPayload) {
       e.dataTransfer.clearData();
       e.dataTransfer.setData('application/json', JSON.stringify(payload));
       e.dataTransfer.effectAllowed = 'move';
-      setCustomDragImage(e.dataTransfer, payload.type);
+      // For files, prefer the actual thumbnail as the drag image; fall back to an icon
+      if (payload.type !== 'file' || !setThumbnailDragImage(e.dataTransfer, el)) {
+        setIconDragImage(e.dataTransfer, payload.type);
+      }
       // Dim the source element so it's clear which item is being dragged
       requestAnimationFrame(() => {
         el.style.opacity = '0.4';
@@ -73,8 +125,12 @@ export function getDragProps(payload: DragPayload) {
 /**
  * Hook for a drop target (a folder or the root drive).
  * Returns drop event handlers and the isOver state for visual feedback.
+ *
+ * @param targetFolderUuid - The folder to move into, or null for root
+ * @param targetOwnerUserId - Optional ownership context. When provided and different
+ *   from the dragged item's ownership, the item's ownership will be updated to match.
  */
-export function useDropTarget(targetFolderUuid: string | null) {
+export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId?: number | null) {
   const [isOver, setIsOver] = useState(false);
   const revalidator = useRevalidator();
 
@@ -100,13 +156,29 @@ export function useDropTarget(targetFolderUuid: string | null) {
 
       try {
         const data: DragPayload = JSON.parse(e.dataTransfer.getData('application/json'));
+        const needsOwnershipChange = targetOwnerUserId !== undefined && data.ownerUserId !== targetOwnerUserId;
 
         if (data.type === 'file') {
+          // When moving to a specific folder, the API auto-adjusts file ownership
+          // to match the folder's ownership. We only need an explicit ownership
+          // change when dropping at root level (no folder).
+          if (needsOwnershipChange && targetFolderUuid === null) {
+            await apiClient.files.update(data.uuid, { ownerUserId: targetOwnerUserId });
+          }
           await apiClient.files.update(data.uuid, { folderUuid: targetFolderUuid });
         } else if (data.type === 'folder') {
           // Prevent dropping folder onto itself
           if (data.uuid === targetFolderUuid) return;
-          await apiClient.folders.update(data.uuid, { parentFolderUuid: targetFolderUuid });
+
+          if (needsOwnershipChange) {
+            // Folder PATCH supports ownerUserId + parentFolderUuid together
+            await apiClient.folders.update(data.uuid, {
+              parentFolderUuid: targetFolderUuid,
+              ownerUserId: targetOwnerUserId,
+            });
+          } else {
+            await apiClient.folders.update(data.uuid, { parentFolderUuid: targetFolderUuid });
+          }
         }
 
         revalidator.revalidate();
@@ -114,8 +186,18 @@ export function useDropTarget(targetFolderUuid: string | null) {
         // Failed to move - revalidation will reset the UI
       }
     },
-    [targetFolderUuid, revalidator]
+    [targetFolderUuid, targetOwnerUserId, revalidator]
   );
 
   return { isOver, onDragOver, onDragLeave, onDrop };
+}
+
+/**
+ * Hook for a section-level drop target ("Team Files" or "Private Files").
+ * Drops move the item to the root of the target section and change ownership.
+ *
+ * @param targetOwnerUserId - null for team section, user ID for private section
+ */
+export function useOwnershipDropTarget(targetOwnerUserId: number | null) {
+  return useDropTarget(null, targetOwnerUserId);
 }

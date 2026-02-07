@@ -39,7 +39,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     },
   });
 
-  if (!folder || folder.deleted) {
+  if (!folder) {
     throw new ApiError(404, 'Folder not found.');
   }
 
@@ -65,7 +65,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       where: { id: currentFolder.parentFolderId },
       include: { parentFolder: true },
     });
-    if (!parent || parent.deleted) break;
+    if (!parent) break;
     breadcrumbs.unshift({ uuid: parent.uuid, name: parent.name });
     currentFolder = parent as any;
   }
@@ -74,7 +74,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   const subfolders = await dbClient.folder.findMany({
     where: {
       parentFolderId: folder.id,
-      deleted: false,
       // Only show folders the user has access to
       OR: [{ ownerUserId: null }, { ownerUserId: userId }],
     },
@@ -185,8 +184,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     folder: {
       uuid: folder.uuid,
       name: folder.name,
-      createdDate: folder.createdDate.toISOString(),
-      updatedDate: folder.updatedDate.toISOString(),
       parentFolderUuid: folder.parentFolder?.uuid ?? null,
       ownerUserId: folder.ownerUserId ?? null,
     },
@@ -194,8 +191,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     subfolders: subfolders.map((sf) => ({
       uuid: sf.uuid,
       name: sf.name,
-      createdDate: sf.createdDate.toISOString(),
-      updatedDate: sf.updatedDate.toISOString(),
     })),
     files: publicFiles,
     filesPrivate: privateFiles,

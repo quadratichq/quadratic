@@ -130,7 +130,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbFolders = await dbClient.folder.findMany({
     where: {
       ownerTeamId: team.id,
-      deleted: false,
       // Only show folders the user has access to
       OR: [{ ownerUserId: null }, { ownerUserId: userMakingRequestId }],
     },
@@ -296,11 +295,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     folders: dbFolders.map((folder) => ({
       uuid: folder.uuid,
       name: folder.name,
-      createdDate: folder.createdDate.toISOString(),
-      updatedDate: folder.updatedDate.toISOString(),
       parentFolderUuid: folder.parentFolder?.uuid ?? null,
       ownerUserId: folder.ownerUserId ?? null,
-      creatorId: folder.creatorUserId,
     })),
   };
 

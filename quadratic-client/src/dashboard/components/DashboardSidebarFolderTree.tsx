@@ -1,9 +1,9 @@
-import { useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
+import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { ChevronRightIcon, FolderIcon, FolderOpenIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, FolderIcon, FolderOpenIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useParams } from 'react-router';
 
 interface FolderTreeNode {
@@ -77,7 +77,18 @@ function getAutoExpandedUuids(
   return expanded;
 }
 
-export function DashboardSidebarFolderTree({ teamUuid, filter }: { teamUuid: string; filter: 'team' | 'private' }) {
+export function DashboardSidebarFolderTree({
+  teamUuid,
+  filter,
+  userId,
+  forceShow,
+}: {
+  teamUuid: string;
+  filter: 'team' | 'private';
+  userId: number;
+  /** When true, the tree is shown even if the current view isn't relevant (e.g. during drag-hover reveal). */
+  forceShow?: boolean;
+}) {
   const {
     activeTeam: { folders },
   } = useDashboardRouteLoaderData();
@@ -111,7 +122,10 @@ export function DashboardSidebarFolderTree({ teamUuid, filter }: { teamUuid: str
   const tree = useMemo(() => buildFolderTree(folders, filter), [folders, filter]);
   const autoExpandedUuids = useMemo(() => getAutoExpandedUuids(folders, activeFolderUuid), [folders, activeFolderUuid]);
 
-  if (!isRelevantView || tree.length === 0) return null;
+  if ((!isRelevantView && !forceShow) || tree.length === 0) return null;
+
+  // The target ownership for drop targets: null for team folders, userId for private folders
+  const targetOwnerUserId = filter === 'team' ? null : userId;
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -122,6 +136,7 @@ export function DashboardSidebarFolderTree({ teamUuid, filter }: { teamUuid: str
           teamUuid={teamUuid}
           depth={0}
           autoExpandedUuids={autoExpandedUuids}
+          targetOwnerUserId={targetOwnerUserId}
         />
       ))}
     </div>
@@ -133,14 +148,17 @@ function FolderTreeItem({
   teamUuid,
   depth,
   autoExpandedUuids,
+  targetOwnerUserId,
 }: {
   node: FolderTreeNode;
   teamUuid: string;
   depth: number;
   autoExpandedUuids: Set<string>;
+  targetOwnerUserId: number | null;
 }) {
   const [isManuallyExpanded, setIsManuallyExpanded] = useState<boolean | null>(null);
-  const { isOver: isDropTarget, onDragOver, onDragLeave, onDrop } = useDropTarget(node.uuid);
+  const { isOver: isDropTarget, onDragOver, onDragLeave, onDrop } = useDropTarget(node.uuid, targetOwnerUserId);
+  const dragProps = getDragProps({ type: 'folder', uuid: node.uuid, ownerUserId: node.ownerUserId });
   const location = useLocation();
   const navigation = useNavigation();
   const to = ROUTES.TEAM_DRIVE_FOLDER(teamUuid, node.uuid);
@@ -161,16 +179,33 @@ function FolderTreeItem({
     setIsManuallyExpanded(null);
   }, [isAutoExpanded]);
 
+  // Auto-expand collapsed folders after hovering with a drag for 500ms
+  const dragExpandTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (isDropTarget && hasChildren && !isExpanded) {
+      dragExpandTimer.current = setTimeout(() => {
+        setIsManuallyExpanded(true);
+      }, 500);
+    }
+    return () => {
+      if (dragExpandTimer.current) {
+        clearTimeout(dragExpandTimer.current);
+        dragExpandTimer.current = null;
+      }
+    };
+  }, [isDropTarget, hasChildren, isExpanded]);
+
   return (
     <div>
       <div
         className={cn(
           'flex items-center gap-0.5 rounded px-1.5 py-1 text-sm no-underline transition-colors',
-          'hover:bg-accent/50',
-          isActive && 'bg-accent brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
+          'bg-accent hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100',
+          isActive && 'brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
           isDropTarget && 'border border-primary bg-primary/10'
         )}
         style={{ paddingLeft: `${depth * 8 + 14}px` }}
+        {...dragProps}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
@@ -191,6 +226,8 @@ function FolderTreeItem({
         <NavLink to={to} className="flex min-w-0 flex-grow items-center gap-1.5 no-underline">
           {showChildren ? (
             <FolderOpenIcon className="shrink-0 text-muted-foreground" />
+          ) : node.ownerUserId !== null ? (
+            <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
           ) : (
             <FolderIcon className="shrink-0 text-muted-foreground" />
           )}
@@ -205,6 +242,7 @@ function FolderTreeItem({
             teamUuid={teamUuid}
             depth={depth + 1}
             autoExpandedUuids={autoExpandedUuids}
+            targetOwnerUserId={targetOwnerUserId}
           />
         ))}
     </div>

@@ -20,7 +20,6 @@ model User {
     ownedFiles          File[]            @relation(name: "OwnerRelation")
     createdFiles        File[]            @relation(name: "CreatorRelation")
     ownedFolders        Folder[]          @relation(name: "FolderOwnerRelation")
-    createdFolders      Folder[]          @relation(name: "FolderCreatorRelation")
     QFeedback           QFeedback[]
     UserTeamRole        UserTeamRole[]
     UserFileRole        UserFileRole[]
@@ -305,13 +304,9 @@ model FileInvite {
 }
 
 model Folder {
-    id          Int       @id @default(autoincrement())
-    uuid        String    @unique @default(uuid())
-    name        String
-    createdDate DateTime  @default(now()) @map("created_date")
-    updatedDate DateTime  @default(now()) @map("updated_date")
-    deleted     Boolean   @default(false)
-    deletedDate DateTime? @map("deleted_date")
+    id   Int    @id @default(autoincrement())
+    uuid String @unique @default(uuid())
+    name String
 
     // Subfolder support (self-referencing)
     parentFolder   Folder?  @relation("FolderSubfolders", fields: [parentFolderId], references: [id])
@@ -323,10 +318,6 @@ model Folder {
     ownerUserId Int?  @map("owner_user_id")
     ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id])
     ownerTeamId Int   @map("owner_team_id")
-
-    // Creator (set at creation, never changes)
-    creator       User @relation(name: "FolderCreatorRelation", fields: [creatorUserId], references: [id])
-    creatorUserId Int  @map("creator_user_id")
 
     // Files in this folder
     files File[]

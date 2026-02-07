@@ -400,6 +400,13 @@ export const apiClient = {
     delete(uuid: string) {
       return fetchFromApi(`/v0/folders/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/folders/:uuid.DELETE.response']);
     },
+    getDeletePreview(uuid: string) {
+      return fetchFromApi(
+        `/v0/folders/${uuid}/delete-preview`,
+        { method: 'GET' },
+        ApiSchemas['/v0/folders/:uuid/delete-preview.GET.response']
+      );
+    },
   },
 
   templates: {

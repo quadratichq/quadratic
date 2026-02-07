@@ -54,9 +54,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     if (parentFolder.ownerTeamId !== team.id) {
       throw new ApiError(400, 'Parent folder must belong to the same team.');
     }
-    if (parentFolder.deleted) {
-      throw new ApiError(400, 'Cannot create a subfolder in a deleted folder.');
-    }
     parentFolderId = parentFolder.id;
   }
 
@@ -65,7 +62,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       name,
       ownerTeamId: team.id,
       ownerUserId: isPrivate ? userId : undefined,
-      creatorUserId: userId,
       parentFolderId: parentFolderId ?? null,
     },
   });
@@ -74,8 +70,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     folder: {
       uuid: folder.uuid,
       name: folder.name,
-      createdDate: folder.createdDate.toISOString(),
-      updatedDate: folder.updatedDate.toISOString(),
       parentFolderUuid: parentFolderUuid ?? null,
       ownerUserId: folder.ownerUserId ?? null,
     },

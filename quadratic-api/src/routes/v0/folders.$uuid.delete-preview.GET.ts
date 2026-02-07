@@ -22,13 +22,15 @@ export default [
   handler,
 ];
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders/:uuid.DELETE.response']>) {
+async function handler(
+  req: RequestWithUser,
+  res: Response<ApiTypes['/v0/folders/:uuid/delete-preview.GET.response']>
+) {
   const {
     user: { id: userId },
   } = req;
   const folderUuid = req.params.uuid;
 
-  // Get the folder
   const folder = await dbClient.folder.findUnique({
     where: { uuid: folderUuid },
   });
@@ -37,7 +39,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(404, 'Folder not found.');
   }
 
-  // Check team access
   const folderTeam = await dbClient.team.findUnique({ where: { id: folder.ownerTeamId } });
   if (!folderTeam) {
     throw new ApiError(404, 'Team not found.');
@@ -47,7 +48,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     userMakingRequest: { permissions: teamPermissions },
   } = await getTeam({ uuid: folderTeam.uuid, userId });
 
-  // Check permissions
   if (folder.ownerUserId && folder.ownerUserId !== userId) {
     throw new ApiError(403, 'You do not have access to this folder.');
   }
@@ -56,50 +56,41 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have permission to delete this folder.');
   }
 
-  // Recursively soft-delete files in the tree, then hard-delete the folder and its subfolders
-  await deleteFolderRecursive(folder.id);
+  const { files, subfolderCount } = await collectFolderTreeContents(folder.id);
 
-  return res.status(200).json({ message: 'Folder deleted.' });
+  return res.status(200).json({
+    files,
+    subfolderCount,
+  });
 }
 
 /**
- * Recursively soft-deletes all files in the folder tree, then hard-deletes the folder and its subfolders.
- * Files can be restored later; folders cannot.
+ * Recursively collects all files (uuid, name) and counts subfolders in the folder tree.
  */
-async function deleteFolderRecursive(folderId: number): Promise<void> {
-  const now = new Date();
-
-  // Soft-delete all files in this folder (so they can be restored; DB will set folder_id to null when we delete the folder)
-  await dbClient.file.updateMany({
-    where: { folderId, deleted: false },
-    data: { deleted: true, deletedDate: now },
-  });
-
-  // Soft-delete scheduled tasks for files in this folder
+async function collectFolderTreeContents(
+  folderId: number
+): Promise<{ files: { uuid: string; name: string }[]; subfolderCount: number }> {
   const filesInFolder = await dbClient.file.findMany({
-    where: { folderId },
-    select: { id: true },
+    where: { folderId, deleted: false },
+    select: { uuid: true, name: true },
   });
-  if (filesInFolder.length > 0) {
-    await dbClient.scheduledTask.updateMany({
-      where: {
-        fileId: { in: filesInFolder.map((f) => f.id) },
-        status: { not: 'DELETED' },
-      },
-      data: { status: 'DELETED' },
-    });
-  }
 
-  // Recurse into subfolders first (must delete children before parent)
   const subfolders = await dbClient.folder.findMany({
     where: { parentFolderId: folderId },
+    select: { id: true },
   });
+
+  let allFiles = [...filesInFolder];
+  let totalSubfolders = subfolders.length;
+
   for (const subfolder of subfolders) {
-    await deleteFolderRecursive(subfolder.id);
+    const { files: childFiles, subfolderCount: childCount } = await collectFolderTreeContents(subfolder.id);
+    allFiles = allFiles.concat(childFiles);
+    totalSubfolders += childCount;
   }
 
-  // Hard-delete this folder (File.folder_id has ON DELETE SET NULL, so file rows are updated automatically)
-  await dbClient.folder.delete({
-    where: { id: folderId },
-  });
+  return {
+    files: allFiles.map((f) => ({ uuid: f.uuid, name: f.name })),
+    subfolderCount: totalSubfolders,
+  };
 }

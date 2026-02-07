@@ -95,8 +95,6 @@ export const FolderSchema = z.object({
     .string()
     .min(1, { message: 'Must be at least 1 character.' })
     .max(140, { message: 'Cannot be longer than 140 characters.' }),
-  createdDate: z.string().datetime(),
-  updatedDate: z.string().datetime(),
   parentFolderUuid: z.string().uuid().nullable(),
   ownerUserId: z.number().nullable(),
 });
@@ -418,7 +416,7 @@ export const ApiSchemas = {
   '/v0/folders/:uuid.GET.response': z.object({
     folder: FolderSchema,
     breadcrumbs: z.array(FolderSchema.pick({ uuid: true, name: true })),
-    subfolders: z.array(FolderSchema.pick({ uuid: true, name: true, createdDate: true, updatedDate: true })),
+    subfolders: z.array(FolderSchema.pick({ uuid: true, name: true })),
     files: z.array(
       z.object({
         file: TeamPublicFileSchema,
@@ -435,12 +433,17 @@ export const ApiSchemas = {
   '/v0/folders/:uuid.PATCH.request': z.object({
     name: FolderSchema.shape.name.optional(),
     parentFolderUuid: z.string().uuid().nullable().optional(),
+    ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
   }),
   '/v0/folders/:uuid.PATCH.response': z.object({
     folder: FolderSchema,
   }),
   '/v0/folders/:uuid.DELETE.response': z.object({
     message: z.string(),
+  }),
+  '/v0/folders/:uuid/delete-preview.GET.response': z.object({
+    files: z.array(z.object({ uuid: z.string().uuid(), name: z.string() })),
+    subfolderCount: z.number(),
   }),
 
   /**
@@ -507,11 +510,7 @@ export const ApiSchemas = {
       totalFiles: z.number(),
       maxEditableFiles: z.number().optional(),
     }),
-    folders: z.array(
-      FolderSchema.extend({
-        creatorId: z.number().optional(),
-      })
-    ),
+    folders: z.array(FolderSchema),
   }),
   '/v0/teams/:uuid.PATCH.request': z
     .object({

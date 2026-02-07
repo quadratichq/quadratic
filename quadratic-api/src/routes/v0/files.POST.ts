@@ -62,7 +62,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     const folder = await dbClient.folder.findUnique({
       where: { uuid: folderUuid },
     });
-    if (!folder || folder.deleted) {
+    if (!folder) {
       throw new ApiError(404, 'Folder not found.');
     }
     if (folder.ownerTeamId !== teamId) {

@@ -1,6 +1,7 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { DashboardSidebarFolderTree } from '@/dashboard/components/DashboardSidebarFolderTree';
+import { useOwnershipDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
@@ -17,6 +18,7 @@ import {
   ExamplesIcon,
   ExternalLinkIcon,
   FolderIcon,
+  FolderSpecialIcon,
   GroupIcon,
   HomeIcon,
   LabsIcon,
@@ -57,7 +59,7 @@ import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
 import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -79,6 +81,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const submit = useSubmit();
   const {
     eduStatus,
+    userMakingRequest: { id: userId },
     activeTeam: {
       userMakingRequest: { teamPermissions },
       team: { uuid: activeTeamUuid },
@@ -96,6 +99,24 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
   const classNameIcons = `mx-0.5 text-muted-foreground`;
+
+  // Track whether the folder tree for each section has been revealed by drag-hovering
+  const [dragRevealTeam, setDragRevealTeam] = useState(false);
+  const [dragRevealPrivate, setDragRevealPrivate] = useState(false);
+
+  // Reset both reveal flags when the drag operation ends
+  useEffect(() => {
+    const reset = () => {
+      setDragRevealTeam(false);
+      setDragRevealPrivate(false);
+    };
+    document.addEventListener('dragend', reset, true);
+    document.addEventListener('drop', reset, true);
+    return () => {
+      document.removeEventListener('dragend', reset, true);
+      document.removeEventListener('drop', reset, true);
+    };
+  }, []);
 
   return (
     <nav className={`flex h-full flex-col gap-4 overflow-auto bg-accent`}>
@@ -115,16 +136,30 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               )}
             </SidebarNavLink>
           </div>
-          <SidebarNavLink to={ROUTES.TEAM_DRIVE_TEAM(activeTeamUuid)}>
-            <FolderIcon className={classNameIcons} />
-            Team Files
-          </SidebarNavLink>
-          <DashboardSidebarFolderTree teamUuid={activeTeamUuid} filter="team" />
-          <SidebarNavLink to={ROUTES.TEAM_DRIVE_PRIVATE(activeTeamUuid)}>
-            <FolderIcon className={classNameIcons} />
-            Private Files
-          </SidebarNavLink>
-          <DashboardSidebarFolderTree teamUuid={activeTeamUuid} filter="private" />
+          <SidebarOwnershipDropZone targetOwnerUserId={null} onDragReveal={() => setDragRevealTeam(true)}>
+            <SidebarNavLink to={ROUTES.TEAM_DRIVE_TEAM(activeTeamUuid)}>
+              <FolderIcon className={classNameIcons} />
+              Team Files
+            </SidebarNavLink>
+          </SidebarOwnershipDropZone>
+          <DashboardSidebarFolderTree
+            teamUuid={activeTeamUuid}
+            filter="team"
+            userId={userId}
+            forceShow={dragRevealTeam}
+          />
+          <SidebarOwnershipDropZone targetOwnerUserId={userId} onDragReveal={() => setDragRevealPrivate(true)}>
+            <SidebarNavLink to={ROUTES.TEAM_DRIVE_PRIVATE(activeTeamUuid)}>
+              <FolderSpecialIcon className={classNameIcons} />
+              Private Files
+            </SidebarNavLink>
+          </SidebarOwnershipDropZone>
+          <DashboardSidebarFolderTree
+            teamUuid={activeTeamUuid}
+            filter="private"
+            userId={userId}
+            forceShow={dragRevealPrivate}
+          />
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
@@ -247,6 +282,45 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </div>
       </div>
     </nav>
+  );
+}
+
+function SidebarOwnershipDropZone({
+  targetOwnerUserId,
+  onDragReveal,
+  children,
+}: {
+  targetOwnerUserId: number | null;
+  onDragReveal?: () => void;
+  children: ReactNode;
+}) {
+  const { isOver, onDragOver, onDragLeave, onDrop } = useOwnershipDropTarget(targetOwnerUserId);
+
+  // Reveal the folder tree after hovering with a drag for 500ms
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stableOnDragReveal = useCallback(() => onDragReveal?.(), [onDragReveal]);
+
+  useEffect(() => {
+    if (isOver) {
+      revealTimer.current = setTimeout(stableOnDragReveal, 500);
+    }
+    return () => {
+      if (revealTimer.current) {
+        clearTimeout(revealTimer.current);
+        revealTimer.current = null;
+      }
+    };
+  }, [isOver, stableOnDragReveal]);
+
+  return (
+    <div
+      className={cn('rounded', isOver && 'border border-primary bg-primary/10 [&>a]:bg-transparent')}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {children}
+    </div>
   );
 }
 

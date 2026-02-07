@@ -18,6 +18,7 @@ export const Component = () => {
       userMakingRequest: { teamPermissions },
       users,
     },
+    userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
   const location = useLocation();
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -119,7 +120,9 @@ export const Component = () => {
         }
       />
 
-      {topLevelFolders.length > 0 && <FolderListItems folders={topLevelFolders} teamUuid={teamUuid} />}
+      {topLevelFolders.length > 0 && (
+        <FolderListItems folders={topLevelFolders} teamUuid={teamUuid} ownerUserId={isPrivateView ? userId : null} />
+      )}
 
       <UserFilesList files={rootFiles} teamUuid={teamUuid} hideTypeFilters />
 

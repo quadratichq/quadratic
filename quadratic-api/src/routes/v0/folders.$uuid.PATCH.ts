@@ -22,7 +22,7 @@ const schema = z.object({
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders/:uuid.PATCH.response']>) {
   const {
     params: { uuid },
-    body: { name, parentFolderUuid },
+    body: { name, parentFolderUuid, ownerUserId: newOwnerUserId },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -33,7 +33,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     where: { uuid },
   });
 
-  if (!folder || folder.deleted) {
+  if (!folder) {
     throw new ApiError(404, 'Folder not found.');
   }
 
@@ -58,9 +58,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have permission to edit this folder.');
   }
 
-  const data: { name?: string; parentFolderId?: number | null; updatedDate: Date } = {
-    updatedDate: new Date(),
-  };
+  const data: { name?: string; parentFolderId?: number | null; ownerUserId?: number | null } = {};
 
   // Update name
   if (name !== undefined) {
@@ -82,7 +80,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
         where: { uuid: parentFolderUuid },
       });
 
-      if (!newParent || newParent.deleted) {
+      if (!newParent) {
         throw new ApiError(404, 'Target parent folder not found.');
       }
 
@@ -108,20 +106,78 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     }
   }
 
-  const updatedFolder = await dbClient.folder.update({
-    where: { uuid },
-    data,
-    include: { parentFolder: true },
+  // Change ownership (move between team and private)
+  if (newOwnerUserId !== undefined) {
+    if (newOwnerUserId !== null) {
+      // Moving to private: must be the requesting user
+      if (newOwnerUserId !== userId) {
+        throw new ApiError(400, 'You can only move folders to your own private files.');
+      }
+    }
+    data.ownerUserId = newOwnerUserId;
+
+    // When changing ownership, move to root if no explicit parent was provided
+    if (parentFolderUuid === undefined) {
+      data.parentFolderId = null;
+    }
+  }
+
+  // Collect descendant folder IDs before updating (needed for cascading ownership)
+  let descendantFolderIds: number[] = [];
+  if (newOwnerUserId !== undefined) {
+    descendantFolderIds = await collectDescendantFolderIds(folder.id);
+  }
+
+  // Perform the update (and cascade ownership if needed) in a transaction
+  const updatedFolder = await dbClient.$transaction(async (tx) => {
+    const updated = await tx.folder.update({
+      where: { uuid },
+      data,
+      include: { parentFolder: true },
+    });
+
+    // Cascade ownership change to all descendant folders and their files
+    if (newOwnerUserId !== undefined && descendantFolderIds.length > 0) {
+      await tx.folder.updateMany({
+        where: { id: { in: descendantFolderIds } },
+        data: { ownerUserId: newOwnerUserId },
+      });
+    }
+
+      // Update all files in this folder and its descendants
+      const allFolderIds = [folder.id, ...descendantFolderIds];
+      await tx.file.updateMany({
+        where: { folderId: { in: allFolderIds }, deleted: false },
+        data: { ownerUserId: newOwnerUserId },
+      });
+    }
+
+    return updated;
   });
 
   return res.status(200).json({
     folder: {
       uuid: updatedFolder.uuid,
       name: updatedFolder.name,
-      createdDate: updatedFolder.createdDate.toISOString(),
-      updatedDate: updatedFolder.updatedDate.toISOString(),
       parentFolderUuid: updatedFolder.parentFolder?.uuid ?? null,
       ownerUserId: updatedFolder.ownerUserId ?? null,
     },
   });
+}
+
+/**
+ * Recursively collects all descendant folder IDs for a given folder.
+ * Used to cascade ownership changes to the entire subtree.
+ */
+async function collectDescendantFolderIds(folderId: number): Promise<number[]> {
+  const children = await dbClient.folder.findMany({
+    where: { parentFolderId: folderId },
+    select: { id: true },
+  });
+
+  const ids = children.map((c) => c.id);
+  for (const child of children) {
+    ids.push(...(await collectDescendantFolderIds(child.id)));
+  }
+  return ids;
 }

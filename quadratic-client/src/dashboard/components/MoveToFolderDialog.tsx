@@ -1,6 +1,6 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon, FolderIcon, FolderOpenIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, FolderIcon, FolderOpenIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -18,13 +18,16 @@ interface FolderNode {
   uuid: string;
   name: string;
   parentFolderUuid: string | null;
+  ownerUserId: number | null;
   children: FolderNode[];
 }
 
-function buildTree(folders: Array<{ uuid: string; name: string; parentFolderUuid: string | null }>): FolderNode[] {
+function buildTree(
+  folders: Array<{ uuid: string; name: string; parentFolderUuid: string | null; ownerUserId?: number | null }>
+): FolderNode[] {
   const map = new Map<string, FolderNode>();
   for (const f of folders) {
-    map.set(f.uuid, { ...f, children: [] });
+    map.set(f.uuid, { ...f, ownerUserId: f.ownerUserId ?? null, children: [] });
   }
   const roots: FolderNode[] = [];
   for (const node of map.values()) {
@@ -159,6 +162,8 @@ function FolderPickerItem({
         {!hasChildren && <span className="w-5" />}
         {isExpanded ? (
           <FolderOpenIcon className="shrink-0 text-muted-foreground" />
+        ) : node.ownerUserId !== null ? (
+          <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
         ) : (
           <FolderIcon className="shrink-0 text-muted-foreground" />
         )}

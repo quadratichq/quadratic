@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb, createFolder, createUsers, upgradeTeamToPro } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createFolder, createUsers, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
 const teamUuid = '00000000-0000-4000-8000-000000000001';
 const folderUuid = '00000000-0000-4000-8000-000000000010';
@@ -42,7 +42,6 @@ describe('PATCH /v0/folders/:uuid', () => {
         name: 'Folder A',
         uuid: folderUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
       },
     });
     folderId = folder.id;
@@ -52,7 +51,6 @@ describe('PATCH /v0/folders/:uuid', () => {
         name: 'Subfolder B',
         uuid: subfolderUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
         parentFolderId: folderId,
       },
     });
@@ -62,7 +60,6 @@ describe('PATCH /v0/folders/:uuid', () => {
         name: 'Sibling C',
         uuid: siblingUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
       },
     });
   });
@@ -130,6 +127,190 @@ describe('PATCH /v0/folders/:uuid', () => {
     it('rejects moving to a non-existent parent', async () => {
       await patchFolder(folderUuid, { parentFolderUuid: '00000000-0000-4000-8000-000000000099' })
         .expect(404)
+        .expect(expectError);
+    });
+  });
+
+  describe('ownership cascade', () => {
+    const cascadeParentUuid = '00000000-0000-4000-8000-000000000020';
+    const cascadeChildUuid = '00000000-0000-4000-8000-000000000021';
+    const cascadeGrandchildUuid = '00000000-0000-4000-8000-000000000022';
+
+    let fileInParentId: number;
+    let fileInChildId: number;
+    let fileInGrandchildId: number;
+    let fileOutsideId: number;
+
+    beforeAll(async () => {
+      // Create a folder hierarchy: parent → child → grandchild (all team-owned)
+      const parent = await createFolder({
+        data: {
+          name: 'Cascade Parent',
+          uuid: cascadeParentUuid,
+          ownerTeamId: teamId,
+        },
+      });
+
+      const child = await createFolder({
+        data: {
+          name: 'Cascade Child',
+          uuid: cascadeChildUuid,
+          ownerTeamId: teamId,
+          parentFolderId: parent.id,
+        },
+      });
+
+      const grandchild = await createFolder({
+        data: {
+          name: 'Cascade Grandchild',
+          uuid: cascadeGrandchildUuid,
+          ownerTeamId: teamId,
+          parentFolderId: child.id,
+        },
+      });
+
+      // Create files in each folder
+      const fileInParent = await createFile({
+        data: {
+          name: 'File in Parent',
+          ownerTeamId: teamId,
+          creatorUserId: userOwnerId,
+          folderId: parent.id,
+        },
+      });
+      fileInParentId = fileInParent.id;
+
+      const fileInChild = await createFile({
+        data: {
+          name: 'File in Child',
+          ownerTeamId: teamId,
+          creatorUserId: userOwnerId,
+          folderId: child.id,
+        },
+      });
+      fileInChildId = fileInChild.id;
+
+      const fileInGrandchild = await createFile({
+        data: {
+          name: 'File in Grandchild',
+          ownerTeamId: teamId,
+          creatorUserId: userOwnerId,
+          folderId: grandchild.id,
+        },
+      });
+      fileInGrandchildId = fileInGrandchild.id;
+
+      // Create a file in the existing sibling folder (should NOT be affected by cascade)
+      const siblingFolder = await dbClient.folder.findUnique({ where: { uuid: siblingUuid } });
+      const fileOutside = await createFile({
+        data: {
+          name: 'File Outside Cascade',
+          ownerTeamId: teamId,
+          creatorUserId: userOwnerId,
+          folderId: siblingFolder!.id,
+        },
+      });
+      fileOutsideId = fileOutside.id;
+    });
+
+    it('cascades ownership to all subfolders and files when moving team → private', async () => {
+      await patchFolder(cascadeParentUuid, { ownerUserId: userOwnerId })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.folder.ownerUserId).toBe(userOwnerId);
+        });
+
+      // Verify child and grandchild folders also got ownership updated
+      const childFolder = await dbClient.folder.findUnique({ where: { uuid: cascadeChildUuid } });
+      expect(childFolder!.ownerUserId).toBe(userOwnerId);
+
+      const grandchildFolder = await dbClient.folder.findUnique({ where: { uuid: cascadeGrandchildUuid } });
+      expect(grandchildFolder!.ownerUserId).toBe(userOwnerId);
+
+      // Verify files in all folders got ownership updated
+      const parentFile = await dbClient.file.findUnique({ where: { id: fileInParentId } });
+      expect(parentFile!.ownerUserId).toBe(userOwnerId);
+
+      const childFile = await dbClient.file.findUnique({ where: { id: fileInChildId } });
+      expect(childFile!.ownerUserId).toBe(userOwnerId);
+
+      const grandchildFile = await dbClient.file.findUnique({ where: { id: fileInGrandchildId } });
+      expect(grandchildFile!.ownerUserId).toBe(userOwnerId);
+    });
+
+    it('does not affect files outside the folder tree', async () => {
+      // The file in the sibling folder should still have no ownerUserId (team-owned)
+      const outsideFile = await dbClient.file.findUnique({ where: { id: fileOutsideId } });
+      expect(outsideFile!.ownerUserId).toBeNull();
+
+      // The sibling folder itself should still be team-owned
+      const sibling = await dbClient.folder.findUnique({ where: { uuid: siblingUuid } });
+      expect(sibling!.ownerUserId).toBeNull();
+    });
+
+    it('cascades ownership back when moving private → team', async () => {
+      await patchFolder(cascadeParentUuid, { ownerUserId: null })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.folder.ownerUserId).toBeNull();
+        });
+
+      // Verify child and grandchild folders reverted
+      const childFolder = await dbClient.folder.findUnique({ where: { uuid: cascadeChildUuid } });
+      expect(childFolder!.ownerUserId).toBeNull();
+
+      const grandchildFolder = await dbClient.folder.findUnique({ where: { uuid: cascadeGrandchildUuid } });
+      expect(grandchildFolder!.ownerUserId).toBeNull();
+
+      // Verify files reverted
+      const parentFile = await dbClient.file.findUnique({ where: { id: fileInParentId } });
+      expect(parentFile!.ownerUserId).toBeNull();
+
+      const childFile = await dbClient.file.findUnique({ where: { id: fileInChildId } });
+      expect(childFile!.ownerUserId).toBeNull();
+
+      const grandchildFile = await dbClient.file.findUnique({ where: { id: fileInGrandchildId } });
+      expect(grandchildFile!.ownerUserId).toBeNull();
+    });
+
+    it('cascades ownership when moving to a different parent and changing ownership simultaneously', async () => {
+      // Move cascade parent into sibling folder AND change to private
+      await patchFolder(cascadeParentUuid, { parentFolderUuid: siblingUuid, ownerUserId: userOwnerId })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.folder.ownerUserId).toBe(userOwnerId);
+          expect(res.body.folder.parentFolderUuid).toBe(siblingUuid);
+        });
+
+      // Verify descendants got ownership updated
+      const childFolder = await dbClient.folder.findUnique({ where: { uuid: cascadeChildUuid } });
+      expect(childFolder!.ownerUserId).toBe(userOwnerId);
+
+      const grandchildFolder = await dbClient.folder.findUnique({ where: { uuid: cascadeGrandchildUuid } });
+      expect(grandchildFolder!.ownerUserId).toBe(userOwnerId);
+
+      // Verify files got ownership updated
+      const parentFile = await dbClient.file.findUnique({ where: { id: fileInParentId } });
+      expect(parentFile!.ownerUserId).toBe(userOwnerId);
+
+      const childFile = await dbClient.file.findUnique({ where: { id: fileInChildId } });
+      expect(childFile!.ownerUserId).toBe(userOwnerId);
+
+      const grandchildFile = await dbClient.file.findUnique({ where: { id: fileInGrandchildId } });
+      expect(grandchildFile!.ownerUserId).toBe(userOwnerId);
+
+      // Sibling folder itself should still be team-owned
+      const sibling = await dbClient.folder.findUnique({ where: { uuid: siblingUuid } });
+      expect(sibling!.ownerUserId).toBeNull();
+
+      // Clean up: move back to root and team
+      await patchFolder(cascadeParentUuid, { parentFolderUuid: null, ownerUserId: null }).expect(200);
+    });
+
+    it('rejects moving a folder to private under a different user', async () => {
+      // userViewer tries to set ownerUserId to userOwnerId (not themselves)
+      await patchFolder(cascadeParentUuid, { ownerUserId: userOwnerId }, 'userViewer')
+        .expect(403)
         .expect(expectError);
     });
   });

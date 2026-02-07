@@ -41,7 +41,6 @@ describe('GET /v0/folders/:uuid', () => {
         name: 'Test Folder',
         uuid: folderUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
       },
     });
     folderId = folder.id;
@@ -52,7 +51,6 @@ describe('GET /v0/folders/:uuid', () => {
         name: 'Subfolder',
         uuid: subfolderUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
         parentFolderId: folderId,
       },
     });

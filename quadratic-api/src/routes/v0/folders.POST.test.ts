@@ -100,7 +100,6 @@ describe('POST /v0/folders', () => {
         data: {
           name: 'Parent Folder',
           ownerTeamId: teamId,
-          creatorUserId: userOwnerId,
           uuid: '00000000-0000-4000-8000-000000000010',
         },
       });

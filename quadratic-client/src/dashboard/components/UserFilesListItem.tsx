@@ -162,7 +162,7 @@ export function UserFilesListItem({
     <ListItem>
       <div
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
-        {...getDragProps({ type: 'file', uuid })}
+        {...getDragProps({ type: 'file', uuid, ownerUserId: fileType === 'team' ? null : userId })}
       >
         <Link
           key={uuid}

@@ -42,7 +42,6 @@ describe('DELETE /v0/folders/:uuid', () => {
         name: 'Folder to Delete',
         uuid: folderUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
       },
     });
 
@@ -51,7 +50,6 @@ describe('DELETE /v0/folders/:uuid', () => {
         name: 'Subfolder',
         uuid: subfolderUuid,
         ownerTeamId: teamId,
-        creatorUserId: userOwnerId,
         parentFolderId: folder.id,
       },
     });
@@ -102,26 +100,23 @@ describe('DELETE /v0/folders/:uuid', () => {
   });
 
   describe('delete folder', () => {
-    it('soft-deletes the folder', async () => {
+    it('hard-deletes the folder', async () => {
       await deleteFolder(folderUuid)
         .expect(200)
         .expect((res) => {
           expect(res.body.message).toBe('Folder deleted.');
         });
 
-      // Verify folder is soft-deleted
+      // Verify folder is gone (hard-delete; only files can be restored)
       const folder = await dbClient.folder.findUnique({ where: { uuid: folderUuid } });
-      expect(folder?.deleted).toBe(true);
-      expect(folder?.deletedDate).not.toBeNull();
+      expect(folder).toBeNull();
     });
 
-    it('recursively soft-deletes subfolders', async () => {
+    it('recursively hard-deletes subfolders', async () => {
       await deleteFolder(folderUuid).expect(200);
 
-      // Verify subfolder is soft-deleted
       const subfolder = await dbClient.folder.findUnique({ where: { uuid: subfolderUuid } });
-      expect(subfolder?.deleted).toBe(true);
-      expect(subfolder?.deletedDate).not.toBeNull();
+      expect(subfolder).toBeNull();
     });
 
     it('soft-deletes files inside the folder', async () => {
@@ -144,6 +139,7 @@ describe('DELETE /v0/folders/:uuid', () => {
 
     it('returns 404 when trying to delete an already-deleted folder', async () => {
       await deleteFolder(folderUuid).expect(200);
+      // Folder is hard-deleted, so second request gets 404
       await deleteFolder(folderUuid).expect(404).expect(expectError);
     });
   });

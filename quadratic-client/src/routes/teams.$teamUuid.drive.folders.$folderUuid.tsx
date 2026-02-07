@@ -118,7 +118,9 @@ export const Component = () => {
         }
       />
 
-      {subfolders.length > 0 && <FolderListItems folders={subfolders} teamUuid={teamUuid} />}
+      {subfolders.length > 0 && (
+        <FolderListItems folders={subfolders} teamUuid={teamUuid} ownerUserId={folder.ownerUserId} />
+      )}
 
       <UserFilesList files={allFiles} teamUuid={teamUuid} hideTypeFilters />
 
