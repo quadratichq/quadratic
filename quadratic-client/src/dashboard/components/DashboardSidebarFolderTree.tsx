@@ -20,7 +20,7 @@ import { DropdownMenu, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-m
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useLocation, useNavigation, useParams, useRevalidator } from 'react-router';
+import { NavLink, useLocation, useNavigate, useNavigation, useParams, useRevalidator } from 'react-router';
 
 interface FolderTreeNode {
   uuid: string;
@@ -181,6 +181,7 @@ function FolderTreeItem({
   const { isOver: isDropTarget, onDragOver, onDragLeave, onDrop } = useDropTarget(node.uuid, targetOwnerUserId);
   const dragProps = getDragProps({ type: 'folder', uuid: node.uuid, ownerUserId: node.ownerUserId });
   const location = useLocation();
+  const navigate = useNavigate();
   const navigation = useNavigation();
   const revalidator = useRevalidator();
   const to = ROUTES.TEAM_DRIVE_FOLDER(teamUuid, node.uuid);
@@ -284,6 +285,7 @@ function FolderTreeItem({
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!canEditTeam) return;
     e.preventDefault();
+    navigate(to);
     contextMenuRequestedRef.current = true;
     setContextMenuOpen(true);
   };
@@ -304,7 +306,8 @@ function FolderTreeItem({
         'bg-accent hover:brightness-95 hover:saturate-150 dark:hover:brightness-125 dark:hover:saturate-100',
         isActive && 'brightness-95 saturate-150 dark:brightness-125 dark:saturate-100',
         isDropTarget && 'border border-primary bg-primary/10',
-        'pl-3 pr-11'
+        'pl-3 pr-11',
+        canEditTeam && 'cursor-context-menu'
       )}
       style={{ paddingLeft: `${iconLeftPx + 12}px` }}
       {...dragProps}
@@ -314,44 +317,44 @@ function FolderTreeItem({
       {...(canEditTeam && { onContextMenu: handleContextMenu })}
     >
       <DropdownMenu open={contextMenuOpen} onOpenChange={handleContextMenuOpenChange}>
-        <DropdownMenuTrigger asChild>
-          <div className="flex min-w-0 flex-grow cursor-context-menu items-center gap-0.5">
-            <button
-              className={cn(
-                'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
-                !hasChildren && 'invisible'
-              )}
-              style={{ left: `${chevronLeftPx + 12}px` }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsManuallyExpanded(!isExpanded);
-              }}
-            >
-              <ChevronRightIcon
-                className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')}
-              />
-            </button>
-            <NavLink
-              to={to}
-              className="flex min-w-0 flex-grow items-center gap-1.5 no-underline"
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-            >
-              {node.ownerUserId !== null ? (
-                <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
-              ) : (
-                <FolderIcon className="shrink-0 text-muted-foreground" />
-              )}
-              <span className="min-w-0 truncate" title={displayName}>
-                {displayName}
-              </span>
-            </NavLink>
-          </div>
-        </DropdownMenuTrigger>
+        {/* Hidden trigger used only as positioning anchor for the dropdown.
+            pointer-events-none prevents it from intercepting drag/pointer events. */}
+        <DropdownMenuTrigger
+          className="pointer-events-none absolute inset-0 m-0 border-none bg-transparent p-0 opacity-0 outline-none"
+          tabIndex={-1}
+        />
         <FolderActionsMenuContent onRename={() => setShowRename(true)} onDelete={() => setShowDeleteDialog(true)} />
       </DropdownMenu>
+      <button
+        className={cn(
+          'absolute flex h-full w-6 items-center justify-center rounded p-0 hover:bg-accent',
+          !hasChildren && 'invisible'
+        )}
+        style={{ left: `${chevronLeftPx + 12}px` }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsManuallyExpanded(!isExpanded);
+        }}
+      >
+        <ChevronRightIcon className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
+      </button>
+      <NavLink
+        to={to}
+        className="flex min-w-0 flex-grow items-center gap-1.5 no-underline"
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        {node.ownerUserId !== null ? (
+          <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
+        ) : (
+          <FolderIcon className="shrink-0 text-muted-foreground" />
+        )}
+        <span className="min-w-0 truncate" title={displayName}>
+          {displayName}
+        </span>
+      </NavLink>
       {canEditTeam && (
         <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Tooltip>
