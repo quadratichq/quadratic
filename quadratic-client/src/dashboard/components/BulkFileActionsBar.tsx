@@ -8,6 +8,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { AlertDialog } from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useState } from 'react';
+import { useRevalidator } from 'react-router';
 
 export function BulkFileActionsBar({
   selectedFiles,
@@ -18,6 +19,7 @@ export function BulkFileActionsBar({
 }) {
   const { loggedInUser } = useRootRouteLoaderData();
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const revalidator = useRevalidator();
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -32,7 +34,7 @@ export function BulkFileActionsBar({
     const userEmail = loggedInUser?.email ?? '';
     const body = getActionFileDelete({ userEmail, redirect: false });
 
-    const results = await Promise.all(
+    const results = await Promise.allSettled(
       uuids.map(async (uuid) => {
         const res = await fetch(ROUTES.API.FILE(uuid), {
           method: 'POST',
@@ -46,8 +48,10 @@ export function BulkFileActionsBar({
     );
 
     setIsDeleting(false);
-    const succeeded = results.filter(Boolean).length;
+    const succeeded = results.filter((r) => r.status === 'fulfilled' && r.value).length;
     const failed = results.length - succeeded;
+
+    revalidator.revalidate();
 
     if (failed > 0) {
       addGlobalSnackbar(

@@ -70,8 +70,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   // Soft-delete files and scheduled tasks first, then hard-delete folders. Order matters: we must
   // update files before deleting folders so (1) files can be restored and (2) FK ON DELETE SET NULL
   // on File.folder_id only runs as a safety net, not while files still reference the folders.
+  const folderIds = descendantFolderIds;
   await dbClient.$transaction(async (tx) => {
-    const folderIds = await getDescendantFolderIds(tx, folder.id);
     const now = new Date();
 
     if (folderIds.length > 0) {

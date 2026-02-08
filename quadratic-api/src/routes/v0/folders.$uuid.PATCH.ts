@@ -71,31 +71,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     if (parentFolderUuid === null) {
       // Move to root
       data.parentFolderId = null;
-    } else {
+    } else if (parentFolderUuid === uuid) {
       // Can't move a folder into itself
-      if (parentFolderUuid === uuid) {
-        throw new ApiError(400, 'Cannot move a folder into itself.');
-      }
-
-      const newParent = await dbClient.folder.findUnique({
-        where: { uuid: parentFolderUuid },
-      });
-
-      if (!newParent) {
-        throw new ApiError(404, 'Target parent folder not found.');
-      }
-
-      if (newParent.ownerTeamId !== folder.ownerTeamId) {
-        throw new ApiError(400, 'Target parent folder must belong to the same team.');
-      }
-
-      // User must have access to the target parent (e.g. cannot move into another user's private folder)
-      if (newParent.ownerUserId && newParent.ownerUserId !== userId) {
-        throw new ApiError(403, 'You do not have access to the target parent folder.');
-      }
-
-      data.parentFolderId = newParent.id;
+      throw new ApiError(400, 'Cannot move a folder into itself.');
     }
+    // Non-null parent: validation and data.parentFolderId are set inside the transaction (after lock)
   }
 
   // Change ownership (move between team and private).
@@ -134,14 +114,21 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     if (parentFolderUuid !== undefined && parentFolderUuid !== null) {
       const newParent = await tx.folder.findUnique({
         where: { uuid: parentFolderUuid },
-        select: { id: true },
       });
-      if (newParent) {
-        const ancestorIds = await getAncestorFolderIds(tx, newParent.id);
-        if (ancestorIds.includes(folder.id)) {
-          throw new ApiError(400, 'Cannot move a folder into one of its subfolders.');
-        }
+      if (!newParent) {
+        throw new ApiError(404, 'Target parent folder not found.');
       }
+      if (newParent.ownerTeamId !== folder.ownerTeamId) {
+        throw new ApiError(400, 'Target parent folder must belong to the same team.');
+      }
+      if (newParent.ownerUserId && newParent.ownerUserId !== userId) {
+        throw new ApiError(403, 'You do not have access to the target parent folder.');
+      }
+      const ancestorIds = await getAncestorFolderIds(tx, newParent.id);
+      if (ancestorIds.includes(folder.id)) {
+        throw new ApiError(400, 'Cannot move a folder into one of its subfolders.');
+      }
+      data.parentFolderId = newParent.id;
     }
 
     const ownershipActuallyChanging =

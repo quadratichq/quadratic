@@ -91,9 +91,9 @@ describe('getFilePermissions', () => {
     [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-someone-else', fileRole: 'VIEWER'  } }, 'V'],
     [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-someone-else', fileRole: 'VIEWER'  } }, 'V'],
     [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-someone-else', fileRole: 'VIEWER'  } }, 'VE'],
-    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-someone-else', fileRole: 'EDITOR'  } }, 'VE'],
-    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-someone-else', fileRole: 'EDITOR'  } }, 'VE'],
-    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-someone-else', fileRole: 'EDITOR'  } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-someone-else', fileRole: 'EDITOR'  } }, 'VEM'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-someone-else', fileRole: 'EDITOR'  } }, 'VEM'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-someone-else', fileRole: 'EDITOR'  } }, 'VEM'],
 
     // File in a team without an 'owner' so it's public to everyone on the team
     [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'public-to-team', fileRole: undefined, teamRole: 'OWNER' } }, 'VEMD'],
