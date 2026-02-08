@@ -196,7 +196,8 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
         if (data.type === 'folder' && targetFolderUuid && teamUuid) {
           navigate(ROUTES.TEAM_DRIVE_FOLDER(teamUuid, targetFolderUuid));
         }
-      } catch {
+      } catch (err) {
+        console.error('Failed to move item:', err);
         addGlobalSnackbar('Failed to move item. Try again.', { severity: 'error' });
       }
     },

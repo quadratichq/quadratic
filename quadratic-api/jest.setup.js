@@ -1,17 +1,18 @@
 const { multerS3Storage } = require('./src/storage/s3');
 
 // For auth we expect the following Authorization header format:
-// Bearer ValidToken {user.sub}
+// Bearer ValidToken {user.sub} or Bearer ValidToken {user.sub} {user.email}
 jest.mock('./src/middleware/validateAccessToken', () => {
   return {
     validateAccessToken: jest.fn().mockImplementation(async (req, res, next) => {
-      // expected format is `Bearer ValidToken {user.sub} {user.email}`
-      if (req.headers.authorization?.substring(0, 17) === 'Bearer ValidToken') {
-        const sub_email = req.headers.authorization?.substring(18); // Extract user.sub from the Authorization header
-        const [sub, emailStr] = sub_email.split(' ');
+      const authHeader = req.headers?.authorization?.trim();
+      // Accept "Bearer ValidToken ..." (case-insensitive) so env/HTTP stack cannot break tests
+      if (authHeader?.toLowerCase().startsWith('bearer validtoken')) {
+        const payload = authHeader.substring(17).trim(); // after "Bearer ValidToken"
+        const [sub, emailStr] = payload.split(/\s+/);
         const email = (emailStr ? emailStr : `${sub}@test.com`).toLowerCase();
         req.auth = {
-          sub,
+          sub: sub ?? '',
           email,
         };
         return next();

@@ -87,11 +87,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       }
     }
 
-    // Delete folders in depth-descending order (children before parents)
-    const sortedByDepthDesc = [...descendantIdsWithDepth].sort((a, b) => b.depth - a.depth);
-    for (const { id } of sortedByDepthDesc) {
-      await tx.folder.delete({ where: { id } });
-    }
+    // Delete all folders in one operation (files are already soft-deleted)
+    await tx.folder.deleteMany({
+      where: { id: { in: folderIds } },
+    });
   });
 
   return res.status(200).json({ message: 'Folder deleted.' });

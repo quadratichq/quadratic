@@ -316,7 +316,7 @@ model Folder {
     // Ownership (mirrors File model pattern — ownerUser and ownerTeam are mutually exclusive)
     ownerUser   User? @relation(name: "FolderOwnerRelation", fields: [ownerUserId], references: [id])
     ownerUserId Int?  @map("owner_user_id")
-    ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id])
+    ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id], onDelete: Cascade)
     ownerTeamId Int   @map("owner_team_id")
 
     // Files in this folder

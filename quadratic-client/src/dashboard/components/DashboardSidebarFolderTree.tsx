@@ -1,5 +1,6 @@
 import { FolderActionsMenuContent } from '@/dashboard/components/FolderActionsMenu';
 import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
+import { useFolderDelete, FolderDeleteAlertDialog } from '@/dashboard/hooks/useFolderDelete';
 import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
@@ -7,16 +8,7 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/shadcn/ui/alert-dialog';
+import { AlertDialog } from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
@@ -194,28 +186,17 @@ function FolderTreeItem({
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const contextMenuRequestedRef = useRef(false);
   const [showRename, setShowRename] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deletePreview, setDeletePreview] = useState<{
-    files: { uuid: string; name: string }[];
-    subfolderCount: number;
-  } | null>(null);
-  const [deletePreviewLoading, setDeletePreviewLoading] = useState(false);
-  const [deletePreviewError, setDeletePreviewError] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [optimisticName, setOptimisticName] = useState<string | null>(null);
+  const {
+    showDeleteDialog,
+    setShowDeleteDialog,
+    deletePreview,
+    deletePreviewLoading,
+    deletePreviewError,
+    isDeleting,
+    confirmDelete,
+  } = useFolderDelete(node.uuid);
   const displayName = optimisticName ?? node.name;
-
-  useEffect(() => {
-    if (!showDeleteDialog || !node.uuid) return;
-    setDeletePreviewLoading(true);
-    setDeletePreview(null);
-    setDeletePreviewError(false);
-    apiClient.folders
-      .getDeletePreview(node.uuid)
-      .then((data) => setDeletePreview(data))
-      .catch(() => setDeletePreviewError(true))
-      .finally(() => setDeletePreviewLoading(false));
-  }, [showDeleteDialog, node.uuid]);
 
   const handleRename = async (newName: string) => {
     setOptimisticName(newName);
@@ -225,18 +206,6 @@ function FolderTreeItem({
     } catch {
       setOptimisticName(null);
       addGlobalSnackbar('Failed to rename folder. Try again.', { severity: 'error' });
-    }
-  };
-
-  const confirmDelete = async () => {
-    setShowDeleteDialog(false);
-    setIsDeleting(true);
-    try {
-      await apiClient.folders.delete(node.uuid);
-      revalidator.revalidate();
-    } catch {
-      setIsDeleting(false);
-      addGlobalSnackbar('Failed to delete folder. Try again.', { severity: 'error' });
     }
   };
 
@@ -399,65 +368,14 @@ function FolderTreeItem({
       {canEditTeam && (
         <>
           <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent className="max-w-md">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete folder?</AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="flex flex-col gap-2">
-                    {deletePreviewLoading ? (
-                      <span>Loading…</span>
-                    ) : deletePreviewError ? (
-                      <p>
-                        We couldn’t load the list of files. The folder and all its contents (including any subfolders
-                        and files) will be removed. Files will be moved to the trash and can be restored from Recover
-                        deleted files.
-                      </p>
-                    ) : deletePreview && deletePreview.files.length === 0 && deletePreview.subfolderCount === 0 ? (
-                      <p>This will permanently remove the folder.</p>
-                    ) : (
-                      <>
-                        <p>
-                          This will remove the folder and any subfolders.
-                          <br />
-                          <br />
-                          {deletePreview && deletePreview.files.length > 0 && (
-                            <>
-                              {' '}
-                              {deletePreview.files.length} file{deletePreview.files.length !== 1 ? 's' : ''} will be
-                              moved to the trash and can be restored from Recover deleted files.
-                            </>
-                          )}
-                        </p>
-                        {deletePreview && deletePreview.files.length > 0 && (
-                          <div className="max-h-52 overflow-y-auto rounded border border-border bg-muted/30 p-2">
-                            <div className="flex flex-col gap-1 text-sm">
-                              {deletePreview.files.map((f) => (
-                                <div key={f.uuid} className="truncate">
-                                  {f.name}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={deletePreviewLoading}>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(e) => {
-                    e.preventDefault();
-                    confirmDelete();
-                  }}
-                  disabled={deletePreviewLoading}
-                  variant="destructive"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
+            <FolderDeleteAlertDialog
+              open={showDeleteDialog}
+              onOpenChange={setShowDeleteDialog}
+              deletePreview={deletePreview}
+              deletePreviewLoading={deletePreviewLoading}
+              deletePreviewError={deletePreviewError}
+              onConfirm={confirmDelete}
+            />
           </AlertDialog>
           {showRename && (
             <DialogRenameItem

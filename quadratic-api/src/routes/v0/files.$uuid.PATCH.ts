@@ -159,6 +159,10 @@ async function handler(
       if (folder.ownerTeamId !== file.ownerTeamId) {
         throw new ApiError(400, 'Folder must belong to the same team as the file.');
       }
+      // If the target folder is private, the user must own it
+      if (folder.ownerUserId && folder.ownerUserId !== userId) {
+        throw new ApiError(403, 'You do not have access to the target folder.');
+      }
       folderId = folder.id;
 
       // Automatically adjust the file's ownership to match the target folder.

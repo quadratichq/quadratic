@@ -101,14 +101,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     orderBy: { updatedDate: 'desc' },
   });
 
-  // Get signed thumbnail URLs
-  await Promise.all(
-    dbFiles.map(async (file) => {
-      if (file.thumbnail) {
-        file.thumbnail = await getPresignedFileUrl(file.thumbnail);
-      }
-    })
+  // Get signed thumbnail URLs (non-mutating Promise.all, then assign)
+  const signedThumbnails = await Promise.all(
+    dbFiles.map(async (file) =>
+      file.thumbnail ? getPresignedFileUrl(file.thumbnail) : null
+    )
   );
+  dbFiles.forEach((file, i) => {
+    file.thumbnail = signedThumbnails[i];
+  });
 
   // Get file limit info for edit restrictions
   const isPaidPlan = await getIsOnPaidPlan(folderTeam);

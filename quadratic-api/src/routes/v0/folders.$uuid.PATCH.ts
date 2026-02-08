@@ -101,6 +101,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   // Moving between Team Files and Private Files requires updating ownerUserId on this folder
   // and recursively on all descendant folders and files; ownerTeamId stays the same (same team).
   if (newOwnerUserId !== undefined) {
+    if (!teamPermissions.includes('TEAM_VIEW')) {
+      throw new ApiError(403, "You don't have access to this team.");
+    }
     if (newOwnerUserId !== null) {
       // Moving to private: must be the requesting user (authorization, not bad request)
       if (newOwnerUserId !== userId) {
@@ -190,18 +193,25 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
 type TransactionClient = Parameters<Parameters<typeof dbClient.$transaction>[0]>[0];
 
 /**
- * Recursively collects all descendant folder IDs for a given folder.
+ * Collects all descendant folder IDs for a given folder using an iterative queue.
  * Used to cascade ownership changes to the entire subtree.
  */
 async function collectDescendantFolderIds(folderId: number, tx: TransactionClient): Promise<number[]> {
-  const children = await tx.folder.findMany({
-    where: { parentFolderId: folderId },
-    select: { id: true },
-  });
+  const ids: number[] = [];
+  const queue = [folderId];
 
-  const ids = children.map((c) => c.id);
-  for (const child of children) {
-    ids.push(...(await collectDescendantFolderIds(child.id, tx)));
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    const children = await tx.folder.findMany({
+      where: { parentFolderId: currentId },
+      select: { id: true },
+    });
+
+    for (const child of children) {
+      ids.push(child.id);
+      queue.push(child.id);
+    }
   }
+
   return ids;
 }
