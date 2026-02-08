@@ -34,7 +34,7 @@ async function handler(
   } = req;
   const {
     file,
-    userMakingRequest: { filePermissions, id: userMakingRequestId },
+    userMakingRequest: { filePermissions, teamPermissions, id: userMakingRequestId },
   } = await getFile({ uuid, userId });
 
   // Can't change multiple things at once, except move-to-root + ownership in one call (for drag-drop)
@@ -89,8 +89,27 @@ async function handler(
     throw new ApiError(403, 'Permission denied');
   }
 
+  // If the file is in a folder, verify the user has access to that folder before allowing any move.
+  // This prevents moving a file out of a folder the user cannot access (e.g. direct file access via UserFileRole only).
+  if (file.folderId !== null) {
+    const currentFolder = await dbClient.folder.findUnique({
+      where: { id: file.folderId },
+    });
+    if (currentFolder) {
+      if (currentFolder.ownerUserId !== null && currentFolder.ownerUserId !== userId) {
+        throw new ApiError(403, 'You do not have access to the current folder.');
+      }
+      if (currentFolder.ownerUserId === null && !teamPermissions?.includes('TEAM_EDIT')) {
+        throw new ApiError(403, 'You do not have access to the current folder.');
+      }
+    }
+  }
+
   // Move to root and set ownership in one call (e.g. drag file to "Private Files" or "Team Files")
   if (isMoveToRootWithOwnership) {
+    if (!filePermissions.includes(FILE_EDIT)) {
+      throw new ApiError(403, 'Permission denied');
+    }
     if (ownerUserId !== null && ownerUserId !== userMakingRequestId) {
       throw new ApiError(400, 'You can only move your own files');
     }

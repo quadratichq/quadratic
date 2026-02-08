@@ -57,33 +57,38 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have permission to delete this folder.');
   }
 
-  // Soft-delete all files in the tree and hard-delete folders in one transaction (batched for performance)
+  // Reject very large trees to avoid long-running transactions, lock contention, and timeouts
+  const MAX_FOLDERS_IN_DELETE = 500;
+  const descendantFolderIds = await getDescendantFolderIds(dbClient, folder.id);
+  if (descendantFolderIds.length > MAX_FOLDERS_IN_DELETE) {
+    throw new ApiError(
+      413,
+      `This folder tree is too large to delete at once (${descendantFolderIds.length} folders). Please delete subfolders in smaller batches.`
+    );
+  }
+
+  // Soft-delete files and scheduled tasks first, then hard-delete folders. Order matters: we must
+  // update files before deleting folders so (1) files can be restored and (2) FK ON DELETE SET NULL
+  // on File.folder_id only runs as a safety net, not while files still reference the folders.
   await dbClient.$transaction(async (tx) => {
     const folderIds = await getDescendantFolderIds(tx, folder.id);
     const now = new Date();
 
     if (folderIds.length > 0) {
-      // We soft-delete files first so they can be restored. The migration uses ON DELETE SET NULL
-      // on File.folder_id as a safety net if a folder is ever deleted without going through this path.
       await tx.file.updateMany({
         where: { folderId: { in: folderIds }, deleted: false },
         data: { deleted: true, deletedDate: now },
       });
 
-      const filesInTree = await tx.file.findMany({
-        where: { folderId: { in: folderIds } },
-        select: { id: true },
+      await tx.scheduledTask.updateMany({
+        where: {
+          file: { folderId: { in: folderIds } },
+          status: { not: 'DELETED' },
+        },
+        data: { status: 'DELETED' },
       });
-      const fileIds = filesInTree.map((f) => f.id);
-      if (fileIds.length > 0) {
-        await tx.scheduledTask.updateMany({
-          where: { fileId: { in: fileIds }, status: { not: 'DELETED' } },
-          data: { status: 'DELETED' },
-        });
-      }
     }
 
-    // Delete all folders in one operation (files are already soft-deleted)
     await tx.folder.deleteMany({
       where: { id: { in: folderIds } },
     });

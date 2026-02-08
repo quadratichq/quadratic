@@ -8,7 +8,6 @@ import { ROUTES } from '@/shared/constants/routes';
 import { AlertDialog } from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useState } from 'react';
-import { useSubmit } from 'react-router';
 
 export function BulkFileActionsBar({
   selectedFiles,
@@ -18,28 +17,49 @@ export function BulkFileActionsBar({
   onClearSelection: () => void;
 }) {
   const { loggedInUser } = useRootRouteLoaderData();
-  const submit = useSubmit();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const count = selectedFiles.length;
   const uuids = selectedFiles.map((f) => f.uuid);
   const fileNames = selectedFiles.map((f) => f.name);
 
-  const performDelete = () => {
+  const performDelete = async () => {
     setShowDeleteDialog(false);
+    setIsDeleting(true);
     const userEmail = loggedInUser?.email ?? '';
-    for (const uuid of uuids) {
-      submit(getActionFileDelete({ userEmail, redirect: false }), {
-        method: 'POST',
-        action: ROUTES.API.FILE(uuid),
-        encType: 'application/json',
-        navigate: false,
-      });
+    const body = getActionFileDelete({ userEmail, redirect: false });
+
+    const results = await Promise.all(
+      uuids.map(async (uuid) => {
+        const res = await fetch(ROUTES.API.FILE(uuid), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          credentials: 'same-origin',
+        });
+        const data = await res.json().catch(() => ({ ok: false }));
+        return data?.ok === true;
+      })
+    );
+
+    setIsDeleting(false);
+    const succeeded = results.filter(Boolean).length;
+    const failed = results.length - succeeded;
+
+    if (failed > 0) {
+      addGlobalSnackbar(
+        failed === results.length
+          ? `Failed to delete ${count} file${count === 1 ? '' : 's'}.`
+          : `${succeeded} deleted; ${failed} failed.`,
+        { severity: 'error' }
+      );
+    } else {
+      onClearSelection();
+      addGlobalSnackbar(`${count} file${count === 1 ? '' : 's'} deleted.`);
     }
-    onClearSelection();
-    addGlobalSnackbar(`${count} file${count === 1 ? '' : 's'} deleted.`);
   };
 
   return (
@@ -61,10 +81,11 @@ export function BulkFileActionsBar({
           variant="outline"
           size="sm"
           onClick={() => setShowDeleteDialog(true)}
+          disabled={isDeleting}
           className="gap-1.5 text-destructive hover:text-destructive"
         >
           <DeleteIcon />
-          Delete
+          {isDeleting ? 'Deleting…' : 'Delete'}
         </Button>
       </div>
 

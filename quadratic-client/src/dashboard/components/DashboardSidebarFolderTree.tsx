@@ -63,10 +63,11 @@ function buildFolderTree(
 }
 
 /**
- * Build the set of folder UUIDs that should be auto-expanded
- * because they are ancestors of the currently selected folder.
+ * Build the set of folder UUIDs that should be auto-expanded so the active folder is visible.
+ * Includes the active folder itself and all its ancestors (so the active folder is expanded
+ * when it has children; ancestors are expanded to reveal the path to it).
  */
-function getAutoExpandedUuids(
+function getAncestorAndActiveFolderUuids(
   folders: Array<{ uuid: string; parentFolderUuid: string | null }>,
   activeFolderUuid: string | undefined
 ): Set<string> {
@@ -133,7 +134,10 @@ export function DashboardSidebarFolderTree({
     (filter === 'team' && isOnTeamDrive) || (filter === 'private' && isOnPrivateDrive) || activeFolderBelongsToFilter;
 
   const tree = useMemo(() => buildFolderTree(folders, filter), [folders, filter]);
-  const autoExpandedUuids = useMemo(() => getAutoExpandedUuids(folders, activeFolderUuid), [folders, activeFolderUuid]);
+  const ancestorAndActiveFolderUuids = useMemo(
+    () => getAncestorAndActiveFolderUuids(folders, activeFolderUuid),
+    [folders, activeFolderUuid]
+  );
 
   if ((!isRelevantView && !forceShow) || tree.length === 0) return null;
 
@@ -148,7 +152,7 @@ export function DashboardSidebarFolderTree({
           node={node}
           teamUuid={teamUuid}
           depth={0}
-          autoExpandedUuids={autoExpandedUuids}
+          ancestorAndActiveFolderUuids={ancestorAndActiveFolderUuids}
           targetOwnerUserId={targetOwnerUserId}
           canEditTeam={canEditTeam}
         />
@@ -161,14 +165,14 @@ function FolderTreeItem({
   node,
   teamUuid,
   depth,
-  autoExpandedUuids,
+  ancestorAndActiveFolderUuids,
   targetOwnerUserId,
   canEditTeam,
 }: {
   node: FolderTreeNode;
   teamUuid: string;
   depth: number;
-  autoExpandedUuids: Set<string>;
+  ancestorAndActiveFolderUuids: Set<string>;
   targetOwnerUserId: number | null;
   canEditTeam?: boolean;
 }) {
@@ -221,7 +225,7 @@ function FolderTreeItem({
     (nextLocation !== undefined && to === nextLocation.pathname);
 
   // Auto-expand takes effect, but manual toggle overrides it
-  const isAutoExpanded = autoExpandedUuids.has(node.uuid);
+  const isAutoExpanded = ancestorAndActiveFolderUuids.has(node.uuid);
   const isExpanded = isManuallyExpanded !== null ? isManuallyExpanded : isAutoExpanded;
   const showChildren = isExpanded && hasChildren;
 
@@ -369,7 +373,7 @@ function FolderTreeItem({
             node={child}
             teamUuid={teamUuid}
             depth={depth + 1}
-            autoExpandedUuids={autoExpandedUuids}
+            ancestorAndActiveFolderUuids={ancestorAndActiveFolderUuids}
             targetOwnerUserId={targetOwnerUserId}
             canEditTeam={canEditTeam}
           />

@@ -161,8 +161,20 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
 
       let data: DragPayload;
       try {
-        data = JSON.parse(e.dataTransfer.getData('application/json'));
-      } catch {
+        const parsed = JSON.parse(e.dataTransfer.getData('application/json'));
+        if (
+          !parsed ||
+          typeof parsed.type !== 'string' ||
+          typeof parsed.uuid !== 'string' ||
+          (parsed.type !== 'file' && parsed.type !== 'folder')
+        ) {
+          return;
+        }
+        data = parsed as DragPayload;
+      } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Ignoring drop with invalid payload:', err);
+        }
         return; // Not a valid internal drag payload (e.g. external drag or malformed JSON)
       }
 

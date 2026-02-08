@@ -171,14 +171,27 @@ export function MoveToFolderBulkDialog({ fileUuids, onClose }: { fileUuids: stri
     setIsLoading(true);
     setError(null);
     try {
-      for (const uuid of fileUuids) {
-        if (selected === 'team-root') {
-          await apiClient.files.update(uuid, { folderUuid: null, ownerUserId: null });
-        } else if (selected === 'personal-root') {
-          await apiClient.files.update(uuid, { folderUuid: null, ownerUserId: userId });
-        } else {
-          await apiClient.files.update(uuid, { folderUuid: selected });
-        }
+      const results = await Promise.allSettled(
+        fileUuids.map(async (uuid) => {
+          if (selected === 'team-root') {
+            return apiClient.files.update(uuid, { folderUuid: null, ownerUserId: null });
+          } else if (selected === 'personal-root') {
+            return apiClient.files.update(uuid, { folderUuid: null, ownerUserId: userId });
+          } else {
+            return apiClient.files.update(uuid, { folderUuid: selected });
+          }
+        })
+      );
+      const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      if (failures.length > 0) {
+        setError(
+          failures.length === fileUuids.length
+            ? 'Failed to move files. Please try again.'
+            : `Failed to move ${failures.length} of ${fileUuids.length} files.`
+        );
+        setIsLoading(false);
+        revalidator.revalidate();
+        return;
       }
       revalidator.revalidate();
       onClose();

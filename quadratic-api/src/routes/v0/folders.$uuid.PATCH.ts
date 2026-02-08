@@ -128,6 +128,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   // Perform the update (and cascade ownership if needed) in a transaction.
   // Circularity and descendants use recursive CTEs to avoid loading all team folders.
   const updatedFolder = await dbClient.$transaction(async (tx) => {
+    // Lock the folder row to prevent concurrent modifications while we fetch descendants and cascade.
+    await tx.$queryRaw`SELECT id FROM "Folder" WHERE uuid = ${uuid} FOR UPDATE`;
+
     if (parentFolderUuid !== undefined && parentFolderUuid !== null) {
       const newParent = await tx.folder.findUnique({
         where: { uuid: parentFolderUuid },
@@ -141,10 +144,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       }
     }
 
-    const descendantFolderIds =
-      newOwnerUserId !== undefined
-        ? (await getDescendantFolderIds(tx, folder.id)).filter((id) => id !== folder.id)
-        : [];
+    const ownershipActuallyChanging =
+      newOwnerUserId !== undefined && newOwnerUserId !== folder.ownerUserId;
+    const descendantFolderIds = ownershipActuallyChanging
+      ? (await getDescendantFolderIds(tx, folder.id)).filter((id) => id !== folder.id)
+      : [];
 
     const updated = await tx.folder.update({
       where: { uuid },

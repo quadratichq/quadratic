@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getDescendantFolderIds } from '../../utils/folderTreeQueries';
 
 export default [
   validateRequestSchema(
@@ -53,7 +54,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have permission to delete this folder.');
   }
 
-  const { files, subfolderCount } = await getFolderTreeContentsBulk(folder.id, folder.ownerTeamId);
+  const { files, subfolderCount } = await getFolderTreeContentsBulk(folder.id);
 
   return res.status(200).json({
     files,
@@ -62,30 +63,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
 }
 
 /**
- * Collects all files and subfolder count in the folder tree using one folder query and one file query.
+ * Collects all files and subfolder count in the folder tree using a recursive CTE for descendants.
  */
 async function getFolderTreeContentsBulk(
-  folderId: number,
-  ownerTeamId: number
+  folderId: number
 ): Promise<{ files: { uuid: string; name: string }[]; subfolderCount: number }> {
-  const teamFolders = await dbClient.folder.findMany({
-    where: { ownerTeamId },
-    select: { id: true, parentFolderId: true },
-  });
+  const descendantIds = await getDescendantFolderIds(dbClient, folderId);
+  const subfolderCount = descendantIds.length - 1;
 
-  const descendantIds = new Set<number>();
-  const stack = [folderId];
-  while (stack.length > 0) {
-    const id = stack.pop()!;
-    descendantIds.add(id);
-    for (const f of teamFolders) {
-      if (f.parentFolderId === id) stack.push(f.id);
-    }
-  }
-
-  const subfolderCount = descendantIds.size - 1;
   const files = await dbClient.file.findMany({
-    where: { folderId: { in: [...descendantIds] }, deleted: false },
+    where: { folderId: { in: descendantIds }, deleted: false },
     select: { uuid: true, name: true },
   });
 

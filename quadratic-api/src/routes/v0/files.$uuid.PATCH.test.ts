@@ -206,6 +206,54 @@ describe('PATCH /v0/files/:uuid', () => {
         .expect(expectError);
     });
   });
+
+  describe('move file — requires access to current folder', () => {
+    const fileInPrivateFolderUuid = '00000000-0000-4000-8000-000000000010';
+    const privateFolderUuid = '00000000-0000-4000-8000-000000000011';
+
+    beforeAll(async () => {
+      const [userEditor] = await createUsers(['userEditor']);
+      const userOwner = await dbClient.user.findFirst({ where: { auth0Id: 'userOwner' } });
+      const team = await dbClient.team.findFirst({ where: { name: 'team1' } });
+      if (!userOwner || !team) throw new Error('Test setup: userOwner or team1 not found');
+
+      const privateFolder = await createFolder({
+        data: {
+          name: 'Private folder',
+          uuid: privateFolderUuid,
+          ownerTeamId: team.id,
+          ownerUserId: userOwner.id,
+        },
+      });
+
+      await createFile({
+        data: {
+          creatorUserId: userOwner.id,
+          ownerUserId: userOwner.id,
+          ownerTeamId: team.id,
+          name: 'file_in_private_folder',
+          contents: Buffer.from('contents'),
+          uuid: fileInPrivateFolderUuid,
+          publicLinkAccess: 'NOT_SHARED',
+          folderId: privateFolder.id,
+          UserFileRole: {
+            create: [{ userId: userEditor.id, role: 'EDITOR' }],
+          },
+        },
+      });
+    });
+
+    it('rejects moving a file out of a folder the user does not have access to', async () => {
+      const res = await request(app)
+        .patch(`/v0/files/${fileInPrivateFolderUuid}`)
+        .send({ folderUuid: null })
+        .set('Authorization', `Bearer ValidToken userEditor`)
+        .expect(403)
+        .expect(expectError);
+
+      expect(res.body.error.message).toBe('You do not have access to the current folder.');
+    });
+  });
 });
 
 /**
