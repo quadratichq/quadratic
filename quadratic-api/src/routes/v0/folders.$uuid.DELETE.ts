@@ -56,50 +56,70 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have permission to delete this folder.');
   }
 
-  // Recursively soft-delete files in the tree, then hard-delete the folder and its subfolders
-  await deleteFolderRecursive(folder.id);
+  // Soft-delete all files in the tree and hard-delete folders in one transaction (batched for performance)
+  await dbClient.$transaction(async (tx) => {
+    const teamFolders = await tx.folder.findMany({
+      where: { ownerTeamId: folder.ownerTeamId },
+      select: { id: true, parentFolderId: true },
+    });
+    const descendantIdsWithDepth = getDescendantIdsWithDepth(folder.id, teamFolders);
+    const folderIds = descendantIdsWithDepth.map(({ id }) => id);
+    const now = new Date();
+
+    if (folderIds.length > 0) {
+      // We soft-delete files first so they can be restored. The migration uses ON DELETE SET NULL
+      // on File.folder_id as a safety net if a folder is ever deleted without going through this path.
+      await tx.file.updateMany({
+        where: { folderId: { in: folderIds }, deleted: false },
+        data: { deleted: true, deletedDate: now },
+      });
+
+      const filesInTree = await tx.file.findMany({
+        where: { folderId: { in: folderIds } },
+        select: { id: true },
+      });
+      const fileIds = filesInTree.map((f) => f.id);
+      if (fileIds.length > 0) {
+        await tx.scheduledTask.updateMany({
+          where: { fileId: { in: fileIds }, status: { not: 'DELETED' } },
+          data: { status: 'DELETED' },
+        });
+      }
+    }
+
+    // Delete folders in depth-descending order (children before parents)
+    const sortedByDepthDesc = [...descendantIdsWithDepth].sort((a, b) => b.depth - a.depth);
+    for (const { id } of sortedByDepthDesc) {
+      await tx.folder.delete({ where: { id } });
+    }
+  });
 
   return res.status(200).json({ message: 'Folder deleted.' });
 }
 
 /**
- * Recursively soft-deletes all files in the folder tree, then hard-deletes the folder and its subfolders.
- * Files can be restored later; folders cannot.
+ * Returns all descendant folder IDs (including the given root) with depth (0 = root).
  */
-async function deleteFolderRecursive(folderId: number): Promise<void> {
-  const now = new Date();
-
-  // Soft-delete all files in this folder (so they can be restored; DB will set folder_id to null when we delete the folder)
-  await dbClient.file.updateMany({
-    where: { folderId, deleted: false },
-    data: { deleted: true, deletedDate: now },
-  });
-
-  // Soft-delete scheduled tasks for files in this folder
-  const filesInFolder = await dbClient.file.findMany({
-    where: { folderId },
-    select: { id: true },
-  });
-  if (filesInFolder.length > 0) {
-    await dbClient.scheduledTask.updateMany({
-      where: {
-        fileId: { in: filesInFolder.map((f) => f.id) },
-        status: { not: 'DELETED' },
-      },
-      data: { status: 'DELETED' },
-    });
+function getDescendantIdsWithDepth(
+  rootId: number,
+  teamFolders: { id: number; parentFolderId: number | null }[]
+): { id: number; depth: number }[] {
+  const childrenByParentId = new Map<number, number[]>();
+  for (const f of teamFolders) {
+    if (f.parentFolderId === null) continue;
+    const p = f.parentFolderId;
+    if (!childrenByParentId.has(p)) childrenByParentId.set(p, []);
+    childrenByParentId.get(p)!.push(f.id);
   }
-
-  // Recurse into subfolders first (must delete children before parent)
-  const subfolders = await dbClient.folder.findMany({
-    where: { parentFolderId: folderId },
-  });
-  for (const subfolder of subfolders) {
-    await deleteFolderRecursive(subfolder.id);
+  const result: { id: number; depth: number }[] = [];
+  const queue: { id: number; depth: number }[] = [{ id: rootId, depth: 0 }];
+  while (queue.length > 0) {
+    const { id, depth } = queue.shift()!;
+    result.push({ id, depth });
+    const children = childrenByParentId.get(id) ?? [];
+    for (const c of children) {
+      queue.push({ id: c, depth: depth + 1 });
+    }
   }
-
-  // Hard-delete this folder (File.folder_id has ON DELETE SET NULL, so file rows are updated automatically)
-  await dbClient.folder.delete({
-    where: { id: folderId },
-  });
+  return result;
 }

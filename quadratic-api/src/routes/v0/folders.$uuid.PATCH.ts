@@ -88,18 +88,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
         throw new ApiError(400, 'Target parent folder must belong to the same team.');
       }
 
-      // Check for circular reference: walk up from the new parent to make sure
-      // we don't encounter the folder being moved
-      let current = newParent;
-      while (current.parentFolderId) {
-        if (current.parentFolderId === folder.id) {
-          throw new ApiError(400, 'Cannot move a folder into one of its subfolders.');
-        }
-        const parent = await dbClient.folder.findUnique({
-          where: { id: current.parentFolderId },
-        });
-        if (!parent) break;
-        current = parent;
+      // User must have access to the target parent (e.g. cannot move into another user's private folder)
+      if (newParent.ownerUserId && newParent.ownerUserId !== userId) {
+        throw new ApiError(403, 'You do not have access to the target parent folder.');
       }
 
       data.parentFolderId = newParent.id;
@@ -111,27 +102,56 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   // and recursively on all descendant folders and files; ownerTeamId stays the same (same team).
   if (newOwnerUserId !== undefined) {
     if (newOwnerUserId !== null) {
-      // Moving to private: must be the requesting user
+      // Moving to private: must be the requesting user (authorization, not bad request)
       if (newOwnerUserId !== userId) {
-        throw new ApiError(400, 'You can only move folders to your own private files.');
+        throw new ApiError(403, 'You can only assign folders to your own private files.');
+      }
+    } else {
+      // Moving to team: require TEAM_EDIT so a viewer cannot move their private folder to team files
+      if (!teamPermissions.includes('TEAM_EDIT')) {
+        throw new ApiError(403, 'You do not have permission to move this folder to team files.');
       }
     }
     data.ownerUserId = newOwnerUserId;
 
-    // When changing ownership, move to root if no explicit parent was provided
+    // When changing ownership, implicitly move to root if no explicit parent was provided.
+    // API contract: setting ownerUserId without parentFolderUuid moves the folder to drive root.
     if (parentFolderUuid === undefined) {
       data.parentFolderId = null;
     }
   }
 
-  // Collect descendant folder IDs before updating (needed for cascading ownership)
-  let descendantFolderIds: number[] = [];
-  if (newOwnerUserId !== undefined) {
-    descendantFolderIds = await collectDescendantFolderIds(folder.id);
-  }
-
-  // Perform the update (and cascade ownership if needed) in a transaction
+  // Perform the update (and cascade ownership if needed) in a transaction.
+  // Circularity check and descendant collection run inside the transaction for consistency.
   const updatedFolder = await dbClient.$transaction(async (tx) => {
+    // Load all team folders once and check circularity in memory (avoid N+1)
+    const teamFolders = await tx.folder.findMany({
+      where: { ownerTeamId: folder.ownerTeamId },
+      select: { id: true, uuid: true, parentFolderId: true },
+    });
+    const folderById = new Map(teamFolders.map((f) => [f.id, f]));
+
+    if (parentFolderUuid !== undefined && parentFolderUuid !== null) {
+      const newParentInTx = teamFolders.find((f) => f.uuid === parentFolderUuid);
+      if (newParentInTx) {
+        let currentId: number | null = newParentInTx.id;
+        while (currentId !== null) {
+          const node = folderById.get(currentId);
+          if (!node) break;
+          if (node.parentFolderId === folder.id) {
+            throw new ApiError(400, 'Cannot move a folder into one of its subfolders.');
+          }
+          currentId = node.parentFolderId;
+        }
+      }
+    }
+
+    // Collect descendant folder IDs inside transaction so list cannot go stale
+    let descendantFolderIds: number[] = [];
+    if (newOwnerUserId !== undefined) {
+      descendantFolderIds = await collectDescendantFolderIds(folder.id, tx);
+    }
+
     const updated = await tx.folder.update({
       where: { uuid },
       data,
@@ -167,19 +187,21 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   });
 }
 
+type TransactionClient = Parameters<Parameters<typeof dbClient.$transaction>[0]>[0];
+
 /**
  * Recursively collects all descendant folder IDs for a given folder.
  * Used to cascade ownership changes to the entire subtree.
  */
-async function collectDescendantFolderIds(folderId: number): Promise<number[]> {
-  const children = await dbClient.folder.findMany({
+async function collectDescendantFolderIds(folderId: number, tx: TransactionClient): Promise<number[]> {
+  const children = await tx.folder.findMany({
     where: { parentFolderId: folderId },
     select: { id: true },
   });
 
   const ids = children.map((c) => c.id);
   for (const child of children) {
-    ids.push(...(await collectDescendantFolderIds(child.id)));
+    ids.push(...(await collectDescendantFolderIds(child.id, tx)));
   }
   return ids;
 }

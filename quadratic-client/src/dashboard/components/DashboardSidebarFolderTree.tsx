@@ -4,6 +4,7 @@ import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { AddIcon, ChevronRightIcon, FolderIcon, FolderSpecialIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import {
@@ -185,6 +186,7 @@ function FolderTreeItem({
   const navigate = useNavigate();
   const navigation = useNavigation();
   const revalidator = useRevalidator();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const to = ROUTES.TEAM_DRIVE_FOLDER(teamUuid, node.uuid);
   const hasChildren = node.children.length > 0;
 
@@ -222,6 +224,7 @@ function FolderTreeItem({
       revalidator.revalidate();
     } catch {
       setOptimisticName(null);
+      addGlobalSnackbar('Failed to rename folder. Try again.', { severity: 'error' });
     }
   };
 
@@ -233,6 +236,7 @@ function FolderTreeItem({
       revalidator.revalidate();
     } catch {
       setIsDeleting(false);
+      addGlobalSnackbar('Failed to delete folder. Try again.', { severity: 'error' });
     }
   };
 

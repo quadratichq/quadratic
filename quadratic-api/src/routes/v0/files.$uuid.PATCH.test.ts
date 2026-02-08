@@ -243,7 +243,6 @@ describe('PATCH /v0/files/:uuid — cross-ownership folder moves', () => {
         name: 'Team Subfolder',
         uuid: teamFolderUuid,
         ownerTeamId: team.id,
-        creatorUserId: userId,
       },
     });
     teamFolderId = teamFolder.id;
@@ -255,7 +254,6 @@ describe('PATCH /v0/files/:uuid — cross-ownership folder moves', () => {
         uuid: privateFolderUuid,
         ownerTeamId: team.id,
         ownerUserId: userId,
-        creatorUserId: userId,
       },
     });
     privateFolderId = privateFolder.id;
@@ -314,7 +312,6 @@ describe('PATCH /v0/files/:uuid — cross-ownership folder moves', () => {
         uuid: '00000000-0000-4000-8000-000000000022',
         ownerTeamId: file!.ownerTeamId,
         ownerUserId: userId,
-        creatorUserId: userId,
       },
     });
 

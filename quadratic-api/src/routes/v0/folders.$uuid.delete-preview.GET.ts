@@ -22,10 +22,7 @@ export default [
   handler,
 ];
 
-async function handler(
-  req: RequestWithUser,
-  res: Response<ApiTypes['/v0/folders/:uuid/delete-preview.GET.response']>
-) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders/:uuid/delete-preview.GET.response']>) {
   const {
     user: { id: userId },
   } = req;
@@ -56,7 +53,7 @@ async function handler(
     throw new ApiError(403, 'You do not have permission to delete this folder.');
   }
 
-  const { files, subfolderCount } = await collectFolderTreeContents(folder.id);
+  const { files, subfolderCount } = await getFolderTreeContentsBulk(folder.id, folder.ownerTeamId);
 
   return res.status(200).json({
     files,
@@ -65,32 +62,36 @@ async function handler(
 }
 
 /**
- * Recursively collects all files (uuid, name) and counts subfolders in the folder tree.
+ * Collects all files and subfolder count in the folder tree using one folder query and one file query.
  */
-async function collectFolderTreeContents(
-  folderId: number
+async function getFolderTreeContentsBulk(
+  folderId: number,
+  ownerTeamId: number
 ): Promise<{ files: { uuid: string; name: string }[]; subfolderCount: number }> {
-  const filesInFolder = await dbClient.file.findMany({
-    where: { folderId, deleted: false },
+  const teamFolders = await dbClient.folder.findMany({
+    where: { ownerTeamId },
+    select: { id: true, parentFolderId: true },
+  });
+  const folderById = new Map(teamFolders.map((f) => [f.id, f]));
+
+  const descendantIds = new Set<number>();
+  const stack = [folderId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    descendantIds.add(id);
+    for (const f of teamFolders) {
+      if (f.parentFolderId === id) stack.push(f.id);
+    }
+  }
+
+  const subfolderCount = descendantIds.size - 1;
+  const files = await dbClient.file.findMany({
+    where: { folderId: { in: [...descendantIds] }, deleted: false },
     select: { uuid: true, name: true },
   });
 
-  const subfolders = await dbClient.folder.findMany({
-    where: { parentFolderId: folderId },
-    select: { id: true },
-  });
-
-  let allFiles = [...filesInFolder];
-  let totalSubfolders = subfolders.length;
-
-  for (const subfolder of subfolders) {
-    const { files: childFiles, subfolderCount: childCount } = await collectFolderTreeContents(subfolder.id);
-    allFiles = allFiles.concat(childFiles);
-    totalSubfolders += childCount;
-  }
-
   return {
-    files: allFiles.map((f) => ({ uuid: f.uuid, name: f.name })),
-    subfolderCount: totalSubfolders,
+    files: files.map((f) => ({ uuid: f.uuid, name: f.name })),
+    subfolderCount,
   };
 }

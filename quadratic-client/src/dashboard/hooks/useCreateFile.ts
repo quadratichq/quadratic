@@ -67,8 +67,7 @@ export function useCreateFile() {
   const createFile = useCallback(
     (overrides?: { isPrivate?: boolean; folderUuid?: string | null }) => {
       const isPrivate = overrides?.isPrivate ?? context.isPrivate;
-      const folderUuid =
-        overrides?.folderUuid !== undefined ? (overrides.folderUuid ?? undefined) : context.folderUuid;
+      const folderUuid = overrides?.folderUuid !== undefined ? (overrides.folderUuid ?? undefined) : context.folderUuid;
 
       window.location.href = ROUTES.CREATE_FILE(context.teamUuid, {
         private: isPrivate,

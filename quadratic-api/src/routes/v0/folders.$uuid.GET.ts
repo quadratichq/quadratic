@@ -56,18 +56,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have access to this folder.');
   }
 
-  // Build breadcrumbs (walk up the parent chain)
+  // Build breadcrumbs in memory from a single query (avoid N+1)
+  const teamFolders = await dbClient.folder.findMany({
+    where: { ownerTeamId: folder.ownerTeamId },
+    select: { id: true, uuid: true, name: true, parentFolderId: true },
+  });
+  const folderById = new Map(teamFolders.map((f) => [f.id, f]));
   const breadcrumbs: { uuid: string; name: string }[] = [];
-  let currentFolder = folder;
-  // Walk up through parents to build breadcrumb trail
-  while (currentFolder.parentFolderId) {
-    const parent = await dbClient.folder.findUnique({
-      where: { id: currentFolder.parentFolderId },
-      include: { parentFolder: true },
-    });
+  let current: (typeof teamFolders)[0] | undefined = folder;
+  while (current?.parentFolderId) {
+    const parent = folderById.get(current.parentFolderId);
     if (!parent) break;
     breadcrumbs.unshift({ uuid: parent.uuid, name: parent.name });
-    currentFolder = parent as any;
+    current = parent;
   }
 
   // Get subfolders

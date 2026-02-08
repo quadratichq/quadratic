@@ -33,12 +33,15 @@ async function handler(
     user: { id: userId },
   } = req;
   const {
+    file,
     userMakingRequest: { filePermissions, id: userMakingRequestId },
   } = await getFile({ uuid, userId });
 
-  // Can't change multiple things at once
+  // Can't change multiple things at once, except move-to-root + ownership in one call (for drag-drop)
   const fieldsToUpdate = [name, ownerUserId, timezone, folderUuid].filter((field) => field !== undefined);
-  if (fieldsToUpdate.length > 1) {
+  const isMoveToRootWithOwnership =
+    folderUuid !== undefined && ownerUserId !== undefined && folderUuid === null && fieldsToUpdate.length === 2;
+  if (fieldsToUpdate.length > 1 && !isMoveToRootWithOwnership) {
     return res.status(400).json({ error: { message: 'You can only change one thing at a time' } });
   }
 
@@ -84,6 +87,21 @@ async function handler(
   // Do you have permission to move? (You can't move someone else's private file, for example)
   if (!filePermissions.includes(FILE_MOVE)) {
     throw new ApiError(403, 'Permission denied');
+  }
+
+  // Move to root and set ownership in one call (e.g. drag file to "Private Files" or "Team Files")
+  if (isMoveToRootWithOwnership) {
+    if (ownerUserId !== null && ownerUserId !== userMakingRequestId) {
+      throw new ApiError(400, 'You can only move your own files');
+    }
+    await dbClient.file.update({
+      where: { uuid },
+      data: { folderId: null, ownerUserId: ownerUserId ?? null },
+    });
+    return res.status(200).json({
+      folderUuid: null,
+      ownerUserId: ownerUserId ?? undefined,
+    });
   }
 
   // Moving to a user's private (team) files?
@@ -137,9 +155,8 @@ async function handler(
       if (!folder) {
         throw new ApiError(404, 'Folder not found.');
       }
-      // Ensure the folder belongs to the same team as the file
-      const file = await dbClient.file.findUnique({ where: { uuid } });
-      if (!file || folder.ownerTeamId !== file.ownerTeamId) {
+      // Ensure the folder belongs to the same team as the file (reuse file from getFile)
+      if (folder.ownerTeamId !== file.ownerTeamId) {
         throw new ApiError(400, 'Folder must belong to the same team as the file.');
       }
       folderId = folder.id;

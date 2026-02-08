@@ -40,9 +40,7 @@ const stateToInsertAndRun = {
 
 export function NewFileButton() {
   const {
-    activeTeam: {
-      connections,
-    },
+    activeTeam: { connections },
   } = useDashboardRouteLoaderData();
   const { teamUuid, isPrivate, folderUuid, createFile } = useCreateFile();
   const navigate = useNavigate();

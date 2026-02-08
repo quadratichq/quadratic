@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import type { DragEvent } from 'react';
 import { useCallback, useState } from 'react';
@@ -136,6 +137,7 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
   const revalidator = useRevalidator();
   const navigate = useNavigate();
   const { teamUuid } = useParams<{ teamUuid: string }>();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const onDragOver = useCallback((e: DragEvent) => {
     // Always prevent default on dragOver to stop the browser from
@@ -162,13 +164,16 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
         const needsOwnershipChange = targetOwnerUserId !== undefined && data.ownerUserId !== targetOwnerUserId;
 
         if (data.type === 'file') {
-          // When moving to a specific folder, the API auto-adjusts file ownership
-          // to match the folder's ownership. We only need an explicit ownership
-          // change when dropping at root level (no folder).
+          // When moving to a specific folder, the API auto-adjusts file ownership.
+          // When moving to root with ownership change, send both in one call for atomicity.
           if (needsOwnershipChange && targetFolderUuid === null) {
-            await apiClient.files.update(data.uuid, { ownerUserId: targetOwnerUserId });
+            await apiClient.files.update(data.uuid, {
+              folderUuid: null,
+              ownerUserId: targetOwnerUserId ?? undefined,
+            });
+          } else {
+            await apiClient.files.update(data.uuid, { folderUuid: targetFolderUuid });
           }
-          await apiClient.files.update(data.uuid, { folderUuid: targetFolderUuid });
         } else if (data.type === 'folder') {
           // Prevent dropping folder onto itself
           if (data.uuid === targetFolderUuid) return;
@@ -192,10 +197,10 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
           navigate(ROUTES.TEAM_DRIVE_FOLDER(teamUuid, targetFolderUuid));
         }
       } catch {
-        // Failed to move - revalidation will reset the UI
+        addGlobalSnackbar('Failed to move item. Try again.', { severity: 'error' });
       }
     },
-    [targetFolderUuid, targetOwnerUserId, revalidator, navigate, teamUuid]
+    [targetFolderUuid, targetOwnerUserId, revalidator, navigate, teamUuid, addGlobalSnackbar]
   );
 
   return { isOver, onDragOver, onDragLeave, onDrop };
