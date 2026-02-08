@@ -9,6 +9,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getAncestorFolderIds, getDescendantFolderIds } from '../../utils/folderTreeQueries';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -125,49 +126,25 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   }
 
   // Perform the update (and cascade ownership if needed) in a transaction.
-  // Circularity check and descendant collection run inside the transaction for consistency.
+  // Circularity and descendants use recursive CTEs to avoid loading all team folders.
   const updatedFolder = await dbClient.$transaction(async (tx) => {
-    // Load all team folders once and check circularity in memory (avoid N+1)
-    const teamFolders = await tx.folder.findMany({
-      where: { ownerTeamId: folder.ownerTeamId },
-      select: { id: true, uuid: true, parentFolderId: true },
-    });
-    const folderById = new Map(teamFolders.map((f) => [f.id, f]));
-
     if (parentFolderUuid !== undefined && parentFolderUuid !== null) {
-      const newParentInTx = teamFolders.find((f) => f.uuid === parentFolderUuid);
-      if (newParentInTx) {
-        let currentId: number | null = newParentInTx.id;
-        while (currentId !== null) {
-          const node = folderById.get(currentId);
-          if (!node) break;
-          if (node.parentFolderId === folder.id) {
-            throw new ApiError(400, 'Cannot move a folder into one of its subfolders.');
-          }
-          currentId = node.parentFolderId;
+      const newParent = await tx.folder.findUnique({
+        where: { uuid: parentFolderUuid },
+        select: { id: true },
+      });
+      if (newParent) {
+        const ancestorIds = await getAncestorFolderIds(tx, newParent.id);
+        if (ancestorIds.includes(folder.id)) {
+          throw new ApiError(400, 'Cannot move a folder into one of its subfolders.');
         }
       }
     }
 
-    // Collect descendant folder IDs in memory from already-fetched teamFolders (avoids N+1)
-    let descendantFolderIds: number[] = [];
-    if (newOwnerUserId !== undefined) {
-      const childrenByParentId = new Map<number, number[]>();
-      for (const f of teamFolders) {
-        if (f.parentFolderId === null) continue;
-        if (!childrenByParentId.has(f.parentFolderId)) childrenByParentId.set(f.parentFolderId, []);
-        childrenByParentId.get(f.parentFolderId)!.push(f.id);
-      }
-      const queue = [folder.id];
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        const children = childrenByParentId.get(currentId) ?? [];
-        for (const childId of children) {
-          descendantFolderIds.push(childId);
-          queue.push(childId);
-        }
-      }
-    }
+    const descendantFolderIds =
+      newOwnerUserId !== undefined
+        ? (await getDescendantFolderIds(tx, folder.id)).filter((id) => id !== folder.id)
+        : [];
 
     const updated = await tx.folder.update({
       where: { uuid },

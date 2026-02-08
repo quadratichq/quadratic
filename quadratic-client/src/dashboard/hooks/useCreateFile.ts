@@ -37,7 +37,8 @@ export function useCreateFile() {
       if (folder) {
         let current = folder;
         while (current.parentFolderUuid) {
-          const parent = folders.find((f) => f.uuid === current.parentFolderUuid);
+          const parentUuid = current.parentFolderUuid;
+          const parent = folders.find((f) => f.uuid === parentUuid);
           if (!parent) break;
           current = parent;
         }
@@ -69,10 +70,12 @@ export function useCreateFile() {
       const isPrivate = overrides?.isPrivate ?? context.isPrivate;
       const folderUuid = overrides?.folderUuid !== undefined ? (overrides.folderUuid ?? undefined) : context.folderUuid;
 
-      window.location.href = ROUTES.CREATE_FILE(context.teamUuid, {
-        private: isPrivate,
-        folderUuid,
-      });
+      window.location.assign(
+        ROUTES.CREATE_FILE(context.teamUuid, {
+          private: isPrivate,
+          folderUuid,
+        })
+      );
     },
     [context]
   );

@@ -23,6 +23,9 @@ export function FolderListItems({
   teamUuid,
   ownerUserId,
   canEdit,
+  /** UUID of the folder we're viewing (parent of these subfolders). Used for redirect after delete. */
+  parentFolderUuid = null,
+  isPrivate = false,
 }: {
   folders: FolderListItemsFolder[];
   teamUuid: string;
@@ -30,6 +33,10 @@ export function FolderListItems({
   ownerUserId?: number | null;
   /** Whether the user can edit folder structure (create/rename/delete/move). False for team viewers. */
   canEdit?: boolean;
+  /** Parent folder UUID when viewing a folder (so after delete we stay on this folder). */
+  parentFolderUuid?: string | null;
+  /** Whether this is the private drive (for redirect when deleting a top-level folder). */
+  isPrivate?: boolean;
 }) {
   if (folders.length === 0) return null;
 
@@ -44,6 +51,8 @@ export function FolderListItems({
             teamUuid={teamUuid}
             ownerUserId={ownerUserId}
             canEdit={canEdit ?? false}
+            parentFolderUuid={parentFolderUuid}
+            isPrivate={isPrivate}
           />
         ))}
       </div>
@@ -56,11 +65,15 @@ function FolderListItem({
   teamUuid,
   ownerUserId,
   canEdit,
+  parentFolderUuid,
+  isPrivate,
 }: {
   folder: FolderListItemsFolder;
   teamUuid: string;
   ownerUserId?: number | null;
   canEdit: boolean;
+  parentFolderUuid: string | null;
+  isPrivate: boolean;
 }) {
   const effectiveOwnerUserId = folder.ownerUserId ?? ownerUserId ?? null;
   const dragProps = getDragProps({ type: 'folder', uuid: folder.uuid, ownerUserId: effectiveOwnerUserId });
@@ -76,7 +89,11 @@ function FolderListItem({
     deletePreviewError,
     isDeleting,
     confirmDelete,
-  } = useFolderDelete(folder.uuid);
+  } = useFolderDelete(folder.uuid, {
+    teamUuid,
+    parentFolderUuid,
+    isPrivate,
+  });
 
   const displayName = optimisticName ?? folder.name;
 

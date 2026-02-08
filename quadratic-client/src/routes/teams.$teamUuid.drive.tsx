@@ -124,6 +124,8 @@ export const Component = () => {
           teamUuid={teamUuid}
           ownerUserId={isPrivateView ? userId : null}
           canEdit={isPrivateView || canEdit}
+          parentFolderUuid={null}
+          isPrivate={isPrivateView}
         />
       )}
 

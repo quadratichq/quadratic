@@ -9,15 +9,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
+import { ROUTES } from '@/shared/constants/routes';
 import { useEffect, useState } from 'react';
-import { useRevalidator } from 'react-router';
+import { useNavigate, useRevalidator } from 'react-router';
 
 export type FolderDeletePreview = {
   files: { uuid: string; name: string }[];
   subfolderCount: number;
 };
 
-export function useFolderDelete(folderUuid: string) {
+export type UseFolderDeleteOptions = {
+  teamUuid: string;
+  /** Parent folder UUID when the deleted folder is a subfolder; null when it's a top-level folder. */
+  parentFolderUuid: string | null;
+  isPrivate: boolean;
+};
+
+export function useFolderDelete(folderUuid: string, options: UseFolderDeleteOptions) {
+  const { teamUuid, parentFolderUuid, isPrivate } = options;
+  const navigate = useNavigate();
   const revalidator = useRevalidator();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -43,6 +53,12 @@ export function useFolderDelete(folderUuid: string) {
     setIsDeleting(true);
     try {
       await apiClient.folders.delete(folderUuid);
+      const targetPath = parentFolderUuid
+        ? ROUTES.TEAM_DRIVE_FOLDER(teamUuid, parentFolderUuid)
+        : isPrivate
+          ? ROUTES.TEAM_DRIVE_PRIVATE(teamUuid)
+          : ROUTES.TEAM_DRIVE_TEAM(teamUuid);
+      navigate(targetPath);
       revalidator.revalidate();
     } catch {
       setIsDeleting(false);

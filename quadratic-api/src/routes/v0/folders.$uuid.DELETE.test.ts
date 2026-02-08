@@ -18,7 +18,7 @@ describe('DELETE /v0/folders/:uuid', () => {
   let userOwnerId: number;
 
   beforeEach(async () => {
-    const [userOwner, userViewer, userNoTeam] = await createUsers(['userOwner', 'userViewer', 'userNoTeam']);
+    const [userOwner, userViewer] = await createUsers(['userOwner', 'userViewer']);
     userOwnerId = userOwner.id;
 
     const team = await dbClient.team.create({

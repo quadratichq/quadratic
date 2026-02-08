@@ -1,3 +1,4 @@
+import { CreateFolderDialog } from '@/dashboard/components/CreateFolderDialog';
 import { FolderActionsMenuContent } from '@/dashboard/components/FolderActionsMenu';
 import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { FolderDeleteAlertDialog, useFolderDelete } from '@/dashboard/hooks/useFolderDelete';
@@ -186,6 +187,7 @@ function FolderTreeItem({
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const contextMenuRequestedRef = useRef(false);
   const [showRename, setShowRename] = useState(false);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [optimisticName, setOptimisticName] = useState<string | null>(null);
   const {
     showDeleteDialog,
@@ -195,7 +197,11 @@ function FolderTreeItem({
     deletePreviewError,
     isDeleting,
     confirmDelete,
-  } = useFolderDelete(node.uuid);
+  } = useFolderDelete(node.uuid, {
+    teamUuid,
+    parentFolderUuid: node.parentFolderUuid,
+    isPrivate: node.ownerUserId !== null,
+  });
   const displayName = optimisticName ?? node.name;
 
   const handleRename = async (newName: string) => {
@@ -255,6 +261,10 @@ function FolderTreeItem({
     createFile({ isPrivate: node.ownerUserId !== null, folderUuid: node.uuid });
   };
 
+  const handleNewFileFromMenu = () => {
+    createFile({ isPrivate: node.ownerUserId !== null, folderUuid: node.uuid });
+  };
+
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!canEditTeam) return;
     e.preventDefault();
@@ -296,7 +306,12 @@ function FolderTreeItem({
           className="pointer-events-none absolute inset-0 m-0 border-none bg-transparent p-0 opacity-0 outline-none"
           tabIndex={-1}
         />
-        <FolderActionsMenuContent onRename={() => setShowRename(true)} onDelete={() => setShowDeleteDialog(true)} />
+        <FolderActionsMenuContent
+          onRename={() => setShowRename(true)}
+          onDelete={() => setShowDeleteDialog(true)}
+          onNewFile={handleNewFileFromMenu}
+          onNewFolder={() => setShowCreateFolder(true)}
+        />
       </DropdownMenu>
       <button
         className={cn(
@@ -371,6 +386,14 @@ function FolderTreeItem({
               onConfirm={confirmDelete}
             />
           </AlertDialog>
+          {showCreateFolder && (
+            <CreateFolderDialog
+              teamUuid={teamUuid}
+              parentFolderUuid={node.uuid}
+              isPrivate={node.ownerUserId !== null}
+              onClose={() => setShowCreateFolder(false)}
+            />
+          )}
           {showRename && (
             <DialogRenameItem
               itemLabel="Folder"

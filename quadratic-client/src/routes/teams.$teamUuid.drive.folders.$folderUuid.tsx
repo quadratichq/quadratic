@@ -126,6 +126,8 @@ export const Component = () => {
           teamUuid={teamUuid}
           ownerUserId={folder.ownerUserId}
           canEdit={isPrivateFolder || canEdit}
+          parentFolderUuid={folder.uuid}
+          isPrivate={isPrivateFolder}
         />
       )}
 

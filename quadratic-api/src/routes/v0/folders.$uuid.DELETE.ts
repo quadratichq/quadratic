@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getDescendantFolderIds } from '../../utils/folderTreeQueries';
 
 export default [
   validateRequestSchema(
@@ -58,12 +59,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
 
   // Soft-delete all files in the tree and hard-delete folders in one transaction (batched for performance)
   await dbClient.$transaction(async (tx) => {
-    const teamFolders = await tx.folder.findMany({
-      where: { ownerTeamId: folder.ownerTeamId },
-      select: { id: true, parentFolderId: true },
-    });
-    const descendantIdsWithDepth = getDescendantIdsWithDepth(folder.id, teamFolders);
-    const folderIds = descendantIdsWithDepth.map(({ id }) => id);
+    const folderIds = await getDescendantFolderIds(tx, folder.id);
     const now = new Date();
 
     if (folderIds.length > 0) {
@@ -94,31 +90,4 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
   });
 
   return res.status(200).json({ message: 'Folder deleted.' });
-}
-
-/**
- * Returns all descendant folder IDs (including the given root) with depth (0 = root).
- */
-function getDescendantIdsWithDepth(
-  rootId: number,
-  teamFolders: { id: number; parentFolderId: number | null }[]
-): { id: number; depth: number }[] {
-  const childrenByParentId = new Map<number, number[]>();
-  for (const f of teamFolders) {
-    if (f.parentFolderId === null) continue;
-    const p = f.parentFolderId;
-    if (!childrenByParentId.has(p)) childrenByParentId.set(p, []);
-    childrenByParentId.get(p)!.push(f.id);
-  }
-  const result: { id: number; depth: number }[] = [];
-  const queue: { id: number; depth: number }[] = [{ id: rootId, depth: 0 }];
-  while (queue.length > 0) {
-    const { id, depth } = queue.shift()!;
-    result.push({ id, depth });
-    const children = childrenByParentId.get(id) ?? [];
-    for (const c of children) {
-      queue.push({ id: c, depth: depth + 1 });
-    }
-  }
-  return result;
 }

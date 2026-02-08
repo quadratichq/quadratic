@@ -144,6 +144,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
   const dbConnections = dbTeam.Connection ? dbTeam.Connection : [];
 
+  const folderUuidById = new Map(dbFolders.map((f) => [f.id, f.uuid]));
+
   // Get user info from auth
   const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
 
@@ -232,9 +234,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           },
         });
         const isEditRestricted = !editableFileIds.includes(file.id);
-        const fileFolderUuid = file.folderId
-          ? dbFolders.find((f) => f.id === file.folderId)?.uuid ?? null
-          : null;
+        const fileFolderUuid = file.folderId ? folderUuidById.get(file.folderId) ?? null : null;
         return {
           file: {
             uuid: file.uuid,
@@ -264,9 +264,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           },
         });
         const isEditRestricted = !editableFileIds.includes(file.id);
-        const fileFolderUuid = file.folderId
-          ? dbFolders.find((f) => f.id === file.folderId)?.uuid ?? null
-          : null;
+        const fileFolderUuid = file.folderId ? folderUuidById.get(file.folderId) ?? null : null;
         return {
           file: {
             uuid: file.uuid,
