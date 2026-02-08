@@ -14,6 +14,7 @@ export function FilesListItems({
       className={cn(
         viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4'
       )}
+      data-file-list-background
     >
       {children}
     </ul>
@@ -21,7 +22,11 @@ export function FilesListItems({
 }
 
 export function ListItem({ children }: { children: React.ReactNode }) {
-  return <li className="relative flex">{children}</li>;
+  return (
+    <li className="relative flex" data-file-item>
+      {children}
+    </li>
+  );
 }
 
 export function ListItemView({
@@ -30,17 +35,26 @@ export function ListItemView({
   lazyLoad,
   children,
   overlay,
+  isSelected,
+  isSelectionMode,
 }: {
   viewPreferences: ViewPreferences;
   thumbnail: string | null;
   lazyLoad: boolean;
   children: React.ReactNode;
   overlay?: React.ReactNode;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
 }) {
   const { layout } = viewPreferences;
 
   return layout === Layout.Grid ? (
-    <div className="border border-border p-2 hover:bg-accent">
+    <div
+      className={cn(
+        'border p-2 hover:bg-accent',
+        isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+      )}
+    >
       <div className="relative flex aspect-video items-center justify-center bg-background">
         {thumbnail ? (
           <img
@@ -66,10 +80,15 @@ export function ListItemView({
         {overlay && <div className="absolute left-1 top-1">{overlay}</div>}
       </div>
       <Separator className="border-accent" />
-      <div className="pt-2">{children}</div>
+      <div className={cn('pt-2', isSelectionMode && 'cursor-default')}>{children}</div>
     </div>
   ) : (
-    <div className={`flex w-full flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
+    <div
+      className={cn(
+        'flex w-full flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2',
+        isSelected && 'ring-2 ring-primary/20'
+      )}
+    >
       <div className={`relative hidden border border-border shadow-sm md:block`}>
         {thumbnail ? (
           <img
@@ -95,7 +114,7 @@ export function ListItemView({
         )}
         {overlay && <div className="absolute left-0.5 top-0.5">{overlay}</div>}
       </div>
-      <div className="flex-grow">{children}</div>
+      <div className={cn('flex-grow', isSelectionMode && 'cursor-default')}>{children}</div>
     </div>
   );
 }

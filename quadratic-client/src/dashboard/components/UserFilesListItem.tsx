@@ -1,4 +1,5 @@
 import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
+import { DeleteFilesAlertDialog } from '@/dashboard/components/DeleteFilesAlertDialog';
 import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
 import { ListItem, ListItemView } from '@/dashboard/components/FilesListItems';
 import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
@@ -19,6 +20,7 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import { AlertDialog } from '@/shared/shadcn/ui/alert-dialog';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -40,11 +42,21 @@ export function UserFilesListItem({
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
+  selectedFileUuids,
+  onToggleSelection,
+  onSelectOnly,
+  onShiftClickSelection,
+  isSelectionMode,
 }: {
   file: UserFilesListFile;
   setActiveShareMenuFileId: React.Dispatch<React.SetStateAction<string>>;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
+  selectedFileUuids: Set<string>;
+  onToggleSelection: (uuid: string) => void;
+  onSelectOnly: (uuid: string) => void;
+  onShiftClickSelection: (uuid: string) => void;
+  isSelectionMode: boolean;
 }) {
   const filters = useAtomValue(userFilesListFiltersAtom);
   const setFilters = useSetAtom(userFilesListFiltersAtom);
@@ -57,6 +69,7 @@ export function UserFilesListItem({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
   const [showMoveToFolder, setShowMoveToFolder] = useState<boolean>(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     activeTeam: {
@@ -125,6 +138,30 @@ export function UserFilesListItem({
 
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
   const isDisabled = uuid.includes('duplicate');
+  const isSelected = selectedFileUuids.has(uuid);
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    const isTitleAreaClick = (e.target as HTMLElement).closest('[data-file-title-area]');
+    if (e.shiftKey) {
+      e.preventDefault();
+      onShiftClickSelection(uuid);
+      return;
+    }
+    if (e.metaKey || e.ctrlKey) {
+      e.preventDefault();
+      onToggleSelection(uuid);
+      return;
+    }
+    if (isSelectionMode) {
+      e.preventDefault();
+      onSelectOnly(uuid);
+      return;
+    }
+    if (isTitleAreaClick) {
+      e.preventDefault();
+      onToggleSelection(uuid);
+    }
+  };
 
   const renameFile = (value: string) => {
     // Update on the server and optimistically in the UI
@@ -170,12 +207,15 @@ export function UserFilesListItem({
           reloadDocument
           draggable={false}
           className="block w-full"
+          onClick={handleLinkClick}
         >
           <ListItemView
             viewPreferences={viewPreferences}
             thumbnail={thumbnail}
             lazyLoad={lazyLoad}
             overlay={file.requiresUpgradeToEdit ? <FileEditRestrictedBadge /> : undefined}
+            isSelected={isSelected}
+            isSelectionMode={isSelectionMode}
           >
             <FilesListItemCore
               key={uuid}
@@ -204,6 +244,7 @@ export function UserFilesListItem({
                     <Btn
                       variant="ghost"
                       size="icon"
+                      onClick={(e) => e.stopPropagation()}
                       className={cn(
                         viewPreferences.layout === Layout.Grid ? 'absolute right-2 top-2' : 'flex-shrink-0',
                         'hover:border hover:bg-background hover:text-foreground hover:shadow-sm data-[state=open]:border data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:shadow-sm',
@@ -292,7 +333,10 @@ export function UserFilesListItem({
                     {permissions.includes('FILE_DELETE') && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleDelete} data-testid="dashboard-file-actions-delete">
+                        <DropdownMenuItem
+                          onClick={() => setShowDeleteDialog(true)}
+                          data-testid="dashboard-file-actions-delete"
+                        >
                           Delete
                         </DropdownMenuItem>
                       </>
@@ -315,6 +359,17 @@ export function UserFilesListItem({
         />
       )}
       {showMoveToFolder && <MoveToFolderDialog fileUuid={uuid} onClose={() => setShowMoveToFolder(false)} />}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DeleteFilesAlertDialog
+          fileCount={1}
+          fileNames={[displayName]}
+          onConfirm={() => {
+            handleDelete();
+            setShowDeleteDialog(false);
+          }}
+        />
+      </AlertDialog>
     </ListItem>
   );
 }

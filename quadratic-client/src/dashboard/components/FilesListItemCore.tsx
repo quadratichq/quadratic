@@ -42,7 +42,7 @@ export function FilesListItemCore({
   return (
     <div className={`flex w-full items-center`}>
       <div className={`flex w-full items-center justify-between gap-3`}>
-        <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
+        <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')} data-file-title-area>
           <h2 className={titleClasses} title={fullTitle}>
             {folderPath ? (
               <>
