@@ -78,6 +78,11 @@ impl EmptyValuesCache {
             return;
         }
 
+        let cell_count = array_size.w.get() as usize * array_size.h.get() as usize;
+        if cell_count > EMPTY_VALUES_CACHE_MAX_CELLS && self.cache.is_none() {
+            return;
+        }
+
         if let Some(cache) = self.cache.as_mut() {
             let val = if blank { Some(Some(true)) } else { Some(None) };
             cache.set(pos.translate(1, 1, 1, 1), val);
