@@ -55,6 +55,10 @@ impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
             })
             .collect();
 
+        if empty_positions.is_empty() {
+            return Self::new();
+        }
+
         let mut cache = Contiguous2D::new();
         cache.set_rect(1, 1, Some(width), Some(height), Some(None));
         for pos in empty_positions {
@@ -118,6 +122,13 @@ impl EmptyValuesCache {
     pub fn remove_row(&mut self, array_size: &ArraySize, row: i64) {
         // required only in app for client side interactions
         if !cfg!(target_family = "wasm") && !cfg!(test) {
+            self.cache = None;
+            return;
+        }
+
+        // Clear cache when table is over threshold (e.g. started large, then had rows removed).
+        let cell_count = array_size.w.get() as usize * array_size.h.get() as usize;
+        if cell_count > EMPTY_VALUES_CACHE_MAX_CELLS {
             self.cache = None;
             return;
         }
