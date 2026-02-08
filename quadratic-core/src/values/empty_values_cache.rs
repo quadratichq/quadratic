@@ -37,16 +37,28 @@ impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
 
         let width = array_size.w.get() as i64;
         let height = array_size.h.get() as i64;
+        let width_usize = width as usize;
+
+        // Collect empty positions first, then set only those. For tables with few empty
+        // cells (e.g. 99k cells, 10 empty), this avoids 99k set() calls.
+        let empty_positions: SmallVec<[Pos; 8]> = values
+            .iter()
+            .enumerate()
+            .filter_map(|(i, value)| {
+                if value.is_blank_or_empty_string() {
+                    let x = (i % width_usize) as i64;
+                    let y = (i / width_usize) as i64;
+                    Some(Pos { x, y }.translate(1, 1, 1, 1))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         let mut cache = Contiguous2D::new();
         cache.set_rect(1, 1, Some(width), Some(height), Some(None));
-
-        for (i, value) in values.iter().enumerate() {
-            if value.is_blank_or_empty_string() {
-                let x = (i % array_size.w.get() as usize) as i64;
-                let y = (i / array_size.w.get() as usize) as i64;
-                cache.set(Pos { x, y }.translate(1, 1, 1, 1), Some(Some(true)));
-            }
+        for pos in empty_positions {
+            cache.set(pos, Some(Some(true)));
         }
 
         Self { cache: Some(cache) }
@@ -78,8 +90,10 @@ impl EmptyValuesCache {
             return;
         }
 
+        // Clear cache when table grows past threshold so cache presence doesn't depend on history.
         let cell_count = array_size.w.get() as usize * array_size.h.get() as usize;
-        if cell_count > EMPTY_VALUES_CACHE_MAX_CELLS && self.cache.is_none() {
+        if cell_count > EMPTY_VALUES_CACHE_MAX_CELLS {
+            self.cache = None;
             return;
         }
 
