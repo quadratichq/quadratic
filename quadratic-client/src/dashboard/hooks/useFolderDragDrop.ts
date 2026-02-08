@@ -159,8 +159,14 @@ export function useDropTarget(targetFolderUuid: string | null, targetOwnerUserId
       e.stopPropagation();
       setIsOver(false);
 
+      let data: DragPayload;
       try {
-        const data: DragPayload = JSON.parse(e.dataTransfer.getData('application/json'));
+        data = JSON.parse(e.dataTransfer.getData('application/json'));
+      } catch {
+        return; // Not a valid internal drag payload (e.g. external drag or malformed JSON)
+      }
+
+      try {
         const needsOwnershipChange = targetOwnerUserId !== undefined && data.ownerUserId !== targetOwnerUserId;
 
         if (data.type === 'file') {

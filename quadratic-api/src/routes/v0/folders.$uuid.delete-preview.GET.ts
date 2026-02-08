@@ -72,7 +72,6 @@ async function getFolderTreeContentsBulk(
     where: { ownerTeamId },
     select: { id: true, parentFolderId: true },
   });
-  const folderById = new Map(teamFolders.map((f) => [f.id, f]));
 
   const descendantIds = new Set<number>();
   const stack = [folderId];

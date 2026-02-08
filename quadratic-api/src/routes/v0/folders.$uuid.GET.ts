@@ -101,15 +101,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     orderBy: { updatedDate: 'desc' },
   });
 
-  // Get signed thumbnail URLs (non-mutating Promise.all, then assign)
-  const signedThumbnails = await Promise.all(
-    dbFiles.map(async (file) =>
-      file.thumbnail ? getPresignedFileUrl(file.thumbnail) : null
-    )
+  // Get signed thumbnail URLs (map to new objects to avoid mutating query results)
+  const filesWithSignedThumbnails = await Promise.all(
+    dbFiles.map(async (file) => ({
+      ...file,
+      thumbnail: file.thumbnail ? await getPresignedFileUrl(file.thumbnail) : null,
+    }))
   );
-  dbFiles.forEach((file, i) => {
-    file.thumbnail = signedThumbnails[i];
-  });
 
   // Get file limit info for edit restrictions
   const isPaidPlan = await getIsOnPaidPlan(folderTeam);
@@ -122,7 +120,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     return permissions;
   };
 
-  const publicFiles = dbFiles
+  const publicFiles = filesWithSignedThumbnails
     .filter((file) => !file.ownerUserId)
     .map((file) => {
       const basePermissions = getFilePermissions({
@@ -153,7 +151,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       };
     });
 
-  const privateFiles = dbFiles
+  const privateFiles = filesWithSignedThumbnails
     .filter((file) => file.ownerUserId)
     .map((file) => {
       const basePermissions = getFilePermissions({

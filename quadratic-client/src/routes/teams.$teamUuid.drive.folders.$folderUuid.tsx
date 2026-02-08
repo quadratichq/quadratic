@@ -26,6 +26,7 @@ export const Component = () => {
       userMakingRequest: { teamPermissions },
       users,
     },
+    userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
   const revalidator = useRevalidator();
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -44,10 +45,7 @@ export const Component = () => {
     [users]
   );
 
-  const currentUser = useMemo(
-    () => (users[0] ? { name: users[0].name, picture: users[0].picture, email: users[0].email } : undefined),
-    [users]
-  );
+  const currentUser = useMemo(() => (userId != null ? usersById[userId] : undefined), [userId, usersById]);
 
   const allFiles = useMemo(() => {
     const result: UserFilesListFile[] = [];

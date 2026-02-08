@@ -1,6 +1,6 @@
 import { FolderActionsMenuContent } from '@/dashboard/components/FolderActionsMenu';
 import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
-import { useFolderDelete, FolderDeleteAlertDialog } from '@/dashboard/hooks/useFolderDelete';
+import { FolderDeleteAlertDialog, useFolderDelete } from '@/dashboard/hooks/useFolderDelete';
 import { getDragProps, useDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
@@ -312,13 +312,7 @@ function FolderTreeItem({
       >
         <ChevronRightIcon className={cn('text-muted-foreground transition-transform', isExpanded && 'rotate-90')} />
       </button>
-      <NavLink
-        to={to}
-        className="flex min-w-0 flex-grow items-center gap-1.5 no-underline"
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
+      <NavLink to={to} className="flex min-w-0 flex-grow items-center gap-1.5 no-underline">
         {node.ownerUserId !== null ? (
           <FolderSpecialIcon className="shrink-0 text-muted-foreground" />
         ) : (

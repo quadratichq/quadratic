@@ -149,10 +149,24 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       }
     }
 
-    // Collect descendant folder IDs inside transaction so list cannot go stale
+    // Collect descendant folder IDs in memory from already-fetched teamFolders (avoids N+1)
     let descendantFolderIds: number[] = [];
     if (newOwnerUserId !== undefined) {
-      descendantFolderIds = await collectDescendantFolderIds(folder.id, tx);
+      const childrenByParentId = new Map<number, number[]>();
+      for (const f of teamFolders) {
+        if (f.parentFolderId === null) continue;
+        if (!childrenByParentId.has(f.parentFolderId)) childrenByParentId.set(f.parentFolderId, []);
+        childrenByParentId.get(f.parentFolderId)!.push(f.id);
+      }
+      const queue = [folder.id];
+      while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        const children = childrenByParentId.get(currentId) ?? [];
+        for (const childId of children) {
+          descendantFolderIds.push(childId);
+          queue.push(childId);
+        }
+      }
     }
 
     const updated = await tx.folder.update({
@@ -188,30 +202,4 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
       ownerUserId: updatedFolder.ownerUserId ?? null,
     },
   });
-}
-
-type TransactionClient = Parameters<Parameters<typeof dbClient.$transaction>[0]>[0];
-
-/**
- * Collects all descendant folder IDs for a given folder using an iterative queue.
- * Used to cascade ownership changes to the entire subtree.
- */
-async function collectDescendantFolderIds(folderId: number, tx: TransactionClient): Promise<number[]> {
-  const ids: number[] = [];
-  const queue = [folderId];
-
-  while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    const children = await tx.folder.findMany({
-      where: { parentFolderId: currentId },
-      select: { id: true },
-    });
-
-    for (const child of children) {
-      ids.push(child.id);
-      queue.push(child.id);
-    }
-  }
-
-  return ids;
 }

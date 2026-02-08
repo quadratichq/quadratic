@@ -2,7 +2,13 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb, createFile as createFileData, createUsers, upgradeTeamToPro } from '../../tests/testDataGenerator';
+import {
+  clearDb,
+  createFile as createFileData,
+  createFolder,
+  createUsers,
+  upgradeTeamToPro,
+} from '../../tests/testDataGenerator';
 
 const validPayload = {
   name: 'new_file_with_name',
@@ -19,6 +25,8 @@ const createFile = (payload: any, user: string = 'test_user_1') =>
   request(app).post('/v0/files').send(payload).set('Authorization', `Bearer ValidToken ${user}`);
 
 describe('POST /v0/files', () => {
+  let teamId: number;
+
   beforeAll(async () => {
     // Create a test user
     const [test_user_1, test_user_2] = await createUsers(['test_user_1', 'test_user_2', 'test_user_3']);
@@ -41,6 +49,7 @@ describe('POST /v0/files', () => {
         },
       },
     });
+    teamId = team.id;
     // Upgrade the team to paid so tests don't hit file limits
     await upgradeTeamToPro(team.id);
   });
@@ -125,6 +134,68 @@ describe('POST /v0/files', () => {
         .expect((res) => {
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
         });
+    });
+  });
+
+  describe('create file in folder', () => {
+    const folderUuid = '00000000-0000-4000-8000-000000000010';
+
+    it('creates a file in a folder when folderUuid is valid and belongs to the same team', async () => {
+      const folder = await createFolder({
+        data: {
+          name: 'Test Folder',
+          ownerTeamId: teamId,
+          uuid: folderUuid,
+        },
+      });
+
+      const createResponse = await createFile({ ...validPayload, name: 'file_in_folder', folderUuid: folder.uuid })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.file.name).toBe('file_in_folder');
+        });
+
+      const dbFile = await dbClient.file.findUnique({
+        where: { uuid: createResponse.body.file.uuid },
+        select: { folderId: true },
+      });
+      expect(dbFile?.folderId).toBe(folder.id);
+    });
+
+    it('returns 404 when folderUuid does not exist', async () => {
+      await createFile({
+        ...validPayload,
+        folderUuid: '00000000-0000-4000-8000-000000000099',
+      })
+        .expect(404)
+        .expect(expectError);
+    });
+
+    it('returns 400 when folder belongs to a different team', async () => {
+      const [otherUser] = await createUsers(['folder_other_team_user']);
+      const otherTeam = await dbClient.team.create({
+        data: {
+          name: 'other_team',
+          uuid: '00000000-0000-4000-8000-000000000020',
+          UserTeamRole: {
+            create: [{ userId: otherUser.id, role: 'OWNER' }],
+          },
+        },
+      });
+      const otherFolder = await createFolder({
+        data: {
+          name: 'Other Team Folder',
+          ownerTeamId: otherTeam.id,
+          uuid: '00000000-0000-4000-8000-000000000021',
+        },
+      });
+
+      await createFile({
+        ...validPayload,
+        folderUuid: otherFolder.uuid,
+      })
+        .expect(400)
+        .expect(expectError);
     });
   });
 
