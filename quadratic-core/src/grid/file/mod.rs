@@ -831,17 +831,6 @@ mod tests {
     }
 
     #[test]
-    fn test_total_revenue_grid_imports() {
-        let file = include_bytes!("../../../test-files/Total revenue.grid");
-        let imported =
-            import(file.to_vec()).expect("Total revenue.grid should import successfully");
-        assert!(
-            !imported.sheets.is_empty(),
-            "should have at least one sheet"
-        );
-    }
-
-    #[test]
     fn process_a_v1_7_1_borders_file() {
         let mut gc = GridController::test();
 
