@@ -157,6 +157,8 @@ async function handler(
         if (folder.ownerUserId && folder.ownerUserId !== userId) {
           throw new ApiError(403, 'You do not have access to the target folder.');
         }
+        // Lock target folder so ownerUserId cannot change between check and update
+        await db.$queryRaw`SELECT id FROM "Folder" WHERE uuid = ${folderUuid} FOR UPDATE`;
         folderId = folder.id;
         const folderOwner = folder.ownerUserId ?? null;
         const fileOwner = file.ownerUserId ?? null;
@@ -184,21 +186,24 @@ async function handler(
     return null;
   };
 
-  // If the file is in a folder, lock the folder row and verify access inside a transaction
-  // so another request cannot change the folder's owner between the check and the update.
-  if (file.folderId !== null) {
+  // When moving to a folder or when the file is in a folder, use a transaction so folder row
+  // locks (FOR UPDATE) are held until the file update completes.
+  const movingToFolder = folderUuid !== undefined && folderUuid !== null;
+  if (file.folderId !== null || movingToFolder) {
     const currentFolderId = file.folderId;
     const result = await dbClient.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Folder" WHERE id = ${currentFolderId} FOR UPDATE`;
-      const currentFolder = await tx.folder.findUnique({
-        where: { id: currentFolderId },
-      });
-      if (currentFolder) {
-        if (currentFolder.ownerUserId !== null && currentFolder.ownerUserId !== userId) {
-          throw new ApiError(403, 'You do not have access to the current folder.');
-        }
-        if (currentFolder.ownerUserId === null && !teamPermissions?.includes('TEAM_EDIT')) {
-          throw new ApiError(403, 'You do not have access to the current folder.');
+      if (currentFolderId !== null) {
+        await tx.$queryRaw`SELECT id FROM "Folder" WHERE id = ${currentFolderId} FOR UPDATE`;
+        const currentFolder = await tx.folder.findUnique({
+          where: { id: currentFolderId },
+        });
+        if (currentFolder) {
+          if (currentFolder.ownerUserId !== null && currentFolder.ownerUserId !== userId) {
+            throw new ApiError(403, 'You do not have access to the current folder.');
+          }
+          if (currentFolder.ownerUserId === null && !teamPermissions?.includes('TEAM_EDIT')) {
+            throw new ApiError(403, 'You do not have access to the current folder.');
+          }
         }
       }
       return executeMove(tx);

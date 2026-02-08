@@ -57,32 +57,33 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     throw new ApiError(403, 'You do not have permission to delete this folder.');
   }
 
-  // Reject very large trees to avoid long-running transactions, lock contention, and timeouts
-  const MAX_FOLDERS_IN_DELETE = 500;
-  const descendantFolderIds = await getDescendantFolderIds(dbClient, folder.id);
-  if (descendantFolderIds.length > MAX_FOLDERS_IN_DELETE) {
-    throw new ApiError(
-      413,
-      `This folder tree is too large to delete at once (${descendantFolderIds.length} folders). Please delete subfolders in smaller batches.`
-    );
-  }
-
   // Soft-delete files and scheduled tasks first, then hard-delete folders. Order matters: we must
   // update files before deleting folders so (1) files can be restored and (2) FK ON DELETE SET NULL
   // on File.folder_id only runs as a safety net, not while files still reference the folders.
-  const folderIds = descendantFolderIds;
+  const MAX_FOLDERS_IN_DELETE = 500;
   await dbClient.$transaction(async (tx) => {
+    // Lock the root folder to prevent concurrent modifications (avoids orphaned folders)
+    await tx.$queryRaw`SELECT id FROM "Folder" WHERE id = ${folder.id} FOR UPDATE`;
+
+    const descendantFolderIds = await getDescendantFolderIds(tx, folder.id);
+    if (descendantFolderIds.length > MAX_FOLDERS_IN_DELETE) {
+      throw new ApiError(
+        413,
+        `This folder tree is too large to delete at once (${descendantFolderIds.length} folders). Please delete subfolders in smaller batches.`
+      );
+    }
+
     const now = new Date();
 
-    if (folderIds.length > 0) {
+    if (descendantFolderIds.length > 0) {
       await tx.file.updateMany({
-        where: { folderId: { in: folderIds }, deleted: false },
+        where: { folderId: { in: descendantFolderIds }, deleted: false },
         data: { deleted: true, deletedDate: now },
       });
 
       await tx.scheduledTask.updateMany({
         where: {
-          file: { folderId: { in: folderIds } },
+          file: { folderId: { in: descendantFolderIds } },
           status: { not: 'DELETED' },
         },
         data: { status: 'DELETED' },
@@ -90,7 +91,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     }
 
     await tx.folder.deleteMany({
-      where: { id: { in: folderIds } },
+      where: { id: { in: descendantFolderIds } },
     });
   });
 

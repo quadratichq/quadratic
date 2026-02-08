@@ -34,18 +34,24 @@ export function BulkFileActionsBar({
     const userEmail = loggedInUser?.email ?? '';
     const body = getActionFileDelete({ userEmail, redirect: false });
 
-    const results = await Promise.allSettled(
-      uuids.map(async (uuid) => {
-        const res = await fetch(ROUTES.API.FILE(uuid), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          credentials: 'same-origin',
-        });
-        const data = await res.json().catch(() => ({ ok: false }));
-        return data?.ok === true;
-      })
-    );
+    const BATCH_SIZE = 5;
+    const results: PromiseSettledResult<boolean>[] = [];
+    for (let i = 0; i < uuids.length; i += BATCH_SIZE) {
+      const batch = uuids.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (uuid) => {
+          const res = await fetch(ROUTES.API.FILE(uuid), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            credentials: 'same-origin',
+          });
+          const data = await res.json().catch(() => ({ ok: false }));
+          return data?.ok === true;
+        })
+      );
+      results.push(...batchResults);
+    }
 
     setIsDeleting(false);
     const succeeded = results.filter((r) => r.status === 'fulfilled' && r.value).length;

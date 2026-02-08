@@ -171,17 +171,23 @@ export function MoveToFolderBulkDialog({ fileUuids, onClose }: { fileUuids: stri
     setIsLoading(true);
     setError(null);
     try {
-      const results = await Promise.allSettled(
-        fileUuids.map(async (uuid) => {
-          if (selected === 'team-root') {
-            return apiClient.files.update(uuid, { folderUuid: null, ownerUserId: null });
-          } else if (selected === 'personal-root') {
-            return apiClient.files.update(uuid, { folderUuid: null, ownerUserId: userId });
-          } else {
-            return apiClient.files.update(uuid, { folderUuid: selected });
-          }
-        })
-      );
+      const BATCH_SIZE = 5;
+      const results: PromiseSettledResult<unknown>[] = [];
+      for (let i = 0; i < fileUuids.length; i += BATCH_SIZE) {
+        const batch = fileUuids.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (uuid) => {
+            if (selected === 'team-root') {
+              return apiClient.files.update(uuid, { folderUuid: null, ownerUserId: null });
+            } else if (selected === 'personal-root') {
+              return apiClient.files.update(uuid, { folderUuid: null, ownerUserId: userId });
+            } else {
+              return apiClient.files.update(uuid, { folderUuid: selected });
+            }
+          })
+        );
+        results.push(...batchResults);
+      }
       const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failures.length > 0) {
         setError(

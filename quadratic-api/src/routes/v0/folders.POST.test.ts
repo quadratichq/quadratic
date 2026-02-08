@@ -17,10 +17,12 @@ const createFolderRequest = (payload: any, user: string = 'userOwner') =>
 describe('POST /v0/folders', () => {
   let teamId: number;
   let userOwnerId: number;
+  let userViewerId: number;
 
   beforeAll(async () => {
     const [userOwner, userViewer, userNoTeam] = await createUsers(['userOwner', 'userViewer', 'userNoTeam']);
     userOwnerId = userOwner.id;
+    userViewerId = userViewer.id;
     const team = await dbClient.team.create({
       data: {
         name: 'test_team',
@@ -123,6 +125,117 @@ describe('POST /v0/folders', () => {
       })
         .expect(404)
         .expect(expectError);
+    });
+  });
+
+  describe('parent folder privacy validation', () => {
+    it('rejects private subfolder under a team folder', async () => {
+      const teamParent = await createFolder({
+        data: {
+          name: 'Team Parent',
+          ownerTeamId: teamId,
+          uuid: '00000000-0000-4000-8000-000000000020',
+        },
+      });
+
+      await createFolderRequest({
+        ...validPayload,
+        name: 'Private Child',
+        parentFolderUuid: teamParent.uuid,
+        isPrivate: true,
+      })
+        .expect(400)
+        .expect(expectError);
+    });
+
+    it('rejects private subfolder under another user’s private folder', async () => {
+      const otherUserPrivateFolder = await createFolder({
+        data: {
+          name: 'Viewer Private Parent',
+          ownerTeamId: teamId,
+          ownerUserId: userViewerId,
+          uuid: '00000000-0000-4000-8000-000000000021',
+        },
+      });
+
+      await createFolderRequest(
+        {
+          ...validPayload,
+          name: 'My Private Child',
+          parentFolderUuid: otherUserPrivateFolder.uuid,
+          isPrivate: true,
+        },
+        'userOwner',
+      )
+        .expect(400)
+        .expect(expectError);
+    });
+
+    it('rejects team subfolder under a private folder', async () => {
+      const privateParent = await createFolder({
+        data: {
+          name: 'Private Parent',
+          ownerTeamId: teamId,
+          ownerUserId: userOwnerId,
+          uuid: '00000000-0000-4000-8000-000000000022',
+        },
+      });
+
+      await createFolderRequest({
+        ...validPayload,
+        name: 'Team Child',
+        parentFolderUuid: privateParent.uuid,
+        isPrivate: false,
+      })
+        .expect(400)
+        .expect(expectError);
+    });
+
+    it('creates private subfolder under own private folder', async () => {
+      const privateParent = await createFolder({
+        data: {
+          name: 'My Private Parent',
+          ownerTeamId: teamId,
+          ownerUserId: userOwnerId,
+          uuid: '00000000-0000-4000-8000-000000000023',
+        },
+      });
+
+      await createFolderRequest({
+        ...validPayload,
+        name: 'My Private Child',
+        parentFolderUuid: privateParent.uuid,
+        isPrivate: true,
+      })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.folder.name).toBe('My Private Child');
+          expect(res.body.folder.parentFolderUuid).toBe(privateParent.uuid);
+          expect(res.body.folder.ownerUserId).not.toBeNull();
+        });
+    });
+
+    it('creates team subfolder under team folder', async () => {
+      const teamParent = await createFolder({
+        data: {
+          name: 'Team Parent For Child',
+          ownerTeamId: teamId,
+          uuid: '00000000-0000-4000-8000-000000000024',
+        },
+      });
+
+      await createFolderRequest({
+        ...validPayload,
+        name: 'Team Child',
+        parentFolderUuid: teamParent.uuid,
+        isPrivate: false,
+      })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.folder.name).toBe('Team Child');
+          expect(res.body.folder.parentFolderUuid).toBe(teamParent.uuid);
+          expect(res.body.folder.ownerUserId).toBeNull();
+        });
     });
   });
 });

@@ -54,6 +54,28 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/folders
     if (parentFolder.ownerTeamId !== team.id) {
       throw new ApiError(400, 'Parent folder must belong to the same team.');
     }
+    // Ensure subfolder privacy matches parent: private under private (same user), team under team
+    if (isPrivate) {
+      if (parentFolder.ownerUserId === null) {
+        throw new ApiError(
+          400,
+          'A private subfolder must be created under a private folder owned by you.',
+        );
+      }
+      if (parentFolder.ownerUserId !== userId) {
+        throw new ApiError(
+          400,
+          'A private subfolder must be created under a private folder you own.',
+        );
+      }
+    } else {
+      if (parentFolder.ownerUserId !== null) {
+        throw new ApiError(
+          400,
+          'A team folder must be created under a team folder, not a private folder.',
+        );
+      }
+    }
     parentFolderId = parentFolder.id;
   }
 
