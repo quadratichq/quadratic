@@ -16,6 +16,9 @@ pub struct EmptyValuesCache {
     cache: Option<Contiguous2D<Option<Option<bool>>>>,
 }
 
+/// Skip building the cache for arrays larger than this to avoid slow import and high memory use.
+const EMPTY_VALUES_CACHE_MAX_CELLS: usize = 100_000;
+
 impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
     fn from((array_size, values): (&ArraySize, &SmallVec<[CellValue; 1]>)) -> Self {
         // required only in app for client side interactions
@@ -28,33 +31,22 @@ impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
             return Self::new();
         }
 
-        let width = array_size.w.get() as usize;
-
-        // collect all the empty cells
-        let mut empty = Vec::<Pos>::new();
-        for (i, value) in values.iter().enumerate() {
-            if value.is_blank_or_empty_string() {
-                let x = i % width;
-                let y = i / width;
-                empty.push((x, y).into());
-            }
-        }
-
-        // if there are no empty cells, we don't need to store the cache
-        if empty.is_empty() {
+        if values.len() > EMPTY_VALUES_CACHE_MAX_CELLS {
             return Self::new();
         }
 
-        let height = array_size.h.get();
+        let width = array_size.w.get() as i64;
+        let height = array_size.h.get() as i64;
 
         let mut cache = Contiguous2D::new();
+        cache.set_rect(1, 1, Some(width), Some(height), Some(None));
 
-        // mark all cells (array rect) as Some(None) -> non-empty
-        cache.set_rect(1, 1, Some(width as i64), Some(height as i64), Some(None));
-
-        // then mark empty cells as Some(Some(true))
-        for pos in empty {
-            cache.set(pos.translate(1, 1, 1, 1), Some(Some(true)));
+        for (i, value) in values.iter().enumerate() {
+            if value.is_blank_or_empty_string() {
+                let x = (i % array_size.w.get() as usize) as i64;
+                let y = (i / array_size.w.get() as usize) as i64;
+                cache.set(Pos { x, y }.translate(1, 1, 1, 1), Some(Some(true)));
+            }
         }
 
         Self { cache: Some(cache) }
