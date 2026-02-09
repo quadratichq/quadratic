@@ -1139,6 +1139,12 @@ function ListItemTeamFile({
       // checked = false means make it a personal file (ownerUserId: loggedInUserId)
       const newOwnerUserId = checked ? null : loggedInUserId;
 
+      if (newOwnerUserId === null) {
+        trackEvent('[FileSharing].moveFileToTeam');
+      } else {
+        trackEvent('[FileSharing].moveFileToPersonal');
+      }
+
       // Submit via fetcher (handles API call)
       const data = getActionFileMove(newOwnerUserId);
       fetcher.submit(data, {
