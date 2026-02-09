@@ -503,8 +503,6 @@ impl GridController {
                             ),
                         );
 
-                        sheet.data_table_insert_full(sheet_pos.into(), data_table);
-
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
                             ..Default::default()
