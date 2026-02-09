@@ -45,16 +45,23 @@ export function useAIRequestToAPI() {
           exceededBillingLimit: false,
         };
 
+        let initialMessageAdded = false;
+
         const setErrorMessage = (text: string) => {
           responseMessage = {
             ...responseMessage,
             content: [...responseMessage.content, createTextContent(text)],
           };
-          setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+          if (initialMessageAdded) {
+            setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+          } else {
+            setMessages?.((prev) => [...prev, { ...responseMessage }]);
+          }
         };
 
         try {
           setMessages?.((prev) => [...prev, { ...responseMessage }]);
+          initialMessageAdded = true;
 
           const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
           const { stream } = getModelOptions(modelKey, { source, useStream });
@@ -203,12 +210,8 @@ export function useAIRequestToAPI() {
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
           responseMessage = newResponseMessage;
 
-          try {
-            setIsOnPaidPlan(responseMessage.isOnPaidPlan);
-            onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
-          } catch (error) {
-            console.error('Error updating billing state:', error);
-          }
+          setIsOnPaidPlan(responseMessage.isOnPaidPlan);
+          onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
           return {
             content: responseMessage.content,
