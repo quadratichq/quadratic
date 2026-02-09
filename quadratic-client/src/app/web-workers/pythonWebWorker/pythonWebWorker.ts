@@ -218,6 +218,11 @@ class PythonWebWorker {
         if (!resolved) {
           resolved = true;
           plotElement.removeEventListener('plotly_afterplot', onAfterPlot);
+          console.warn(
+            '[pythonWebWorker] Plotly render timeout hit after',
+            RENDER_TIMEOUT_MS,
+            'ms — chart may be incomplete or have a large dataset'
+          );
           resolve();
         }
       }, RENDER_TIMEOUT_MS);

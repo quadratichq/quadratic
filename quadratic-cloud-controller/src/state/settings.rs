@@ -1,6 +1,10 @@
 use jsonwebtoken::{EncodingKey, jwk::JwkSet};
 use quadratic_rust_shared::auth::jwt::{Claims, generate_jwt, get_kid_from_jwks, jwks_from_private_key_pem};
 use quadratic_rust_shared::environment::Environment;
+use quadratic_rust_shared::storage::StorageContainer;
+use quadratic_rust_shared::storage::StorageType;
+use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
+use quadratic_rust_shared::storage::s3::{S3, S3Config};
 use tracing::info;
 use url::Url;
 use uuid::Uuid;
@@ -33,6 +37,7 @@ pub(crate) struct Settings {
     pub(crate) _worker_jwt_email: String,
     pub(crate) _namespace: String,
     pub(crate) version: String,
+    pub(crate) storage: StorageContainer,
 }
 
 /// Gets the version of the crate (which should be in sync with the client version)
@@ -56,6 +61,10 @@ impl Settings {
             CONTROLLER_KEY_ID
         );
 
+        let storage = Self::new_storage(config)
+            .await
+            .map_err(|e| ControllerError::Settings(e.to_string()))?;
+
         let settings = Settings {
             environment: config.environment,
             public_host: config.public_host.to_owned(),
@@ -77,9 +86,74 @@ impl Settings {
             _worker_jwt_email: config.worker_jwt_email.to_owned(),
             _namespace: config.namespace.to_owned(),
             version: version(),
+            storage,
         };
 
         Ok(settings)
+    }
+
+    async fn new_storage(config: &Config) -> std::result::Result<StorageContainer, String> {
+        let is_local = config.environment.is_local_or_docker();
+
+        match config.storage_type {
+            StorageType::S3 => {
+                let bucket_name = config
+                    .aws_s3_bucket_name
+                    .as_ref()
+                    .ok_or("Expected AWS_S3_BUCKET_NAME to have a value")?
+                    .to_owned();
+                let region = config
+                    .aws_s3_region
+                    .as_ref()
+                    .ok_or("Expected AWS_S3_REGION to have a value")?
+                    .to_owned();
+                let access_key_id = config
+                    .aws_s3_access_key_id
+                    .as_ref()
+                    .ok_or("Expected AWS_S3_ACCESS_KEY_ID to have a value")?
+                    .to_owned();
+                let secret_access_key = config
+                    .aws_s3_secret_access_key
+                    .as_ref()
+                    .ok_or("Expected AWS_S3_SECRET_ACCESS_KEY to have a value")?
+                    .to_owned();
+
+                Ok(StorageContainer::S3(S3::new(
+                    S3Config::new(
+                        bucket_name,
+                        region,
+                        access_key_id,
+                        secret_access_key,
+                        "Quadratic Cloud Controller",
+                        is_local,
+                    )
+                    .await,
+                )))
+            }
+            StorageType::FileSystem => {
+                let storage_dir = config
+                    .storage_dir
+                    .as_ref()
+                    .ok_or("Expected STORAGE_DIR to have a value")?
+                    .to_owned();
+                let encryption_keys = config
+                    .storage_encryption_keys
+                    .as_ref()
+                    .ok_or("Expected STORAGE_ENCRYPTION_KEYS to have a value")?
+                    .to_owned();
+
+                Ok(StorageContainer::FileSystem(FileSystem::new(
+                    FileSystemConfig {
+                        path: storage_dir,
+                        encryption_keys,
+                        presigned_url_base: format!(
+                            "http://{}:{}/storage/presigned",
+                            config.files_host, config.files_port
+                        ),
+                    },
+                )))
+            }
+        }
     }
 
     /// Generate a JWT token for a worker with a specific JTI for one-time use

@@ -43,6 +43,7 @@ pub mod wasm_bindings;
 
 pub use a1::TableRef;
 pub use clear_option::*;
+pub use constants::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH};
 pub use copy_formats::CopyFormats;
 pub use error_run::*;
 pub use ext::*;

@@ -131,9 +131,9 @@ impl MergeCells {
     }
 
     /// Adjusts merge cells when a column is inserted.
-    /// - Merges entirely before the column (with gap): no change
-    /// - Merges entirely after the column: shift right by 1
-    /// - Merges adjacent to, at, or spanning the column: expand by 1
+    /// - Merges at or after the column end: no change
+    /// - Merges at or before the column start: shift right by 1
+    /// - Merges strictly spanning the column: expand by 1
     ///
     /// Returns all affected rects (old and new positions) for dirty tracking.
     pub fn insert_column(&mut self, column: i64) -> Vec<Rect> {
@@ -152,14 +152,14 @@ impl MergeCells {
         // Re-create merges with adjusted positions
         let mut affected_rects = merge_rects.clone();
         for rect in merge_rects {
-            let new_rect = if rect.max.x + 1 < column {
-                // Merge is entirely before the insertion point - no change
+            let new_rect = if column > rect.max.x {
+                // Insertion is at or past the merge end - no change
                 rect
-            } else if rect.min.x > column {
-                // Merge is entirely after the insertion point - shift right
+            } else if column <= rect.min.x {
+                // Insertion is at or before the merge start - shift right
                 Rect::new(rect.min.x + 1, rect.min.y, rect.max.x + 1, rect.max.y)
             } else {
-                // Insertion is adjacent to, at, or inside the merge - expand
+                // Insertion is strictly inside the merge - expand
                 Rect::new(rect.min.x, rect.min.y, rect.max.x + 1, rect.max.y)
             };
             self.merge_cells(new_rect);
@@ -213,9 +213,9 @@ impl MergeCells {
     }
 
     /// Adjusts merge cells when a row is inserted.
-    /// - Merges entirely before the row (with gap): no change
-    /// - Merges entirely after the row: shift down by 1
-    /// - Merges adjacent to, at, or spanning the row: expand by 1
+    /// - Merges at or after the row end: no change
+    /// - Merges at or before the row start: shift down by 1
+    /// - Merges strictly spanning the row: expand by 1
     ///
     /// Returns all affected rects (old and new positions) for dirty tracking.
     pub fn insert_row(&mut self, row: i64) -> Vec<Rect> {
@@ -234,14 +234,14 @@ impl MergeCells {
         // Re-create merges with adjusted positions
         let mut affected_rects = merge_rects.clone();
         for rect in merge_rects {
-            let new_rect = if rect.max.y + 1 < row {
-                // Merge is entirely before the insertion point - no change
+            let new_rect = if row > rect.max.y {
+                // Insertion is at or past the merge end - no change
                 rect
-            } else if rect.min.y > row {
-                // Merge is entirely after the insertion point - shift down
+            } else if row <= rect.min.y {
+                // Insertion is at or before the merge start - shift down
                 Rect::new(rect.min.x, rect.min.y + 1, rect.max.x, rect.max.y + 1)
             } else {
-                // Insertion is adjacent to, at, or inside the merge - expand
+                // Insertion is strictly inside the merge - expand
                 Rect::new(rect.min.x, rect.min.y, rect.max.x, rect.max.y + 1)
             };
             self.merge_cells(new_rect);
@@ -530,10 +530,10 @@ mod tests {
         // Insert column at C (column 3) - at the merge start
         merge_cells.insert_column(3);
 
-        // Merge should expand: C2:E4 -> C2:F4
+        // Merge should shift right: C2:E4 -> D2:F4
         let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
         assert_eq!(rects.len(), 1);
-        assert_eq!(rects[0], Rect::test_a1("C2:F4"));
+        assert_eq!(rects[0], Rect::test_a1("D2:F4"));
     }
 
     #[test]
@@ -558,10 +558,10 @@ mod tests {
         // Insert column at F (column 6) - immediately after the merge end
         merge_cells.insert_column(6);
 
-        // Merge should expand: C2:E4 -> C2:F4
+        // Merge should be unchanged (adjacent insertion does not expand)
         let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
         assert_eq!(rects.len(), 1);
-        assert_eq!(rects[0], Rect::test_a1("C2:F4"));
+        assert_eq!(rects[0], Rect::test_a1("C2:E4"));
     }
 
     #[test]
@@ -669,10 +669,10 @@ mod tests {
         // Insert row at row 3 - at the merge start
         merge_cells.insert_row(3);
 
-        // Merge should expand: B3:D5 -> B3:D6
+        // Merge should shift down: B3:D5 -> B4:D6
         let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
         assert_eq!(rects.len(), 1);
-        assert_eq!(rects[0], Rect::test_a1("B3:D6"));
+        assert_eq!(rects[0], Rect::test_a1("B4:D6"));
     }
 
     #[test]
@@ -697,10 +697,10 @@ mod tests {
         // Insert row at row 6 - immediately after the merge end
         merge_cells.insert_row(6);
 
-        // Merge should expand: B3:D5 -> B3:D6
+        // Merge should be unchanged (adjacent insertion does not expand)
         let rects: Vec<Rect> = merge_cells.iter_merge_cells().collect();
         assert_eq!(rects.len(), 1);
-        assert_eq!(rects[0], Rect::test_a1("B3:D6"));
+        assert_eq!(rects[0], Rect::test_a1("B3:D5"));
     }
 
     #[test]
