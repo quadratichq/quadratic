@@ -1,5 +1,23 @@
 [
   {
+    "version": "0.23.10",
+    "date": "2026-02-05",
+    "changes": [
+      "Agent mode",
+      "Move files between teams",
+      "Excel font size support",
+      "Connections improvements",
+      "Bug fixes"
+    ],
+    "details": "<h2>Agent mode</h2>\n<p>Introducing Agent mode—a new way to interact with AI in Quadratic. Agent mode provides an enhanced, focused experience for working with your data:</p>\n<ul>\n<li>Expanded chat interface with contextual suggestions</li>\n<li>Smart file import suggestions when dragging files</li>\n<li>Improved connection schema browsing</li>\n<li>Toggle between Agent mode and standard mode from the top bar</li>\n</ul>\n\n<h2>Move files between teams</h2>\n<p>You can now move files between your personal space and team folders directly from within the spreadsheet. Access this feature from the File menu or the file name dropdown in the top bar.</p>\n\n<h2>Excel font size support</h2>\n<p>We've upgraded our Excel import/export capabilities to include font size support. Font sizes from Excel files are now preserved on import, and your font sizes will be exported when saving to Excel format.</p>\n\n<h2>Connections improvements</h2>\n<p>Several improvements to the connections experience:</p>\n<ul>\n<li>Simplified workflow for creating new connections</li>\n<li>Focus automatically shifts to chat when adding a connection</li>\n<li>Added \"Learn more\" documentation links for connection setup</li>\n<li>Improved visibility and UI for connection options</li>\n</ul>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed hyperlink editing when the inline editor is open</li>\n<li>Fixed a filter bug in cell type menu</li>\n<li>Fixed alignment and styling issues</li>\n</ul>"
+  },
+  {
+    "version": "0.23.9",
+    "date": "2026-01-30",
+    "changes": ["Feature walkthrough for new users", "Free team file limits", "AI thinking improvements", "Bug fixes"],
+    "details": "<h2>Feature walkthrough for new users</h2>\n<p>New users are now greeted with an interactive walkthrough that highlights key Quadratic features:</p>\n<ul>\n<li>The infinite canvas with pinch-to-zoom navigation</li>\n<li>External data connections for live dashboards</li>\n<li>Scheduled tasks for automatic updates</li>\n<li>AI-powered assistance for building formulas and workflows</li>\n</ul>\n<p>The walkthrough can be skipped at any time and is disabled on mobile devices.</p>\n\n<h2>Free team file limits</h2>\n<p>Free teams can now edit up to 5 files. Files beyond this limit become read-only with an option to upgrade. A banner is displayed when the limit is exceeded, and individual files show an \"Upgrade to edit\" prompt.</p>\n\n<h2>AI thinking improvements</h2>\n<p>We've simplified the AI thinking UI to provide a cleaner, more streamlined experience when the AI is reasoning through your requests.</p>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed an issue where inactive or archived connections were still being processed</li>\n<li>Improved build performance for faster deployments</li>\n</ul>"
+  },
+  {
     "version": "0.23.8",
     "date": "2026-01-28",
     "changes": [

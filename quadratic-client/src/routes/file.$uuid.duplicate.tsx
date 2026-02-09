@@ -21,7 +21,12 @@ import {
   type LoaderFunctionArgs,
 } from 'react-router';
 
-export const loader = async (loaderArgs: LoaderFunctionArgs) => {
+type LoaderData = {
+  teams: Awaited<ReturnType<typeof apiClient.teams.list>>['teams'];
+  fileUuid: string;
+};
+
+export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   // You can't duplicate a file if you're not logged in, regardless of your
   // access to the OG file itself.
   await requireAuth(loaderArgs.request);
@@ -29,36 +34,43 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const fileUuid = loaderArgs.params.uuid as string;
   const data = await apiClient.teams.list();
 
-  // If the user only has access to one team, just duplicate the file and
-  // send them on their way.
+  // If the user only has access to one team, duplicate directly
   if (data.teams.length === 1) {
+    const teamUuid = data.teams[0].team.uuid;
     const { uuid: newFileUuid } = await apiClient.files.duplicate(fileUuid, {
-      teamUuid: data.teams[0].team.uuid,
+      teamUuid,
       isPrivate: true,
     });
     return redirectDocument(ROUTES.FILE({ uuid: newFileUuid, searchParams: '' }));
   }
 
   // If there's more than one team, return teams and show ui to pick a team
-  return data;
+  return { teams: data.teams, fileUuid };
 };
 
 export const Component = () => {
   const { uuid: fileUuid } = useParams() as { uuid: string };
-  const { teams } = useLoaderData() as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
+  const { teams } = useLoaderData() as LoaderData;
   const [selectedTeamUuid, setSelectedTeamUuid] = useState<string>(teams[0].team.uuid);
   const navigation = useNavigation();
   const submit = useSubmit();
   const isLoading = useMemo(() => navigation.state !== 'idle', [navigation.state]);
 
+  const doDuplicate = useCallback(
+    (teamUuid: string) => {
+      const data = getActionFileDuplicate({
+        isPrivate: true,
+        teamUuid,
+        redirect: true,
+      });
+      submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
+    },
+    [fileUuid, submit]
+  );
+
   const handleSubmit = useCallback(() => {
-    const data = getActionFileDuplicate({
-      isPrivate: true,
-      teamUuid: selectedTeamUuid,
-      redirect: true,
-    });
-    submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
-  }, [fileUuid, selectedTeamUuid, submit]);
+    doDuplicate(selectedTeamUuid);
+  }, [selectedTeamUuid, doDuplicate]);
 
   useRemoveInitialLoadingUI();
 

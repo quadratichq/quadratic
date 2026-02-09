@@ -6,7 +6,6 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useAtomValue } from 'jotai';
-import { Link } from 'react-router';
 
 export const UserFilesListEmptyState = ({ filesToRenderCount }: { filesToRenderCount: number }) => {
   const {
@@ -88,22 +87,20 @@ const CreateFileEmptyState = ({ isPrivate = false, title }: { isPrivate?: boolea
     },
   } = useDashboardRouteLoaderData();
 
+  const handleCreateFile = () => {
+    trackEvent('[FilesEmptyState].clickCreateBlankFile');
+    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+  };
+
   return (
     <WrapperEmptyState className="border-dashed border-border">
       <EmptyState
         title={title ? title : 'No files'}
         description={
           <>
-            <Link
-              to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })}
-              reloadDocument
-              className="underline hover:text-primary"
-              onClick={() => {
-                trackEvent('[FilesEmptyState].clickCreateBlankFile');
-              }}
-            >
+            <button onClick={handleCreateFile} className="underline hover:text-primary">
               Create a new file
-            </Link>{' '}
+            </button>{' '}
             or drag and drop a CSV, Excel, Parquet, or Quadratic file here.
           </>
         }

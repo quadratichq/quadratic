@@ -1,5 +1,5 @@
-import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
+import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -26,9 +26,9 @@ const ConnectionFormGoogleAnalyticsSchema = z.object({
 type FormValues = z.infer<typeof ConnectionFormGoogleAnalyticsSchema>;
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const defaultStartDate = threeMonthsAgo.toISOString().split('T')[0];
 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
@@ -57,6 +57,18 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
+        <p className="pb-2 text-sm">
+          Find your Property ID in Google Analytics under Admin → Property Settings.{' '}
+          <a
+            href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-primary"
+          >
+            Learn more
+          </a>
+          .
+        </p>
         <FormField
           control={form.control}
           name="name"
@@ -107,14 +119,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               <FormControl>
                 <Textarea autoComplete="off" {...field} className="h-48" />
               </FormControl>
-              <a
-                href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm underline hover:text-primary"
-              >
-                Learn how to find Google Analytics connection details
-              </a>
               <FormMessage />
             </FormItem>
           )}

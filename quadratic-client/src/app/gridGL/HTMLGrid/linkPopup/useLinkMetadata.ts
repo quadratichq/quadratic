@@ -1,3 +1,4 @@
+import { ensureHttpProtocol } from '@/app/helpers/links';
 import { apiClient } from '@/shared/api/apiClient';
 import { useEffect, useRef, useState } from 'react';
 
@@ -26,8 +27,7 @@ async function fetchUrlMetadata(url: string): Promise<{ title?: string }> {
  */
 export function getDomainFromUrl(url: string): string {
   try {
-    const urlWithProtocol = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-    return new URL(urlWithProtocol).hostname;
+    return new URL(ensureHttpProtocol(url)).hostname;
   } catch {
     return url;
   }

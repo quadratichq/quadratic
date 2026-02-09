@@ -7,14 +7,17 @@ use crate::{Pos, SheetPos, controller::operations::operation::Operation};
 use super::Validations;
 
 impl Validations {
+    /// Gets the validation warning for a given position.
     pub fn get_warning(&self, pos: Pos) -> Option<&Uuid> {
         self.warnings.get(&pos)
     }
 
+    /// Checks if a given position has a validation warning.
     pub fn has_warning(&self, pos: Pos) -> bool {
         self.warnings.contains_key(&pos)
     }
 
+    /// Checks if a given position has a validation warning for a given validation id.
     pub fn has_warning_for_validation(&self, pos: Pos, validation_id: Uuid) -> bool {
         self.warnings
             .iter()

@@ -12,7 +12,6 @@ export function FilesListItemCore({
   description,
   creator,
   hasNetworkError,
-  isShared,
   viewPreferences,
   actions,
   children,
@@ -24,7 +23,6 @@ export function FilesListItemCore({
   viewPreferences: ViewPreferences;
   creator?: FileCreator;
   hasNetworkError?: boolean;
-  isShared?: boolean;
   actions?: ReactNode;
   children?: ReactNode;
   onCreatorClick?: (creator: FileCreator) => void;

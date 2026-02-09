@@ -19,6 +19,7 @@ export function initializeAnalytics(user: User) {
   configureSentry(user);
 }
 
+// Load Google Analytics script and configure it with the user's email and UTM data.
 function loadGoogleAnalytics(user: User) {
   if (!googleAnalyticsAvailable()) return;
   const email = user?.email || '';

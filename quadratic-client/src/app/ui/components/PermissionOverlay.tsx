@@ -1,6 +1,7 @@
 import { duplicateFileAction } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -20,11 +21,11 @@ export function PermissionOverlay() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
-    team: { uuid: teamUuid },
+    userMakingRequest: { requiresUpgradeToEdit },
   } = useFileRouteLoaderData();
   const location = useLocation();
 
-  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid, teamUuid }), [fileUuid, teamUuid]);
+  const handleDuplicate = useCallback(() => duplicateFileAction.run({ fileUuid }), [fileUuid]);
 
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.
@@ -52,14 +53,38 @@ export function PermissionOverlay() {
     );
   }
 
-  // If you can't edit the file, we've got a message for you
-  if (!permissions.includes(FILE_EDIT)) {
+  // If you can't edit the file due to file limit, show upgrade message
+  // This is distinct from "View only" (permission-based) - this is billing-restricted
+  if (!permissions.includes(FILE_EDIT) && requiresUpgradeToEdit && isOpen) {
     return (
       <FixedBottomAlert>
         <Type>
-          <strong>Read-only.</strong> Duplicate or ask the owner for permission to edit.
+          <strong>Upgrade to edit.</strong> This file exceeds your plan's limit. Upgrade for unlimited editable files.
         </Type>
-        <Button onClick={handleDuplicate}>{duplicateFileAction.label}</Button>
+        <div className="flex flex-shrink-0 gap-2">
+          <Button onClick={() => showUpgradeDialog('fileLimitReached')}>Upgrade</Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <Cross2Icon />
+          </Button>
+        </div>
+      </FixedBottomAlert>
+    );
+  }
+
+  // If you can't edit the file for other reasons (permission-based), show standard message
+  // This is distinct from "Upgrade to edit" (billing-restricted)
+  if (!permissions.includes(FILE_EDIT) && isOpen) {
+    return (
+      <FixedBottomAlert>
+        <Type>
+          <strong>View only.</strong> Duplicate or ask the owner for permission to edit.
+        </Type>
+        <div className="flex flex-shrink-0 gap-2">
+          <Button onClick={handleDuplicate}>{duplicateFileAction.label}</Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <Cross2Icon />
+          </Button>
+        </div>
       </FixedBottomAlert>
     );
   }
