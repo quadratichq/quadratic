@@ -15,9 +15,7 @@ pub mod run_formula;
 pub mod run_javascript;
 pub mod run_python;
 
-// this should be kept in sync with HtmlCell.ts and aiToolsSpec.ts
-const DEFAULT_HTML_WIDTH: f32 = 600.0;
-const DEFAULT_HTML_HEIGHT: f32 = 460.0;
+use crate::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH};
 
 impl GridController {
     /// Finalize changes to a data table.

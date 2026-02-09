@@ -62,17 +62,21 @@ const THUMBNAIL_HEIGHT: u32 = 720;
 const THUMBNAIL_DPR: u32 = 2;
 
 /// Configuration for thumbnail asset paths
+#[derive(Clone)]
 pub struct ThumbnailAssetConfig {
     pub fonts_dir: Option<String>,
     pub icons_dir: Option<String>,
     pub emojis_dir: Option<String>,
 }
 
-/// Render a thumbnail of the grid and return the PNG bytes
+/// Render a thumbnail of the grid and return the PNG bytes.
+/// Must be called from a blocking context (e.g. inside `spawn_blocking`) since it uses
+/// `blocking_lock()` on the provided mutex.
 pub fn render_thumbnail(
-    gc: &GridController,
+    file: Arc<Mutex<GridController>>,
     config: &ThumbnailAssetConfig,
 ) -> Result<Vec<u8>, ThumbnailError> {
+    let gc = file.blocking_lock();
     let sheet_ids = gc.sheet_ids();
     if sheet_ids.is_empty() {
         return Err(ThumbnailError::NoSheets);
@@ -101,7 +105,7 @@ pub fn render_thumbnail(
     let render_height = THUMBNAIL_HEIGHT * THUMBNAIL_DPR;
 
     let request = build_render_request(
-        gc,
+        &gc,
         sheet_id,
         &sheet,
         selection,
@@ -168,19 +172,22 @@ pub async fn render_and_upload_thumbnail(
     thumbnail_upload_url: &str,
     thumbnail_key: &str,
 ) -> Result<String, ThumbnailError> {
-    info!("Rendering thumbnail");
+    trace!("Rendering thumbnail");
 
-    let gc = file.lock().await;
-    let png_bytes = match render_thumbnail(&gc, asset_config) {
+    let config = asset_config.clone();
+    let png_bytes = tokio::task::spawn_blocking(move || render_thumbnail(file, &config))
+        .await
+        .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
+
+    let png_bytes = match png_bytes {
         Ok(bytes) => bytes,
         Err(e) => {
             error!("Failed to render thumbnail: {}", e);
             return Err(e);
         }
     };
-    drop(gc);
 
-    info!("Thumbnail rendered ({} bytes), uploading", png_bytes.len());
+    trace!("Thumbnail rendered ({} bytes), uploading", png_bytes.len());
 
     upload_thumbnail(png_bytes, thumbnail_upload_url).await?;
     info!("Thumbnail uploaded to S3");
@@ -188,82 +195,73 @@ pub async fn render_and_upload_thumbnail(
     Ok(thumbnail_key.to_string())
 }
 
-/// Find the fonts directory
+/// Find an asset directory: use explicit path if provided and valid, otherwise search candidates.
+/// For explicit paths only existence is checked; for candidates, existence of sentinel_file is also required.
+fn find_asset_directory<E>(
+    explicit_path: &Option<String>,
+    candidates: &[&str],
+    sentinel_file: &str,
+    not_found_error: impl FnOnce(PathBuf) -> E,
+    missing_error: impl FnOnce() -> E,
+) -> Result<PathBuf, E> {
+    if let Some(path) = explicit_path {
+        let path = PathBuf::from(path);
+        if path.exists() {
+            return Ok(path);
+        }
+        return Err(not_found_error(path));
+    }
+
+    for candidate in candidates {
+        let path = PathBuf::from(*candidate);
+        if path.exists() && path.join(sentinel_file).exists() {
+            return Ok(path);
+        }
+    }
+
+    Err(missing_error())
+}
+
 fn find_fonts_directory(explicit_path: &Option<String>) -> Result<PathBuf, ThumbnailError> {
-    if let Some(path) = explicit_path {
-        let path = PathBuf::from(path);
-        if path.exists() {
-            return Ok(path);
-        }
-        return Err(ThumbnailError::FontsDirectoryNotFound(path));
-    }
-
-    let candidates = [
-        "/assets/fonts",
-        "quadratic-client/public/fonts/opensans",
-        "../quadratic-client/public/fonts/opensans",
-    ];
-
-    for candidate in &candidates {
-        let path = PathBuf::from(candidate);
-        if path.exists() && path.join("OpenSans.fnt").exists() {
-            return Ok(path);
-        }
-    }
-
-    Err(ThumbnailError::FontsDirectoryMissing)
+    find_asset_directory(
+        explicit_path,
+        &[
+            "/assets/fonts",
+            "quadratic-client/public/fonts/opensans",
+            "../quadratic-client/public/fonts/opensans",
+        ],
+        "OpenSans.fnt",
+        ThumbnailError::FontsDirectoryNotFound,
+        || ThumbnailError::FontsDirectoryMissing,
+    )
 }
 
-/// Find the icons directory
 fn find_icons_directory(explicit_path: &Option<String>) -> Result<PathBuf, ThumbnailError> {
-    if let Some(path) = explicit_path {
-        let path = PathBuf::from(path);
-        if path.exists() {
-            return Ok(path);
-        }
-        return Err(ThumbnailError::IconsDirectoryNotFound(path));
-    }
-
-    let candidates = [
-        "/assets/icons",
-        "quadratic-client/public/images",
-        "../quadratic-client/public/images",
-    ];
-
-    for candidate in &candidates {
-        let path = PathBuf::from(candidate);
-        if path.exists() && path.join("icon-python.png").exists() {
-            return Ok(path);
-        }
-    }
-
-    Err(ThumbnailError::IconsDirectoryMissing)
+    find_asset_directory(
+        explicit_path,
+        &[
+            "/assets/icons",
+            "quadratic-client/public/images",
+            "../quadratic-client/public/images",
+        ],
+        "icon-python.png",
+        ThumbnailError::IconsDirectoryNotFound,
+        || ThumbnailError::IconsDirectoryMissing,
+    )
 }
 
-/// Find the emoji directory
 fn find_emoji_directory(explicit_path: &Option<String>) -> Result<PathBuf, ThumbnailError> {
-    if let Some(path) = explicit_path {
-        let path = PathBuf::from(path);
-        if path.exists() {
-            return Ok(path);
-        }
-        return Err(ThumbnailError::EmojiDirectoryNotFound(path));
-    }
-
-    let candidates = [
-        "/assets/emojis",
-        "quadratic-client/public/emojis",
-        "../quadratic-client/public/emojis",
-    ];
-
-    for candidate in &candidates {
-        let path = PathBuf::from(candidate);
-        if path.exists() && path.join("emoji-mapping.json").exists() {
-            return Ok(path);
-        }
-    }
-
-    Err(ThumbnailError::EmojiDirectoryMissing)
+    find_asset_directory(
+        explicit_path,
+        &[
+            "/assets/emojis",
+            "quadratic-client/public/emojis",
+            "../quadratic-client/public/emojis",
+        ],
+        "emoji-mapping.json",
+        ThumbnailError::EmojiDirectoryNotFound,
+        || ThumbnailError::EmojiDirectoryMissing,
+    )
 }
 
 #[cfg(test)]
@@ -295,6 +293,7 @@ mod tests {
     #[test]
     fn test_render_thumbnail_empty_grid() {
         let gc = GridController::test();
+        let file = Arc::new(Mutex::new(gc));
 
         let config = ThumbnailAssetConfig {
             fonts_dir: Some("../quadratic-client/public/fonts/opensans".to_string()),
@@ -302,7 +301,7 @@ mod tests {
             emojis_dir: None,
         };
 
-        let result = render_thumbnail(&gc, &config);
+        let result = render_thumbnail(file, &config);
 
         match result {
             Ok(bytes) => {
@@ -361,7 +360,8 @@ mod tests {
             emojis_dir: None,
         };
 
-        let result = render_thumbnail(&gc, &config);
+        let file = Arc::new(Mutex::new(gc));
+        let result = render_thumbnail(file, &config);
 
         match result {
             Ok(bytes) => {
@@ -437,7 +437,8 @@ mod tests {
             emojis_dir: None,
         };
 
-        let result = render_thumbnail(&gc, &config);
+        let file = Arc::new(Mutex::new(gc));
+        let result = render_thumbnail(file, &config);
 
         match result {
             Ok(png_bytes) => {

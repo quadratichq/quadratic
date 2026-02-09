@@ -46,9 +46,11 @@ pub fn prepare_renderer_for_request(
     }
 
     if !request.table_name_icons.is_empty() {
-        if let Some(icons_dir) = &assets.icons {
-            renderer.upload_language_icons(&request.table_name_icons, icons_dir)?;
-        }
+        let icons_dir = assets
+            .icons
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Icons directory required for table name icons but not provided"))?;
+        renderer.upload_language_icons(&request.table_name_icons, icons_dir)?;
     }
 
     if let Some(emoji_dir) = &assets.emoji {
