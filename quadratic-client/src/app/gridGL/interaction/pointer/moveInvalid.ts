@@ -2,6 +2,7 @@
 //! whether to show a red border on the moving cells.
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { AdditionalTable } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { Rectangle } from 'pixi.js';
 
@@ -95,14 +96,11 @@ function tablesWouldOverlap(
   sourceTables: TableBounds[],
   destX: number,
   destY: number,
-  sourceX: number,
-  sourceY: number,
+  deltaX: number,
+  deltaY: number,
   width: number,
   height: number
 ): boolean {
-  const deltaX = destX - sourceX;
-  const deltaY = destY - sourceY;
-
   // Get the destination rectangle
   const destRect = new Rectangle(destX, destY, width, height);
   const destTables = getTablesInRect(destRect);
@@ -148,7 +146,8 @@ export function checkMoveDestinationInvalid(
   width: number,
   height: number,
   colRows: 'columns' | 'rows' | undefined,
-  original: Rectangle | undefined
+  original: Rectangle | undefined,
+  additionalTables?: AdditionalTable[]
 ): boolean {
   // Determine the source rectangle
   let sourceX: number;
@@ -200,12 +199,40 @@ export function checkMoveDestinationInvalid(
 
   const sourceRect = new Rectangle(sourceX, sourceY, sourceWidth, sourceHeight);
 
-  // Get tables in the source selection
+  // Get tables in the source selection (these are the tables being moved)
   const sourceTables = getTablesInRect(sourceRect);
+
+  // Add additional tables to the source tables list (they're also being moved)
+  if (additionalTables) {
+    for (const table of additionalTables) {
+      // Check if this table is already in sourceTables (e.g., if it overlaps sourceRect)
+      const alreadyExists = sourceTables.some((t) => t.x === table.column && t.y === table.row);
+      if (alreadyExists) continue;
+
+      // Get the actual table to retrieve accurate properties
+      const tableRect = new Rectangle(table.column, table.row, table.width, table.height);
+      const actualTables = getTablesInRect(tableRect);
+      const actualTable = actualTables.find((t) => t.x === table.column && t.y === table.row);
+
+      sourceTables.push({
+        x: table.column,
+        y: table.row,
+        width: table.width,
+        height: table.height,
+        hasNameRow: actualTable?.hasNameRow ?? true,
+        isCodeTable: actualTable?.isCodeTable ?? false,
+        isSingleCell: actualTable?.isSingleCell ?? false,
+      });
+    }
+  }
+
+  // Calculate the delta for the move
+  const deltaX = destX - sourceX;
+  const deltaY = destY - sourceY;
 
   // Check if any source table would overlap with a destination table
   if (sourceTables.length > 0) {
-    if (tablesWouldOverlap(sourceTables, destX, destY, sourceX, sourceY, sourceWidth, sourceHeight)) {
+    if (tablesWouldOverlap(sourceTables, destX, destY, deltaX, deltaY, sourceWidth, sourceHeight)) {
       return true;
     }
   }
@@ -213,6 +240,101 @@ export function checkMoveDestinationInvalid(
   // Do not allow dropping on any table (code or data)
   if (wouldOverlapTable(destX, destY, width, height, sourceTables)) {
     return true;
+  }
+
+  // Check additional tables for overlaps
+  if (additionalTables) {
+    // Pre-calculate destination positions for all additional tables
+    // (needed for inter-table collision detection)
+    const additionalTableDestinations = additionalTables.map((table) => ({
+      table,
+      destX: Math.max(1, table.column + deltaX),
+      destY: Math.max(1, table.row + deltaY),
+    }));
+
+    // Check if the primary table's destination would collide with any additional table's destination
+    // This is important because Math.max(1, ...) clamping could push tables together
+    // Apply the same clamping to the primary table's destination for consistency
+    const primaryDestX = Math.max(1, destX);
+    const primaryDestY = Math.max(1, destY);
+    for (const additionalDest of additionalTableDestinations) {
+      if (
+        rectanglesOverlap(
+          primaryDestX,
+          primaryDestY,
+          width,
+          height,
+          additionalDest.destX,
+          additionalDest.destY,
+          additionalDest.table.width,
+          additionalDest.table.height
+        )
+      ) {
+        return true;
+      }
+    }
+
+    for (let i = 0; i < additionalTableDestinations.length; i++) {
+      const { table, destX: tableDestX, destY: tableDestY } = additionalTableDestinations[i];
+
+      // Check if this additional table would overlap a code table
+      if (wouldOverlapCodeTable(tableDestX, tableDestY, table.width, table.height, sourceTables)) {
+        return true;
+      }
+
+      // Check if this additional table would overlap a name row
+      if (wouldOverlapNameRow(tableDestX, tableDestY, table.width, table.height, sourceTables)) {
+        return true;
+      }
+
+      // Check if this additional table would overlap any other table at its destination
+      const tableDestRect = new Rectangle(tableDestX, tableDestY, table.width, table.height);
+      const tablesAtDest = getTablesInRect(tableDestRect);
+      for (const destTable of tablesAtDest) {
+        // Skip if this is one of our source tables (they're moving with us)
+        const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
+        if (isSourceTable) continue;
+
+        // Skip single-cell tables (they can be overwritten)
+        if (destTable.isSingleCell) continue;
+
+        // Check if the additional table would overlap with this destination table
+        if (
+          rectanglesOverlap(
+            tableDestX,
+            tableDestY,
+            table.width,
+            table.height,
+            destTable.x,
+            destTable.y,
+            destTable.width,
+            destTable.height
+          )
+        ) {
+          return true;
+        }
+      }
+
+      // Check for inter-table collisions between additional tables at their destination positions
+      // This is important because Math.max(1, ...) clamping could push tables together
+      for (let j = i + 1; j < additionalTableDestinations.length; j++) {
+        const other = additionalTableDestinations[j];
+        if (
+          rectanglesOverlap(
+            tableDestX,
+            tableDestY,
+            table.width,
+            table.height,
+            other.destX,
+            other.destY,
+            other.table.width,
+            other.table.height
+          )
+        ) {
+          return true;
+        }
+      }
+    }
   }
 
   return false;

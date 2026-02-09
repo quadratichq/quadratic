@@ -183,7 +183,7 @@ mod tests {
         let dest_pos = pos![F4];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
 
-        gc.move_cells(
+        gc.move_cols_rows(
             data_table.output_sheet_rect(sheet_pos, true),
             sheet_dest_pos,
             false,
@@ -235,7 +235,7 @@ mod tests {
         // Move the cell from A1 to C3
         let dest_pos = pos![C3];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
-        gc.move_cells(
+        gc.move_cols_rows(
             crate::SheetRect::single_sheet_pos(sheet_source_pos),
             sheet_dest_pos,
             false,
