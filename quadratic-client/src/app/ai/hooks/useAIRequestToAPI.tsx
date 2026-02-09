@@ -47,15 +47,19 @@ export function useAIRequestToAPI() {
 
         let initialMessageAdded = false;
 
-        const setErrorMessage = (text: string) => {
+        const appendErrorAndUpdateMessages = (text: string) => {
           responseMessage = {
             ...responseMessage,
             content: [...responseMessage.content, createTextContent(text)],
           };
-          if (initialMessageAdded) {
-            setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
-          } else {
-            setMessages?.((prev) => [...prev, { ...responseMessage }]);
+          try {
+            if (initialMessageAdded) {
+              setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+            } else {
+              setMessages?.((prev) => [...prev, { ...responseMessage }]);
+            }
+          } catch (error) {
+            console.error('Failed to update messages with error state:', error);
           }
         };
 
@@ -92,7 +96,9 @@ export function useAIRequestToAPI() {
                 text = 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
                 break;
               default:
-                text = `Looks like there was a problem. Error: ${JSON.stringify(data?.error ?? data)}`;
+                text = data?.error
+                  ? `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`
+                  : `Looks like there was a problem. Status: ${response.status}`;
                 break;
             }
 
@@ -114,7 +120,7 @@ export function useAIRequestToAPI() {
             // handle streaming response
             const reader = response.body?.getReader();
             if (!reader) {
-              setErrorMessage('Response body is not readable.');
+              appendErrorAndUpdateMessages('Response body is not readable.');
               return { error: true, content: responseMessage.content, toolCalls: [] };
             }
 
@@ -178,7 +184,7 @@ export function useAIRequestToAPI() {
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);
               console.error(`Error parsing non-streaming AI response: ${errorMessage}`);
-              setErrorMessage('An error occurred while parsing the AI response.');
+              appendErrorAndUpdateMessages('An error occurred while parsing the AI response.');
               return { error: true, content: responseMessage.content, toolCalls: [] };
             }
           }
@@ -223,7 +229,7 @@ export function useAIRequestToAPI() {
             return { error: false, content: [createTextContent('Aborted by user')], toolCalls: [] };
           } else {
             console.error('Error in AI prompt handling:', err);
-            setErrorMessage('An error occurred while processing the response.');
+            appendErrorAndUpdateMessages('An error occurred while processing the response.');
             return {
               error: true,
               content: responseMessage.content,
