@@ -1,10 +1,10 @@
 import {
+  restoreFileViewStateAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
   showGridLinesAtom,
   showHeadingsAtom,
   showScrollbarsAtom,
-  restoreFileViewStateAtom,
 } from '@/app/atoms/gridSettingsAtom';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Separator } from '@/shared/shadcn/ui/separator';
@@ -82,8 +82,8 @@ export function GeneralSettings() {
                 Restore sheet when reopening files
               </Label>
               <div className="text-xs text-muted-foreground">
-                Save your current sheet, cursor position, scroll position, open panes (e.g. validation, logs), code
-                editor state, and AI panel visibility per file; when you open the file again, that view is restored.
+                Save your current sheet, cursor, and view on your local machine so when you open the file again, you
+                continue work where you left off.
               </div>
             </div>
             <Switch
