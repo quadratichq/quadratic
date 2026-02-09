@@ -33,21 +33,30 @@ export function useAIRequestToAPI() {
         content: AIMessagePrompt['content'];
         toolCalls: AIMessagePrompt['toolCalls'];
       }> => {
+        const { source, modelKey, useStream } = args;
+
         let responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
           role: 'assistant',
           content: [],
           contextType: 'userPrompt',
           toolCalls: [],
-          modelKey: args.modelKey,
+          modelKey,
           isOnPaidPlan,
           exceededBillingLimit: false,
         };
-        setMessages?.((prev) => [...prev, { ...responseMessage }]);
 
-        const { source, modelKey, useStream } = args;
-        const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
+        const setErrorMessage = (text: string) => {
+          responseMessage = {
+            ...responseMessage,
+            content: [...responseMessage.content, createTextContent(text)],
+          };
+          setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+        };
 
         try {
+          setMessages?.((prev) => [...prev, { ...responseMessage }]);
+
+          const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
           const { stream } = getModelOptions(modelKey, { source, useStream });
 
           const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
@@ -76,7 +85,7 @@ export function useAIRequestToAPI() {
                 text = 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
                 break;
               default:
-                text = `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`;
+                text = `Looks like there was a problem. Error: ${JSON.stringify(data?.error ?? data)}`;
                 break;
             }
 
@@ -96,43 +105,75 @@ export function useAIRequestToAPI() {
 
           if (stream) {
             // handle streaming response
-
             const reader = response.body?.getReader();
-            if (!reader) throw new Error('Response body is not readable');
+            if (!reader) {
+              setErrorMessage('Response body is not readable.');
+              return { error: true, content: responseMessage.content, toolCalls: [] };
+            }
 
-            const decoder = new TextDecoder();
+            try {
+              const decoder = new TextDecoder();
+              let buffer = '';
 
-            while (true) {
-              const { value, done } = await reader.read();
-              if (done) break;
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
 
-              const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split('\n');
-              for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                  const data = line.slice(6).trim();
-                  // Skip empty data chunks (common in SSE streams)
-                  if (!data) continue;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                // Keep the last (potentially incomplete) line in the buffer
+                buffer = lines.pop() ?? '';
 
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    const data = line.slice(6).trim();
+                    // Skip empty data chunks (common in SSE streams)
+                    if (!data) continue;
+
+                    try {
+                      const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(data));
+                      setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
+                      responseMessage = newResponseMessage;
+                    } catch (error) {
+                      // Only log actual parsing errors, not empty chunks
+                      const errorMessage = error instanceof Error ? error.message : String(error);
+                      console.warn(`Error parsing AI response: ${errorMessage}`, { data });
+                    }
+                  }
+                }
+              }
+
+              // Process any remaining data in the buffer after stream ends
+              if (buffer.startsWith('data: ')) {
+                const data = buffer.slice(6).trim();
+                if (data) {
                   try {
                     const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(data));
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {
-                    // Only log actual parsing errors, not empty chunks
                     const errorMessage = error instanceof Error ? error.message : String(error);
                     console.warn(`Error parsing AI response: ${errorMessage}`, { data });
                   }
                 }
               }
+            } finally {
+              reader.releaseLock();
             }
           }
           // handle non-streaming response
           else {
-            const data = await response.json();
-            const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(data);
-            setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
-            responseMessage = newResponseMessage;
+            try {
+              const data = await response.json();
+              const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(data);
+              setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
+              responseMessage = newResponseMessage;
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              console.error(`Error parsing non-streaming AI response: ${errorMessage}`);
+              setErrorMessage('An error occurred while parsing the AI response.');
+              return { error: true, content: responseMessage.content, toolCalls: [] };
+            }
           }
 
           // filter out tool calls that are not valid
@@ -162,8 +203,12 @@ export function useAIRequestToAPI() {
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
           responseMessage = newResponseMessage;
 
-          setIsOnPaidPlan(responseMessage.isOnPaidPlan);
-          onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
+          try {
+            setIsOnPaidPlan(responseMessage.isOnPaidPlan);
+            onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
+          } catch (error) {
+            console.error('Error updating billing state:', error);
+          }
 
           return {
             content: responseMessage.content,
@@ -174,18 +219,11 @@ export function useAIRequestToAPI() {
           if (err.name === 'AbortError') {
             return { error: false, content: [createTextContent('Aborted by user')], toolCalls: [] };
           } else {
-            responseMessage = {
-              ...responseMessage,
-              content: [
-                ...responseMessage.content,
-                createTextContent('An error occurred while processing the response.'),
-              ],
-            };
-            setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
             console.error('Error in AI prompt handling:', err);
+            setErrorMessage('An error occurred while processing the response.');
             return {
               error: true,
-              content: [createTextContent('An error occurred while processing the response.')],
+              content: responseMessage.content,
               toolCalls: [],
             };
           }
