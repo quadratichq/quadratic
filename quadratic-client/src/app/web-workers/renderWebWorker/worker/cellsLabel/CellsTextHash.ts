@@ -310,6 +310,8 @@ export class CellsTextHash {
       // their text processed, so their heights are not accurate)
       if (!label.visible) return;
 
+      const isMerged = label.minCol !== label.maxCol || label.minRow !== label.maxRow;
+
       let column = label.location.x;
       let row = label.location.y;
 
@@ -317,11 +319,15 @@ export class CellsTextHash {
       let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
       columnsMax.set(column, maxWidth);
 
-      // Use textHeightWithDescenders for row sizing to ensure characters
-      // with descenders (g, y, p, q, j) aren't clipped
-      let height = label.textHeightWithDescenders;
-      let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
-      rowsMax.set(row, maxHeight);
+      // Skip merged cells for row height calculations; their text is clipped
+      // instead of triggering auto-resize
+      if (!isMerged) {
+        // Use textHeightWithDescenders for row sizing to ensure characters
+        // with descenders (g, y, p, q, j) aren't clipped
+        let height = label.textHeightWithDescenders;
+        let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
+        rowsMax.set(row, maxHeight);
+      }
     });
     this.columnsMaxCache = columnsMax;
     this.rowsMaxCache = rowsMax;
