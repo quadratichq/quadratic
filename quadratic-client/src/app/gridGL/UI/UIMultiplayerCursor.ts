@@ -1,4 +1,4 @@
-import { events } from '@/app/events/events';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
@@ -18,16 +18,32 @@ export class UIMultiPlayerCursor extends Graphics {
   constructor() {
     super();
     this.alpha = ALPHA;
-    events.on('multiplayerCursor', this.setDirty);
+    events.on('multiplayerCursor', this.onMultiplayerCursor);
+    events.on('setDirty', this.onSetDirty);
+    events.on('mergeCells', this.onSheetChanged);
   }
 
   destroy() {
-    events.off('multiplayerCursor', this.setDirty);
+    events.off('multiplayerCursor', this.onMultiplayerCursor);
+    events.off('setDirty', this.onSetDirty);
+    events.off('mergeCells', this.onSheetChanged);
     super.destroy();
   }
 
-  private setDirty = () => {
+  private onMultiplayerCursor = () => {
     this.dirty = true;
+  };
+
+  private onSetDirty = (dirty: DirtyObject) => {
+    if (dirty.multiplayerCursor) {
+      this.dirty = true;
+    }
+  };
+
+  private onSheetChanged = (sheetId: string) => {
+    if (sheetId === sheets.current) {
+      this.dirty = true;
+    }
   };
 
   private drawCursor({
