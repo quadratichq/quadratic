@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
@@ -23,10 +24,6 @@ import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec'
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
-  ? parseInt(import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD || '15', 10)
-  : 15;
-
 interface AIAnalystHeaderProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
@@ -36,7 +33,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
     [debugFlags]
   );
-
+  const agentMode = useRecoilValue(agentModeAtom);
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
@@ -44,14 +41,6 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const showStartFreshMsg = useMemo(
-    () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
-    [currentUserMessagesCount, showChatHistory]
-  );
-  const showHistoryMsg = useMemo(
-    () => currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
-    [currentUserMessagesCount, showChatHistory, loading, chatsCount]
-  );
 
   const handleExecuteAllToolCalls = useRecoilCallback(
     ({ snapshot }) =>
@@ -101,7 +90,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
           <TooltipPopover label="New chat">
             <Button
-              variant={showStartFreshMsg ? 'outline' : 'ghost'}
+              variant={'ghost'}
               size="icon-sm"
               className="text-muted-foreground hover:text-foreground"
               disabled={loading || (currentUserMessagesCount === 0 && !showChatHistory)}
@@ -123,7 +112,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 
           <TooltipPopover label="Previous chats">
             <Button
-              variant={showChatHistory ? 'default' : showHistoryMsg ? 'outline' : 'ghost'}
+              variant={showChatHistory ? 'default' : 'ghost'}
               size="icon-sm"
               className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
               disabled={!showChatHistory && (loading || chatsCount === 0)}
@@ -135,28 +124,22 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
             </Button>
           </TooltipPopover>
 
-          <TooltipPopover label="Close" side="bottom">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-muted-foreground hover:text-foreground"
-              disabled={loading}
-              onClick={() => setShowAIAnalyst(false)}
-              data-testid="close-ai-analyst"
-            >
-              <CloseIcon />
-            </Button>
-          </TooltipPopover>
+          {!agentMode && (
+            <TooltipPopover label="Close" side="bottom">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground"
+                disabled={loading}
+                onClick={() => setShowAIAnalyst(false)}
+                data-testid="close-ai-analyst"
+              >
+                <CloseIcon />
+              </Button>
+            </TooltipPopover>
+          )}
         </div>
       </div>
-
-      {showStartFreshMsg && (
-        <SubheaderMessage caretPosFromRight={86}>Long chat? New topic? Fresh chats = better results.</SubheaderMessage>
-      )}
-
-      {showHistoryMsg && (
-        <SubheaderMessage caretPosFromRight={49}>Previous chats are saved in history.</SubheaderMessage>
-      )}
 
       <AIAnalystDebugChatInput />
     </div>
@@ -174,7 +157,7 @@ function RenamableHeaderTitle({ showChatHistory }: { showChatHistory: boolean })
 
   const headerTitle = useMemo(() => {
     if (showChatHistory) {
-      return `${defaultLabel} history`;
+      return `Chat history`;
     }
     return currentChatName.trim() || defaultLabel;
   }, [showChatHistory, currentChatName, defaultLabel]);
@@ -243,21 +226,5 @@ function RenamableHeaderTitle({ showChatHistory }: { showChatHistory: boolean })
         </button>
       )}
     </div>
-  );
-}
-
-function SubheaderMessage({ children, caretPosFromRight }: { children: React.ReactNode; caretPosFromRight: number }) {
-  return (
-    <p className="relative mx-2 mb-1.5 rounded border border-border bg-background px-2 py-1.5 text-center text-xs font-semibold text-muted-foreground">
-      {children}
-      <span
-        className={`absolute -top-[8px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-border border-l-transparent border-r-transparent`}
-        style={{ right: `${caretPosFromRight}px` }}
-      />
-      <span
-        className={`absolute -top-[6px] h-0 w-0 border-b-8 border-l-8 border-r-8 border-b-background border-l-transparent border-r-transparent`}
-        style={{ right: `${caretPosFromRight}px` }}
-      />
-    </p>
   );
 }

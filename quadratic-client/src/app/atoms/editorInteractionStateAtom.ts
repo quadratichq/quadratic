@@ -13,7 +13,7 @@ export interface EditorInteractionState {
   transactionsInfo: TransactionInfo[];
   showCellTypeMenu: boolean | 'connections';
   showCommandPalette: boolean;
-  showConnectionsMenu: boolean;
+  showConnectionsMenu: boolean | 'new';
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showRenameFileMenu: boolean;

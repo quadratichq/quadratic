@@ -1,6 +1,7 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
+import { useRef } from 'react';
 
 interface HyperlinkPopupEditProps {
   editText: string;
@@ -25,11 +26,14 @@ export const HyperlinkPopupEdit = ({
   onSave,
   onCancel,
 }: HyperlinkPopupEditProps) => {
+  const urlInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="link-url">URL</Label>
         <Input
+          ref={urlInputRef}
           id="link-url"
           value={editUrl}
           onChange={(e) => onUrlChange(e.target.value)}
