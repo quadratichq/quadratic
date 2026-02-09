@@ -6,7 +6,6 @@ authors = ["Quadratic"]
 description = "File processing worker for Quadratic Cloud"
 
 [dependencies]
-anyhow = "1.0"
 envy = "0.4.2"
 quadratic-core = { path = "../quadratic-core", default-features = false, features = ["js"] }
 quadratic-core-cloud = { path = "../quadratic-core-cloud" }

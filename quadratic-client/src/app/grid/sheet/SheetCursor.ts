@@ -249,7 +249,7 @@ export class SheetCursor {
     const checkForTableRef = options?.checkForTableRef ?? false;
     const append = options?.append ?? false;
     const ensureVisible = options?.ensureVisible ?? true;
-    this.jsSelection.moveTo(x, y, append);
+    this.jsSelection.moveTo(x, y, append, this.sheets.sheet.mergeCells);
     if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };

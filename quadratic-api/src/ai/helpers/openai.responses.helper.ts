@@ -59,7 +59,13 @@ function convertImageContent(content: ImageContent): ResponseInputContent {
 
 function convertInputContent(content: Content | ToolResultContent, imageSupport: boolean): Array<ResponseInputContent> {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .filter(
       (content): content is TextContent | ImageContent =>
         (imageSupport && isContentImage(content)) || isContentText(content)
