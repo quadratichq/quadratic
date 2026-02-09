@@ -1,5 +1,4 @@
 // every minute, print the current time in a separate thread
-use anyhow::Result;
 use quadratic_core_cloud::worker::Worker;
 use quadratic_rust_shared::quadratic_api::{get_file_init_data, get_scheduled_tasks};
 use tokio::signal;
@@ -15,7 +14,7 @@ const MULTIPLAYER_URL: &str = "ws://localhost:3001/ws";
 const CONNECTION_URL: &str = "http://localhost:3003";
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tracing_subscriber::fmt::init();
 
     let mut interval = interval(Duration::from_millis(INTERVAL_MS));
@@ -35,7 +34,7 @@ async fn main() -> Result<()> {
 
                         info!("Processing task for file: {file_id}");
 
-                        let result: Result<()> = async {
+                        let result: Result<(), Box<dyn std::error::Error + Send + Sync>> = async {
                             let file_init_data =
                                 get_file_init_data(API_URL, JWT, file_id).await?;
 

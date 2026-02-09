@@ -3,7 +3,7 @@ import express from 'express';
 import { param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
-import { getFileUrl, getPresignedFileUploadUrl } from '../../storage/storage';
+import { getFileUrl } from '../../storage/storage';
 import type { Request } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 
@@ -55,17 +55,11 @@ router.get('/file/:uuid/init-data', validateM2MAuth(), validateUUID(), async (re
   const { s3Key, sequenceNumber } = result.FileCheckpoint[0];
   const presignedUrl = await getFileUrl(s3Key);
 
-  // Generate presigned URL for thumbnail upload
-  const thumbnailKey = `${fileUuid}-thumbnail.png`;
-  const thumbnailUploadUrl = await getPresignedFileUploadUrl(thumbnailKey, 'image/png');
-
   return res.status(200).json({
     teamId: result.ownerTeam.uuid,
     email: result.creator.email,
     sequenceNumber,
     presignedUrl,
-    thumbnailUploadUrl,
-    thumbnailKey,
     timezone: result.timezone,
   });
 });

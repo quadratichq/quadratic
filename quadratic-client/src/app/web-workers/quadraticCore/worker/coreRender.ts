@@ -29,7 +29,7 @@ declare var self: WorkerGlobalScope &
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
-    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array) => void;
+    sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array, dirtyHashes: Uint8Array) => void;
   };
 
 class CoreRender {
@@ -137,15 +137,13 @@ class CoreRender {
     this.send({ type: 'coreRenderTransactionEnd', transactionId, transactionName });
   };
 
-  sendMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
-    this.send(
-      {
-        type: 'coreRenderMergeCells',
-        sheetId,
-        mergeCells,
-      },
-      mergeCells.buffer
-    );
+  sendMergeCells = (sheetId: string, mergeCells: Uint8Array, dirtyHashes: Uint8Array) => {
+    this.send({
+      type: 'coreRenderMergeCells',
+      sheetId,
+      mergeCells,
+      dirtyHashes,
+    });
   };
 }
 

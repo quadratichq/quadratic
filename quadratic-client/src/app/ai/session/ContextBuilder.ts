@@ -100,11 +100,12 @@ export class ContextBuilder {
               const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
               return getConnectionMarkdown(connectionTableInfo);
             } catch (error) {
-              const prev = aiStore.get(failingSqlConnectionsAtom);
-              if (!prev.uuids.includes(connection.uuid)) {
+              // Jotai store.set doesn't support functional updates; get current state then set new value
+              const current = aiStore.get(failingSqlConnectionsAtom);
+              if (!current.uuids.includes(connection.uuid)) {
                 aiStore.set(failingSqlConnectionsAtom, {
-                  ...prev,
-                  uuids: [...prev.uuids, connection.uuid],
+                  ...current,
+                  uuids: [...current.uuids, connection.uuid],
                 });
               }
 

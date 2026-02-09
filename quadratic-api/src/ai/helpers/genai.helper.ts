@@ -39,7 +39,13 @@ import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): Part[] {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images, PDFs, files)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .map((content) => {
       if (isContentText(content)) {
         return { text: content.text.trim() };

@@ -11,6 +11,13 @@ import type { AIAPIResponse, ExceededBillingLimitCallback, StreamingMessageCallb
 const IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY = 'isOnPaidPlan';
 
 /**
+ * Returns a deep clone of the message so callback consumers cannot mutate internal state.
+ */
+function cloneMessageForCallback<T extends ChatMessage>(message: T): T {
+  return structuredClone(message);
+}
+
+/**
  * AIAPIClient handles communication with the AI API.
  * This is a pure class with no React dependencies.
  */
@@ -52,7 +59,7 @@ export class AIAPIClient {
     };
 
     // Notify listener of initial empty message
-    onMessage?.({ ...responseMessage });
+    onMessage?.(cloneMessageForCallback(responseMessage));
 
     try {
       const { stream } = getModelOptions(modelKey, { source, useStream });
@@ -101,7 +108,7 @@ export class AIAPIClient {
         };
       }
 
-      onMessage?.({ ...responseMessage });
+      onMessage?.(cloneMessageForCallback(responseMessage));
       onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
       // Update context usage atom with the latest usage data
@@ -125,7 +132,7 @@ export class AIAPIClient {
         ...responseMessage,
         content: [...responseMessage.content, ...errorContent],
       };
-      onMessage?.({ ...errorMessage });
+      onMessage?.(cloneMessageForCallback(errorMessage));
 
       console.error('Error in AI API request:', err);
       return { error: true, content: errorContent, toolCalls: [] };
@@ -167,7 +174,7 @@ export class AIAPIClient {
       modelKey,
       toolCalls: [],
     };
-    onMessage?.(errorMessage);
+    onMessage?.(cloneMessageForCallback(errorMessage));
 
     console.error(`Error retrieving data from AI API. Error: ${JSON.stringify(data)}`);
     return { error: true, content: [createTextContent(text)], toolCalls: [] };
@@ -201,7 +208,7 @@ export class AIAPIClient {
           if (line.startsWith('data: ')) {
             try {
               const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(line.slice(6)));
-              onMessage?.({ ...newResponseMessage });
+              onMessage?.(cloneMessageForCallback(newResponseMessage));
               responseMessage = newResponseMessage;
             } catch (error) {
               console.warn('Error parsing AI response: ', { error, line });
@@ -225,7 +232,7 @@ export class AIAPIClient {
   ): Promise<ApiTypes['/v0/ai/chat.POST.response']> {
     const data = await response.json();
     const responseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(data);
-    onMessage?.({ ...responseMessage });
+    onMessage?.(cloneMessageForCallback(responseMessage));
     return responseMessage;
   }
 

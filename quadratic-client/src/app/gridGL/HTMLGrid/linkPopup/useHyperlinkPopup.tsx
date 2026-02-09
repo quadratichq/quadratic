@@ -7,7 +7,7 @@ import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdit
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { openLink } from '@/app/helpers/links';
+import { ensureHttpProtocol, hasHttpProtocol, openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CopyIcon } from '@/shared/components/Icons';
@@ -49,6 +49,8 @@ export interface LinkData {
   spanStart?: number;
   // Character end position of this hyperlink span within the cell text
   spanEnd?: number;
+  // True if this is creating a new link (should replace entire cell content on save)
+  isNewLink?: boolean;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -67,6 +69,7 @@ export function useHyperlinkPopup() {
 
   // Edit form state
   const [mode, setMode] = useState<PopupMode>('view');
+  const modeRef = useRef<PopupMode>('view');
   const [editUrl, setEditUrl] = useState('');
   const [editText, setEditText] = useState('');
 
@@ -84,6 +87,10 @@ export function useHyperlinkPopup() {
   useEffect(() => {
     linkDataRef.current = linkData;
   }, [linkData]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   // Sync displayData and visibility with linkData
   useEffect(() => {
@@ -211,7 +218,10 @@ export function useHyperlinkPopup() {
 
   // Handle insert link event
   useEffect(() => {
-    const handleInsertLink = () => {
+    const handleInsertLink = async () => {
+      // Don't handle insertLink when inline editor is open - use showInlineHyperlinkInput instead
+      if (inlineEditorHandler.isOpen()) return;
+
       const sheet = sheets.sheet;
       const cursor = sheet.cursor;
       if (cursor.isMultiCursor()) return;
@@ -227,21 +237,55 @@ export function useHyperlinkPopup() {
 
       const rect = getCellBounds(sheet, x, y);
 
-      setLinkData({ x, y, url: '', rect, source: 'cursor', isFormula: false });
-      setMode('edit');
-      setEditUrl('');
-      setEditText('');
+      try {
+        // Check if the cell is a single-span hyperlink (entire cell is one link)
+        const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
+        const isSingleSpanHyperlink =
+          cellValue?.kind === 'RichText' && cellValue.spans?.length === 1 && cellValue.spans[0].link;
+        const linkSpan = isSingleSpanHyperlink ? cellValue.spans![0] : undefined;
+
+        let urlValue = '';
+        let textValue = '';
+        let isNewLink = false;
+
+        if (linkSpan) {
+          // Cell is a single hyperlink span - pre-populate URL and text for editing
+          urlValue = linkSpan.link ?? '';
+          // Only set text if it differs from the URL
+          textValue = linkSpan.text !== linkSpan.link ? linkSpan.text : '';
+        } else {
+          // Rich text with multiple spans or plain text - user wants to create a new link
+          // Get the plain text display value for the text field, leave URL blank
+          isNewLink = true;
+          const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
+          if (displayValue && hasHttpProtocol(displayValue)) {
+            // Content is a URL - pre-populate URL field, leave text empty
+            urlValue = displayValue;
+          } else {
+            // Content is not a URL - pre-populate text field with plain text value
+            textValue = displayValue ?? '';
+          }
+        }
+
+        setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false, isNewLink });
+        setMode('edit');
+        setEditUrl(urlValue);
+        setEditText(textValue);
+      } catch (error) {
+        console.error('Failed to open hyperlink popup:', error);
+        addGlobalSnackbar('Failed to open hyperlink editor. Please try again.');
+      }
     };
 
     events.on('insertLink', handleInsertLink);
     return () => {
       events.off('insertLink', handleInsertLink);
     };
-  }, []);
+  }, [addGlobalSnackbar]);
 
   // Handle inline hyperlink input (Ctrl+K in inline editor)
   useEffect(() => {
-    const handleShowInlineHyperlinkInput = (data: { selectedText: string }) => {
+    const handleShowInlineHyperlinkInput = (data: { selectedText: string; existingUrl?: string }) => {
       // Get the inline editor's position to use for the popup
       const location = inlineEditorHandler.location;
       if (!location) return;
@@ -258,18 +302,27 @@ export function useHyperlinkPopup() {
 
       const rect = getCellBounds(sheet, x, y);
 
+      // If the selection precisely matches an existing hyperlink, pre-populate URL and text
+      // Otherwise, leave URL blank and use the selected text (plain text)
+      const urlValue = data.existingUrl ?? '';
+      const textValue = data.selectedText;
+
+      // Set mode ref synchronously to prevent inlineEditorCursorOnHyperlink from overwriting values
+      // (The useEffect that syncs mode to modeRef runs after state updates, creating a race condition)
+      visibilityRef.current.setModeRef('edit');
+
       setLinkData({
         x,
         y,
-        url: '',
+        url: urlValue,
         rect,
         source: 'inline',
         isFormula: false,
         hasSelection: !!data.selectedText,
       });
       setMode('edit');
-      setEditUrl('');
-      setEditText(data.selectedText);
+      setEditUrl(urlValue);
+      setEditText(textValue);
     };
 
     events.on('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
@@ -633,7 +686,7 @@ export function useHyperlinkPopup() {
   const handleSaveEdit = useCallback(async () => {
     if (!linkData || !editUrl.trim()) return;
 
-    const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
+    const normalizedUrl = ensureHttpProtocol(editUrl);
     const text = editText.trim() || normalizedUrl;
     const hasCustomTitle = text !== normalizedUrl;
 
@@ -649,9 +702,27 @@ export function useHyperlinkPopup() {
         inlineEditorSpans.updateHyperlinkAtCursor(normalizedUrl, text);
       }
       inlineEditorMonaco.focus();
-    } else if (linkData.isNakedUrl && !hasCustomTitle) {
+      closePopup(true);
+      return;
+    }
+
+    if (linkData.isNakedUrl && !hasCustomTitle) {
       // For naked URLs without a custom title, keep as plain text
       quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
+    } else if (linkData.isNewLink) {
+      // Creating a new link - replace entire cell content with the new hyperlink
+      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+        {
+          text,
+          link: normalizedUrl,
+          bold: null,
+          italic: null,
+          underline: null,
+          strike_through: null,
+          text_color: null,
+          font_size: null,
+        },
+      ]);
     } else {
       // Get the current cell value to check if it has multiple spans
       const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
@@ -704,12 +775,15 @@ export function useHyperlinkPopup() {
       }
     }
     closePopup(true);
+    focusGrid();
   }, [linkData, editUrl, editText, closePopup]);
 
   const handleCancelEdit = useCallback(() => {
     if (linkData?.source === 'inline') {
       inlineEditorSpans.cancelPendingHyperlink();
       inlineEditorMonaco.focus();
+    } else {
+      focusGrid();
     }
     closePopup(true);
   }, [linkData, closePopup]);
@@ -735,6 +809,36 @@ export function useHyperlinkPopup() {
     e.stopPropagation();
   }, []);
 
+  // Click-outside detection
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const setPopupRef = useCallback((node: HTMLDivElement | null) => {
+    popupRef.current = node;
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      // Only handle click-outside in edit mode (check via ref to avoid re-running effect)
+      if (modeRef.current !== 'edit' || !popupRef.current) return;
+
+      // Check if click was outside the popup
+      if (!popupRef.current.contains(e.target as Node)) {
+        // Cancel edit: handle inline source cleanup, then close popup
+        if (linkDataRef.current?.source === 'inline') {
+          inlineEditorSpans.cancelPendingHyperlink();
+          inlineEditorMonaco.focus();
+        } else {
+          focusGrid();
+        }
+        closePopup(true);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [closePopup]); // closePopup has no dependencies, uses refs internally
+
   // When editing in inline mode with a text selection, hide the text field
   const hideTextField = displayData?.source === 'inline' && displayData?.hasSelection;
 
@@ -748,6 +852,7 @@ export function useHyperlinkPopup() {
     isVisible,
     skipFade: visibility.skipFade,
     hideTextField,
+    setPopupRef,
     setEditUrl,
     setEditText,
     handleMouseEnter,

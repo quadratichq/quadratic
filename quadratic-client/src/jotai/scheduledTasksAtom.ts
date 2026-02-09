@@ -49,24 +49,22 @@ export const useLoadScheduledTasks = () => {
     if (fileUuid) {
       scheduledTasksAPI.get(fileUuid).then((tasks) => {
         setScheduledTasks((prev) => ({ ...prev, tasks }));
-
-        // Check URL param after tasks are loaded (only once)
-        if (!hasCheckedUrlParam.current) {
-          hasCheckedUrlParam.current = true;
-          const searchParams = new URLSearchParams(window.location.search);
-          if (searchParams.has(SEARCH_PARAMS.SCHEDULED_TASKS.KEY)) {
-            // Open the scheduled tasks dialog
-            setScheduledTasks((prev) => ({ ...prev, show: true }));
-
-            // Remove the param from the URL without reloading
-            searchParams.delete(SEARCH_PARAMS.SCHEDULED_TASKS.KEY);
-            const newUrl = searchParams.toString()
-              ? `${window.location.pathname}?${searchParams.toString()}`
-              : window.location.pathname;
-            window.history.replaceState({}, '', newUrl);
-          }
-        }
       });
+
+      // Check URL param regardless of API success (only once)
+      if (!hasCheckedUrlParam.current) {
+        hasCheckedUrlParam.current = true;
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has(SEARCH_PARAMS.SCHEDULED_TASKS.KEY)) {
+          setScheduledTasks((prev) => ({ ...prev, show: true }));
+
+          searchParams.delete(SEARCH_PARAMS.SCHEDULED_TASKS.KEY);
+          const newUrl = searchParams.toString()
+            ? `${window.location.pathname}?${searchParams.toString()}`
+            : window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
     }
   }, [fileUuid, setScheduledTasks]);
 

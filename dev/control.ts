@@ -564,6 +564,7 @@ export class Control {
     this.status.cloudController = false;
     this.ui.print("cloudController");
     await this.kill("cloudController");
+    await killPort(3004);
 
     this.signals.cloudController = new AbortController();
     if (this.cli.options.noRust) {

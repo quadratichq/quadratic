@@ -36,7 +36,7 @@ export class HtmlPlaceholders extends Graphics {
         sprite.texture = Texture.from(dataUrl);
 
         // Cell area dimensions (adjusted for border)
-        const cellAreaWidth = htmlCell.width - 2;
+        const cellAreaWidth = htmlCell.width - BORDER_WIDTH * 2;
         const cellAreaHeight = htmlCell.height - offsets.height;
 
         // Calculate dimensions that preserve aspect ratio

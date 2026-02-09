@@ -1,7 +1,6 @@
 use quadratic_rust_shared::quadratic_api::{
     GetFileInitDataResponse, ScheduledTaskLogResponse, ScheduledTaskLogStatus, TaskRun,
     create_scheduled_task_log, get_file_init_data, get_scheduled_tasks,
-    update_file_thumbnail as shared_update_file_thumbnail,
 };
 use tracing::trace;
 use uuid::Uuid;
@@ -139,22 +138,6 @@ pub(crate) async fn insert_failed_logs(
     Ok(())
 }
 
-/// Update the file thumbnail after a worker uploads it.
-pub(crate) async fn update_file_thumbnail(
-    state: &State,
-    file_id: Uuid,
-    thumbnail_key: &str,
-) -> Result<()> {
-    shared_update_file_thumbnail(
-        &state.settings.quadratic_api_uri,
-        &state.settings.m2m_auth_token,
-        file_id,
-        thumbnail_key,
-    )
-    .await
-    .map_err(|e| api_error(e, "Update file thumbnail"))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -200,8 +183,6 @@ mod tests {
                     "email": "test@example.com",
                     "sequenceNumber": 0,
                     "presignedUrl": "https://example.com/file.grid",
-                    "thumbnailUploadUrl": "https://example.com/thumbnail.png",
-                    "thumbnailKey": "thumbnails/test-key",
                     "timezone": "UTC"
                 }));
         });

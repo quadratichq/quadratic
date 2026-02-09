@@ -1,6 +1,7 @@
+import { deriveSyncStateFromConnectionList, type SyncState } from '@/app/atoms/useSyncedConnection';
 import { connectionClient, type SqlSchemaResponse } from '@/shared/api/connectionClient';
 import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
-import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 
 export interface ConnectionInfo {
   connectionId: string;
@@ -9,17 +10,29 @@ export interface ConnectionInfo {
   semanticDescription: string | undefined;
   schema: SqlSchemaResponse | null;
   error: string | undefined;
+  isSyncedConnection: boolean;
+  syncState: SyncState | null;
 }
 
 export const getConnectionTableInfo = async (
   connection: ConnectionList[number],
   teamUuid: string
 ): Promise<ConnectionInfo> => {
+  const isSynced = isSyncedConnectionType(connection.type);
+  const syncState = isSynced
+    ? deriveSyncStateFromConnectionList({
+        syncedConnectionPercentCompleted: connection.syncedConnectionPercentCompleted,
+        syncedConnectionLatestLogStatus: connection.syncedConnectionLatestLogStatus,
+      })
+    : null;
+
   const connectionDetailsShared = {
     connectionId: connection.uuid,
     connectionName: connection.name,
     connectionType: connection.type,
     semanticDescription: connection.semanticDescription,
+    isSyncedConnection: isSynced,
+    syncState,
   };
 
   try {
@@ -45,7 +58,10 @@ export const getConnectionTableInfo = async (
       error: undefined,
     };
   } catch (error) {
-    console.warn(`[getConnectionTableInfo] Failed to get schema for connection ${connection.uuid}:`, error);
+    // Expected for stale/invalid connections - don't log Error object to avoid Sentry capture
+    console.warn(
+      `[getConnectionTableInfo] Failed to get schema for connection ${connection.uuid}: ${error instanceof Error ? error.message : String(error)}`
+    );
     return {
       ...connectionDetailsShared,
       schema: null,
@@ -57,6 +73,29 @@ export const getConnectionTableInfo = async (
 export const getConnectionMarkdown = (connectionInfo: ConnectionInfo): string => {
   const tableNames = connectionInfo.schema?.tables?.map((table) => table.name) || [];
   const tablesText = tableNames.length > 0 ? tableNames.join(', ') : 'No tables found';
+
+  // Add sync state information for synced connections
+  let syncStateText = '';
+  if (connectionInfo.isSyncedConnection && connectionInfo.syncState) {
+    switch (connectionInfo.syncState) {
+      case 'not_synced':
+        syncStateText =
+          '\nsyncStatus: NOT_SYNCED (Initial sync has not started. This connection cannot be queried yet.)';
+        break;
+      case 'syncing':
+        syncStateText =
+          '\nsyncStatus: SYNCING (Data is currently being synced. This connection may have partial data or may not be queryable.)';
+        break;
+      case 'synced':
+        syncStateText = '\nsyncStatus: SYNCED (Data sync is complete. This connection is ready to query.)';
+        break;
+      case 'failed':
+        syncStateText =
+          '\nsyncStatus: FAILED (The last sync failed. This connection may have stale or incomplete data.)';
+        break;
+    }
+  }
+
   return `
 ## Connection
 ${connectionInfo.connectionName}
@@ -64,7 +103,7 @@ ${connectionInfo.connectionName}
 ### Information
 type: ${connectionInfo.connectionType}
 id: ${connectionInfo.connectionId}
-semanticDescription: ${connectionInfo.semanticDescription}
+semanticDescription: ${connectionInfo.semanticDescription}${syncStateText}
 
 ### Database
 ${connectionInfo.schema?.database || 'Unknown'}
@@ -76,8 +115,30 @@ ${tablesText}
 };
 
 export const getConnectionSchemaMarkdown = (connectionInfo: ConnectionInfo): string => {
+  // Add sync state information for synced connections
+  let syncStateInfo = '';
+  if (connectionInfo.isSyncedConnection && connectionInfo.syncState) {
+    switch (connectionInfo.syncState) {
+      case 'not_synced':
+        syncStateInfo =
+          'Sync Status: NOT_SYNCED (Initial sync has not started. This connection cannot be queried yet.)\n';
+        break;
+      case 'syncing':
+        syncStateInfo =
+          'Sync Status: SYNCING (Data is currently being synced. This connection may have partial data or may not be queryable.)\n';
+        break;
+      case 'synced':
+        syncStateInfo = 'Sync Status: SYNCED (Data sync is complete. This connection is ready to query.)\n';
+        break;
+      case 'failed':
+        syncStateInfo =
+          'Sync Status: FAILED (The last sync failed. This connection may have stale or incomplete data.)\n';
+        break;
+    }
+  }
+
   if (connectionInfo.error) {
-    return `Connection: ${connectionInfo.connectionName} (${connectionInfo.connectionType})\nID: ${connectionInfo.connectionId}\nError: ${connectionInfo.error}\n`;
+    return `Connection: ${connectionInfo.connectionName} (${connectionInfo.connectionType})\nID: ${connectionInfo.connectionId}\n${syncStateInfo}Error: ${connectionInfo.error}\n`;
   }
 
   const tablesInfo =
@@ -91,5 +152,5 @@ export const getConnectionSchemaMarkdown = (connectionInfo: ConnectionInfo): str
       })
       .join('\n\n') || 'No tables found';
 
-  return `Connection: ${connectionInfo.connectionName} (${connectionInfo.connectionType})\nID: ${connectionInfo.connectionId}\nDatabase: ${connectionInfo.schema?.database || 'Unknown'}\n\n${tablesInfo}\n`;
+  return `Connection: ${connectionInfo.connectionName} (${connectionInfo.connectionType})\nID: ${connectionInfo.connectionId}\n${syncStateInfo}Database: ${connectionInfo.schema?.database || 'Unknown'}\n\n${tablesInfo}\n`;
 };
