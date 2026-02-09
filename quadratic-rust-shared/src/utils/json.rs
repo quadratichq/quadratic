@@ -1,9 +1,7 @@
-/// Flatten a JSON map, converting nested objects and arrays to JSON strings.
-pub fn flatten_json_map(
-    map: &serde_json::Map<String, serde_json::Value>,
-) -> serde_json::Map<String, serde_json::Value> {
-    use serde_json::Value;
+use serde_json::{Map, Value};
 
+/// Flatten a JSON map, converting nested objects and arrays to JSON strings.
+pub fn flatten_json_map(map: &Map<String, Value>) -> Map<String, Value> {
     map.iter()
         .map(|(key, value)| {
             let flattened_value = match value {
@@ -25,23 +23,21 @@ pub fn flatten_json_map(
 /// Arrays are converted to JSON strings since they can't be flattened meaningfully.
 /// `max_depth` controls how many levels deep to recurse before serializing as JSON strings.
 pub fn flatten_json_map_recursive(
-    map: &serde_json::Map<String, serde_json::Value>,
+    map: &Map<String, Value>,
     max_depth: usize,
-) -> serde_json::Map<String, serde_json::Value> {
+) -> Map<String, Value> {
     flatten_json_map_with_prefix(map, "", 0, max_depth)
 }
 
 /// Recursively flatten a JSON map with a key prefix.
 /// Stops recursing at `max_depth` and serializes remaining nested values as JSON strings.
 fn flatten_json_map_with_prefix(
-    map: &serde_json::Map<String, serde_json::Value>,
+    map: &Map<String, Value>,
     prefix: &str,
     depth: usize,
     max_depth: usize,
-) -> serde_json::Map<String, serde_json::Value> {
-    use serde_json::Value;
-
-    let mut result = serde_json::Map::new();
+) -> Map<String, Value> {
+    let mut result = Map::new();
 
     for (key, value) in map.iter() {
         let full_key = if prefix.is_empty() {
@@ -88,7 +84,7 @@ fn flatten_json_map_with_prefix(
 pub fn flatten_to_json<T: serde::Serialize>(
     item: &T,
     max_depth: Option<usize>,
-) -> serde_json::Map<String, serde_json::Value> {
+) -> Map<String, Value> {
     let json_value = serde_json::to_value(item).unwrap_or_else(|e| {
         tracing::warn!("Failed to serialize item to JSON: {}", e);
         serde_json::Value::Null
