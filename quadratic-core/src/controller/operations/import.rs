@@ -2,6 +2,7 @@ use std::{io::Cursor, path::Path};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
+use regex::Regex;
 use rust_decimal::prelude::ToPrimitive;
 
 use crate::a1::A1Selection;
@@ -41,6 +42,34 @@ const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 pub const COLUMN_WIDTH_MULTIPLIER: f64 = 7.0;
 pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
 pub const DEFAULT_FONT_SIZE: f64 = 11.0;
+
+/// Pre-compiled regex pattern and escaped replacement for a named range.
+/// This avoids recompiling the regex for every formula.
+struct NamedRangeReplacement {
+    name: String,
+    pattern: Regex,
+    replacement: String, // pre-escaped with $$ for $ characters
+}
+
+/// Replaces named range references in a formula with their full sheet references.
+/// Uses word boundaries to avoid replacing partial matches (e.g., "A" in "ABC").
+///
+/// Note: This may incorrectly replace named ranges that appear inside string literals
+/// (e.g., `="Hello Total World"` with named range `Total` would become
+/// `="Hello Sheet1!$C$3 World"`). This is a known limitation; a string-aware parser
+/// would be needed to handle this edge case.
+fn replace_named_ranges(code: &str, named_ranges: &[NamedRangeReplacement]) -> String {
+    let mut result = code.to_string();
+    for named_range in named_ranges {
+        if result.contains(named_range.name.as_str()) {
+            result = named_range
+                .pattern
+                .replace_all(&result, named_range.replacement.as_str())
+                .to_string();
+        }
+    }
+    result
+}
 
 impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
@@ -312,6 +341,23 @@ impl GridController {
 
         let sheets = workbook.sheet_names().to_owned();
 
+        // Collect named ranges with pre-compiled regex patterns for efficient replacement.
+        // Word boundaries (\b) ensure we only match complete identifiers, so order doesn't matter.
+        let named_ranges: Vec<NamedRangeReplacement> = workbook
+            .defined_names()
+            .iter()
+            .filter_map(|(name, reference)| {
+                let pattern = Regex::new(&format!(r"\b{}\b", regex::escape(name))).ok()?;
+                // Escape $ in replacement string to prevent backreference interpretation
+                let replacement = reference.replace('$', "$$");
+                Some(NamedRangeReplacement {
+                    name: name.clone(),
+                    pattern,
+                    replacement,
+                })
+            })
+            .collect();
+
         // total rows for calculating import progress
         let total_rows = sheets
             .iter()
@@ -435,21 +481,27 @@ impl GridController {
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
-                        let data_table = DataTable::new(
-                            DataTableKind::CodeRun(CodeRun {
-                                language: CodeCellLanguage::Formula,
-                                code: cell.to_string(),
-                                ..Default::default()
-                            }),
-                            &formula_start_name,
-                            Value::Single(CellValue::Blank),
-                            false,
-                            None,
-                            None,
-                            None,
-                        );
+                        let code = cell.to_string();
 
-                        sheet.data_table_insert_full(sheet_pos.into(), data_table);
+                        // Replace all named ranges in the formula with their references
+                        let code = replace_named_ranges(&code, &named_ranges);
+
+                        sheet.data_table_insert_full(
+                            sheet_pos.into(),
+                            DataTable::new(
+                                DataTableKind::CodeRun(CodeRun {
+                                    language: CodeCellLanguage::Formula,
+                                    code: code.clone(),
+                                    ..Default::default()
+                                }),
+                                &formula_start_name,
+                                Value::Single(CellValue::Blank),
+                                false,
+                                None,
+                                None,
+                                None,
+                            ),
+                        );
 
                         let mut transaction = PendingTransaction {
                             source: TransactionSource::Server,
@@ -459,7 +511,7 @@ impl GridController {
                         gc.add_formula_without_eval(
                             &mut transaction,
                             sheet_pos,
-                            cell,
+                            &code,
                             formula_start_name.as_str(),
                         );
                         gc.update_a1_context_table_map(&mut transaction);
@@ -2036,6 +2088,75 @@ mod test {
         assert_eq!(sheet.formats.font_size.get((1, 16).into()), Some(18)); // Excel 14pt
         assert_eq!(sheet.formats.font_size.get((1, 17).into()), Some(12)); // Excel 8pt
         assert_eq!(sheet.formats.font_size.get((1, 18).into()), Some(40)); // Excel 36pt
+    }
+
+    #[test]
+    fn import_xlsx_named_ranges() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/named_range.xlsx");
+        gc.import_excel(file.as_ref(), "named_ranges.xlsx", None, false)
+            .unwrap();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+
+        // formula with named range at B4
+        let formula = sheet.code_run_at(&pos![B4]).unwrap();
+        let expected = "SUM(Sheet1!$A$1:$B$3)".to_string();
+        assert_eq!(formula.code, expected);
+    }
+
+    #[test]
+    fn named_range_replacement_word_boundaries() {
+        // Test the word-boundary-aware replacement logic used for named ranges
+        // This ensures that named ranges that are substrings of other identifiers
+        // are not incorrectly replaced
+
+        // Build named ranges with pre-compiled regex patterns
+        // Word boundaries (\b) ensure order doesn't matter - "A" won't match within "ABC"
+        let named_ranges: Vec<NamedRangeReplacement> = [
+            ("A", "Sheet1!$A$1"),
+            ("ABC", "Sheet1!$B$2"),
+            ("Total", "Sheet1!$C$3"),
+            ("TotalSum", "Sheet1!$D$4"),
+        ]
+        .into_iter()
+        .map(|(name, reference)| NamedRangeReplacement {
+            name: name.to_string(),
+            pattern: Regex::new(&format!(r"\b{}\b", regex::escape(name))).unwrap(),
+            replacement: reference.replace('$', "$$"),
+        })
+        .collect();
+
+        let test_cases = vec![
+            // (input formula, expected output)
+            // Named range "A" should not match "ABC"
+            ("=SUM(A) + ABC", "=SUM(Sheet1!$A$1) + Sheet1!$B$2"),
+            // Named range at start and end
+            ("=A + A", "=Sheet1!$A$1 + Sheet1!$A$1"),
+            // Named range adjacent to operators
+            (
+                "=A+A*A/A-A",
+                "=Sheet1!$A$1+Sheet1!$A$1*Sheet1!$A$1/Sheet1!$A$1-Sheet1!$A$1",
+            ),
+            // "Total" should not match "TotalSum"
+            ("=Total + TotalSum", "=Sheet1!$C$3 + Sheet1!$D$4"),
+            // Multiple occurrences
+            ("=ABC + ABC + A", "=Sheet1!$B$2 + Sheet1!$B$2 + Sheet1!$A$1"),
+            // Named range in function arguments
+            (
+                "=SUM(A, ABC, Total)",
+                "=SUM(Sheet1!$A$1, Sheet1!$B$2, Sheet1!$C$3)",
+            ),
+            // Named range in parentheses
+            ("=(A)", "=(Sheet1!$A$1)"),
+            // No named ranges to replace
+            ("=1 + 2", "=1 + 2"),
+        ];
+
+        for (input, expected) in test_cases {
+            let result = replace_named_ranges(input, &named_ranges);
+            assert_eq!(result, expected, "Failed for input: {}", input);
+        }
     }
 
     #[test]
