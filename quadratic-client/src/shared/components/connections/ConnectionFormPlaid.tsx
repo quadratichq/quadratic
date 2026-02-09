@@ -63,13 +63,12 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   const [, setLinkedInstitution] = useState<string | null>(connection?.typeDetails?.institution_name || null);
   const hasOpenedPlaidRef = useRef(false);
 
-  // Map plaidCategory to primary_product: Brokerages -> investments, everything else -> transactions
-  const primaryProduct = plaidCategory === 'Brokerages' ? 'investments' : 'transactions';
-
   // Auto-open Plaid when the component mounts and we don't have an access token
   useEffect(() => {
     const fetchLinkTokenAndOpen = async () => {
       try {
+        // Map plaidCategory to primary_product: Brokerages -> investments, everything else -> transactions
+        const primaryProduct = plaidCategory === 'Brokerages' ? 'investments' : 'transactions';
         const data = await apiClient.connections.plaid.createLinkToken({
           teamUuid,
           primary_product: primaryProduct,
@@ -97,8 +96,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
       console.log('No access token, opening Plaid Link');
       fetchLinkTokenAndOpen();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, teamUuid]);
+  }, [accessToken, teamUuid, plaidCategory]);
 
   // Handle messages from Plaid popup via BroadcastChannel
   useEffect(() => {
