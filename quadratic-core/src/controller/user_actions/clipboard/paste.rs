@@ -1,31 +1,10 @@
+use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::{Clipboard, PasteSpecial};
 use crate::grid::js_types::JsClipboard;
-use crate::grid::{GridBounds, SheetId};
-use crate::{Pos, Rect, SheetPos, SheetRect, a1::A1Selection};
-
-// To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
-// To decode the html, use https://codebeautify.org/html-decode-string
 
 impl GridController {
-    /// using a selection, cut the contents on the grid to the clipboard
-    pub fn cut_to_clipboard(
-        &mut self,
-        selection: &A1Selection,
-        include_display_values: bool,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) -> Result<JsClipboard, String> {
-        match self.cut_to_clipboard_operations(selection, include_display_values) {
-            Ok((clipboard, ops)) => {
-                self.start_user_ai_transaction(ops, cursor, TransactionName::CutClipboard, is_ai);
-                Ok(clipboard.into())
-            }
-            _ => Err("Failed to cut to clipboard".into()),
-        }
-    }
-
     /// using a selection, paste the contents from the clipboard on the grid
     #[function_timer::function_timer]
     pub fn paste_from_clipboard(
@@ -70,115 +49,6 @@ impl GridController {
             self.start_user_ai_transaction(ops, cursor, TransactionName::PasteClipboard, is_ai);
         }
     }
-
-    /// move cells from source to dest
-    /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
-    pub fn move_cells(
-        &mut self,
-        source: SheetRect,
-        dest: SheetPos,
-        columns: bool,
-        rows: bool,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) {
-        let ops = self.move_cells_operations(source, dest, columns, rows);
-        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
-    }
-
-    /// move a code cell vertically
-    /// sheet_end is true if the code cell is at the end of the sheet
-    /// reverse is true if the code cell should be moved up
-    #[allow(clippy::too_many_arguments)]
-    pub fn move_code_cell_vertically(
-        &mut self,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        sheet_end: bool,
-        reverse: bool,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) -> Option<Pos> {
-        let sheet = self.try_sheet(sheet_id)?;
-        let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
-        let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell((x, y).into())?;
-        if sheet_end {
-            if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
-                dest = if reverse {
-                    SheetPos::new(
-                        sheet_id,
-                        x,
-                        rect.min.y.saturating_sub(code_cell.h as i64).max(1),
-                    )
-                } else {
-                    SheetPos::new(sheet_id, x, rect.max.y + 1)
-                };
-            }
-        } else {
-            let rect = Rect::from_numbers(
-                code_cell.x as i64,
-                code_cell.y as i64,
-                code_cell.w as i64,
-                code_cell.h as i64,
-            );
-            let row = sheet
-                .find_next_row_for_rect(y + if reverse { -1 } else { 1 }, x, reverse, rect)
-                .max(1);
-            dest = SheetPos::new(sheet_id, x, row);
-        }
-        let ops = self.move_cells_operations(source, dest, false, false);
-        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
-        Some(dest.into())
-    }
-
-    /// move a code cell horizontally
-    /// sheet_end is true if the code cell is at the end of the sheet
-    /// reverse is true if the code cell should be moved left
-    #[allow(clippy::too_many_arguments)]
-    pub fn move_code_cell_horizontally(
-        &mut self,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        sheet_end: bool,
-        reverse: bool,
-        cursor: Option<String>,
-        is_ai: bool,
-    ) -> Option<Pos> {
-        let sheet = self.try_sheet(sheet_id)?;
-        let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
-        let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell((x, y).into())?;
-        if sheet_end {
-            if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
-                dest = if reverse {
-                    SheetPos::new(
-                        sheet_id,
-                        rect.min.x.saturating_sub(code_cell.w as i64).max(1),
-                        y,
-                    )
-                } else {
-                    SheetPos::new(sheet_id, rect.max.x + 1, y)
-                }
-            }
-        } else {
-            let rect = Rect::from_numbers(
-                code_cell.x as i64,
-                code_cell.y as i64,
-                code_cell.w as i64,
-                code_cell.h as i64,
-            );
-            let col = sheet
-                .find_next_column_for_rect(x + if reverse { -1 } else { 1 }, y, reverse, rect)
-                .max(1);
-            dest = SheetPos::new(sheet_id, col, y);
-        }
-        let ops = self.move_cells_operations(source, dest, false, false);
-        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
-        Some(dest.into())
-    }
 }
 
 #[cfg(test)]
@@ -190,7 +60,6 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
-    use crate::test_util::*;
     use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
     use crate::{Array, assert_cell_value, print_table_in_rect};
     use crate::{
@@ -198,6 +67,7 @@ mod test {
         controller::GridController,
         grid::{CodeCellLanguage, SheetId, js_types::CellFormatSummary},
     };
+    use crate::{Rect, test_util::*};
 
     #[track_caller]
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
@@ -232,26 +102,6 @@ mod test {
         y: i64,
     ) {
         set_code_cell(gc, sheet_id, CodeCellLanguage::Formula, code, x, y);
-    }
-
-    #[track_caller]
-    fn assert_cell_values(gc: &GridController, sheet_id: SheetId, values: &[(i64, i64, i64)]) {
-        let sheet = gc.sheet(sheet_id);
-        for &(x, y, expected) in values {
-            assert_eq!(
-                sheet.display_value(Pos { x, y }),
-                Some(CellValue::Number(expected.into())),
-                "wrong cell value at ({x}, {y})"
-            );
-        }
-    }
-
-    #[track_caller]
-    fn assert_empty_cells(gc: &GridController, sheet_id: SheetId, cells: &[(i64, i64)]) {
-        let sheet = gc.sheet(sheet_id);
-        for &(x, y) in cells {
-            assert_eq!(sheet.display_value(Pos { x, y }), None);
-        }
     }
 
     #[test]
@@ -951,50 +801,6 @@ mod test {
     }
 
     #[test]
-    fn test_move_cells() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
-
-        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 1, 1);
-        set_cell_value(&mut gc, sheet_id, "100", 1, 3);
-
-        gc.move_cells(
-            SheetRect::new_pos_span(Pos { x: 1, y: 1 }, Pos { x: 3, y: 3 }, sheet_id),
-            (11, 11, sheet_id).into(),
-            false,
-            false,
-            None,
-            false,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value((11, 11).into()),
-            Some(CellValue::Number(1.into()))
-        );
-        assert_eq!(
-            sheet.display_value((11, 13).into()),
-            Some(CellValue::Number(100.into()))
-        );
-        assert_eq!(sheet.display_value((1, 1).into()), None);
-        assert_eq!(sheet.display_value((1, 3).into()), None);
-
-        gc.undo(1, None, false);
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.display_value((11, 11).into()), None);
-        assert_eq!(sheet.display_value((11, 13).into()), None);
-        assert_eq!(
-            sheet.display_value((1, 1).into()),
-            Some(CellValue::Number(1.into()))
-        );
-        assert_eq!(
-            sheet.display_value((1, 3).into()),
-            Some(CellValue::Number(100.into()))
-        );
-    }
-
-    #[test]
     fn copy_cell_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1035,188 +841,6 @@ mod test {
                 ..Default::default()
             }
         );
-    }
-
-    #[test]
-    fn test_move_code_cell_vertically() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
-
-        // Set up a code cell
-        set_formula_code_cell(&mut gc, sheet_id, "{1; 2; 3}", 1, 1);
-        assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
-
-        // Move down
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 4 }));
-        assert_cell_values(&gc, sheet_id, &[(1, 4, 1), (1, 5, 2), (1, 6, 3)]);
-        assert_empty_cells(&gc, sheet_id, &[(1, 1), (1, 2), (1, 3)]);
-
-        // Move up
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 4, false, true, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 1 }));
-        assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
-        assert_empty_cells(&gc, sheet_id, &[(1, 4), (1, 5), (1, 6)]);
-
-        // Move to sheet end (down)
-        set_cell_value(&mut gc, sheet_id, "obstacle", 1, 10);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, true, false, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 11 }));
-        assert_cell_values(&gc, sheet_id, &[(1, 11, 1), (1, 12, 2), (1, 13, 3)]);
-        assert_empty_cells(&gc, sheet_id, &[(1, 1), (1, 2), (1, 3)]);
-
-        // Move to sheet start (up)
-        set_cell_value(&mut gc, sheet_id, "obstacle1", 1, 3);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 11, true, true, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 1 }));
-        // Spill error!
-        // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 3)]);
-        // assert_empty_cells(&gc, sheet_id, &[(1, 11), (1, 12), (1, 13)]);
-
-        // Move when there's no code cell
-        let result = gc.move_code_cell_vertically(sheet_id, 20, 20, false, false, None, false);
-        assert_eq!(result, None);
-
-        // Move down with obstacles
-        set_cell_value(&mut gc, sheet_id, "obstacle2", 1, 4);
-        set_cell_value(&mut gc, sheet_id, "obstacle3", 1, 5);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 6 }));
-        assert_cell_values(&gc, sheet_id, &[(1, 6, 1), (1, 7, 2), (1, 8, 3)]);
-
-        // Move up with obstacles
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 6, false, true, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 1 }));
-        // Spill error!
-        // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
-
-        // Move a single-cell code output
-        set_formula_code_cell(&mut gc, sheet_id, "42", 1, 15);
-        let result = gc.move_code_cell_vertically(sheet_id, 1, 15, false, false, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 16 }));
-        assert_cell_values(&gc, sheet_id, &[(1, 16, 42)]);
-        assert_empty_cells(&gc, sheet_id, &[(1, 15)]);
-
-        // Undo and redo
-        gc.undo(1, None, false);
-        assert_cell_values(&gc, sheet_id, &[(1, 15, 42)]);
-        gc.redo(1, None, false);
-        assert_cell_values(&gc, sheet_id, &[(1, result.unwrap().y, 42)]);
-    }
-
-    #[test]
-    fn test_move_code_cell_horizontally() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
-
-        // Set up a code cell
-        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3}", 1, 1);
-        assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
-
-        // Move right
-        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None, false);
-        assert_eq!(result, Some(Pos { x: 4, y: 1 }));
-        assert_cell_values(&gc, sheet_id, &[(4, 1, 1), (5, 1, 2), (6, 1, 3)]);
-        assert_empty_cells(&gc, sheet_id, &[(1, 1), (2, 1), (3, 1)]);
-
-        // Move left
-        let result = gc.move_code_cell_horizontally(sheet_id, 4, 1, false, true, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 1 }));
-        assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
-        assert_empty_cells(&gc, sheet_id, &[(4, 1), (5, 1), (6, 1)]);
-
-        // Move to sheet end (right)
-        set_cell_value(&mut gc, sheet_id, "obstacle", 10, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, true, false, None, false);
-        assert_eq!(result, Some(Pos { x: 11, y: 1 }));
-        assert_cell_values(&gc, sheet_id, &[(11, 1, 1), (12, 1, 2), (13, 1, 3)]);
-        assert_empty_cells(&gc, sheet_id, &[(1, 1), (2, 1), (3, 1)]);
-
-        // Move to sheet start (left)
-        set_cell_value(&mut gc, sheet_id, "obstacle1", 3, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 11, 1, true, true, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 1 }));
-        // Spill error!
-        // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
-        // assert_empty_cells(&gc, sheet_id, &[(11, 1), (12, 1), (13, 1)]);
-
-        // Move when there's no code cell
-        let result = gc.move_code_cell_horizontally(sheet_id, 20, 20, false, false, None, false);
-        assert_eq!(result, None);
-
-        // Move right with obstacles
-        set_cell_value(&mut gc, sheet_id, "obstacle2", 4, 1);
-        set_cell_value(&mut gc, sheet_id, "obstacle3", 5, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None, false);
-        assert_eq!(result, Some(Pos { x: 6, y: 1 }));
-        assert_cell_values(&gc, sheet_id, &[(6, 1, 1), (7, 1, 2), (8, 1, 3)]);
-
-        // Move left with obstacles
-        let result = gc.move_code_cell_horizontally(sheet_id, 6, 1, false, true, None, false);
-        assert_eq!(result, Some(Pos { x: 1, y: 1 }));
-        // Spill error!
-        // assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
-
-        // Move a single-cell code output
-        set_formula_code_cell(&mut gc, sheet_id, "42", 15, 1);
-        let result = gc.move_code_cell_horizontally(sheet_id, 15, 1, false, false, None, false);
-        assert_eq!(result, Some(Pos { x: 16, y: 1 }));
-        assert_cell_values(&gc, sheet_id, &[(16, 1, 42)]);
-        assert_empty_cells(&gc, sheet_id, &[(15, 1)]);
-
-        // Undo and redo
-        gc.undo(1, None, false);
-        assert_cell_values(&gc, sheet_id, &[(15, 1, 42)]);
-        gc.redo(1, None, false);
-        assert_cell_values(&gc, sheet_id, &[(result.unwrap().x, 1, 42)]);
-    }
-
-    #[test]
-    fn test_translate_code_cell_references_on_cut() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
-
-        set_cell_value(&mut gc, sheet_id, "1", 1, 1);
-        set_formula_code_cell(&mut gc, sheet_id, "A1", 2, 1);
-        assert_cell_values(&gc, sheet_id, &[(1, 1, 1)]);
-        assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
-
-        gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Python,
-            r#"q.cells("A1")"#.to_string(),
-            None,
-            None,
-            false,
-        );
-
-        gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Javascript,
-            r#"return q.cells("A1");"#.to_string(),
-            None,
-            None,
-            false,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        let selection = A1Selection::from_rect(SheetRect::new(2, 1, 4, 1, sheet_id));
-        let js_clipboard = sheet
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Cut, true)
-            .into();
-
-        gc.paste_from_clipboard(
-            &A1Selection::from_xy(2, 2, sheet_id),
-            js_clipboard,
-            PasteSpecial::None,
-            None,
-            false,
-        );
-
-        assert_cell_values(&gc, sheet_id, &[(2, 2, 1)]);
-        assert_code_cell_value(&gc, sheet_id, 2, 2, "A1");
-        assert_code_cell_value(&gc, sheet_id, 3, 2, r#"q.cells("A1")"#);
-        assert_code_cell_value(&gc, sheet_id, 4, 2, r#"return q.cells("A1");"#);
     }
 
     #[test]
@@ -1519,5 +1143,17 @@ mod test {
             data_table.value.get(3, 3).unwrap(),
             &CellValue::Text("value".to_string())
         );
+    }
+
+    #[track_caller]
+    fn assert_cell_values(gc: &GridController, sheet_id: SheetId, values: &[(i64, i64, i64)]) {
+        let sheet = gc.sheet(sheet_id);
+        for &(x, y, expected) in values {
+            assert_eq!(
+                sheet.display_value(Pos { x, y }),
+                Some(CellValue::Number(expected.into())),
+                "wrong cell value at ({x}, {y})"
+            );
+        }
     }
 }
