@@ -442,8 +442,8 @@ mod tests {
         assert_eq!(label.x, 100.0);
         assert_eq!(label.y, 50.0);
         assert_eq!(label.font_size, HEADING_FONT_SIZE);
-        assert_eq!(label.bold, false);
-        assert_eq!(label.italic, false);
+        assert!(!label.bold);
+        assert!(!label.italic);
         assert_eq!(label.color, [0.0, 0.0, 0.0, 1.0]);
         assert_eq!(label.anchor, TextAnchor::Center);
         assert_eq!(label.width(), 0.0);
@@ -472,10 +472,10 @@ mod tests {
     #[test]
     fn test_text_label_with_bold() {
         let label = TextLabel::new("Test".to_string(), 0.0, 0.0).with_bold(true);
-        assert_eq!(label.bold, true);
+        assert!(label.bold);
 
         let label2 = TextLabel::new("Test".to_string(), 0.0, 0.0).with_bold(false);
-        assert_eq!(label2.bold, false);
+        assert!(!label2.bold);
     }
 
     #[test]
@@ -492,7 +492,7 @@ mod tests {
         assert_eq!(label.font_size, 24.0);
         assert_eq!(label.color, [1.0, 0.0, 0.0, 1.0]);
         assert_eq!(label.anchor, TextAnchor::TopRight);
-        assert_eq!(label.bold, true);
+        assert!(label.bold);
     }
 
     // =========================================================================

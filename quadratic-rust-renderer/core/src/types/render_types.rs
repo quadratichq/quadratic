@@ -44,20 +44,15 @@ pub fn parse_color(color: &str) -> Rgba {
 // =============================================================================
 
 /// Border line style
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
 pub enum BorderLineStyle {
+    #[default]
     Line1,
     Line2,
     Line3,
     Dotted,
     Dashed,
     Double,
-}
-
-impl Default for BorderLineStyle {
-    fn default() -> Self {
-        Self::Line1
-    }
 }
 
 impl BorderLineStyle {
