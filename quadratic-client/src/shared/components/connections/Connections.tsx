@@ -7,7 +7,11 @@ import {
   type UpdateConnectionAction,
 } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
-import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
+import {
+  ConnectionFormCreate,
+  ConnectionFormEdit,
+  type OnConnectionCreatedCallback,
+} from '@/shared/components/connections/ConnectionForm';
 import {
   connectionsByType,
   potentialConnectionsByType,
@@ -31,12 +35,18 @@ import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { Fragment, memo, useCallback, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
 };
+export type OnConnectionSelectedCallback = (
+  connectionUuid: string,
+  connectionType: ConnectionType,
+  connectionName: string
+) => void;
+
 type Props = {
   teamUuid: string;
   sshPublicKey: string;
@@ -47,6 +57,10 @@ type Props = {
   hideSidebar?: boolean;
   /** Open directly to the 'new' view */
   initialView?: 'new' | 'list';
+  /** Called when a new connection is created successfully */
+  onConnectionCreated?: OnConnectionCreatedCallback;
+  /** Called when an existing connection is selected from the list (in-app only) */
+  onConnectionSelected?: OnConnectionSelectedCallback;
 };
 
 export type NavigateToListView = () => void;
@@ -70,17 +84,41 @@ export const Connections = ({
   sshPublicKey,
   hideSidebar,
   initialView,
+  onConnectionCreated,
+  onConnectionSelected,
 }: Props) => {
   const submit = useSubmit();
 
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
+
+  // Check if user only has demo connections (or no connections at all)
+  const hasOnlyDemoConnections = connections.length === 0 || connections.every((c) => c.isDemo === true);
+
   const initialConnectionState =
-    initialView === 'new' ? { view: 'new' as const } : getInitialConnectionState(searchParams);
+    initialView === 'new' || (!connectionsAreLoading && hasOnlyDemoConnections)
+      ? { view: 'new' as const }
+      : getInitialConnectionState(searchParams);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
   const [activeConnectionState, setActiveConnectionState] = useState<ConnectionState>(initialConnectionState);
+
+  // Track if we've already handled the "only demo connections" redirect
+  const hasHandledDemoOnlyRedirect = useRef(false);
+
+  // When loading finishes and we only have demo connections, redirect to 'new' view
+  useEffect(() => {
+    if (
+      !connectionsAreLoading &&
+      hasOnlyDemoConnections &&
+      activeConnectionState.view === 'list' &&
+      !hasHandledDemoOnlyRedirect.current
+    ) {
+      hasHandledDemoOnlyRedirect.current = true;
+      setActiveConnectionState({ view: 'new' });
+    }
+  }, [connectionsAreLoading, hasOnlyDemoConnections, activeConnectionState.view]);
 
   /**
    * Optimistic UI
@@ -187,9 +225,6 @@ export const Connections = ({
   const handleNavigateToEditView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ view: 'edit', uuid: connectionUuid, type: connectionType });
   }, []);
-  const handleNavigateToDetailsView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
-    setActiveConnectionState({ view: 'details', type: connectionType, uuid: connectionUuid });
-  }, []);
   const handleNavigateToNewView = useCallback(() => {
     setActiveConnectionState({ view: 'new' });
   }, []);
@@ -270,6 +305,7 @@ export const Connections = ({
                   type={activeConnectionState.type}
                   handleNavigateToListView={handleNavigateToListView}
                   handleNavigateToNewView={handleNavigateToNewView}
+                  onConnectionCreated={onConnectionCreated}
                 />
               </>
             ) : activeConnectionState.view === 'create-potential' ? (
@@ -293,16 +329,24 @@ export const Connections = ({
                 teamUuid={teamUuid}
                 connectionsAreLoading={connectionsAreLoading}
                 handleNavigateToNewView={handleNavigateToNewView}
-                handleNavigateToCreateView={handleNavigateToCreateView}
                 handleNavigateToEditView={handleNavigateToEditView}
-                handleNavigateToDetailsView={handleNavigateToDetailsView}
                 handleShowConnectionDemo={handleShowConnectionDemo}
+                onConnectionSelected={onConnectionSelected}
               />
             )}
           </div>
           {!hideSidebar && (
             <div className="col-span-4 mt-12 md:mt-0">
-              <ConnectionsSidebar staticIps={staticIps} sshPublicKey={sshPublicKey} />
+              <ConnectionsSidebar
+                staticIps={staticIps}
+                sshPublicKey={sshPublicKey}
+                connectionType={
+                  activeConnectionState.view === 'create' || activeConnectionState.view === 'edit'
+                    ? activeConnectionState.type
+                    : undefined
+                }
+                showIps={activeConnectionState.view === 'details'}
+              />
             </div>
           )}
         </div>
