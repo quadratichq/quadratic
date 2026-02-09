@@ -29,17 +29,19 @@ export function ListItemView({
   thumbnail,
   lazyLoad,
   children,
+  overlay,
 }: {
   viewPreferences: ViewPreferences;
   thumbnail: string | null;
   lazyLoad: boolean;
   children: React.ReactNode;
+  overlay?: React.ReactNode;
 }) {
   const { layout } = viewPreferences;
 
   return layout === Layout.Grid ? (
     <div className="border border-border p-2 hover:bg-accent">
-      <div className="flex aspect-video items-center justify-center bg-background">
+      <div className="relative flex aspect-video items-center justify-center bg-background">
         {thumbnail ? (
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
@@ -61,13 +63,14 @@ export function ListItemView({
             />
           </div>
         )}
+        {overlay && <div className="absolute left-1 top-1">{overlay}</div>}
       </div>
       <Separator className="border-accent" />
       <div className="pt-2">{children}</div>
     </div>
   ) : (
     <div className={`flex w-full flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
-      <div className={`hidden border border-border shadow-sm md:block`}>
+      <div className={`relative hidden border border-border shadow-sm md:block`}>
         {thumbnail ? (
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
@@ -90,6 +93,7 @@ export function ListItemView({
             />
           </div>
         )}
+        {overlay && <div className="absolute left-0.5 top-0.5">{overlay}</div>}
       </div>
       <div className="flex-grow">{children}</div>
     </div>

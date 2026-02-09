@@ -22,19 +22,12 @@
 //! calculated to match the cell area's aspect ratio.
 
 use clap::Parser;
-use quadratic_core::color::Rgba;
 use quadratic_core::controller::GridController;
 use quadratic_core::grid::file::import;
-use quadratic_core::CellValue;
 use quadratic_core::Pos;
-use quadratic_renderer_core::emoji_loader::load_emoji_spritesheet;
-use quadratic_renderer_core::font_loader::load_fonts_from_directory;
-use quadratic_renderer_core::from_rgba;
-use quadratic_renderer_core::parse_color_to_rgba;
-use quadratic_renderer_core::{RenderCell, RenderFill};
 use quadratic_renderer_native::{
-    BorderLineStyle, ChartImage, GridExclusionZone, ImageFormat, NativeRenderer, RenderRequest,
-    SelectionRange, SheetBorders, TableNameIcon, TableOutline, TableOutlines,
+    build_render_request, prepare_renderer_for_request, AssetPaths, ImageFormat, NativeRenderer,
+    SelectionRange,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -220,268 +213,23 @@ fn main() -> anyhow::Result<()> {
     let render_width = base_width * args.dpr;
     let render_height = base_height * args.dpr;
 
-    // Create render request
-    let mut request = RenderRequest::new(selection, render_width, render_height);
-    request.show_grid_lines = show_grid_lines;
-    request.offsets = offsets;
-
-    // Get fills from the sheet
-    let render_rect = quadratic_core::Rect::new_span(
-        Pos {
-            x: selection.start_col,
-            y: selection.start_row,
-        },
-        Pos {
-            x: selection.end_col,
-            y: selection.end_row,
-        },
+    let request = build_render_request(
+        &gc,
+        sheet_id,
+        &sheet,
+        selection,
+        render_width,
+        render_height,
+        show_grid_lines,
     );
 
-    // Get fills and convert from JsRenderFill to RenderFill
-    let js_fills = sheet.get_render_fills_in_rect(render_rect);
-    let mut fills: Vec<RenderFill> = js_fills.into_iter().map(RenderFill::from).collect();
+    let font_dir = find_fonts_directory(args.fonts.as_ref())?;
+    let assets = AssetPaths {
+        fonts: font_dir,
+        icons: find_icons_directory().ok(),
+        emoji: find_emoji_directory().ok(),
+    };
 
-    // Get conditional format fills and merge them (they render on top of static fills)
-    let a1_context = gc.a1_context();
-    let cf_fills = gc.get_conditional_format_fills(sheet_id, render_rect, a1_context);
-    for (rect, color) in cf_fills {
-        fills.push(RenderFill::new(
-            rect.min.x,
-            rect.min.y,
-            (rect.max.x - rect.min.x + 1) as u32,
-            (rect.max.y - rect.min.y + 1) as u32,
-            parse_color_to_rgba(&color),
-        ));
-    }
-    request.fills = fills;
-
-    log::debug!("Found {} fills", request.fills.len());
-
-    // Get cells and convert from JsRenderCell to RenderCell
-    let mut js_cells = sheet.get_render_cells(render_rect, a1_context);
-
-    // Apply conditional formatting to cells (text styles: bold, italic, underline, strikethrough, text_color)
-    gc.apply_conditional_formatting_to_cells(sheet_id, render_rect, &mut js_cells);
-
-    let mut cells: Vec<RenderCell> = js_cells.into_iter().map(RenderCell::from).collect();
-
-    // Table header text colors (matching TS renderer)
-    let table_name_text_color = Rgba::rgb(255, 255, 255); // White on colored bg
-    let column_header_text_color = Rgba::rgb(2, 8, 23); // Dark on white bg
-
-    // Apply table header colors (these override cell colors for visibility)
-    for cell in &mut cells {
-        if cell.table_name == Some(true) {
-            cell.text_color = Some(table_name_text_color);
-        } else if cell.column_header == Some(true) {
-            cell.text_color = Some(column_header_text_color);
-        }
-    }
-
-    request.cells = cells;
-
-    log::debug!("Found {} cells", request.cells.len());
-
-    // Get borders from the sheet
-    let js_borders = sheet.borders_in_sheet();
-    let mut borders = SheetBorders::new();
-
-    // Convert horizontal borders
-    if let Some(h_borders) = js_borders.horizontal {
-        for border in h_borders {
-            let color = from_rgba(&border.color);
-            let line_style = cell_border_line_to_style(&border.line);
-            borders.add_horizontal(border.x, border.y, border.width, color, line_style);
-        }
-    }
-
-    // Convert vertical borders
-    if let Some(v_borders) = js_borders.vertical {
-        for border in v_borders {
-            let color = from_rgba(&border.color);
-            let line_style = cell_border_line_to_style(&border.line);
-            borders.add_vertical(border.x, border.y, border.height, color, line_style);
-        }
-    }
-
-    request.borders = borders;
-
-    // Get table outlines (code cells / data tables)
-    // Only include tables that intersect with the selection, clipped to selection bounds
-    let mut table_outlines = TableOutlines::new();
-    let mut table_name_cells: Vec<RenderCell> = Vec::new();
-    let mut table_name_icons: Vec<TableNameIcon> = Vec::new();
-
-    for code_cell in sheet.get_all_render_code_cells() {
-        let table_x = code_cell.x as i64;
-        let table_y = code_cell.y as i64;
-        let table_right = table_x + code_cell.w as i64;
-        let table_bottom = table_y + code_cell.h as i64;
-
-        // Check if table intersects with selection
-        if table_right <= selection.start_col
-            || table_x > selection.end_col
-            || table_bottom <= selection.start_row
-            || table_y > selection.end_row
-        {
-            continue; // Table doesn't intersect with selection
-        }
-
-        // Clip table bounds to selection
-        let clipped_x = table_x.max(selection.start_col);
-        let clipped_y = table_y.max(selection.start_row);
-        let clipped_right = table_right.min(selection.end_col + 1);
-        let clipped_bottom = table_bottom.min(selection.end_row + 1);
-        let clipped_w = (clipped_right - clipped_x) as u32;
-        let clipped_h = (clipped_bottom - clipped_y) as u32;
-
-        // Check if table extends beyond selection bounds (clipped edges)
-        let is_clipped_top = table_y < selection.start_row;
-        let is_clipped_bottom = table_bottom > selection.end_row + 1;
-        let is_clipped_left = table_x < selection.start_col;
-        let is_clipped_right = table_right > selection.end_col + 1;
-
-        // Only show name/columns if the top of the table is visible
-        let show_name = code_cell.show_name && table_y >= selection.start_row;
-        let show_columns = code_cell.show_columns
-            && (table_y + if show_name { 1 } else { 0 }) >= selection.start_row;
-
-        let mut table = TableOutline::new(clipped_x, clipped_y, clipped_w, clipped_h)
-            .with_show_columns(show_columns)
-            .with_active(false) // No active table in static render
-            .with_clipped_top(is_clipped_top)
-            .with_clipped_bottom(is_clipped_bottom)
-            .with_clipped_left(is_clipped_left)
-            .with_clipped_right(is_clipped_right);
-
-        if show_name {
-            table = table.with_name(&code_cell.name);
-
-            // Add language icon for this table
-            table_name_icons.push(TableNameIcon {
-                x: table_x,
-                y: table_y,
-                language: code_cell.language.clone(),
-            });
-
-            // Add table name as a RenderCell for text rendering
-            // The name text is offset to the right to make room for the icon
-            table_name_cells.push(RenderCell {
-                x: table_x,
-                y: table_y,
-                value: code_cell.name.clone(),
-                bold: Some(true),
-                text_color: Some(Rgba::rgb(255, 255, 255)), // White on colored bg
-                table_name: Some(true),
-                language: Some(code_cell.language.clone()),
-                table_columns: Some(code_cell.w),
-                ..Default::default()
-            });
-        }
-
-        table_outlines.add(table);
-    }
-
-    // Also process single-cell CellValue::Code cells (formulas, etc.)
-    // These are 1x1 code cells that aren't stored as DataTables
-    for pos in sheet.iter_code_cells_positions() {
-        // Check if cell is in selection
-        if pos.x < selection.start_col
-            || pos.x > selection.end_col
-            || pos.y < selection.start_row
-            || pos.y > selection.end_row
-        {
-            continue;
-        }
-
-        // Get the code cell to extract language
-        if let Some(CellValue::Code(_)) = sheet.cell_value_ref(pos) {
-            // Create a 1x1 table outline for the code cell
-            // Note: No language icon for single-cell code cells since show_name is false
-            let table = TableOutline::new(pos.x, pos.y, 1, 1)
-                .with_show_columns(false)
-                .with_active(false);
-
-            table_outlines.add(table);
-        }
-    }
-
-    request.table_outlines = table_outlines;
-    request.table_name_icons = table_name_icons;
-
-    // Remove cells that are underneath table name rows (they would overlap with the table name)
-    if !table_name_cells.is_empty() {
-        let table_name_positions: std::collections::HashSet<(i64, i64)> = table_name_cells
-            .iter()
-            .map(|cell| (cell.x, cell.y))
-            .collect();
-        request
-            .cells
-            .retain(|cell| !table_name_positions.contains(&(cell.x, cell.y)));
-    }
-
-    // Add table name cells to the cells list
-    request.cells.extend(table_name_cells);
-    log::debug!(
-        "Found {} table outlines",
-        request.table_outlines.tables.len()
-    );
-
-    // Get chart images (HTML output with chart_image data) and create grid exclusion zones
-    let mut chart_images = Vec::new();
-    let mut grid_exclusion_zones = Vec::new();
-
-    for html_output in sheet.get_html_output() {
-        let chart_x = html_output.x as i64;
-        // Charts always have a title bar, so offset y by 1 row and reduce height by 1
-        let chart_y = html_output.y as i64 + 1;
-        let chart_w = html_output.w as i64;
-        let chart_h = html_output.h as i64 - 1;
-
-        // Check if chart intersects with selection
-        if chart_x + chart_w <= selection.start_col
-            || chart_x > selection.end_col
-            || chart_y + chart_h <= selection.start_row
-            || chart_y > selection.end_row
-        {
-            continue; // Chart doesn't intersect with selection
-        }
-
-        // Create grid exclusion zone for this chart (in world coordinates)
-        // The chart spans from (chart_x, chart_y) to (chart_x + chart_w, chart_y + chart_h) in cells
-        let (left, _) = request.offsets.column_position_size(chart_x);
-        let (top, _) = request.offsets.row_position_size(chart_y);
-        let (right_pos, right_size) = request.offsets.column_position_size(chart_x + chart_w - 1);
-        let (bottom_pos, bottom_size) = request.offsets.row_position_size(chart_y + chart_h - 1);
-
-        grid_exclusion_zones.push(GridExclusionZone {
-            left: left as f32,
-            top: top as f32,
-            right: (right_pos + right_size) as f32,
-            bottom: (bottom_pos + bottom_size) as f32,
-        });
-
-        // Only add to chart_images if we have chart_image data
-        if let Some(chart_image_data) = html_output.chart_image {
-            // Note: w and h in JsHtmlOutput are in cells, chart_h excludes the title row
-            chart_images.push(ChartImage {
-                x: chart_x,
-                y: chart_y,
-                width: chart_w as u32,
-                height: chart_h as u32,
-                image_data: chart_image_data,
-            });
-        }
-    }
-    request.chart_images = chart_images;
-    request.grid_exclusion_zones = grid_exclusion_zones;
-    log::debug!("Found {} chart images", request.chart_images.len());
-    log::debug!(
-        "Created {} grid exclusion zones",
-        request.grid_exclusion_zones.len()
-    );
-
-    // Create renderer and render
     log::debug!(
         "Creating renderer ({} x {} pixels, {}x DPR = {} x {})...",
         base_width,
@@ -491,81 +239,7 @@ fn main() -> anyhow::Result<()> {
         render_height
     );
     let mut renderer = NativeRenderer::new(render_width, render_height)?;
-
-    // Find fonts directory
-    let font_dir = find_fonts_directory(args.fonts.as_ref())?;
-    log::debug!("Loading fonts from {:?}", font_dir);
-
-    // Standard OpenSans font variants
-    let font_files = [
-        "OpenSans.fnt",
-        "OpenSans-Bold.fnt",
-        "OpenSans-Italic.fnt",
-        "OpenSans-BoldItalic.fnt",
-    ];
-
-    let (fonts, texture_infos) = load_fonts_from_directory(&font_dir, &font_files)?;
-
-    log::debug!("Loaded {} fonts: {:?}", fonts.count(), fonts.font_names());
-
-    // Load font textures
-    for texture_info in &texture_infos {
-        let texture_path = font_dir.join(&texture_info.filename);
-        log::debug!(
-            "Loading font texture: {:?} (UID: {})",
-            texture_path,
-            texture_info.texture_uid
-        );
-
-        let texture_bytes = fs::read(&texture_path)?;
-        renderer.upload_font_texture(texture_info.texture_uid, &texture_bytes)?;
-    }
-
-    // Set fonts on renderer
-    renderer.set_fonts(fonts);
-
-    // Upload chart images
-    if !request.chart_images.is_empty() {
-        log::debug!("Uploading {} chart images...", request.chart_images.len());
-        renderer.upload_chart_images(&request.chart_images)?;
-    }
-
-    // Upload language icons
-    if !request.table_name_icons.is_empty() {
-        if let Ok(icons_dir) = find_icons_directory() {
-            log::debug!(
-                "Loading {} language icons from {:?}...",
-                request.table_name_icons.len(),
-                icons_dir
-            );
-            renderer.upload_language_icons(&request.table_name_icons, &icons_dir)?;
-        } else {
-            log::warn!(
-                "Icons directory not found, {} table icons will not render",
-                request.table_name_icons.len()
-            );
-        }
-    }
-
-    // Load emoji spritesheet (textures are lazy-loaded when needed)
-    if let Ok(emoji_dir) = find_emoji_directory() {
-        log::debug!("Loading emoji mapping from {:?}...", emoji_dir);
-        match load_emoji_spritesheet(&emoji_dir) {
-            Ok((spritesheet, _texture_infos)) => {
-                log::debug!(
-                    "Loaded emoji mapping: {} emojis, {} texture pages (lazy loading)",
-                    spritesheet.emoji_count(),
-                    spritesheet.page_count()
-                );
-                renderer.set_emoji_spritesheet(spritesheet, emoji_dir);
-            }
-            Err(e) => {
-                log::warn!("Failed to load emoji mapping: {}", e);
-            }
-        }
-    } else {
-        log::debug!("Emoji directory not found, emojis will not render");
-    }
+    prepare_renderer_for_request(&mut renderer, &request, &assets)?;
 
     log::debug!(
         "Rendering to {:?} format{}...",
@@ -602,22 +276,6 @@ fn main() -> anyhow::Result<()> {
     );
 
     Ok(())
-}
-
-/// Convert CellBorderLine to BorderLineStyle
-fn cell_border_line_to_style(
-    line: &quadratic_core::grid::sheet::borders::CellBorderLine,
-) -> BorderLineStyle {
-    use quadratic_core::grid::sheet::borders::CellBorderLine;
-    match line {
-        CellBorderLine::Line1 => BorderLineStyle::Line1,
-        CellBorderLine::Line2 => BorderLineStyle::Line2,
-        CellBorderLine::Line3 => BorderLineStyle::Line3,
-        CellBorderLine::Dotted => BorderLineStyle::Dotted,
-        CellBorderLine::Dashed => BorderLineStyle::Dashed,
-        CellBorderLine::Double => BorderLineStyle::Double,
-        CellBorderLine::Clear => BorderLineStyle::Line1, // Shouldn't happen
-    }
 }
 
 /// Find the fonts directory, trying multiple locations.

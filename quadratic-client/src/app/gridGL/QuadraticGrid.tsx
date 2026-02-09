@@ -53,6 +53,7 @@ export const QuadraticGrid = memo(() => {
     <div
       className="pointer-up-ignore"
       ref={containerRef}
+      data-walkthrough="grid-canvas"
       style={{
         position: 'relative',
         width: '100%',

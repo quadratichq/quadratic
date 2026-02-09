@@ -132,6 +132,10 @@ impl Sheet {
         self.borders.remove_row(row);
         transaction.sheet_borders.insert(self.id);
 
+        // update merge cells and track affected hashes for re-rendering
+        let affected_rects = self.merge_cells.remove_row(row);
+        transaction.add_merge_cells_dirty_hashes(self.id, &affected_rects);
+
         // update all cells that were impacted by the deletion
         self.columns.remove_row(row);
 
@@ -484,5 +488,73 @@ mod test {
             !transaction.sheet_meta_fills.contains(&sheet.id),
             "sheet_meta_fills should NOT be marked for finite fills only"
         );
+    }
+
+    #[test]
+    fn test_delete_row_shrinks_merge_cells() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a merge at B3:D5
+        sheet.merge_cells.merge_cells(Rect::test_a1("B3:D5"));
+
+        let a1_context = sheet.expensive_make_a1_context();
+
+        let mut transaction = PendingTransaction::default();
+
+        // Delete row 4 - inside the merge
+        sheet.delete_row(&mut transaction, 4, &a1_context);
+
+        // Merge should shrink: B3:D5 -> B3:D4
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B3:D4"));
+
+        // Verify transaction has merge_cells_updates marked
+        assert!(transaction.merge_cells_updates.contains_key(&sheet.id));
+    }
+
+    #[test]
+    fn test_delete_row_shifts_merge_cells() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a merge at B3:D5
+        sheet.merge_cells.merge_cells(Rect::test_a1("B3:D5"));
+
+        let a1_context = sheet.expensive_make_a1_context();
+
+        let mut transaction = PendingTransaction::default();
+
+        // Delete row 1 - before the merge
+        sheet.delete_row(&mut transaction, 1, &a1_context);
+
+        // Merge should shift up: B3:D5 -> B2:D4
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B2:D4"));
+    }
+
+    #[test]
+    fn test_delete_row_removes_single_row_merge() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a single row merge at B3:D3
+        sheet.merge_cells.merge_cells(Rect::test_a1("B3:D3"));
+
+        let a1_context = sheet.expensive_make_a1_context();
+
+        let mut transaction = PendingTransaction::default();
+
+        // Delete row 3 - the entire merge
+        sheet.delete_row(&mut transaction, 3, &a1_context);
+
+        // Merge should be deleted
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 0);
     }
 }

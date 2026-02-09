@@ -16,6 +16,7 @@ export const HyperlinkPopup = () => {
     pageTitle,
     isVisible,
     hideTextField,
+    setPopupRef,
     setEditUrl,
     setEditText,
     handleMouseEnter,
@@ -35,9 +36,13 @@ export const HyperlinkPopup = () => {
 
   // Positioning
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
-  const ref = useCallback((node: HTMLDivElement) => {
-    setDiv(node);
-  }, []);
+  const ref = useCallback(
+    (node: HTMLDivElement) => {
+      setDiv(node);
+      setPopupRef(node);
+    },
+    [setPopupRef]
+  );
 
   const offsets = linkData?.rect ?? new Rectangle();
   const { top, left } = usePositionCellMessage({

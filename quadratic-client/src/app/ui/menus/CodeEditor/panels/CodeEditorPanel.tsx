@@ -36,7 +36,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   const handleOnClick = useMemo(
     () =>
       ({ tableQuery }: SchemaBrowserTableActionOnClick) => {
-        trackEvent('[ConnectionSchemaBrowser].insertQuery');
+        trackEvent('[ConnectionSchemaBrowser].insertQuery', { language: connectionInfo?.kind });
 
         if (editorInst) {
           const model = editorInst.getModel();
@@ -54,7 +54,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
           saveAndRunCell();
         }
       },
-    [editorInst, saveAndRunCell]
+    [connectionInfo?.kind, editorInst, saveAndRunCell]
   );
 
   const schemaBrowser =

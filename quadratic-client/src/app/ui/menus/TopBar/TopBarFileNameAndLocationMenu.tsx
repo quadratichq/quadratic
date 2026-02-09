@@ -5,13 +5,22 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ConnectionStatusIcon } from '@/app/ui/menus/TopBar/ConnectionStatusIcon';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { moveFile, useFileLocation } from '@/shared/atom/fileLocationAtom';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { ExternalLinkIcon, MoveItemIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { useTeamData } from '@/shared/hooks/useTeamData';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import type { Dispatch, SetStateAction } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 export const TopBarFileNameAndLocationMenu = () => {
@@ -55,20 +64,46 @@ export const TopBarFileNameAndLocationMenu = () => {
 };
 
 function FileLocation() {
+  const { uuid } = useParams() as { uuid: string };
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    file: { ownerUserId },
     team,
     userMakingRequest: { fileRole, teamRole, id: userId },
   } = useFileRouteLoaderDataRequired();
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const linkProps = {
-    reloadDocument: true,
-    className: 'hover:text-foreground hover:underline block max-w-40 truncate',
-  };
+  // Use the atom for reactive file location state (synced with ShareDialog)
+  const { ownerUserId } = useFileLocation();
+
+  // Determine current file location based on ownerUserId:
+  //   1. You have access to the team and its your file: personal
+  //   2. You have access to the team but its not your file: team
+  //   3. You don't have access to the team but file was shared via link: "Untitled"
+  //   4. You don't have access to the team but you were invited to the file: "Shared with me / Untitled"
+  // Note: ownerUserId can be undefined (from loader) or null (from atom) for team files
+  const fileType = useMemo<'team' | 'personal' | 'shared-invite' | 'shared-link'>(() => {
+    if (ownerUserId != null && ownerUserId === userId) {
+      return 'personal';
+    }
+    if (ownerUserId == null && teamRole) {
+      return 'team';
+    }
+    if (fileRole) {
+      return 'shared-invite';
+    }
+    return 'shared-link';
+  }, [ownerUserId, userId, teamRole, fileRole]);
+
+  const handleMoveFile = useCallback(
+    (newFileType: 'team' | 'personal') => {
+      if (!userId) return;
+      moveFile(uuid, newFileType === 'personal' ? userId : null, addGlobalSnackbar);
+    },
+    [uuid, userId, addGlobalSnackbar]
+  );
 
   // Don't show anything if they're not logged in
   if (!isAuthenticated) {
@@ -77,35 +112,92 @@ function FileLocation() {
 
   // Determine where the file is located and where we link back to
   // But don't allow links in embed mode (file history, etc.)
-  let dashboardLink = null;
-  if (ownerUserId && ownerUserId === userId) {
-    // My private file
-    const label = 'Personal';
-    dashboardLink = isEmbed ? (
+  let teamElement = null;
+  if (fileType === 'personal') {
+    const label = (
+      <>
+        <span className="block max-w-40 truncate">{teamName}</span> (Personal)
+      </>
+    );
+    teamElement = isEmbed ? (
       label
-    ) : (
-      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} data-testid="file-location-link-my-files">
+    ) : teamRole === 'VIEWER' ? (
+      <Link
+        to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)}
+        reloadDocument
+        className={'flex items-center gap-1 hover:text-foreground hover:underline'}
+      >
         {label}
       </Link>
-    );
-  } else if (ownerUserId === undefined && teamRole) {
-    // Team file
-    dashboardLink = isEmbed ? (
-      teamName
     ) : (
-      <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps} data-testid="file-location-link-team-files">
-        {teamName}
-      </Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-1 hover:text-foreground">{label}</DropdownMenuTrigger>
+        <DropdownMenuContent
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            focusGrid();
+          }}
+        >
+          <DropdownMenuItem asChild>
+            <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} reloadDocument className="no-underline">
+              <ExternalLinkIcon className="mr-2" />
+              View personal files
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleMoveFile('team')}>
+            <MoveItemIcon className="mr-2" />
+            Move to team files
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
-  } else if (fileRole) {
-    // File i was invited to
+  } else if (fileType === 'team') {
+    const label = (
+      <>
+        <span className="block max-w-40 truncate">{teamName}</span> (Team)
+      </>
+    );
+    teamElement = isEmbed ? (
+      label
+    ) : teamRole === 'VIEWER' ? (
+      <Link
+        to={ROUTES.TEAM_FILES(team.uuid, { type: 'team' })}
+        reloadDocument
+        className={'flex items-center gap-1 hover:text-foreground hover:underline'}
+      >
+        {label}
+      </Link>
+    ) : (
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-1 hover:text-foreground">{label}</DropdownMenuTrigger>
+        <DropdownMenuContent
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            focusGrid();
+          }}
+        >
+          <DropdownMenuItem asChild>
+            <Link to={ROUTES.TEAM_FILES(team.uuid, { type: 'team' })} reloadDocument className="no-underline">
+              <ExternalLinkIcon className="mr-2" />
+              View team files
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleMoveFile('personal')}>
+            <MoveItemIcon className="mr-2" />
+            Move to personal files
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  } else if (fileType === 'shared-invite') {
     const label = 'Shared with me';
-    dashboardLink = isEmbed ? (
+    teamElement = isEmbed ? (
       label
     ) : (
       <Link
         to={ROUTES.TEAM_FILES_SHARED_WITH_ME(team.uuid)}
-        {...linkProps}
+        reloadDocument
+        className="block max-w-40 truncate"
         data-testid="file-location-link-shared-with-me"
       >
         {label}
@@ -114,13 +206,13 @@ function FileLocation() {
   }
 
   // They must be seeing the file because the public link is being used
-  if (dashboardLink === null) {
+  if (teamElement === null) {
     return null;
   }
 
   return (
     <>
-      <Type className="hidden text-muted-foreground md:block">{dashboardLink}</Type>
+      <Type className="hidden text-muted-foreground md:block">{teamElement}</Type>
 
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /

@@ -1,10 +1,18 @@
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { apiClient } from '@/shared/api/apiClient';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
-import { AddIcon, AIIcon, ArrowDropDownIcon, DatabaseIcon, ExamplesIcon, FileIcon } from '@/shared/components/Icons';
+import {
+  AddIcon,
+  AIIcon,
+  ApiIcon,
+  ArrowDropDownIcon,
+  DatabaseIcon,
+  ExamplesIcon,
+  FileIcon,
+} from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
@@ -23,6 +31,11 @@ import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
 
 const CONNECTIONS_DISPLAY_LIMIT = 3;
+
+const stateToInsertAndRun = {
+  codeString: SNIPPET_PY_API,
+  language: 'Python' as CodeCellLanguage,
+};
 
 export function NewFileButton() {
   const {
@@ -48,14 +61,9 @@ export function NewFileButton() {
       <Button
         data-testid="files-list-new-file-button"
         variant="default"
-        onClick={async (e) => {
+        onClick={(e) => {
           e.preventDefault();
-          const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, true);
-          if (hasReachedLimit) {
-            showUpgradeDialog('fileLimitReached');
-            return;
-          }
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
+          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
         }}
       >
         New file
@@ -83,12 +91,7 @@ export function NewFileButton() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem
-              onClick={async () => {
-                const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-                if (hasReachedLimit) {
-                  showUpgradeDialog('fileLimitReached');
-                  return;
-                }
+              onClick={() => {
                 navigate(`${ROUTES.TEAM_FILES_CREATE_AI_PROMPT(teamUuid)}${isPrivate ? '?private=true' : ''}`);
               }}
             >
@@ -108,10 +111,24 @@ export function NewFileButton() {
               </span>
             </DropdownMenuItem>
 
+            <DropdownMenuItem
+              onClick={() => {
+                window.location.href = ROUTES.CREATE_FILE(teamUuid, {
+                  state: stateToInsertAndRun,
+                  private: isPrivate,
+                });
+              }}
+            >
+              <ApiIcon className="mr-3" />
+              <span className="flex flex-col">
+                API
+                <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
+              </span>
+            </DropdownMenuItem>
+
             <DropdownMenuItem asChild>
               <Link to={ROUTES.TEMPLATES} className="flex items-center">
-                <ExamplesIcon className="mr-3" />
-
+                <ExamplesIcon className="mr-3 text-primary" />
                 <span className="flex flex-col">
                   Templates
                   <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>

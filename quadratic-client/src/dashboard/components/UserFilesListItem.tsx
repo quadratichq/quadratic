@@ -12,7 +12,6 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
-import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -141,12 +140,7 @@ export function UserFilesListItem({
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
-  const handleDuplicate = async () => {
-    const { hasReachedLimit } = await apiClient.teams.fileLimit(activeTeamUuid, isFilePrivate);
-    if (hasReachedLimit) {
-      showUpgradeDialog('fileLimitReached');
-      return;
-    }
+  const handleDuplicate = () => {
     trackEvent('[Files].duplicateFile', { id: uuid });
     const data = getActionFileDuplicate({
       redirect: false,
@@ -169,7 +163,12 @@ export function UserFilesListItem({
         reloadDocument
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
       >
-        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
+        <ListItemView
+          viewPreferences={viewPreferences}
+          thumbnail={thumbnail}
+          lazyLoad={lazyLoad}
+          overlay={file.requiresUpgradeToEdit ? <FileEditRestrictedBadge /> : undefined}
+        >
           <FilesListItemCore
             key={uuid}
             creator={file.creator}
@@ -180,8 +179,8 @@ export function UserFilesListItem({
             isShared={publicLinkAccess !== 'NOT_SHARED'}
             hasScheduledTasks={hasScheduledTasks}
             fileUuid={uuid}
-            children={<FileTypeBadge type={fileType} />}
             viewPreferences={viewPreferences}
+            children={<FileTypeBadge type={fileType} />}
             onCreatorClick={(creator) => {
               if (creator.email) {
                 setFilters((prev) => ({
@@ -254,7 +253,7 @@ export function UserFilesListItem({
                             });
                           }}
                         >
-                          Move to Private
+                          Move to personal files
                         </DropdownMenuItem>
                       )}
                       {isFilePrivate && (
@@ -271,7 +270,7 @@ export function UserFilesListItem({
                             });
                           }}
                         >
-                          Move to Team
+                          Move to team files
                         </DropdownMenuItem>
                       )}
                     </>
@@ -311,5 +310,28 @@ function FileTypeBadge({ type }: { type: 'shared' | 'private' | 'team' }) {
     <div className={'flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground'}>
       {label}
     </div>
+  );
+}
+
+/**
+ * Badge/button shown on files that are not editable due to billing limits (soft file limit).
+ * This is distinct from "View only" which is permission-based.
+ * Clicking opens the upgrade dialog.
+ */
+function FileEditRestrictedBadge() {
+  return (
+    <button
+      className={
+        'flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground'
+      }
+      title="This file exceeds your plan's limit. Upgrade for unlimited editable files."
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showUpgradeDialog('fileLimitReached');
+      }}
+    >
+      Upgrade to edit
+    </button>
   );
 }

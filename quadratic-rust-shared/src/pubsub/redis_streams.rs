@@ -551,7 +551,7 @@ impl RedisConnection {
     /// Returns (pending_count, lag) where:
     /// - pending_count: messages delivered to consumers but not yet acknowledged
     /// - lag: messages not yet delivered to any consumer in the group
-    async fn get_group_info(&mut self, channel: &str, group: &str) -> Result<(i64, i64)> {
+    pub(crate) async fn get_group_info(&mut self, channel: &str, group: &str) -> Result<(i64, i64)> {
         let info_cmd = cmd("XINFO").arg("GROUPS").arg(channel).to_owned();
 
         let result: Value = self.multiplex.send_packed_command(&info_cmd).await?;
@@ -607,7 +607,7 @@ impl RedisConnection {
 
     /// Check if a channel has any messages (pending or unread)
     /// This is used to determine if a channel should remain in the active channels set
-    async fn has_pending_messages(&mut self, channel: &str, group: &str) -> Result<bool> {
+    pub(crate) async fn has_pending_messages(&mut self, channel: &str, group: &str) -> Result<bool> {
         let (pending_count, lag) = self.get_group_info(channel, group).await?;
         // Channel has messages if there are pending messages or undelivered messages (lag)
         Ok(pending_count > 0 || lag > 0)
@@ -1039,5 +1039,311 @@ pub mod tests {
         assert!(batch3.is_empty(), "No more tasks should be available");
 
         // Step 9: Worker shuts down (tested elsewhere)
+    }
+
+    #[tokio::test]
+    async fn get_group_info_returns_zero_when_stream_empty() {
+        let (config, channel) = setup();
+        let group = "group1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+
+        let (pending, lag) = connection.get_group_info(&channel, group).await.unwrap();
+        assert_eq!(pending, 0, "pending count should be 0 for empty stream");
+        assert_eq!(lag, 0, "lag should be 0 for empty stream");
+    }
+
+    #[tokio::test]
+    async fn get_group_info_returns_lag_when_messages_not_delivered() {
+        let (config, channel) = setup();
+        let group = "group1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+        connection
+            .publish(&channel, "2", b"msg2", None)
+            .await
+            .unwrap();
+
+        let (pending, lag) = connection.get_group_info(&channel, group).await.unwrap();
+        assert_eq!(pending, 0, "no messages delivered yet");
+        assert_eq!(lag, 2, "two messages not yet delivered to group");
+    }
+
+    #[tokio::test]
+    async fn get_group_info_returns_pending_when_delivered_but_not_acked() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+        connection
+            .publish(&channel, "2", b"msg2", None)
+            .await
+            .unwrap();
+
+        let _ = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+
+        let (pending, lag) = connection.get_group_info(&channel, group).await.unwrap();
+        assert_eq!(pending, 2, "two messages delivered but not acked");
+        assert_eq!(lag, 0, "all messages delivered to group");
+    }
+
+    #[tokio::test]
+    async fn get_group_info_returns_zero_after_all_acked() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+
+        let messages = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+        connection
+            .ack(&channel, group, vec![messages[0].0.as_str()], None, false)
+            .await
+            .unwrap();
+
+        let (pending, lag) = connection.get_group_info(&channel, group).await.unwrap();
+        assert_eq!(pending, 0, "no pending after ack");
+        assert_eq!(lag, 0, "no lag after all read and acked");
+    }
+
+    #[tokio::test]
+    async fn has_pending_messages_returns_false_when_stream_empty() {
+        let (config, channel) = setup();
+        let group = "group1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+
+        let has_pending = connection.has_pending_messages(&channel, group).await.unwrap();
+        assert!(!has_pending, "Empty stream should have no pending messages");
+    }
+
+    #[tokio::test]
+    async fn has_pending_messages_returns_true_when_undelivered_messages_exist() {
+        let (config, channel) = setup();
+        let group = "group1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+
+        let has_pending = connection.has_pending_messages(&channel, group).await.unwrap();
+        assert!(
+            has_pending,
+            "Stream with unread messages (lag) should have pending messages"
+        );
+    }
+
+    #[tokio::test]
+    async fn has_pending_messages_returns_true_when_delivered_but_not_acked() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+
+        let messages = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+        assert_eq!(messages.len(), 1, "Should have read one message");
+
+        let has_pending = connection.has_pending_messages(&channel, group).await.unwrap();
+        assert!(
+            has_pending,
+            "Stream with delivered but unacked messages should have pending messages"
+        );
+    }
+
+    #[tokio::test]
+    async fn has_pending_messages_returns_false_when_all_acked() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+
+        let messages = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+        connection
+            .ack(&channel, group, vec![messages[0].0.as_str()], None, false)
+            .await
+            .unwrap();
+
+        let has_pending = connection.has_pending_messages(&channel, group).await.unwrap();
+        assert!(
+            !has_pending,
+            "Stream with all messages acked should have no pending messages"
+        );
+    }
+
+    #[tokio::test]
+    async fn has_undelivered_messages_returns_false_when_no_messages() {
+        let (config, channel) = setup();
+        let group = "group1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+
+        let has_undelivered = connection
+            .has_undelivered_messages(&channel, group)
+            .await
+            .unwrap();
+        assert!(!has_undelivered);
+    }
+
+    #[tokio::test]
+    async fn has_undelivered_messages_returns_true_when_messages_not_delivered() {
+        let (config, channel) = setup();
+        let group = "group1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+
+        let has_undelivered = connection
+            .has_undelivered_messages(&channel, group)
+            .await
+            .unwrap();
+        assert!(
+            has_undelivered,
+            "Stream with messages not yet read by group should have undelivered messages"
+        );
+    }
+
+    #[tokio::test]
+    async fn has_undelivered_messages_returns_false_after_all_read() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", None)
+            .await
+            .unwrap();
+
+        let _ = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+
+        let has_undelivered = connection
+            .has_undelivered_messages(&channel, group)
+            .await
+            .unwrap();
+        assert!(
+            !has_undelivered,
+            "After all messages delivered to consumer, lag should be 0"
+        );
+    }
+
+    #[tokio::test]
+    async fn remove_active_channel_if_empty_removes_channel_when_no_pending() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+        let active_channels = Uuid::new_v4().to_string();
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", Some(&active_channels))
+            .await
+            .unwrap();
+
+        let messages = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+        connection
+            .ack(&channel, group, vec![messages[0].0.as_str()], None, false)
+            .await
+            .unwrap();
+
+        connection
+            .remove_active_channel_if_empty(&active_channels, &channel, group)
+            .await
+            .unwrap();
+
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert!(
+            results.is_empty(),
+            "Channel should be removed when it has no pending messages"
+        );
+    }
+
+    #[tokio::test]
+    async fn remove_active_channel_if_empty_keeps_channel_when_pending() {
+        let (config, channel) = setup();
+        let group = "group1";
+        let consumer = "consumer1";
+        let active_channels = Uuid::new_v4().to_string();
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group, None).await.unwrap();
+        connection
+            .publish(&channel, "1", b"msg1", Some(&active_channels))
+            .await
+            .unwrap();
+
+        let _ = connection
+            .messages(&channel, group, consumer, None, 10, false)
+            .await
+            .unwrap();
+
+        connection
+            .remove_active_channel_if_empty(&active_channels, &channel, group)
+            .await
+            .unwrap();
+
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(
+            results,
+            vec![channel.clone()],
+            "Channel should remain when it has pending (unacked) messages"
+        );
     }
 }

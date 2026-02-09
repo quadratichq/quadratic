@@ -77,6 +77,9 @@ export const AddIcon: IconComponent = (props) => {
 export const AIIcon: IconComponent = (props) => {
   return <Icon {...props}>auto_awesome</Icon>;
 };
+export const AgentModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>robot_2</Icon>;
+};
 export const AppearanceLightModeIcon: IconComponent = (props) => {
   return <Icon {...props}>light_mode</Icon>;
 };
@@ -481,6 +484,10 @@ export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
 };
 
+export const GroupOffIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_off</Icon>;
+};
+
 export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
 };
@@ -557,6 +564,10 @@ export const MoreHorizIcon: IconComponent = (props) => {
   return <Icon {...props}>more_horiz</Icon>;
 };
 
+export const MoveItemIcon: IconComponent = (props) => {
+  return <Icon {...props}>move_item</Icon>;
+};
+
 export const Number123Icon: IconComponent = (props) => {
   // This icon is just too small, so we make it more readable within its container
   // by increasing its size and adjusting its position
@@ -594,6 +605,10 @@ export const PDFIcon: IconComponent = (props) => {
 
 export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
+};
+
+export const PromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>chat_paste_go</Icon>;
 };
 
 export const PersonAddIcon: IconComponent = (props) => {
@@ -815,6 +830,10 @@ export const LightedBulbIcon: IconComponent = (props) => {
 
 export const PublicIcon: IconComponent = (props) => {
   return <Icon {...props}>public</Icon>;
+};
+
+export const PublicOffIcon: IconComponent = (props) => {
+  return <Icon {...props}>public_off</Icon>;
 };
 
 export const SheetComeFromIcon: IconComponent = (props) => {

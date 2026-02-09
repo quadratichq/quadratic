@@ -66,7 +66,7 @@ interface EventTypes {
     selectedText: string;
     selectionRange?: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number };
   }) => void;
-  showInlineHyperlinkInput: (data: { selectedText: string }) => void;
+  showInlineHyperlinkInput: (data: { selectedText: string; existingUrl?: string }) => void;
   inlineEditorCursorOnHyperlink: (data?: { url: string; rect: Rectangle; linkText: string }) => void;
   hoverTable: (table?: JsRenderCodeCell) => void;
 
@@ -194,6 +194,7 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystSelectConnection: (connectionUuid: string, connectionType: string, connectionName: string) => void;
 
   mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
 

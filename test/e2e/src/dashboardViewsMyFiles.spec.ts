@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { chromium, expect, test } from '@playwright/test';
-import { logIn } from './helpers/auth.helpers';
+import { logIn, skipFeatureWalkthrough } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, createSharedFile, uploadFile } from './helpers/file.helpers';
 
 const getViewCharacteristics = async (page: Page) => {
@@ -496,6 +496,9 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   // Edit "C - Test File 1" so it becomes Last updated
   await sharedUserPage.locator(`a :text("${testFile1}")`).click({ timeout: 60 * 1000 });
 
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(sharedUserPage);
+
   await sharedUserPage.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 
   await sharedUserPage.keyboard.press('ArrowRight');
@@ -758,7 +761,7 @@ test('Filter Files by Name - Private Files', async ({ page }) => {
   // const teamName = `Filter Files - ${Date.now()}`;
   // await createNewTeamByURL(page, { teamName });
 
-  // Use 2 files instead of 3 to stay under free user limit
+  // Use 2 files to stay under free user limit
   const string1 = 'Test';
   const string2 = 'Random';
   const file1 = `${string1}_file_1`;

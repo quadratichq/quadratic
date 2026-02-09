@@ -1,7 +1,7 @@
 import { chromium, expect, test } from '@playwright/test';
 import { createInterface } from 'node:readline';
 import { navigateOnSheet, selectCells } from './helpers/app.helper';
-import { logIn } from './helpers/auth.helpers';
+import { dismissGettingStartedDialog, logIn, skipFeatureWalkthrough } from './helpers/auth.helpers';
 import { upgradeToProPlan } from './helpers/billing.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 import { createNewTeamAndNavigateToDashboard } from './helpers/team.helper';
@@ -1095,6 +1095,10 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
+
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(recipientPage);
+
   await recipientPage.locator(`[data-testid="files-list-file-type-shared"]`).click({ timeout: 60 * 1000 });
 
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
@@ -1104,6 +1108,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Navigate to file
   await recipientFileCard.click({ timeout: 60 * 1000 });
   await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(recipientPage);
 
   // Highlight the text from the 0, 0 cell
   try {
@@ -1127,6 +1134,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await recipientPage.reload();
   await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
   await recipientPage.waitForTimeout(2000);
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(recipientPage);
 
   // Close Chat
   try {
@@ -1160,6 +1170,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).waitFor();
   await page.waitForTimeout(2000);
 
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(page);
+
   // Close Chat
   try {
     await page
@@ -1182,6 +1195,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Navigate to files page
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(page);
+
   // Delete Previous Share_File_Spreadsheet file
   await cleanUpFiles(page, { fileName });
 
@@ -1203,6 +1219,10 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
+
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(recipientPage);
+
   await recipientPage.locator(`[data-testid="file-location-link-shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
@@ -1210,7 +1230,11 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Navigate to file (removed redundant 10s waitForTimeout, fixed to wait on recipientPage)
   await recipientFileCard.click({ timeout: 60 * 1000 });
-  await recipientPage.waitForLoadState('networkidle');
+  await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
+  await recipientPage.waitForLoadState('networkidle', { timeout: 60 * 1000 }).catch(() => {});
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(recipientPage);
 
   // Assert "Read-only" message appears
   await expect(
@@ -1223,6 +1247,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Bring default user page to the front and navigate to files page
   await page.bringToFront();
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(page);
 
   // Delete Previous Share_File_Spreadsheet file
   await cleanUpFiles(page, { fileName });
@@ -1253,6 +1280,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await recipientPage.reload();
   await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
 
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(recipientPage);
+
   // Highlight the text from the 0, 0 cell
   try {
     await recipientPage.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
@@ -1275,6 +1305,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await recipientPage.reload();
   await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
   await recipientPage.waitForTimeout(5000);
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(recipientPage);
 
   // Close Chat
   try {
@@ -1299,6 +1332,9 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await page.reload();
   await page.locator(`#QuadraticCanvasID`).waitFor();
   await page.waitForTimeout(2000);
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(page);
 
   // Close Chat
   try {
@@ -1343,6 +1379,10 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Navigate to copied URL with public page
   await recipientPage.bringToFront();
   await recipientPage.goto(copiedUrl);
+  await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
+
+  // Skip the feature walkthrough tour if it appears
+  await skipFeatureWalkthrough(recipientPage);
 
   // Assert "Read-only" message appears
   await expect(
@@ -1357,7 +1397,14 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await page.keyboard.press('Escape');
   await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
+
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(page);
+
   await cleanUpFiles(page, { fileName });
+
+  // Close recipient browser
+  await recipientBrowser.close();
 });
 
 test.skip('Sheet Actions', async ({ page }) => {

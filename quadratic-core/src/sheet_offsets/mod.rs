@@ -1,6 +1,6 @@
 use crate::{
-    CopyFormats, MAX_COLUMN_WIDTH, MAX_ROW_HEIGHT, MIN_COLUMN_WIDTH, MIN_ROW_HEIGHT, Pos, Rect,
-    ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
+    CopyFormats, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MAX_COLUMN_WIDTH, MAX_ROW_HEIGHT,
+    MIN_COLUMN_WIDTH, MIN_ROW_HEIGHT, Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
 };
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
@@ -28,8 +28,8 @@ pub struct SheetOffsets {
 impl Default for SheetOffsets {
     fn default() -> Self {
         let mut offsets = SheetOffsets {
-            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
-            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
+            column_widths: Offsets::new(DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(DEFAULT_ROW_HEIGHT),
             thumbnail: (0, 0),
             transient_resize: None,
         };
@@ -52,8 +52,8 @@ impl SheetOffsets {
     /// import offsets from a GridFile
     pub fn import(offsets: OffsetWidthHeight) -> Self {
         let mut offsets = SheetOffsets {
-            column_widths: Offsets::from_iter(crate::DEFAULT_COLUMN_WIDTH, offsets.0),
-            row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1),
+            column_widths: Offsets::from_iter(DEFAULT_COLUMN_WIDTH, offsets.0),
+            row_heights: Offsets::from_iter(DEFAULT_ROW_HEIGHT, offsets.1),
             thumbnail: (0, 0),
             transient_resize: None,
         };
@@ -68,8 +68,8 @@ impl SheetOffsets {
         default_column_width: Option<f64>,
         default_row_height: Option<f64>,
     ) -> Self {
-        let column_default = default_column_width.unwrap_or(crate::DEFAULT_COLUMN_WIDTH);
-        let row_default = default_row_height.unwrap_or(crate::DEFAULT_ROW_HEIGHT);
+        let column_default = default_column_width.unwrap_or(DEFAULT_COLUMN_WIDTH);
+        let row_default = default_row_height.unwrap_or(DEFAULT_ROW_HEIGHT);
         let mut offsets = SheetOffsets {
             column_widths: Offsets::from_iter(column_default, offsets.0),
             row_heights: Offsets::from_iter(row_default, offsets.1),
@@ -83,7 +83,7 @@ impl SheetOffsets {
     /// Returns the default column width if it differs from the hardcoded default.
     pub fn custom_default_column_width(&self) -> Option<f64> {
         let default = self.defaults().0;
-        if (default - crate::DEFAULT_COLUMN_WIDTH).abs() < f64::EPSILON {
+        if (default - DEFAULT_COLUMN_WIDTH).abs() < f64::EPSILON {
             None
         } else {
             Some(default)
@@ -93,7 +93,7 @@ impl SheetOffsets {
     /// Returns the default row height if it differs from the hardcoded default.
     pub fn custom_default_row_height(&self) -> Option<f64> {
         let default = self.defaults().1;
-        if (default - crate::DEFAULT_ROW_HEIGHT).abs() < f64::EPSILON {
+        if (default - DEFAULT_ROW_HEIGHT).abs() < f64::EPSILON {
             None
         } else {
             Some(default)

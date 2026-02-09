@@ -1,6 +1,6 @@
 import type { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
-import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes, FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers } from '../../auth/providers/auth';
 import { BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
@@ -16,6 +16,7 @@ import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
+import { getFileLimitInfo, getFreeEditableFileLimit, getIsOnPaidPlan } from '../../utils/billing';
 import { getFilePermissions } from '../../utils/permissions';
 import { getDecryptedTeam } from '../../utils/teams';
 
@@ -168,6 +169,19 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
+  // Get file limit info (includes editable file IDs and whether team is over limit)
+  // For free teams, only the N most recently created files are editable
+  const isPaidPlan = await getIsOnPaidPlan(team);
+  const { editableFileIds, isOverLimit, totalFiles } = await getFileLimitInfo(team, isPaidPlan);
+
+  // Helper to apply edit restriction to file permissions
+  const applyEditRestriction = (fileId: number, permissions: FilePermission[]): FilePermission[] => {
+    if (!editableFileIds.includes(fileId) && permissions.includes('FILE_EDIT')) {
+      return permissions.filter((p) => p !== 'FILE_EDIT');
+    }
+    return permissions;
+  };
+
   const response = {
     team: {
       id: team.id,
@@ -195,53 +209,68 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
     files: dbFiles
       .filter((file) => !file.ownerUserId)
-      .map((file) => ({
-        file: {
-          uuid: file.uuid,
-          name: file.name,
-          createdDate: file.createdDate.toISOString(),
-          updatedDate: file.updatedDate.toISOString(),
+      .map((file) => {
+        const basePermissions = getFilePermissions({
           publicLinkAccess: file.publicLinkAccess,
-          thumbnail: file.thumbnail,
-          creatorId: file.creatorUserId,
-          hasScheduledTasks: file.ScheduledTask.length > 0,
-        },
-        userMakingRequest: {
-          filePermissions: getFilePermissions({
+          userFileRelationship: {
+            context: 'public-to-team',
+            teamRole: userMakingRequest.role,
+            fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
+          },
+        });
+        const isEditRestricted = !editableFileIds.includes(file.id);
+        return {
+          file: {
+            uuid: file.uuid,
+            name: file.name,
+            createdDate: file.createdDate.toISOString(),
+            updatedDate: file.updatedDate.toISOString(),
             publicLinkAccess: file.publicLinkAccess,
-            userFileRelationship: {
-              context: 'public-to-team',
-              teamRole: userMakingRequest.role,
-              fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
-            },
-          }),
-        },
-      })),
+            thumbnail: file.thumbnail,
+            creatorId: file.creatorUserId,
+            hasScheduledTasks: file.ScheduledTask.length > 0,
+          },
+          userMakingRequest: {
+            filePermissions: applyEditRestriction(file.id, basePermissions),
+            requiresUpgradeToEdit: isEditRestricted,
+          },
+        };
+      }),
     filesPrivate: dbFiles
       .filter((file) => file.ownerUserId)
-      .map((file) => ({
-        file: {
-          uuid: file.uuid,
-          name: file.name,
-          createdDate: file.createdDate.toISOString(),
-          updatedDate: file.updatedDate.toISOString(),
+      .map((file) => {
+        const basePermissions = getFilePermissions({
           publicLinkAccess: file.publicLinkAccess,
-          thumbnail: file.thumbnail,
-          hasScheduledTasks: file.ScheduledTask.length > 0,
-        },
-        userMakingRequest: {
-          filePermissions: getFilePermissions({
+          userFileRelationship: {
+            context: 'private-to-me',
+            teamRole: userMakingRequest.role,
+          },
+        });
+        const isEditRestricted = !editableFileIds.includes(file.id);
+        return {
+          file: {
+            uuid: file.uuid,
+            name: file.name,
+            createdDate: file.createdDate.toISOString(),
+            updatedDate: file.updatedDate.toISOString(),
             publicLinkAccess: file.publicLinkAccess,
-            userFileRelationship: {
-              context: 'private-to-me',
-              teamRole: userMakingRequest.role,
-            },
-          }),
-        },
-      })),
+            thumbnail: file.thumbnail,
+            hasScheduledTasks: file.ScheduledTask.length > 0,
+          },
+          userMakingRequest: {
+            filePermissions: applyEditRestriction(file.id, basePermissions),
+            requiresUpgradeToEdit: isEditRestricted,
+          },
+        };
+      }),
     license: { ...license },
     connections: getTeamConnectionsList({ dbConnections, settingShowConnectionDemo: team.settingShowConnectionDemo }),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
+    fileLimit: {
+      isOverLimit,
+      totalFiles,
+      maxEditableFiles: isPaidPlan ? undefined : getFreeEditableFileLimit(),
+    },
   };
 
   return res.status(200).json(response);

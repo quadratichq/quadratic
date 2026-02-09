@@ -95,111 +95,104 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
  * Note: This function uses pre-defined (valid) credit card credentials (`creditCard` object) for simulating the checkout process.
  */
 export const upgradeToProPlan = async (page: Page) => {
-  try {
-    // Navigate to the Settings page by clicking the 'Settings' link
-    await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
+  // Navigate to the Settings page by clicking the 'Settings' link
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
-    await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
+  await page.waitForLoadState('domcontentloaded');
 
-    // Assert page is currently displaying Settings
-    await expect(page).toHaveURL(/settings/);
-    await expect(page).toHaveTitle(/settings/);
-    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
+  // Assert page is currently displaying Settings
+  await expect(page).toHaveURL(/settings/);
+  await expect(page).toHaveTitle(/settings/);
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
-    // Locate the parent div that contains 'Free plan'
-    const freePlanParentEl = page.locator(`:text("Free plan")`).locator('..');
+  // Locate the parent div that contains 'Free plan'
+  const freePlanParentEl = page.locator(`:text("Free plan")`).locator('..');
 
-    // Assert both 'Free plan' and 'Current plan' texts are within the same parent div
-    await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
-    await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  // Assert both 'Free plan' and 'Current plan' texts are within the same parent div
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
-    // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
-    await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).toBeVisible({
-      timeout: 60 * 1000,
-    });
+  // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).toBeVisible({
+    timeout: 60 * 1000,
+  });
 
-    // Locate the parent div that contains 'Pro plan' details
-    const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
+  // Locate the parent div that contains 'Pro plan' details
+  const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
 
-    // Click 'Upgrade to Pro' to upgrade the account
-    await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
+  // Click 'Upgrade to Pro' to upgrade the account
+  await page.locator(`[data-testid="billing-upgrade-to-pro-button"]`).click({ timeout: 60 * 1000 });
 
-    // Assert that page was redirected to a Stripe integrated payment page
-    await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });
+  // Assert that page was redirected to a Stripe integrated payment page
+  await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });
 
-    // Assert that subscription page is for Team billing
-    await expect(page.locator(`[data-testid="product-summary-name"]`)).toHaveText(`Subscribe to Team`);
-    await expect(page.locator(`[data-testid="line-item-product-name"]`)).toHaveText(`Team`);
+  // Assert that subscription page is for Team billing
+  await expect(page.locator(`[data-testid="product-summary-name"]`)).toHaveText(`Subscribe to Team`);
+  await expect(page.locator(`[data-testid="line-item-product-name"]`)).toHaveText(`Team`);
 
-    // Assert that the 'Total due today' text is visible, indicating that we're on a checkout page
-    await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 60 * 1000 });
+  // Assert that the 'Total due today' text is visible, indicating that we're on a checkout page
+  await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 60 * 1000 });
 
-    // Assert that the bank account textbox is not visible
-    // This ensures that we will be filling in credit card details and not bank details (debit)
-    await expect(page.getByRole(`textbox`, { name: `Bank account` })).not.toBeVisible({ timeout: 60 * 1000 });
+  // Assert that the bank account textbox is not visible
+  // This ensures that we will be filling in credit card details and not bank details (debit)
+  await expect(page.getByRole(`textbox`, { name: `Bank account` })).not.toBeVisible({ timeout: 60 * 1000 });
 
-    // Fill the card number in the input for 'Card Information'
-    await page.getByRole(`textbox`, { name: `Card number` }).fill(SWIPE_TEST_CARD.number);
+  // Fill the card number in the input for 'Card Information'
+  await page.getByRole(`textbox`, { name: `Card number` }).fill(SWIPE_TEST_CARD.number);
 
-    // Fill the expiration date in the input for 'Expiration'
-    await page.getByRole(`textbox`, { name: `Expiration` }).fill(SWIPE_TEST_CARD.expiration);
+  // Fill the expiration date in the input for 'Expiration'
+  await page.getByRole(`textbox`, { name: `Expiration` }).fill(SWIPE_TEST_CARD.expiration);
 
-    // Fill the 3-digit CVC number in the input for 'CVC'
-    await page.getByRole(`textbox`, { name: `CVC` }).fill(SWIPE_TEST_CARD.cvc);
+  // Fill the 3-digit CVC number in the input for 'CVC'
+  await page.getByRole(`textbox`, { name: `CVC` }).fill(SWIPE_TEST_CARD.cvc);
 
-    // Fill the cardholder's name in the input for 'Cardholder Name'
-    await page.getByRole(`textbox`, { name: `Cardholder name` }).fill(SWIPE_TEST_CARD.name);
+  // Fill the cardholder's name in the input for 'Cardholder Name'
+  await page.getByRole(`textbox`, { name: `Cardholder name` }).fill(SWIPE_TEST_CARD.name);
 
-    // Select United States
-    await page
-      .getByRole(`combobox`, {
-        name: `Country or region`,
-      })
-      .selectOption({ label: `United States` });
+  // Select United States
+  await page
+    .getByRole(`combobox`, {
+      name: `Country or region`,
+    })
+    .selectOption({ label: `United States` });
 
-    // Fill the zip code in the input for 'Zip Code'
-    await page.getByRole(`textbox`, { name: `ZIP` }).fill(SWIPE_TEST_CARD.zipCode);
+  // Fill the zip code in the input for 'Zip Code'
+  await page.getByRole(`textbox`, { name: `ZIP` }).fill(SWIPE_TEST_CARD.zipCode);
 
-    // Default 'country or region' should be set to 'US'
-    await expect(page.getByLabel(`Country or region`)).toHaveValue(`US`);
+  // Default 'country or region' should be set to 'US'
+  await expect(page.getByLabel(`Country or region`)).toHaveValue(`US`);
 
-    // Click 'Subscribe' button to upgrade the count to a Pro plan
-    const navigationPromise = page.waitForNavigation();
-    await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
+  // Click 'Subscribe' button to upgrade the count to a Pro plan
+  const navigationPromise = page.waitForNavigation();
+  await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
 
-    // Wait for the page to redirect to the dashboard page
-    await navigationPromise;
-    await page.waitForTimeout(5 * 1000);
-    await page.waitForLoadState('domcontentloaded');
+  // Wait for the page to redirect to the dashboard page
+  await navigationPromise;
+  await page.waitForLoadState('domcontentloaded');
 
-    // Assert page is currently displaying Settings
-    await expect(page).toHaveURL(/settings/);
-    await expect(page).toHaveTitle(/settings/);
-    await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
+  // Assert page is currently displaying Settings (with extended timeout for post-payment redirect)
+  await expect(page).toHaveURL(/settings/, { timeout: 90 * 1000 });
+  await expect(page).toHaveTitle(/settings/);
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 90 * 1000 });
 
-    // Assert that the 'Free plan' is no longer accompanied by the 'Current plan' flag
-    // freePlanParentEl is declared 'Arrange' step
-    await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
-    await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
+  // Assert that the 'Free plan' is no longer accompanied by the 'Current plan' flag
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
-    // Assert that the 'Pro plan' container includes the 'Current plan' flag
-    await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
-    await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  // Assert that the 'Pro plan' container includes the 'Current plan' flag
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
-    // Assert that the 'Upgrade to Pro' button is no longer visible
-    await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
-      timeout: 60 * 1000,
-    });
+  // Assert that the 'Upgrade to Pro' button is no longer visible
+  await expect(page.locator(`[data-testid="billing-upgrade-to-pro-button"]`)).not.toBeVisible({
+    timeout: 60 * 1000,
+  });
 
-    // Assert that the 'Manage billing' button is visible
-    // This indicates that the user has an active subscription to manage
-    await expect(page.getByRole(`button`, { name: `Manage subscription` })).toBeVisible({ timeout: 60 * 1000 });
+  // Assert that the 'Manage billing' button is visible
+  // This indicates that the user has an active subscription to manage
+  await expect(page.getByRole(`button`, { name: `Manage subscription` })).toBeVisible({ timeout: 60 * 1000 });
 
-    await page.goto(buildUrl(), { waitUntil: 'networkidle' });
-  } catch (error: any) {
-    console.log(`An error occurred while upgrading to the Pro plan: ${error.message}`);
-  }
+  await page.goto(buildUrl(), { waitUntil: 'domcontentloaded' });
 };
 
 type InviteUserToTeamOptions = {

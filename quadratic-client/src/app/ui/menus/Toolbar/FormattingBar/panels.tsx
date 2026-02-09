@@ -193,12 +193,20 @@ export const FillAndBorderFormatting = memo(
 
     useEffect(() => {
       const updateMergeState = () => {
+        const isMultiRange = sheets.sheet.cursor.isMultiRange();
+        const isColumnRow = sheets.sheet.cursor.isColumnRow();
+
         // Merge cells: selection is more than one cell AND does not contain any table or code cells
+        // AND is not a sheet-level selection (entire row, column, or all) AND is a single range
         setCanMergeCells(
-          !sheets.sheet.cursor.isSingleSelection() && !content.cellsSheet.tables.hasCodeCellInCurrentSelection()
+          !sheets.sheet.cursor.isSingleSelection() &&
+            !content.cellsSheet.tables.hasCodeCellInCurrentSelection() &&
+            !isColumnRow &&
+            !isMultiRange
         );
-        // Unmerge cells: selection contains at least one merged cell
-        setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells());
+        // Unmerge cells: selection contains at least one merged cell AND is a single range
+        // AND is not a sheet-level selection
+        setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells() && !isMultiRange && !isColumnRow);
       };
 
       updateMergeState();
@@ -225,15 +233,12 @@ export const FillAndBorderFormatting = memo(
         >
           <BorderMenu />
         </FormatButtonPopover>
-        {canUnmergeCells ? (
+        {canMergeCells ? (
+          <FormatButton action={Action.MergeCells} actionArgs={undefined} hideLabel={props.hideLabel} />
+        ) : canUnmergeCells ? (
           <FormatButton action={Action.UnmergeCells} actionArgs={undefined} hideLabel={props.hideLabel} />
         ) : (
-          <FormatButton
-            action={Action.MergeCells}
-            actionArgs={undefined}
-            hideLabel={props.hideLabel}
-            disabled={!canMergeCells}
-          />
+          <FormatButton action={Action.MergeCells} actionArgs={undefined} hideLabel={props.hideLabel} disabled />
         )}
         <FormatSeparator />
       </div>

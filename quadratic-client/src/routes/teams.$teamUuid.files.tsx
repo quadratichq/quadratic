@@ -1,4 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { FileLimitBanner } from '@/dashboard/components/FileLimitBanner';
 import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { UserFilesList, type UserFilesListFile } from '@/dashboard/components/UserFilesList';
@@ -79,6 +80,7 @@ export const Component = () => {
         permissions: userMakingRequest.filePermissions,
         creator,
         fileType: 'team',
+        requiresUpgradeToEdit: userMakingRequest.requiresUpgradeToEdit,
       });
     });
 
@@ -95,6 +97,7 @@ export const Component = () => {
         permissions: userMakingRequest.filePermissions,
         creator: currentUser,
         fileType: 'private',
+        requiresUpgradeToEdit: userMakingRequest.requiresUpgradeToEdit,
       });
     });
 
@@ -117,6 +120,8 @@ export const Component = () => {
       <OnboardingBanner />
 
       <DashboardHeader title="Files" actions={canEdit && <NewFileButton />} />
+
+      <FileLimitBanner />
 
       <UserFilesList files={suggestedFiles} teamUuid={teamUuid} />
     </div>

@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes, FilePermission } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
@@ -11,7 +11,7 @@ import { getFileUrl } from '../../storage/storage';
 import { updateBilling } from '../../stripe/stripe';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getIsOnPaidPlan } from '../../utils/billing';
+import { getIsOnPaidPlan, requiresUpgradeToEdit } from '../../utils/billing';
 import { isRestrictedModelCountry } from '../../utils/geolocation';
 import { getDecryptedTeam } from '../../utils/teams';
 import { getUserClientDataKv } from '../../utils/userClientData';
@@ -62,6 +62,16 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
   }
 
   const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
+
+  // Check if this file is edit-restricted due to billing limits (soft file limit)
+  // For free teams, only the N most recently created files are editable
+  const isEditRestricted = await requiresUpgradeToEdit(ownerTeam, id);
+
+  // Apply edit restriction to permissions if necessary
+  let finalFilePermissions: FilePermission[] = filePermissions;
+  if (isEditRestricted && filePermissions.includes('FILE_EDIT')) {
+    finalFilePermissions = filePermissions.filter((p) => p !== 'FILE_EDIT');
+  }
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -135,12 +145,13 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
     userMakingRequest: {
       clientDataKv,
       id: userId,
-      filePermissions,
+      filePermissions: finalFilePermissions,
       fileRole,
       fileTeamPrivacy,
       teamRole,
       teamPermissions,
       restrictedModel: isRestrictedModelCountry(req, isOnPaidPlan),
+      requiresUpgradeToEdit: isEditRestricted,
     },
     license,
   };

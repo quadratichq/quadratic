@@ -396,8 +396,6 @@ pub struct GetFileInitDataResponse {
     pub email: String,
     pub sequence_number: u32,
     pub presigned_url: String,
-    pub thumbnail_upload_url: String,
-    pub thumbnail_key: String,
     pub timezone: Option<String>,
 }
 pub async fn get_file_init_data(

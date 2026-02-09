@@ -9,6 +9,8 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { moveFile, useFileLocation } from '@/shared/atom/fileLocationAtom';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
   DeleteIcon,
   DownloadIcon,
@@ -16,8 +18,10 @@ import {
   FileCopyIcon,
   FileIcon,
   FileOpenIcon,
+  MoveItemIcon,
 } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
   MenubarContent,
@@ -46,6 +50,13 @@ export const FileMenubarMenu = () => {
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const user = useRecoilValue(editorInteractionStateUserAtom);
   const isAvailableArgs = useIsAvailableArgs();
+  const { ownerUserId } = useFileLocation();
+  const {
+    userMakingRequest: { id: userId, filePermissions },
+  } = useFileRouteLoaderData();
+
+  const canMoveFile = filePermissions.includes('FILE_MOVE');
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const [recentFiles, setRecentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
   const recentFilesWithoutCurrentFile = useMemo(
@@ -67,7 +78,7 @@ export const FileMenubarMenu = () => {
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid, teamUuid })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ fileUuid })}>
             <FileCopyIcon />
             Duplicate to personal files
             <ExternalLinkIcon className="ml-auto !h-4 !w-4 text-center !text-xs text-muted-foreground opacity-50" />
@@ -104,6 +115,20 @@ export const FileMenubarMenu = () => {
 
         <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
+
+        {canMoveFile && ownerUserId === null && (
+          <MenubarItem onClick={() => userId && moveFile(fileUuid, userId, addGlobalSnackbar)}>
+            <MoveItemIcon />
+            Move to personal files
+          </MenubarItem>
+        )}
+        {canMoveFile && ownerUserId !== null && (
+          <MenubarItem onClick={() => moveFile(fileUuid, null, addGlobalSnackbar)}>
+            <MoveItemIcon />
+            Move to team files
+          </MenubarItem>
+        )}
+
         <MenubarSub>
           <MenubarSubTrigger>
             <DownloadIcon /> Download

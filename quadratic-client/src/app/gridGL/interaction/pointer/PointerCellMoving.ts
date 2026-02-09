@@ -3,10 +3,12 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/moveInvalid';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -53,7 +55,7 @@ export class PointerCellMoving {
 
   // Starts a table move.
   tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
-    if (this.state) return false;
+    if (this.state || inlineEditorHandler.isOpen()) return false;
     this.startCell = new Point(column, row);
     const offset = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
     this.movingCells = {
@@ -70,7 +72,8 @@ export class PointerCellMoving {
   };
 
   pointerDown = (e: FederatedPointerEvent): boolean => {
-    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || e.button === 1) return false;
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || e.button === 1 || inlineEditorHandler.isOpen())
+      return false;
 
     if (this.state === 'hover' && this.movingCells && e.button === 0) {
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
@@ -181,6 +184,11 @@ export class PointerCellMoving {
   };
 
   private pointerMoveHover = (world: Point): boolean => {
+    if (inlineEditorHandler.isOpen()) {
+      this.reset();
+      return false;
+    }
+
     // Ignore cursor interactions when the mouse is over the grid headings
     // to allow column/row resizing to work properly
     if (content.headings.intersectsHeadings(world)) {
@@ -218,6 +226,19 @@ export class PointerCellMoving {
       }
     }
     if (!rectangle) return false;
+
+    // Expand to full merged cell when selection is a single cell inside a merge
+    if (!colsHover && !rowsHover && rectangle.width === 1 && rectangle.height === 1) {
+      const mergeRect = sheets.sheet.getMergeCellRect(rectangle.left, rectangle.top);
+      if (mergeRect) {
+        rectangle = new Rectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      }
+    }
 
     const column = rectangle.left;
     const row = rectangle.top;
@@ -295,15 +316,27 @@ export class PointerCellMoving {
           return true;
         }
 
-        quadraticCore.moveCells(
-          rectToSheetRect(rectangle, sheets.current),
-          this.movingCells.toColumn ?? 0,
-          this.movingCells.toRow ?? 0,
-          sheets.current,
-          this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
-          this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
-          false
-        );
+        const toColumn = this.movingCells.toColumn ?? 0;
+        const toRow = this.movingCells.toRow ?? 0;
+        const width = this.movingCells.width ?? 1;
+        const height = this.movingCells.height ?? 1;
+        const sheetId = sheets.current;
+
+        quadraticCore
+          .moveCells(
+            rectToSheetRect(rectangle, sheetId),
+            toColumn,
+            toRow,
+            sheetId,
+            this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
+            this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
+            false
+          )
+          .then(() => {
+            const rangeStr = `${xyToA1(toColumn, toRow)}:${xyToA1(toColumn + width - 1, toRow + height - 1)}`;
+            const selection = sheets.stringToSelection(rangeStr, sheetId);
+            events.emit('setCursor', selection.save());
+          });
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
         if (

@@ -6,7 +6,7 @@ import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAt
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
-import { showUpgradeDialog } from '@/shared/atom/showUpgradeDialogAtom';
+
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -39,16 +39,8 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleImport = useCallback(
+  const doImport = useCallback(
     async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
-      // Only check file limit when creating new files (teamUuid must be defined)
-      if (teamUuid !== undefined) {
-        const { hasReachedLimit } = await apiClient.teams.fileLimit(teamUuid, isPrivate);
-        if (hasReachedLimit) {
-          showUpgradeDialog('fileLimitReached');
-          return;
-        }
-      }
       quadraticCore.initWorker();
 
       if (!files) files = await uploadFile(supportedFileTypes);
@@ -265,5 +257,5 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
     [addGlobalSnackbar, location.pathname, navigate, setFilesImportProgressListState, setFilesImportProgressState]
   );
 
-  return handleImport;
+  return doImport;
 }

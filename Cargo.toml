@@ -20,7 +20,7 @@ edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
-version = "0.23.8"
+version = "0.23.10"
 
 # TODO(ddimaria): add shared dependencies here
 [workspace.dependencies]
