@@ -33,31 +33,24 @@ const EditInQuadraticButton = ({ showSheetBar }: { showSheetBar: boolean }) => {
 
     // 1. Generate claim token client-side
     const claimToken = uuidv4();
-    console.log('[Embed] Generated claim token:', claimToken);
 
     // 2. Open the Quadratic app immediately (avoids popup blockers)
     // Redirect to the dedicated claim page after login
     const baseUrl = window.location.origin;
     const postAuthUrl = ROUTES.EMBED_CLAIM(claimToken);
     const redirectUrl = `${baseUrl}${ROUTES.LOGIN}?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(postAuthUrl)}`;
-    console.log('[Embed] Opening new tab with claim URL:', redirectUrl);
     window.open(redirectUrl, '_blank');
 
     try {
       // 3. Export the grid to Uint8Array
-      console.log('[Embed] Exporting grid data...');
       const gridData = await quadraticCore.export();
-      console.log('[Embed] Grid data exported, size:', gridData.length, 'bytes');
 
       // 4. Get presigned upload URL from API (passing our claim token)
-      console.log('[Embed] Requesting upload URL from API...');
       const { uploadUrl } = await apiClient.embed.uploadRequest({ version: FILE_VERSION, claimToken });
-      console.log('[Embed] Got upload URL:', uploadUrl);
 
       // 5. Upload the grid data to storage
       // Create a copy backed by a regular ArrayBuffer to avoid SharedArrayBuffer compatibility issues
       const buffer = new Uint8Array(gridData).buffer;
-      console.log('[Embed] Uploading to storage, buffer size:', buffer.byteLength);
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         body: buffer,
@@ -66,17 +59,12 @@ const EditInQuadraticButton = ({ showSheetBar }: { showSheetBar: boolean }) => {
         },
       });
 
-      console.log('[Embed] Upload response status:', uploadResponse.status);
       if (!uploadResponse.ok) {
-        const responseText = await uploadResponse.text();
-        console.error('[Embed] Upload failed:', responseText);
         throw new Error('Failed to upload file');
       }
 
-      console.log('[Embed] Upload successful!');
       setIsLoading(false);
     } catch (err) {
-      console.error('[Embed] Failed to export file:', err);
       setError('Failed to upload file. The opened tab may not work correctly.');
       setIsLoading(false);
     }

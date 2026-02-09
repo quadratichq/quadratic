@@ -55,24 +55,19 @@ export const loader = async ({ request }: { request: Request }) => {
 
       // Get redirect destination from WorkOS state (if available) or URL params
       let redirectTo = getRedirectTo() || '/';
-      console.log('[LoginResult] Initial redirectTo from URL params:', redirectTo);
 
       // For WorkOS, check if there's a redirect state from the OAuth callback
       if (AUTH_TYPE === 'workos') {
         const workosState = getAndClearRedirectState();
-        console.log('[LoginResult] WorkOS state:', workosState);
         if (workosState?.redirectTo) {
           redirectTo = workosState.redirectTo;
-          console.log('[LoginResult] Using redirectTo from WorkOS state:', redirectTo);
         }
       }
 
-      console.log('[LoginResult] Final redirect to:', redirectTo);
       return redirect(redirectTo);
     }
   } catch (e) {
-    console.error('[LoginResult] Error:', e);
+    // Error handled by redirecting to home
   }
-  console.log('[LoginResult] Fallback redirect to /');
   return redirect('/');
 };

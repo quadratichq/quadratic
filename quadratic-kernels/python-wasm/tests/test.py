@@ -12,6 +12,7 @@ import pandas as pd
 
 from inspect_python_test import *
 from process_output_test import *
+from transform_async_test import *
 from quadratic_py.utils import attempt_fix_await, to_python_type, to_quadratic_type, CellValueType
 
 def a1_to_xy(a1: str) -> tuple:

@@ -5,6 +5,7 @@ import z from 'zod';
 import dbClient from '../../dbClient';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { deleteUnclaimedFile, getUnclaimedFileUploadUrl } from '../../storage/storage';
+import { ApiError } from '../../utils/ApiError';
 import logger from '../../utils/logger';
 
 // No authentication required - this endpoint is for anonymous embed users
@@ -21,7 +22,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/embed/upload-re
 
   logger.info('[Embed Upload] Received upload request', { claimToken, version });
 
-  // Storage key for the unclaimed file
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(claimToken)) {
+    throw new ApiError(400, 'Invalid claim token format');
+  }
+
   const storageKey = `unclaimed/${claimToken}.grid`;
   logger.info('[Embed Upload] Storage key:', { storageKey });
 
