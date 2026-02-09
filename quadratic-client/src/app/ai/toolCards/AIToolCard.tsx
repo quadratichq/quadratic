@@ -34,8 +34,7 @@ import { RerunCode } from '@/app/ai/toolCards/RerunCode';
 import { ResizeColumns } from '@/app/ai/toolCards/ResizeColumns';
 import { ResizeRows } from '@/app/ai/toolCards/ResizeRows';
 import { SetBorders } from '@/app/ai/toolCards/SetBorders';
-import { SetDefaultColumnWidth } from '@/app/ai/toolCards/SetDefaultColumnWidth';
-import { SetDefaultRowHeight } from '@/app/ai/toolCards/SetDefaultRowHeight';
+import { SetDefaultDimension } from '@/app/ai/toolCards/SetDefaultDimension';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
@@ -132,9 +131,8 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
     case AITool.ResizeRows:
       return <ResizeRows toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetDefaultColumnWidth:
-      return <SetDefaultColumnWidth toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetDefaultRowHeight:
-      return <SetDefaultRowHeight toolCall={toolCall} className={cn('tool-card', className)} />;
+      return <SetDefaultDimension toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetBorders:
       return <SetBorders toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
     case AITool.MergeCells:

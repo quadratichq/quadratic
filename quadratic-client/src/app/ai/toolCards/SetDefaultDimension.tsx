@@ -5,12 +5,30 @@ import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type SetDefaultColumnWidthResponse = z.infer<(typeof aiToolsSpec)[AITool.SetDefaultColumnWidth]['responseSchema']>;
+const DEFAULT_DIMENSION_TOOLS = [AITool.SetDefaultColumnWidth, AITool.SetDefaultRowHeight] as const;
+type DefaultDimensionTool = (typeof DEFAULT_DIMENSION_TOOLS)[number];
 
-export const SetDefaultColumnWidth = memo(
-  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
-    const [toolArgs, setToolArgs] =
-      useState<z.SafeParseReturnType<SetDefaultColumnWidthResponse, SetDefaultColumnWidthResponse>>();
+function isDefaultDimensionTool(name: string): name is DefaultDimensionTool {
+  return DEFAULT_DIMENSION_TOOLS.includes(name as DefaultDimensionTool);
+}
+
+const LABELS: Record<DefaultDimensionTool, { loading: string; idle: string }> = {
+  [AITool.SetDefaultColumnWidth]: {
+    loading: 'Setting default column width',
+    idle: 'Set default column width',
+  },
+  [AITool.SetDefaultRowHeight]: {
+    loading: 'Setting default row height',
+    idle: 'Set default row height',
+  },
+};
+
+type ResponseSchema = z.infer<(typeof aiToolsSpec)[DefaultDimensionTool]['responseSchema']>;
+
+export const SetDefaultDimension = memo(
+  ({ toolCall: { name, arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+    const tool = isDefaultDimensionTool(name) ? name : AITool.SetDefaultColumnWidth;
+    const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ResponseSchema, ResponseSchema>>();
 
     useEffect(() => {
       if (loading) {
@@ -20,15 +38,15 @@ export const SetDefaultColumnWidth = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.SetDefaultColumnWidth].responseSchema.safeParse(json));
+        setToolArgs(aiToolsSpec[tool].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[SetDefaultColumnWidth] Failed to parse args: ', error);
+        console.error('[SetDefaultDimension] Failed to parse args: ', error);
       }
-    }, [args, loading]);
+    }, [args, loading, tool]);
 
     const icon = <GridActionIcon />;
-    const label = loading ? 'Setting default column width' : 'Set default column width';
+    const label = loading ? LABELS[tool].loading : LABELS[tool].idle;
 
     const description = useMemo(() => {
       if (toolArgs?.success) {
