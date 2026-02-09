@@ -89,6 +89,7 @@ pub enum Any {
     Boolean(bool),
 }
 
+#[allow(dead_code)]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Value {

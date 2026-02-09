@@ -217,7 +217,7 @@ impl GridController {
             y += 1;
 
             // update the progress bar every time there's a new batch
-            let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
+            let should_update = y.is_multiple_of(IMPORT_LINES_PER_OPERATION);
 
             if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
                 crate::wasm_bindings::js::jsImportProgress(file_name, y, height);
