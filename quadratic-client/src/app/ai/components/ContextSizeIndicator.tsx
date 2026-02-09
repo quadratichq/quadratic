@@ -4,79 +4,8 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { cn } from '@/shared/shadcn/utils';
 import { getPercentageGradientColor } from '@/shared/utils/colors';
 import { useAtomValue } from 'jotai';
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { getContextLimit } from 'quadratic-shared/ai/models/AI_CONTEXT_LIMITS';
 import { useMemo } from 'react';
-
-// Context limits by model (input tokens)
-// Values researched from official documentation (January 2025):
-// - Claude 4.5 (Opus/Sonnet/Haiku): 200K tokens
-// - GPT-4.1: 1M tokens, GPT-5/5.2: 400K tokens, o3/o4-mini: 128K tokens
-// - Gemini 2.5 Flash/Pro: 1M tokens
-// - Grok 4: 256K tokens
-// - DeepSeek V3/R1: 128K tokens
-// - Qwen3-Coder-480B: 256K tokens (native)
-// - Kimi K2: 128K tokens
-
-/**
- * Get the context limit for a specific model key.
- * Falls back to provider-based limits if model-specific limit is not found.
- */
-function getContextLimit(modelKey: AIModelKey | undefined): number {
-  if (!modelKey) return 200000;
-
-  // Model-specific overrides (when models within a provider have different limits)
-  // GPT-4.1 has 1M, GPT-5/5.2 has 400K
-  if (modelKey.includes('gpt-4.1')) return 1047576;
-  if (modelKey.includes('gpt-5')) return 400000;
-  if (modelKey.includes('o3') || modelKey.includes('o4')) return 128000;
-
-  // Qwen3-Coder has 256K
-  if (modelKey.includes('qwen') || modelKey.includes('Qwen')) return 256000;
-
-  // Kimi K2 has 128K
-  if (modelKey.includes('kimi') || modelKey.includes('Kimi')) return 128000;
-
-  // DeepSeek has 128K
-  if (modelKey.includes('deepseek') || modelKey.includes('DeepSeek')) return 128000;
-
-  // Provider-based defaults
-  const provider = modelKey.split(':')[0];
-  switch (provider) {
-    // Claude 4.5 models - 200K context window
-    case 'vertexai-anthropic':
-    case 'bedrock-anthropic':
-    case 'anthropic':
-      return 200000;
-
-    // Gemini 2.5 models - 1M context window
-    case 'vertexai':
-    case 'geminiai':
-      return 1048576;
-
-    // Grok 4 - 256K context window
-    case 'xai':
-      return 256000;
-
-    // OpenAI/Azure - default to 400K (GPT-5 series)
-    case 'openai':
-    case 'azure-openai':
-      return 400000;
-
-    // Various hosted models - conservative 128K
-    case 'baseten':
-    case 'fireworks':
-    case 'open-router':
-    case 'bedrock':
-      return 128000;
-
-    // Quadratic auto routes to various models
-    case 'quadratic':
-      return 200000;
-
-    default:
-      return 200000;
-  }
-}
 
 interface ContextSizeIndicatorProps {
   className?: string;

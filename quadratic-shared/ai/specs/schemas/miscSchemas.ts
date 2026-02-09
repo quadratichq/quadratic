@@ -2,6 +2,17 @@ import { z } from 'zod';
 import type { AIToolSpec } from '../aiToolsCore';
 import { AITool, booleanSchema, numberSchema, stringSchema } from '../aiToolsCore';
 
+/** Allowed subagent_type values for DelegateToSubagent. Single source of truth for schema and spec. */
+export const DELEGATE_SUBAGENT_TYPE_VALUES = [
+  'data_finder',
+  'formula_coder',
+  'python_coder',
+  'javascript_coder',
+  'connection_coder',
+] as const;
+
+export type DelegateSubagentType = (typeof DELEGATE_SUBAGENT_TYPE_VALUES)[number];
+
 // Zod schemas for misc tools
 export const miscToolsArgsSchemas = {
   [AITool.SetAIModel]: z.object({
@@ -90,7 +101,7 @@ export const miscToolsArgsSchemas = {
     optimized_prompt: stringSchema,
   }),
   [AITool.DelegateToSubagent]: z.object({
-    subagent_type: z.enum(['data_finder', 'formula_coder', 'python_coder', 'javascript_coder', 'connection_coder']),
+    subagent_type: z.enum(DELEGATE_SUBAGENT_TYPE_VALUES),
     task: stringSchema,
     context_hints: stringSchema.optional(),
     reset: booleanSchema.optional(),
@@ -671,8 +682,8 @@ Session management:
       properties: {
         subagent_type: {
           type: 'string',
-          description:
-            'Type of subagent: "data_finder", "formula_coder", "python_coder", "javascript_coder", or "connection_coder".',
+          enum: [...DELEGATE_SUBAGENT_TYPE_VALUES],
+          description: `Type of subagent: ${DELEGATE_SUBAGENT_TYPE_VALUES.map((v) => `"${v}"`).join(', ')}.`,
         },
         task: {
           type: 'string',

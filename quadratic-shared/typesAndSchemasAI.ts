@@ -204,6 +204,8 @@ export interface AIModelConfig extends AIRates {
   top_k?: number;
   min_p?: number;
   repetition_penalty?: number;
+  /** Input context window size in tokens. Used for context usage indicator. */
+  contextLimit?: number;
 }
 
 // ----------------------------------------------------------------------------
@@ -798,6 +800,7 @@ export const AIModelConfigSchema = z
     top_k: z.number().optional(),
     min_p: z.number().optional(),
     repetition_penalty: z.number().optional(),
+    contextLimit: z.number().optional(),
   })
   .extend(AIRatesSchema.shape) satisfies z.ZodType<AIModelConfig>;
 

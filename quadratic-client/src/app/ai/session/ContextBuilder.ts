@@ -31,6 +31,11 @@ const MAX_TRANSACTIONS = 20;
  * This is a pure class with no React dependencies.
  */
 export class ContextBuilder {
+  /** Used in log messages; subclasses may override. */
+  protected get builderName(): string {
+    return 'ContextBuilder';
+  }
+
   /**
    * Build complete context for an AI request.
    * Uses Promise.allSettled to handle partial failures gracefully - it's better
@@ -52,7 +57,7 @@ export class ContextBuilder {
           return result.value;
         }
         const contextNames = ['SQL', 'files', 'visible', 'summary', 'codeError', 'transactions'];
-        console.warn(`[ContextBuilder] Failed to get ${contextNames[index]} context:`, result.reason);
+        console.warn(`[${this.builderName}] Failed to get ${contextNames[index]} context:`, result.reason);
         return [];
       }
     );
@@ -109,7 +114,7 @@ export class ContextBuilder {
                 });
               }
 
-              console.warn(`[ContextBuilder] Failed to get table names for connection ${connection.uuid}:`, error);
+              console.warn(`[${this.builderName}] Failed to get table names for connection ${connection.uuid}:`, error);
               return '';
             }
           })
@@ -145,7 +150,7 @@ ${contextText}`),
         },
       ];
     } catch (error) {
-      console.error('[ContextBuilder] Error fetching SQL context:', error);
+      console.warn(`[${this.builderName}] Error fetching SQL context:`, error);
       return [];
     }
   }
@@ -224,6 +229,11 @@ How can I help you?`
     ];
   }
 
+  /** Subclasses may override to limit visible context rows (e.g. 0 for no cell values). */
+  protected getVisibleContextMaxRows(): number | undefined {
+    return undefined;
+  }
+
   /**
    * Get visible area context
    */
@@ -238,7 +248,7 @@ How can I help you?`
       ? undefined
       : await quadraticCore.getAISelectionContexts({
           selections: [visibleRectSelection],
-          maxRows: undefined,
+          maxRows: this.getVisibleContextMaxRows(),
         });
     const sheetContext = visibleContext?.length === 1 ? visibleContext[0] : undefined;
 

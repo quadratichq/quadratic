@@ -1,3 +1,4 @@
+import { debugFlags } from '@/app/debugFlags/debugFlags';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, SubagentSession, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -5,6 +6,8 @@ import { v4 } from 'uuid';
 import { aiStore, subagentSessionsAtom } from '../atoms/aiAnalystAtoms';
 import type { SubagentType } from '../subagent/subagentTypes';
 import { aiToolsActions } from '../tools/aiToolsActions';
+
+const subagentDebug = () => debugFlags.getFlag('debugShowAISubagent');
 
 /** Tools that fetch data and may need refreshing when resuming a session */
 const REFRESHABLE_TOOLS: AITool[] = [
@@ -79,7 +82,7 @@ export class SubagentSessionManager {
    * Reset a session (clear messages, create fresh)
    */
   resetSession(type: SubagentType): SubagentSession {
-    console.log(`[SubagentSessionManager] Resetting session for ${type}`);
+    if (subagentDebug()) console.log(`[SubagentSessionManager] Resetting session for ${type}`);
     return this.createSession(type);
   }
 
@@ -108,7 +111,7 @@ export class SubagentSessionManager {
   setMessages(type: SubagentType, messages: ChatMessage[]): void {
     const session = this.getSession(type);
     if (!session) {
-      console.warn(`[SubagentSessionManager] No session found for ${type}, creating new one`);
+      if (subagentDebug()) console.warn(`[SubagentSessionManager] No session found for ${type}, creating new one`);
       const newSession = this.createSession(type);
       newSession.messages = messages;
       newSession.lastUpdated = Date.now();
@@ -155,21 +158,22 @@ export class SubagentSessionManager {
   async refreshContext(type: SubagentType): Promise<void> {
     const session = this.getSession(type);
     if (!session) {
-      console.warn(`[SubagentSessionManager] No session to refresh for ${type}`);
+      if (subagentDebug()) console.warn(`[SubagentSessionManager] No session to refresh for ${type}`);
       return;
     }
 
-    console.log(`[SubagentSessionManager] Refreshing context for ${type}`);
+    if (subagentDebug()) console.log(`[SubagentSessionManager] Refreshing context for ${type}`);
 
     // Find all tool calls that need refreshing
     const toolCallsToRefresh = this.findRefreshableToolCalls(session.messages);
 
     if (toolCallsToRefresh.length === 0) {
-      console.log(`[SubagentSessionManager] No tool calls to refresh`);
+      if (subagentDebug()) console.log(`[SubagentSessionManager] No tool calls to refresh`);
       return;
     }
 
-    console.log(`[SubagentSessionManager] Found ${toolCallsToRefresh.length} tool calls to refresh`);
+    if (subagentDebug())
+      console.log(`[SubagentSessionManager] Found ${toolCallsToRefresh.length} tool calls to refresh`);
 
     // Re-execute each tool call and collect new results
     const newResults: Map<string, { id: string; content: Awaited<ReturnType<(typeof aiToolsActions)[AITool]>> }> =
@@ -205,7 +209,7 @@ export class SubagentSessionManager {
     };
 
     this.setMessages(type, [...updatedMessages, refreshMessage]);
-    console.log(`[SubagentSessionManager] Context refresh complete for ${type}`);
+    if (subagentDebug()) console.log(`[SubagentSessionManager] Context refresh complete for ${type}`);
   }
 
   /**

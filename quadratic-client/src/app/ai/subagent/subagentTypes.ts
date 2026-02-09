@@ -14,8 +14,6 @@ export interface SubagentConfig {
   type: SubagentType;
   /** Tools this subagent is allowed to use */
   allowedTools: AITool[];
-  /** Fallback model if main agent model not provided (should rarely be used) */
-  defaultModelKey?: AIModelKey;
   /** System prompt for the subagent */
   systemPrompt: string;
   /** Maximum tool call iterations before stopping */
@@ -62,7 +60,9 @@ export interface SubagentExecuteOptions {
   task: string;
   /** Optional hints from the main conversation */
   contextHints?: string;
-  /** Override the default model for this subagent */
+  /** Current model the user/session is using (used as subagent model unless overridden) */
+  modelKey: AIModelKey;
+  /** Optional override to use a different model for this subagent */
   modelKeyOverride?: AIModelKey;
   /** File UUID for API calls */
   fileUuid: string;
@@ -105,7 +105,6 @@ export function getSubagentConfig(type: SubagentType): SubagentConfig {
   return {
     type: subagent.type,
     allowedTools: subagent.allowedTools,
-    defaultModelKey: subagent.defaultModelKey,
     systemPrompt: subagent.systemPrompt,
     maxIterations: subagent.maxIterations,
     description: subagent.description,
