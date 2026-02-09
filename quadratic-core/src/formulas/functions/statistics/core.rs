@@ -525,7 +525,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                 }
                 values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                 let len = values.len();
-                if len % 2 == 0 {
+                if len.is_multiple_of(2) {
                     (values[len / 2 - 1] + values[len / 2]) / 2.0
                 } else {
                     values[len / 2]
@@ -2186,7 +2186,7 @@ pub fn get_functions() -> Vec<FormulaFunction> {
                         values
                             .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                         let len = values.len();
-                        if len % 2 == 0 {
+                        if len.is_multiple_of(2) {
                             (values[len / 2 - 1] + values[len / 2]) / 2.0
                         } else {
                             values[len / 2]
@@ -3125,6 +3125,7 @@ where
 
         // Shrink: move all points toward best
         for &idx in &indices[1..] {
+            #[allow(clippy::needless_range_loop)]
             for j in 0..n {
                 simplex[idx][j] =
                     simplex[best_idx][j] + sigma * (simplex[idx][j] - simplex[best_idx][j]);

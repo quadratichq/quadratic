@@ -36,7 +36,13 @@ pub(crate) async fn run_python(
         transaction_id
     );
 
-    let js_code_result = execute(code, transaction_id, get_cells, chart_pixel_width, chart_pixel_height)?;
+    let js_code_result = execute(
+        code,
+        transaction_id,
+        get_cells,
+        chart_pixel_width,
+        chart_pixel_height,
+    )?;
 
     grid.lock()
         .await
@@ -333,7 +339,14 @@ mod tests {
     fn test_execute(code: &str) -> JsCodeResult {
         let start = Instant::now();
         // Use default chart dimensions for tests
-        let result = execute(code, "test", Box::new(test_get_cells), 600.0, 460.0).unwrap();
+        let result = execute(
+            code,
+            "test",
+            Box::new(test_get_cells),
+            DEFAULT_HTML_WIDTH,
+            DEFAULT_HTML_HEIGHT,
+        )
+        .unwrap();
         let end = Instant::now();
         println!("time: {:?}", end.duration_since(start));
         println!("result: {:#?}", result);

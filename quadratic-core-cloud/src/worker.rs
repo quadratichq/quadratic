@@ -124,7 +124,7 @@ pub struct Worker {
     pub(crate) file_id: Uuid,
     pub(crate) sequence_num: u64,
     pub(crate) session_id: Uuid,
-    pub(crate) file: Arc<Mutex<GridController>>,
+    pub file: Arc<Mutex<GridController>>,
     pub(crate) transaction_id: Arc<Mutex<Option<Uuid>>>,
     pub(crate) jwt: String,
     pub(crate) multiplayer_url: String,
@@ -598,10 +598,6 @@ impl Worker {
         self.transaction_id.lock().await.is_some()
     }
 
-    /// Get a reference to the file (GridController) for rendering
-    pub fn file(&self) -> Arc<Mutex<GridController>> {
-        Arc::clone(&self.file)
-    }
 }
 
 impl Drop for Worker {

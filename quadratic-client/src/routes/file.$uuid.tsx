@@ -14,6 +14,7 @@ import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { clearFileLocation, initFileLocation } from '@/shared/atom/fileLocationAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
@@ -207,7 +208,7 @@ export const Component = memo(() => {
   const { loggedInUser } = useRootRouteLoaderData();
   const loaderData = useLoaderData() as FileData;
   const {
-    file: { uuid: fileUuid, timezone: fileTimezone },
+    file: { uuid: fileUuid, timezone: fileTimezone, ownerUserId },
     team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
@@ -270,6 +271,14 @@ export const Component = memo(() => {
       setSearchParams(newSearchParams, { replace: true });
     }
   }, [searchParams, setSearchParams, addGlobalSnackbar, teamUuid]);
+
+  // Initialize file location atom for syncing personal/team file state across components
+  useEffect(() => {
+    initFileLocation(fileUuid, ownerUserId ?? null);
+    return () => {
+      clearFileLocation();
+    };
+  }, [fileUuid, ownerUserId]);
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed

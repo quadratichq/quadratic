@@ -57,6 +57,7 @@ export class SubagentRunner {
       subagentType,
       task,
       contextHints,
+      modelKey: sessionModelKey,
       modelKeyOverride,
       fileUuid,
       abortSignal,
@@ -65,15 +66,8 @@ export class SubagentRunner {
       onToolCallComplete,
     } = options;
 
+    const modelKey = modelKeyOverride ?? sessionModelKey;
     const config = getSubagentConfig(subagentType);
-    const modelKey = modelKeyOverride ?? config.defaultModelKey;
-
-    if (!modelKey) {
-      return {
-        success: false,
-        error: 'No model key provided for subagent. The main agent must provide a model key.',
-      };
-    }
 
     const hasExistingSession = subagentSessionManager.hasSession(subagentType);
     const isResumingSession = hasExistingSession && !reset;

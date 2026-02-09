@@ -1,6 +1,6 @@
 use crate::{
     Pos, Rect,
-    a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds},
+    a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds, select::helpers::expand_to_include_merge_cells},
     grid::{js_types::Direction, sheet::merge_cells::MergeCells},
 };
 
@@ -367,6 +367,14 @@ fn keyboard_select_sheet_range(
     merge_cells: &MergeCells,
 ) {
     let mut rect = range.to_rect_unbounded();
+
+    // First, expand to include any merged cells that the current selection
+    // overlaps with. This ensures that when starting from within a merged cell,
+    // the entire merged cell is treated as the starting selection before
+    // growing/shrinking. Without this, pressing Shift+Right from inside a merged
+    // cell would require two keypresses to extend past the merged cell.
+    expand_to_include_merge_cells(&mut rect, merge_cells);
+
     if delta_x > 0 {
         if is_anchor_aligned_with_left_rect_edge(anchor, rect, merge_cells) {
             grow_right(&mut rect, merge_cells);
@@ -744,6 +752,85 @@ mod tests {
         assert_eq!(selection.test_to_string(), "C5:G7");
         // End position is at the end of the merged cell range
         assert_eq!(selection.last_selection_end(&context), Pos::test_a1("G7"));
+    }
+
+    /// Tests that pressing Shift+Right from inside a merged cell extends
+    /// the selection past the merged cell in a single keypress.
+    #[test]
+    fn test_keyboard_select_from_inside_merged_cell_right() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:D4"));
+
+        // Start at B2 (anchor of merged cell B2:D4)
+        let mut selection = A1Selection::test_a1("B2");
+
+        // Move right - should first expand to full merged cell, then extend right
+        // So the result should be B2:E4 (not just B2:D4)
+        selection.keyboard_select_to(1, 0, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "B2:E4");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E4"));
+
+        // Move right again
+        selection.keyboard_select_to(1, 0, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "B2:F4");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("F4"));
+    }
+
+    /// Tests that pressing Shift+Left from inside a merged cell extends
+    /// the selection past the merged cell in a single keypress.
+    #[test]
+    fn test_keyboard_select_from_inside_merged_cell_left() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("C2:E4"));
+
+        // Start at E4 (bottom-right of merged cell C2:E4)
+        let mut selection = A1Selection::test_a1("E4");
+        selection.cursor = Pos::test_a1("E4");
+
+        // Move left - should first expand to full merged cell, then extend left
+        // So the result should be B2:E4 (not just C2:E4)
+        selection.keyboard_select_to(-1, 0, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "B2:E4");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("E4"));
+    }
+
+    /// Tests that pressing Shift+Down from inside a merged cell extends
+    /// the selection past the merged cell in a single keypress.
+    #[test]
+    fn test_keyboard_select_from_inside_merged_cell_down() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B2:D4"));
+
+        // Start at B2 (anchor of merged cell B2:D4)
+        let mut selection = A1Selection::test_a1("B2");
+
+        // Move down - should first expand to full merged cell, then extend down
+        // So the result should be B2:D5 (not just B2:D4)
+        selection.keyboard_select_to(0, 1, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "B2:D5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D5"));
+    }
+
+    /// Tests that pressing Shift+Up from inside a merged cell extends
+    /// the selection past the merged cell in a single keypress.
+    #[test]
+    fn test_keyboard_select_from_inside_merged_cell_up() {
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::test_a1("B3:D5"));
+
+        // Start at D5 (bottom-right of merged cell B3:D5)
+        let mut selection = A1Selection::test_a1("D5");
+        selection.cursor = Pos::test_a1("D5");
+
+        // Move up - should first expand to full merged cell, then extend up
+        // So the result should be B2:D5 (not just B3:D5)
+        selection.keyboard_select_to(0, -1, &context, &merge_cells);
+        assert_eq!(selection.test_to_string(), "B2:D5");
+        assert_eq!(selection.last_selection_end(&context), Pos::test_a1("D5"));
     }
 
     #[test]

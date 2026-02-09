@@ -39,7 +39,7 @@ import type {
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getFilteredTools } from './tools';
+import { ensureStrictSchema, getFilteredTools } from './tools';
 
 function convertInputTextContent(content: TextContent): ResponseInputContent {
   return {
@@ -58,7 +58,13 @@ function convertImageContent(content: ImageContent): ResponseInputContent {
 
 function convertInputContent(content: Content | ToolResultContent, imageSupport: boolean): Array<ResponseInputContent> {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .filter(
       (content): content is TextContent | ImageContent =>
         (imageSupport && isContentImage(content)) || isContentText(content)
@@ -246,7 +252,7 @@ function getOpenAITools(
       type: 'function' as const,
       name,
       description,
-      parameters,
+      parameters: ensureStrictSchema(parameters, strictParams),
       strict: strictParams,
     })
   );

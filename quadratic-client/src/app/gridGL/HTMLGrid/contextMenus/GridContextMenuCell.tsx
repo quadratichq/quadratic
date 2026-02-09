@@ -31,13 +31,21 @@ export function GridContextMenuCell() {
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
       setCanRunSelection(content.cellsSheet.tables.hasCodeCellInCurrentSelection());
 
+      const isMultiRange = sheets.sheet.cursor.isMultiRange();
+      const isColumnRow = sheets.sheet.cursor.isColumnRow();
+
       // Merge cells: selection is more than one cell AND does not contain any table or code cells
+      // AND is not a sheet-level selection (entire row, column, or all) AND is a single range
       setCanMergeCells(
-        !sheets.sheet.cursor.isSingleSelection() && !content.cellsSheet.tables.hasCodeCellInCurrentSelection()
+        !sheets.sheet.cursor.isSingleSelection() &&
+          !content.cellsSheet.tables.hasCodeCellInCurrentSelection() &&
+          !isColumnRow &&
+          !isMultiRange
       );
 
-      // Unmerge cells: selection contains at least one merged cell
-      setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells());
+      // Unmerge cells: selection contains at least one merged cell AND is a single range
+      // AND is not a sheet-level selection
+      setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells() && !isMultiRange && !isColumnRow);
     };
 
     updateCursor();

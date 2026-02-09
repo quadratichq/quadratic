@@ -97,7 +97,7 @@ impl Storage for S3 {
         Ok(())
     }
 
-    /// Generate a presigned URL
+    /// Generate a presigned GET URL (for downloads)
     async fn presigned_url(&self, data: &str) -> Result<String> {
         let S3Config { client, bucket, .. } = &self.config;
         let presigning_config = PresigningConfig::builder()
@@ -112,6 +112,26 @@ impl Storage for S3 {
             .presigned(presigning_config)
             .await
             .map_err(|e| StorageError::GeneratePresignedUrl(data.to_string(), e.to_string()))?;
+
+        Ok(presigned_request.uri().to_string())
+    }
+
+    /// Generate a presigned PUT URL (for uploads)
+    async fn presigned_upload_url(&self, key: &str, content_type: &str) -> Result<String> {
+        let S3Config { client, bucket, .. } = &self.config;
+        let presigning_config = PresigningConfig::builder()
+            .expires_in(Duration::from_secs(60 * 60)) // Valid for 1 hour
+            .build()
+            .map_err(|e| StorageError::GeneratePresignedUrl(key.to_string(), e.to_string()))?;
+
+        let presigned_request = client
+            .put_object()
+            .bucket(bucket)
+            .key(key)
+            .content_type(content_type)
+            .presigned(presigning_config)
+            .await
+            .map_err(|e| StorageError::GeneratePresignedUrl(key.to_string(), e.to_string()))?;
 
         Ok(presigned_request.uri().to_string())
     }

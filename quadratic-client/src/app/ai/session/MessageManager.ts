@@ -60,7 +60,8 @@ export class MessageManager {
   }
 
   /**
-   * Update the last message in the chat
+   * Update the last message in the chat (in-place).
+   * Used by tests and available for callers that need to replace only the last message.
    */
   updateLastMessage(updater: (msg: ChatMessage) => ChatMessage): void {
     const messages = this.getMessages();

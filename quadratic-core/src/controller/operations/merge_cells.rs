@@ -16,11 +16,28 @@ impl GridController {
         for range in selection.ranges.iter() {
             match range {
                 crate::a1::CellRefRange::Sheet { range } => {
-                    let rect = range.to_rect_unbounded();
+                    let mut rect = range.to_rect_unbounded();
 
                     // Skip single cell selections (should be handled by UI, but double-check)
                     if rect.min.x == rect.max.x && rect.min.y == rect.max.y {
                         continue;
+                    }
+
+                    // Expand the rect to include any partially overlapping merged cells.
+                    // This ensures that when merging a region that overlaps with existing
+                    // merged cells, the entire merged cells are included in the new merge.
+                    loop {
+                        let mut expanded = false;
+                        let merged_cells = sheet.merge_cells.get_merge_cells(rect);
+                        for merged_cell_rect in merged_cells.iter() {
+                            if !rect.contains_rect(merged_cell_rect) {
+                                rect.union_in_place(merged_cell_rect);
+                                expanded = true;
+                            }
+                        }
+                        if !expanded {
+                            break;
+                        }
                     }
 
                     // Check if the rect overlaps with any data table

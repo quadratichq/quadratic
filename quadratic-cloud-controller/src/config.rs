@@ -1,6 +1,7 @@
 use anyhow::Result;
 use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
+use quadratic_rust_shared::storage::StorageType;
 use serde::Deserialize;
 
 use crate::error::ControllerError;
@@ -31,6 +32,19 @@ pub(crate) struct Config {
 
     #[serde(default = "default_start_server")]
     pub(crate) start_server: bool,
+
+    // Storage Type: s3 or file-system
+    pub(crate) storage_type: StorageType,
+
+    // StorageType::S3
+    pub(crate) aws_s3_region: Option<String>,
+    pub(crate) aws_s3_bucket_name: Option<String>,
+    pub(crate) aws_s3_access_key_id: Option<String>,
+    pub(crate) aws_s3_secret_access_key: Option<String>,
+
+    // StorageType::FileSystem
+    pub(crate) storage_dir: Option<String>,
+    pub(crate) storage_encryption_keys: Option<Vec<String>>,
 }
 
 fn default_start_server() -> bool {

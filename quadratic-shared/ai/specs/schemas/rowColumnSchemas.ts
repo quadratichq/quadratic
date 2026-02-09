@@ -54,7 +54,7 @@ This tool resizes specific columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
 The selection is a range of columns, for example: A1:D1.\n
 The size can be: "default" (reset to default width), "auto" (resize to fit the largest cell content), or a number in pixels (between 20 and 2000).\n
-IMPORTANT: To change ALL columns in the sheet at once, use the set_default_column_width tool instead.\n
+IMPORTANT: To change ALL columns in the sheet at once (for uniform grid or square cells), use the set_default_column_width tool instead.\n
 Use this tool for resizing specific columns, auto-fitting content, or prettifying the sheet.\n
 `,
     parameters: {
@@ -78,14 +78,6 @@ Use this tool for resizing specific columns, auto-fitting content, or prettifyin
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.ResizeColumns],
-    prompt: `
-This tool resizes specific columns in a sheet.\n
-It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
-The selection is a range of columns, for example: A1:D1.\n
-The size can be: "default" (reset to default width), "auto" (resize to fit the largest cell content), or a number in pixels (between 20 and 2000).\n
-IMPORTANT: To change ALL columns in the sheet at once (for uniform grid or square cells), use the set_default_column_width tool instead.\n
-Use this tool for resizing specific columns, auto-fitting content, or prettifying the sheet.\n
-`,
   },
   [AITool.ResizeRows]: {
     sources: ['AIAnalyst'],
@@ -95,7 +87,7 @@ This tool resizes specific rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
 The selection is a range of rows, for example: A1:A100.\n
 The size can be: "default" (reset to default height), "auto" (resize to fit the largest cell content), or a number in pixels (between 10 and 2000).\n
-IMPORTANT: To change ALL rows in the sheet at once, use the set_default_row_height tool instead.\n
+IMPORTANT: To change ALL rows in the sheet at once (for uniform grid or square cells), use the set_default_row_height tool instead.\n
 Use this tool for resizing specific rows, auto-fitting content, or adjusting row heights.\n
 `,
     parameters: {
@@ -119,14 +111,6 @@ Use this tool for resizing specific rows, auto-fitting content, or adjusting row
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.ResizeRows],
-    prompt: `
-This tool resizes specific rows in a sheet.\n
-It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
-The selection is a range of rows in A1 notation, for example: A1:A100.\n
-The size can be: "default" (reset to default height), "auto" (resize to fit the largest cell content), or a number in pixels (between 10 and 2000).\n
-IMPORTANT: To change ALL rows in the sheet at once (for uniform grid or square cells), use the set_default_row_height tool instead.\n
-Use this tool for resizing specific rows, auto-fitting content, or adjusting row heights.\n
-`,
   },
   [AITool.SetDefaultColumnWidth]: {
     sources: ['AIAnalyst'],
@@ -135,7 +119,7 @@ Use this tool for resizing specific rows, auto-fitting content, or adjusting row
 This tool sets the default column width for an entire sheet, affecting all columns that don't have a custom width.\n
 It requires the sheet name and a size in pixels (between 20 and 2000).\n
 This is useful for making uniform grid cells across the entire sheet.\n
-For a square grid, set the default column width equal to the default row height.\n
+For a square grid, set the default column width equal to the default row height (e.g., both at 100 pixels).\n
 Use this tool when the user asks to change the default column width, make all columns a certain width, create a square grid, or uniformly resize the grid.\n
 `,
     parameters: {
@@ -155,13 +139,6 @@ Use this tool when the user asks to change the default column width, make all co
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.SetDefaultColumnWidth],
-    prompt: `
-This tool sets the default column width for an entire sheet, affecting all columns that don't have a custom width.\n
-It requires the sheet name and a size in pixels (between 20 and 2000).\n
-This is useful for making uniform grid cells across the entire sheet.\n
-For a square grid, set the default column width equal to the default row height (e.g., both at 100 pixels).\n
-Use this tool when the user asks to change the default column width, make all columns a certain width, create a square grid, or uniformly resize the grid.\n
-`,
   },
   [AITool.SetDefaultRowHeight]: {
     sources: ['AIAnalyst'],
@@ -170,7 +147,7 @@ Use this tool when the user asks to change the default column width, make all co
 This tool sets the default row height for an entire sheet, affecting all rows that don't have a custom height.\n
 It requires the sheet name and a size in pixels (between 10 and 2000).\n
 This is useful for making uniform grid cells across the entire sheet.\n
-For a square grid, set the default row height equal to the default column width.\n
+For a square grid, set the default row height equal to the default column width (e.g., both at 100 pixels).\n
 Use this tool when the user asks to change the default row height, make all rows a certain height, create a square grid, or uniformly resize the grid.\n
 `,
     parameters: {
@@ -190,13 +167,6 @@ Use this tool when the user asks to change the default row height, make all rows
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.SetDefaultRowHeight],
-    prompt: `
-This tool sets the default row height for an entire sheet, affecting all rows that don't have a custom height.\n
-It requires the sheet name and a size in pixels (between 10 and 2000).\n
-This is useful for making uniform grid cells across the entire sheet.\n
-For a square grid, set the default row height equal to the default column width (e.g., both at 100 pixels).\n
-Use this tool when the user asks to change the default row height, make all rows a certain height, create a square grid, or uniformly resize the grid.\n
-`,
   },
   [AITool.InsertColumns]: {
     sources: ['AIAnalyst'],
@@ -231,9 +201,6 @@ It requires the sheet name, the column to insert the columns at, whether to inse
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.InsertColumns],
-    prompt: `
-This tool inserts columns in a sheet, adjusted columns to the right of the insertion.\n
-It requires the sheet name, the column to insert the columns at, whether to insert to the right or left of the column, and the number of columns to insert.\n`,
   },
   [AITool.InsertRows]: {
     sources: ['AIAnalyst'],
@@ -268,9 +235,6 @@ It requires the sheet name, the row to insert the rows at, whether to insert bel
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.InsertRows],
-    prompt: `
-This tool inserts rows in a sheet, adjusted rows below the insertion.\n
-It requires the sheet name, the row to insert the rows at, whether to insert below or above the row, and the number of rows to insert. The new rows will share the formatting of the row provided.\n`,
   },
   [AITool.DeleteColumns]: {
     sources: ['AIAnalyst'],
@@ -298,9 +262,6 @@ It requires the sheet name and an array of sheet columns to delete.\n
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.DeleteColumns],
-    prompt: `
-This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
-It requires the sheet name and an array of sheet columns to delete.\n`,
   },
   [AITool.DeleteRows]: {
     sources: ['AIAnalyst'],
@@ -328,8 +289,5 @@ It requires the sheet name and an array of sheet rows to delete.\n
       additionalProperties: false,
     },
     responseSchema: rowColumnToolsArgsSchemas[AITool.DeleteRows],
-    prompt: `
-This tool deletes rows in a sheet, adjusting rows below the deletion.\n
-It requires the sheet name and an array of sheet rows to delete.\n`,
   },
 } as const;

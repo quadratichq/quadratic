@@ -1,11 +1,7 @@
 use crate::{
-    Pos, Rect, SheetPos,
+    DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH, Pos, Rect, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
 };
-
-// Default chart pixel dimensions (must match DEFAULT_HTML_WIDTH/HEIGHT in run_code/mod.rs)
-const DEFAULT_CHART_PIXEL_WIDTH: f32 = 600.0;
-const DEFAULT_CHART_PIXEL_HEIGHT: f32 = 460.0;
 
 impl GridController {
     pub(crate) fn run_python(
@@ -36,7 +32,7 @@ impl GridController {
                     let screen_rect = sheet.offsets.screen_rect_cell_offsets(rect);
                     Some((screen_rect.w as f32, screen_rect.h as f32))
                 })
-                .unwrap_or((DEFAULT_CHART_PIXEL_WIDTH, DEFAULT_CHART_PIXEL_HEIGHT));
+                .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
 
             if let Some(f) = self.run_python_callback.as_mut() {
                 f(

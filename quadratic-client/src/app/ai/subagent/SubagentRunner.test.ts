@@ -105,6 +105,7 @@ describe('SubagentRunner', () => {
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
         task: 'Find all sales data',
+        modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
         fileUuid: 'test-file-uuid',
         teamUuid: 'test-team-uuid',
       });
@@ -151,6 +152,7 @@ describe('SubagentRunner', () => {
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
         task: 'Find sales data',
+        modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
         fileUuid: 'test-file-uuid',
         teamUuid: 'test-team-uuid',
       });
@@ -195,6 +197,7 @@ describe('SubagentRunner', () => {
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
         task: 'Find data',
+        modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
         fileUuid: 'test-file-uuid',
         teamUuid: 'test-team-uuid',
       });
@@ -213,6 +216,7 @@ describe('SubagentRunner', () => {
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
         task: 'Find data',
+        modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
         fileUuid: 'test-file-uuid',
         teamUuid: 'test-team-uuid',
       });
@@ -228,6 +232,7 @@ describe('SubagentRunner', () => {
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
         task: 'Find data',
+        modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
         fileUuid: 'test-file-uuid',
         teamUuid: 'test-team-uuid',
         abortSignal: abortController.signal,
@@ -260,6 +265,7 @@ describe('SubagentRunner', () => {
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
         task: 'Find all data',
+        modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
         fileUuid: 'test-file-uuid',
         teamUuid: 'test-team-uuid',
       });

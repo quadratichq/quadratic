@@ -3,6 +3,7 @@ use quadratic_rust_shared::quadratic_api::TaskRun;
 use quadratic_rust_shared::quadratic_cloud::{
     GetWorkerInitDataResponse, ack_tasks, get_tasks, get_token, worker_shutdown,
 };
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info, trace, warn};
 use uuid::Uuid;
@@ -397,7 +398,7 @@ impl Worker {
         };
 
         match thumbnail::render_and_upload_thumbnail(
-            self.core.file(),
+            Arc::clone(&self.core.file),
             &asset_config,
             &self.worker_init_data.thumbnail_upload_url,
             &self.worker_init_data.thumbnail_key,

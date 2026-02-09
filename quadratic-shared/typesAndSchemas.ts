@@ -606,6 +606,7 @@ export const ApiSchemas = {
       exceededBillingLimit: z.boolean(),
       error: z.boolean().optional(),
       usage: AIUsageSchema.optional(),
+      errorType: z.enum(['context_length', 'general']).optional(),
     })
   ),
 

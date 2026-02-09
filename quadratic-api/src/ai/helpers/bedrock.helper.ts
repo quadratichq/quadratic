@@ -40,7 +40,13 @@ import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): ContentBlock[] {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images, PDFs, files)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .map((content) => {
       if (isContentImage(content)) {
         const image: ImageBlock = {
@@ -68,7 +74,13 @@ function convertContent(content: Content): ContentBlock[] {
 
 function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .map((content) => {
       if (isContentImage(content)) {
         const image: ImageBlock = {

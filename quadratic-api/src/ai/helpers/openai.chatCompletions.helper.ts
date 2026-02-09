@@ -36,11 +36,17 @@ import type {
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getFilteredTools } from './tools';
+import { ensureStrictSchema, getFilteredTools } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .filter(
       (content): content is TextContent | ImageContent =>
         (imageSupport && isContentImage(content)) || isContentText(content)
@@ -188,7 +194,7 @@ function getOpenAITools(
       function: {
         name,
         description,
-        parameters,
+        parameters: ensureStrictSchema(parameters, strictParams),
         strict: strictParams,
       },
     })

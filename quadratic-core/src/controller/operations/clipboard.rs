@@ -27,8 +27,9 @@ use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::Borders;
 use crate::grid::sheet::borders::BordersUpdates;
+use crate::grid::sheet::merge_cells::MergeCellsUpdate;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
+use crate::{CellValue, ClearOption, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
 lazy_static! {
     static ref CLIPBOARD_REGEX: Regex = Regex::new(r#"data-quadratic="(.*?)".*><tbody"#)
@@ -131,6 +132,9 @@ pub struct Clipboard {
         with = "crate::util::indexmap_serde"
     )]
     pub data_tables: IndexMap<Pos, DataTable>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub merge_rects: Option<Vec<Rect>>,
 
     pub operation: ClipboardOperation,
 }
@@ -1046,7 +1050,6 @@ impl GridController {
         mut clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
-        let mut ops = vec![];
         let mut clipboard_ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
@@ -1064,6 +1067,62 @@ impl GridController {
         let (max_x, max_y, cell_value_width, cell_value_height) =
             Self::get_max_paste_area(insert_at, end_pos, clipboard.w, clipboard.h);
 
+        let _paste_rect = Rect::from_numbers(
+            insert_at.x,
+            insert_at.y,
+            cell_value_width,
+            cell_value_height,
+        );
+
+        // The actual area that will receive pasted data includes all tiled
+        // copies. Use this for merge detection so overlapping merges are found
+        // even when the selection-based paste_rect is smaller (e.g., when
+        // paste_html_operations is called from execute_move_cells with a
+        // single-cell selection).
+        let full_paste_rect = Rect::new(
+            insert_at.x,
+            insert_at.y,
+            max_x + clipboard.w as i64 - 1,
+            max_y + clipboard.h as i64 - 1,
+        );
+
+        let unmerge_ops: Vec<Operation> = if !matches!(special, PasteSpecial::Values) {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                let existing = sheet.merge_cells.get_merge_cells(full_paste_rect);
+                let single_merge_replace = existing.len() == 1
+                    && existing[0].contains(full_paste_rect.min)
+                    && existing[0].contains(full_paste_rect.max);
+                if single_merge_replace {
+                    vec![]
+                } else {
+                    existing
+                        .into_iter()
+                        .map(|merge_rect| {
+                            let mut unmerge = MergeCellsUpdate::default();
+                            unmerge.set_rect(
+                                merge_rect.min.x,
+                                merge_rect.min.y,
+                                Some(merge_rect.max.x),
+                                Some(merge_rect.max.y),
+                                Some(ClearOption::Clear),
+                            );
+                            Operation::SetMergeCells {
+                                sheet_id: selection.sheet_id,
+                                merge_cells_updates: unmerge,
+                            }
+                        })
+                        .collect()
+                }
+            } else {
+                vec![]
+            }
+        } else {
+            vec![]
+        };
+
+        let did_unmerge_in_paste_area = !unmerge_ops.is_empty();
+        let mut ops = unmerge_ops;
+
         // collect all cell values, values and sheet format updates for a a single operation
         let mut cell_values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
         let mut formats = SheetFormatUpdates::default();
@@ -1073,11 +1132,11 @@ impl GridController {
         // Remove code tables if their anchor cell is within the paste area.
         // This applies to both pasting code tables and regular cell values.
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let paste_rect = Rect::new_span(insert_at, end_pos);
+            let paste_rect_for_tables = Rect::new_span(insert_at, end_pos);
             sheet
-                .data_tables_pos_intersect_rect(paste_rect, false)
+                .data_tables_pos_intersect_rect(paste_rect_for_tables, false)
                 .filter(|pos| {
-                    paste_rect.contains(*pos)
+                    paste_rect_for_tables.contains(*pos)
                         && sheet
                             .data_table_at(pos)
                             .is_some_and(|data_table| data_table.is_code())
@@ -1189,14 +1248,19 @@ impl GridController {
             }
         }
 
-        // Adjust paste data for merged cells in the target sheet
-        let merge_cell_ops = self.adjust_paste_for_merge_cells(
-            selection.sheet_id,
-            insert_at,
-            &mut cell_values,
-            &mut formats,
-            &mut borders,
-        );
+        // Adjust paste data for merged cells in the target sheet. Skip when we unmerged
+        // existing merges in the paste area, since those merges will be gone when values apply.
+        let merge_cell_ops = if !did_unmerge_in_paste_area {
+            self.adjust_paste_for_merge_cells(
+                selection.sheet_id,
+                insert_at,
+                &mut cell_values,
+                &mut formats,
+                &mut borders,
+            )
+        } else {
+            vec![]
+        };
 
         // cell values need to be set before the compute_code_ops
         if matches!(special, PasteSpecial::None | PasteSpecial::Values) {
@@ -1204,6 +1268,39 @@ impl GridController {
 
             // Add operations for values redirected to anchor cells outside paste area
             ops.extend(merge_cell_ops);
+
+            if !matches!(special, PasteSpecial::Values)
+                && let Some(merge_rects) = &clipboard.merge_rects
+            {
+                for tile_start_x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
+                    for tile_start_y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
+                        let dx = tile_start_x - clipboard.origin.x;
+                        let dy = tile_start_y - clipboard.origin.y;
+                        for rect in merge_rects {
+                            let dest_min = Pos {
+                                x: rect.min.x + dx,
+                                y: rect.min.y + dy,
+                            };
+                            let dest_max = Pos {
+                                x: rect.max.x + dx,
+                                y: rect.max.y + dy,
+                            };
+                            let mut merge_update = MergeCellsUpdate::default();
+                            merge_update.set_rect(
+                                dest_min.x,
+                                dest_min.y,
+                                Some(dest_max.x),
+                                Some(dest_max.y),
+                                Some(ClearOption::Some(dest_min)),
+                            );
+                            ops.push(Operation::SetMergeCells {
+                                sheet_id: selection.sheet_id,
+                                merge_cells_updates: merge_update,
+                            });
+                        }
+                    }
+                }
+            }
 
             if !cell_values.is_empty() {
                 ops.push(Operation::SetCellValues {
@@ -3317,6 +3414,185 @@ mod test {
         assert_eq!(
             gc.sheet(sheet_id).display_value(pos![B2]),
             Some(CellValue::Text("original".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_paste_over_multiple_merges_unmerges_then_pastes() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.merge_cells(
+            A1Selection::test_a1_sheet_id("B2:B3", sheet_id),
+            None,
+            false,
+        );
+        gc.merge_cells(
+            A1Selection::test_a1_sheet_id("D2:D3", sheet_id),
+            None,
+            false,
+        );
+        gc.set_cell_value(pos![sheet_id!B2], "left".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!D2], "right".to_string(), None, false);
+
+        gc.set_cell_value(pos![sheet_id!A1], "a".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "b".to_string(), None, false);
+        let sheet = gc.sheet(sheet_id);
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::test_a1("A1:A2"),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let paste_rect = Rect::new(2, 2, 3, 3);
+        let merges_in_paste = sheet.merge_cells.get_merge_cells(paste_rect);
+        assert!(
+            merges_in_paste.is_empty(),
+            "Existing merges in paste area should be unmerged"
+        );
+        assert_eq!(sheet.cell_value(pos![B2]), Some(CellValue::Text("a".to_string())));
+        assert_eq!(sheet.cell_value(pos![B3]), Some(CellValue::Text("b".to_string())));
+    }
+
+    #[test]
+    fn test_paste_tiling_values_and_formats() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a 1×2 source with values and a fill
+        gc.set_cell_value(pos![sheet_id!A1], "x".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!A2], "y".to_string(), None, false);
+        let _ = gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("A1:A2", sheet_id),
+            Some("red".to_string()),
+            None,
+            false,
+        );
+
+        // Copy A1:A2 (1 column × 2 rows)
+        let sheet = gc.sheet(sheet_id);
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::test_a1("A1:A2"),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        // Paste into B1:C4 (2 columns × 4 rows) — should tile 2×2 times
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("B1:C4", sheet_id),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Values should tile: columns B and C each get "x","y","x","y"
+        assert_eq!(sheet.cell_value(pos![B1]), Some(CellValue::Text("x".to_string())));
+        assert_eq!(sheet.cell_value(pos![B2]), Some(CellValue::Text("y".to_string())));
+        assert_eq!(sheet.cell_value(pos![B3]), Some(CellValue::Text("x".to_string())));
+        assert_eq!(sheet.cell_value(pos![B4]), Some(CellValue::Text("y".to_string())));
+        assert_eq!(sheet.cell_value(pos![C1]), Some(CellValue::Text("x".to_string())));
+        assert_eq!(sheet.cell_value(pos![C2]), Some(CellValue::Text("y".to_string())));
+        assert_eq!(sheet.cell_value(pos![C3]), Some(CellValue::Text("x".to_string())));
+        assert_eq!(sheet.cell_value(pos![C4]), Some(CellValue::Text("y".to_string())));
+
+        // Formats should tile: all pasted cells get the red fill
+        assert_eq!(sheet.formats.fill_color.get(pos![B1]), Some("red".to_string()));
+        assert_eq!(sheet.formats.fill_color.get(pos![B4]), Some("red".to_string()));
+        assert_eq!(sheet.formats.fill_color.get(pos![C1]), Some("red".to_string()));
+        assert_eq!(sheet.formats.fill_color.get(pos![C4]), Some("red".to_string()));
+
+        // Outside the paste area should have no fill
+        assert_eq!(sheet.formats.fill_color.get(pos![D1]), None);
+        assert_eq!(sheet.formats.fill_color.get(pos![B5]), None);
+    }
+
+    #[test]
+    fn test_paste_into_single_merge_keeps_merge() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.merge_cells(
+            A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
+            None,
+            false,
+        );
+        gc.set_cell_value(pos![sheet_id!A1], "new".to_string(), None, false);
+        let sheet = gc.sheet(sheet_id);
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::test_a1("A1"),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("B2", sheet_id),
+            clipboard.into(),
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let merge_rect = Rect::new(2, 2, 3, 3);
+        let merges = sheet.merge_cells.get_merge_cells(merge_rect);
+        assert_eq!(merges.len(), 1, "Single merge should be preserved when pasting into it");
+        assert_eq!(merges[0], merge_rect);
+        assert_eq!(
+            sheet.display_value(pos![B2]),
+            Some(CellValue::Text("new".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_paste_special_values_over_merges_only_anchor_gets_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.merge_cells(
+            A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
+            None,
+            false,
+        );
+        gc.set_cell_value(pos![sheet_id!A1], "val".to_string(), None, false);
+        let sheet = gc.sheet(sheet_id);
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::test_a1("A1"),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("C3", sheet_id),
+            clipboard.into(),
+            PasteSpecial::Values,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let merge_rect = Rect::new(2, 2, 3, 3);
+        let merges = sheet.merge_cells.get_merge_cells(merge_rect);
+        assert_eq!(merges.len(), 1, "Merge should remain for Paste Special Values");
+        assert_eq!(
+            sheet.display_value(pos![B2]),
+            Some(CellValue::Text("val".to_string())),
+            "Value should be in anchor only"
         );
     }
 }

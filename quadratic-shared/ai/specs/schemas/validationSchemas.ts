@@ -106,10 +106,6 @@ It requires the sheet name.\n
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.GetValidations],
-    prompt: `
-This tool gets the validations in a sheet.\n
-It requires the sheet name.\n
-`,
   },
   [AITool.AddMessage]: {
     sources: ['AIAnalyst'],
@@ -141,8 +137,6 @@ This tool adds a message to a sheet using validations.\n`,
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.AddMessage],
-    prompt: `
-This tool adds a message to a sheet using validations.\n`,
   },
   [AITool.AddLogicalValidation]: {
     sources: ['AIAnalyst'],
@@ -182,8 +176,6 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.AddLogicalValidation],
-    prompt: `
-This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
   },
   [AITool.AddListValidation]: {
     sources: ['AIAnalyst'],
@@ -235,8 +227,6 @@ The list should have either a list_source_list or a list_source_selection, but n
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.AddListValidation],
-    prompt: `
-This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to text rules.\n`,
   },
   [AITool.AddTextValidation]: {
     sources: ['AIAnalyst'],
@@ -316,8 +306,6 @@ This tool adds a text validation to a sheet. This validates a text string to ens
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.AddTextValidation],
-    prompt: `
-This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
   },
   [AITool.AddNumberValidation]: {
     sources: ['AIAnalyst'],
@@ -369,8 +357,6 @@ This tool adds a number validation to a sheet. This validates a number to ensure
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.AddNumberValidation],
-    prompt: `
-This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
   },
   [AITool.AddDateTimeValidation]: {
     sources: ['AIAnalyst'],
@@ -460,8 +446,6 @@ This tool adds a date time validation to a sheet. This validates a date time to 
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.AddDateTimeValidation],
-    prompt: `
-This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
   },
   [AITool.RemoveValidations]: {
     sources: ['AIAnalyst'],
@@ -485,7 +469,5 @@ This tool removes all validations in a sheet from a range.\n`,
       additionalProperties: false,
     },
     responseSchema: validationToolsArgsSchemas[AITool.RemoveValidations],
-    prompt: `
-This tool removes all validations in a sheet from a range.\n`,
   },
 } as const;

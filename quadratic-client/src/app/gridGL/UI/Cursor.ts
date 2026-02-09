@@ -46,6 +46,7 @@ export class Cursor extends Container {
     this.cursorRectangle = new Rectangle();
 
     events.on('setDirty', this.setDirty);
+    events.on('mergeCells', this.onMergeCellsChanged);
 
     // Listen for focus/blur events to update cursor color when grid focus changes
     // We listen on the document and check if the active element is the canvas
@@ -55,6 +56,7 @@ export class Cursor extends Container {
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    events.off('mergeCells', this.onMergeCellsChanged);
     document.removeEventListener('focusin', this.handleFocusChange);
     document.removeEventListener('focusout', this.handleFocusChange);
     super.destroy();
@@ -67,6 +69,12 @@ export class Cursor extends Container {
 
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.cursor) {
+      this.dirty = true;
+    }
+  };
+
+  private onMergeCellsChanged = (sheetId: string) => {
+    if (sheetId === sheets.current) {
       this.dirty = true;
     }
   };

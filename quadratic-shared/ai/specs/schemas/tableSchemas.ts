@@ -43,6 +43,7 @@ IMPORTANT: the selection can NOT contain any code cells or data tables.\n
 It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
 A data table cannot be created over any existing code cells or data tables.\n
 The data table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
+The data table will include a table name as the first row, which will push down all data by one row. Example: if the data previously occupied A1:A6, it now occupies A1:A7 since adding the table name shifted the data down by one row.\n
 `,
     parameters: {
       type: 'object',
@@ -70,14 +71,6 @@ The data table will be created with the first row as the header row if first_row
       additionalProperties: false,
     },
     responseSchema: tableToolsArgsSchemas[AITool.ConvertToTable],
-    prompt: `
-This tool converts a selection of cells on a specified sheet into a data table.\n
-IMPORTANT: the selection can NOT contain any code cells or data tables.\n
-It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
-A data table cannot be created over any existing code cells or data tables.\n
-The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
-The data table will include a table name as the first row, which will push down all data by one row. Example: if the data previously occupied A1:A6, it now occupies A1:A7 since adding the table name shifted the data down by one row.\n
-`,
   },
   [AITool.TableMeta]: {
     sources: ['AIAnalyst'],
@@ -133,9 +126,6 @@ This tool sets the meta data for a table. One or more options can be changed on 
       additionalProperties: false,
     },
     responseSchema: tableToolsArgsSchemas[AITool.TableMeta],
-    prompt: `
-This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
-`,
   },
   [AITool.TableColumnSettings]: {
     sources: ['AIAnalyst'],
@@ -183,9 +173,5 @@ In the parameters, include only columns that you want to change. The remaining c
       additionalProperties: false,
     },
     responseSchema: tableToolsArgsSchemas[AITool.TableColumnSettings],
-    prompt: `
-This tool changes the columns of a table. It can rename them or show or hide them.\n
-Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
-In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 } as const;

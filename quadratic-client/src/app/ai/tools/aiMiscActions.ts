@@ -157,15 +157,9 @@ export const miscToolsActions: MiscToolActions = {
   },
   [AITool.DelegateToSubagent]: async (args, metaData) => {
     try {
-      // Map the subagent_type string to SubagentType enum
-      const subagentTypeMap: Record<string, SubagentType> = {
-        data_finder: SubagentType.DataFinder,
-        formula_coder: SubagentType.FormulaCoder,
-        python_coder: SubagentType.PythonCoder,
-        javascript_coder: SubagentType.JavascriptCoder,
-        connection_coder: SubagentType.ConnectionCoder,
-      };
-
+      const subagentTypeMap: Record<string, SubagentType> = Object.fromEntries(
+        (Object.values(SubagentType) as SubagentType[]).map((t) => [t, t])
+      ) as Record<string, SubagentType>;
       const subagentType = subagentTypeMap[args.subagent_type];
       if (!subagentType) {
         return [createTextContent(`Error: Unknown subagent type '${args.subagent_type}'`)];
@@ -224,12 +218,16 @@ export const miscToolsActions: MiscToolActions = {
         }
       };
 
-      // Execute the subagent with callbacks
+      if (!metaData?.modelKey) {
+        return [createTextContent('Error: No model key available for subagent.')];
+      }
+
+      // Execute the subagent with callbacks (uses current session model unless overridden)
       const result = await subagentRunner.execute({
         subagentType,
         task: args.task,
         contextHints: args.context_hints,
-        modelKeyOverride: metaData?.modelKey,
+        modelKey: metaData.modelKey,
         fileUuid: metaData?.fileUuid ?? '',
         teamUuid: metaData?.teamUuid ?? '',
         reset: args.reset,
