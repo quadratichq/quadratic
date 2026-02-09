@@ -6,7 +6,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use anyhow::Result;
 use quadratic_core::CellValue;
 use quadratic_core::Pos;
 use quadratic_core::color::Rgba;
@@ -21,8 +20,49 @@ use quadratic_renderer_native::{
     BorderLineStyle, ChartImage, GridExclusionZone, NativeRenderer, RenderRequest, SelectionRange,
     SheetBorders, TableNameIcon, TableOutline, TableOutlines,
 };
+use thiserror::Error;
 use tokio::sync::Mutex;
 use tracing::{error, info, trace, warn};
+
+/// Errors that can occur during thumbnail rendering or upload.
+#[derive(Debug, Error)]
+pub enum ThumbnailError {
+    #[error("No sheets in grid")]
+    NoSheets,
+
+    #[error("Sheet not found")]
+    SheetNotFound,
+
+    #[error("Specified fonts directory not found: {0:?}")]
+    FontsDirectoryNotFound(PathBuf),
+
+    #[error("Could not find fonts directory")]
+    FontsDirectoryMissing,
+
+    #[error("Specified icons directory not found: {0:?}")]
+    IconsDirectoryNotFound(PathBuf),
+
+    #[error("Could not find icons directory")]
+    IconsDirectoryMissing,
+
+    #[error("Specified emoji directory not found: {0:?}")]
+    EmojiDirectoryNotFound(PathBuf),
+
+    #[error("Could not find emoji directory")]
+    EmojiDirectoryMissing,
+
+    #[error("Failed to upload thumbnail: {status} {body}")]
+    UploadFailed { status: reqwest::StatusCode, body: String },
+
+    #[error("Renderer: {0}")]
+    Renderer(String),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    Request(#[from] reqwest::Error),
+}
 
 /// Thumbnail dimensions matching the client (1280x720, 16:9 aspect ratio)
 const THUMBNAIL_WIDTH: u32 = 1280;
@@ -37,16 +77,17 @@ pub struct ThumbnailAssetConfig {
 }
 
 /// Render a thumbnail of the grid and return the PNG bytes
-pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> Result<Vec<u8>> {
+pub fn render_thumbnail(
+    gc: &GridController,
+    config: &ThumbnailAssetConfig,
+) -> Result<Vec<u8>, ThumbnailError> {
     let sheet_ids = gc.sheet_ids();
     if sheet_ids.is_empty() {
-        anyhow::bail!("No sheets in grid");
+        return Err(ThumbnailError::NoSheets);
     }
 
     let sheet_id = sheet_ids[0];
-    let sheet = gc
-        .try_sheet(sheet_id)
-        .ok_or_else(|| anyhow::anyhow!("Sheet not found"))?;
+    let sheet = gc.try_sheet(sheet_id).ok_or(ThumbnailError::SheetNotFound)?;
 
     let offsets = sheet.offsets().clone();
 
@@ -295,7 +336,8 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
         "Creating renderer ({}x{} pixels, {}x DPR)",
         THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, THUMBNAIL_DPR
     );
-    let mut renderer = NativeRenderer::new(render_width, render_height)?;
+    let mut renderer = NativeRenderer::new(render_width, render_height)
+        .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
 
     // Load fonts
     let font_dir = find_fonts_directory(&config.fonts_dir)?;
@@ -308,20 +350,25 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
         "OpenSans-BoldItalic.fnt",
     ];
 
-    let (fonts, texture_infos) = load_fonts_from_directory(&font_dir, &font_files)?;
+    let (fonts, texture_infos) = load_fonts_from_directory(&font_dir, &font_files)
+        .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
     trace!("Loaded {} fonts", fonts.count());
 
     for texture_info in &texture_infos {
         let texture_path = font_dir.join(&texture_info.filename);
         let texture_bytes = fs::read(&texture_path)?;
-        renderer.upload_font_texture(texture_info.texture_uid, &texture_bytes)?;
+        renderer
+            .upload_font_texture(texture_info.texture_uid, &texture_bytes)
+            .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
     }
     renderer.set_fonts(fonts);
 
     // Upload chart images
     if !request.chart_images.is_empty() {
         trace!("Uploading {} chart images", request.chart_images.len());
-        renderer.upload_chart_images(&request.chart_images)?;
+        renderer
+            .upload_chart_images(&request.chart_images)
+            .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
     }
 
     // Upload language icons
@@ -332,7 +379,9 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
                 request.table_name_icons.len(),
                 icons_dir
             );
-            renderer.upload_language_icons(&request.table_name_icons, &icons_dir)?;
+            renderer
+                .upload_language_icons(&request.table_name_icons, &icons_dir)
+                .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
         } else {
             warn!("Icons directory not found, table icons will not render");
         }
@@ -360,13 +409,18 @@ pub fn render_thumbnail(gc: &GridController, config: &ThumbnailAssetConfig) -> R
 
     // Render to PNG
     trace!("Rendering thumbnail");
-    let png_bytes = renderer.render_to_png(&request)?;
+    let png_bytes = renderer
+        .render_to_png(&request)
+        .map_err(|e| ThumbnailError::Renderer(e.to_string()))?;
 
     Ok(png_bytes)
 }
 
 /// Upload the thumbnail to S3 using the presigned URL
-pub async fn upload_thumbnail(png_bytes: Vec<u8>, thumbnail_upload_url: &str) -> Result<()> {
+pub async fn upload_thumbnail(
+    png_bytes: Vec<u8>,
+    thumbnail_upload_url: &str,
+) -> Result<(), ThumbnailError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()?;
@@ -378,11 +432,9 @@ pub async fn upload_thumbnail(png_bytes: Vec<u8>, thumbnail_upload_url: &str) ->
         .await?;
 
     if !response.status().is_success() {
-        anyhow::bail!(
-            "Failed to upload thumbnail: {} {}",
-            response.status(),
-            response.text().await.unwrap_or_default()
-        );
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(ThumbnailError::UploadFailed { status, body });
     }
 
     Ok(())
@@ -396,7 +448,7 @@ pub async fn render_and_upload_thumbnail(
     asset_config: &ThumbnailAssetConfig,
     thumbnail_upload_url: &str,
     thumbnail_key: &str,
-) -> Result<String> {
+) -> Result<String, ThumbnailError> {
     info!("Rendering thumbnail");
 
     // Render thumbnail (blocking operation)
@@ -436,13 +488,13 @@ fn cell_border_line_to_style(
 }
 
 /// Find the fonts directory
-fn find_fonts_directory(explicit_path: &Option<String>) -> Result<PathBuf> {
+fn find_fonts_directory(explicit_path: &Option<String>) -> Result<PathBuf, ThumbnailError> {
     if let Some(path) = explicit_path {
         let path = PathBuf::from(path);
         if path.exists() {
             return Ok(path);
         }
-        anyhow::bail!("Specified fonts directory not found: {:?}", path);
+        return Err(ThumbnailError::FontsDirectoryNotFound(path));
     }
 
     // Default paths to try
@@ -459,17 +511,17 @@ fn find_fonts_directory(explicit_path: &Option<String>) -> Result<PathBuf> {
         }
     }
 
-    anyhow::bail!("Could not find fonts directory")
+    Err(ThumbnailError::FontsDirectoryMissing)
 }
 
 /// Find the icons directory
-fn find_icons_directory(explicit_path: &Option<String>) -> Result<PathBuf> {
+fn find_icons_directory(explicit_path: &Option<String>) -> Result<PathBuf, ThumbnailError> {
     if let Some(path) = explicit_path {
         let path = PathBuf::from(path);
         if path.exists() {
             return Ok(path);
         }
-        anyhow::bail!("Specified icons directory not found: {:?}", path);
+        return Err(ThumbnailError::IconsDirectoryNotFound(path));
     }
 
     let candidates = [
@@ -485,17 +537,17 @@ fn find_icons_directory(explicit_path: &Option<String>) -> Result<PathBuf> {
         }
     }
 
-    anyhow::bail!("Could not find icons directory")
+    Err(ThumbnailError::IconsDirectoryMissing)
 }
 
 /// Find the emoji directory
-fn find_emoji_directory(explicit_path: &Option<String>) -> Result<PathBuf> {
+fn find_emoji_directory(explicit_path: &Option<String>) -> Result<PathBuf, ThumbnailError> {
     if let Some(path) = explicit_path {
         let path = PathBuf::from(path);
         if path.exists() {
             return Ok(path);
         }
-        anyhow::bail!("Specified emoji directory not found: {:?}", path);
+        return Err(ThumbnailError::EmojiDirectoryNotFound(path));
     }
 
     let candidates = [
@@ -511,7 +563,7 @@ fn find_emoji_directory(explicit_path: &Option<String>) -> Result<PathBuf> {
         }
     }
 
-    anyhow::bail!("Could not find emoji directory")
+    Err(ThumbnailError::EmojiDirectoryMissing)
 }
 
 #[cfg(test)]

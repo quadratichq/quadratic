@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::controller::Controller;
 use crate::error::{ControllerError, Result};
-use crate::quadratic_api::{insert_completed_logs, insert_failed_logs};
+use crate::quadratic_api::{insert_completed_logs, insert_failed_logs, update_file_thumbnail};
 use crate::state::State;
 
 /// Handle JWKS requests.
@@ -233,7 +233,7 @@ pub(crate) async fn shutdown_worker(
     // If the worker uploaded a thumbnail, update the file record via the API
     if let Some(thumbnail_key) = &shutdown_request.thumbnail_key {
         info!("Updating thumbnail for file {file_id} with key {thumbnail_key}");
-        if let Err(e) = crate::quadratic_api::update_file_thumbnail(&state, file_id, thumbnail_key).await {
+        if let Err(e) = update_file_thumbnail(&state, file_id, thumbnail_key).await {
             warn!("Failed to update thumbnail for file {file_id}: {e}");
             // Don't fail shutdown if thumbnail update fails
         }

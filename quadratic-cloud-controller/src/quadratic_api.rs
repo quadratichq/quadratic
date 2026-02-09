@@ -200,8 +200,6 @@ mod tests {
                     "email": "test@example.com",
                     "sequenceNumber": 0,
                     "presignedUrl": "https://example.com/file.grid",
-                    "thumbnailUploadUrl": "https://example.com/thumbnail.png",
-                    "thumbnailKey": "thumbnails/test-key",
                     "timezone": "UTC"
                 }));
         });
