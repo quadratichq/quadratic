@@ -60,7 +60,7 @@ impl Storage for FileSystem {
         Ok(())
     }
 
-    /// Generate a presigned URL
+    /// Generate a presigned GET URL (for downloads)
     async fn presigned_url(&self, data: &str) -> Result<String> {
         let str_key = self.first_key()?;
         let encoded_key = str_to_key(&str_key)?;
@@ -70,6 +70,22 @@ impl Storage for FileSystem {
             "{}/{}",
             self.config.presigned_url_base, encrypted_key
         ))
+    }
+
+    /// Generate a presigned PUT URL (for uploads)
+    async fn presigned_upload_url(&self, data: &str, _content_type: &str) -> Result<String> {
+        let str_key = self.first_key()?;
+        let encoded_key = str_to_key(&str_key)?;
+        let encrypted_key = encrypt_from_api(&encoded_key, data)?;
+
+        // Derive the upload base from the presigned URL base by replacing
+        // the /presigned path segment with /upload
+        let upload_base = self
+            .config
+            .presigned_url_base
+            .replace("/storage/presigned", "/storage/upload");
+
+        Ok(format!("{}/{}", upload_base, encrypted_key))
     }
 
     /// Return the path to the file system.

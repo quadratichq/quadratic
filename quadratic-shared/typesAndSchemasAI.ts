@@ -1033,6 +1033,8 @@ export const AIMessagePromptSchema = z.preprocess(
     toolCalls: z.array(AIToolCallSchema),
     modelKey: z.string(),
     id: z.string().optional(),
+    error: z.boolean().optional(),
+    errorType: z.enum(['context_length', 'general']).optional(),
   })
 ) as z.ZodType<AIMessagePrompt>;
 
