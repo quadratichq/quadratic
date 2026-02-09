@@ -5,6 +5,7 @@ import { AITool, booleanSchema, numberSchema, stringSchema } from '../aiToolsCor
 // Zod schemas for misc tools
 export const miscToolsArgsSchemas = {
   [AITool.SetAIModel]: z.object({
+    // Model router options only (see MODELS_ROUTER_CONFIGURATION); not all MODELS_CONFIGURATION keys.
     ai_model: z
       .string()
       .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
