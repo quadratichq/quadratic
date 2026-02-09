@@ -130,6 +130,50 @@ impl MergeCells {
             .map(|(rect, _)| rect)
     }
 
+    /// Adjusts a column index so it doesn't fall strictly inside any
+    /// merge cell.  When `after` is true (insert LEFT), the column snaps
+    /// to the merge's min.x; when false (insert RIGHT), it snaps to
+    /// max.x + 1.  Loops in case the adjustment lands inside another merge.
+    pub fn adjust_column_for_insert(&self, column: i64, after: bool) -> i64 {
+        let mut col = column;
+        loop {
+            let mut adjusted = false;
+            for rect in self.iter_merge_cells() {
+                if rect.min.x < col && col <= rect.max.x {
+                    col = if after { rect.min.x } else { rect.max.x + 1 };
+                    adjusted = true;
+                    break;
+                }
+            }
+            if !adjusted {
+                break;
+            }
+        }
+        col
+    }
+
+    /// Adjusts a row index so it doesn't fall strictly inside any merge
+    /// cell.  When `after` is true (insert ABOVE), the row snaps to the
+    /// merge's min.y; when false (insert BELOW), it snaps to max.y + 1.
+    /// Loops in case the adjustment lands inside another merge.
+    pub fn adjust_row_for_insert(&self, row: i64, after: bool) -> i64 {
+        let mut r = row;
+        loop {
+            let mut adjusted = false;
+            for rect in self.iter_merge_cells() {
+                if rect.min.y < r && r <= rect.max.y {
+                    r = if after { rect.min.y } else { rect.max.y + 1 };
+                    adjusted = true;
+                    break;
+                }
+            }
+            if !adjusted {
+                break;
+            }
+        }
+        r
+    }
+
     /// Adjusts merge cells when a column is inserted.
     /// - Merges at or after the column end: no change
     /// - Merges at or before the column start: shift right by 1

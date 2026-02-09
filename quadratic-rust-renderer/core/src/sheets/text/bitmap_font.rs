@@ -124,19 +124,10 @@ impl BitmapFont {
 }
 
 /// Collection of bitmap fonts indexed by name
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BitmapFonts {
     fonts: HashMap<String, BitmapFont>,
     first_font_name: Option<String>,
-}
-
-impl Default for BitmapFonts {
-    fn default() -> Self {
-        Self {
-            fonts: HashMap::new(),
-            first_font_name: None,
-        }
-    }
 }
 
 impl BitmapFonts {

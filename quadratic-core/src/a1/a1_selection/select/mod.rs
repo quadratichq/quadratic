@@ -31,12 +31,11 @@ impl A1Selection {
         // When appending, if the new position is within the same merged cell
         // as the cursor, ignore the action to prevent multi-selecting within
         // a single merged cell.
-        if append {
-            if let Some(cursor_merge) = merge_cells.get_merge_cell_rect(self.cursor) {
-                if cursor_merge.contains(new_pos) {
-                    return;
-                }
-            }
+        if append
+            && let Some(cursor_merge) = merge_cells.get_merge_cell_rect(self.cursor)
+            && cursor_merge.contains(new_pos)
+        {
+            return;
         }
 
         if append {
