@@ -38,15 +38,23 @@ export class GridLines extends Graphics {
   constructor() {
     super();
     events.on('setDirty', this.setDirty);
+    events.on('mergeCells', this.onMergeCellsChanged);
   }
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    events.off('mergeCells', this.onMergeCellsChanged);
     super.destroy();
   }
 
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.gridLines) {
+      this.dirty = true;
+    }
+  };
+
+  private onMergeCellsChanged = (sheetId: string) => {
+    if (sheetId === sheets.current) {
       this.dirty = true;
     }
   };
