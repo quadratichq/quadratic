@@ -8,7 +8,6 @@ import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/mo
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -177,7 +176,7 @@ export class PointerCellMoving {
       }
     }
 
-    // top/bottom i
+    // top/bottom if not columns
     if (!cols) {
       const top = new Rectangle(
         cursorRectangle.x,

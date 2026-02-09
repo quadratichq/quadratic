@@ -91,6 +91,55 @@ function wouldOverlapTable(
   return false;
 }
 
+// Checks if the destination would overlap any code table (excluding source and single-cell).
+function wouldOverlapCodeTable(
+  destX: number,
+  destY: number,
+  width: number,
+  height: number,
+  sourceTables: TableBounds[]
+): boolean {
+  const destRect = new Rectangle(destX, destY, width, height);
+  const destTables = getTablesInRect(destRect);
+
+  for (const destTable of destTables) {
+    if (!destTable.isCodeTable || destTable.isSingleCell) continue;
+    const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
+    if (isSourceTable) continue;
+
+    if (rectanglesOverlap(destX, destY, width, height, destTable.x, destTable.y, destTable.width, destTable.height)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Checks if the destination would overlap the name row of any table (excluding source tables).
+function wouldOverlapNameRow(
+  destX: number,
+  destY: number,
+  width: number,
+  height: number,
+  sourceTables: TableBounds[]
+): boolean {
+  const destRect = new Rectangle(destX, destY, width, height);
+  const destTables = getTablesInRect(destRect);
+
+  for (const destTable of destTables) {
+    if (!destTable.hasNameRow) continue;
+    const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
+    if (isSourceTable) continue;
+
+    const nameRowHeight = 1;
+    if (rectanglesOverlap(destX, destY, width, height, destTable.x, destTable.y, destTable.width, nameRowHeight)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Checks if any source table would overlap with a destination table
 function tablesWouldOverlap(
   sourceTables: TableBounds[],
