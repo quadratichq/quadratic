@@ -3,18 +3,15 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
+#[derive(
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
+)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum Resize {
+    #[default]
     Auto,
     Manual,
-}
-
-impl Default for Resize {
-    fn default() -> Self {
-        Self::Auto
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]

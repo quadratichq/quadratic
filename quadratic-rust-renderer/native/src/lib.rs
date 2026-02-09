@@ -27,13 +27,18 @@
 //! let png_bytes = renderer.render_to_png(&request)?;
 //! ```
 
+mod grid_render;
 mod image_export;
 mod renderer;
 mod request;
 
+pub use grid_render::{prepare_renderer_for_request, AssetPaths};
 pub use image_export::ImageFormat;
 pub use renderer::NativeRenderer;
-pub use request::{ChartImage, GridExclusionZone, RenderRequest, SelectionRange, TableNameIcon};
+pub use request::{
+    build_render_request, ChartImage, GridExclusionZone, RenderRequest, SelectionRange,
+    TableNameIcon,
+};
 
 // Re-export core types that users might need
 pub use quadratic_renderer_core::{

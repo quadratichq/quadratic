@@ -69,7 +69,14 @@ export class PointerTable {
       this.doubleClickTimeout = undefined;
     } else {
       if (await inlineEditorHandler.handleCellPointerDown()) {
-        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, shiftKey, ctrlKey);
+        // Check if clicked table is already selected - if so, don't change the selection
+        // This allows dragging multiple selected tables together
+        const selectedTableNames = sheets.sheet.cursor.getSelectedTableNames();
+        const isAlreadySelected = selectedTableNames.includes(tableDown.table.name);
+
+        if (!isAlreadySelected || shiftKey || ctrlKey) {
+          sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, shiftKey, ctrlKey);
+        }
       } else {
         inlineEditorMonaco.focus();
       }
@@ -230,12 +237,33 @@ export class PointerTable {
         this.tableNameDown.column !== this.tableNameDown.point.x ||
         this.tableNameDown.row !== this.tableNameDown.point.y
       ) {
+        // Get all selected tables and filter out the primary (dragged) table
+        const selectedTableNames = sheets.sheet.cursor.getSelectedTableNames();
+        const additionalTables = selectedTableNames
+          .filter((name) => name !== this.tableNameDown!.table.name)
+          .map((name) => {
+            const table = content.cellsSheet.tables.getTableFromName(name);
+            if (table) {
+              return {
+                column: table.codeCell.x,
+                row: table.codeCell.y,
+                width: table.codeCell.w,
+                height: table.codeCell.h,
+                name: table.codeCell.name,
+              };
+            }
+            return null;
+          })
+          .filter((t): t is NonNullable<typeof t> => t !== null);
+
         pixiApp.pointer.pointerCellMoving.tableMove(
           this.tableNameDown.column,
           this.tableNameDown.row,
           this.tableNameDown.point,
           this.tableNameDown.table.w,
-          this.tableNameDown.table.h
+          this.tableNameDown.table.h,
+          this.tableNameDown.table.name,
+          additionalTables.length > 0 ? additionalTables : undefined
         );
       }
       this.tableNameDown = undefined;

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-cloud-controller"
-version = "0.23.9"
+version = "0.23.10"
 edition = "2024"
 authors = ["Quadratic"]
 description = "Kubernetes controller for file workers in Quadratic Cloud Kubernetes cluster"
@@ -23,6 +23,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "pubsub",
   "quadratic-api",
   "quadratic-cloud",
+  "storage",
 ] }
 redis = { version = "0.29.1", features = ["tokio-comp", "connection-manager"] }
 serde = { version = "1.0", features = ["derive"] }

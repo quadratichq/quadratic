@@ -1,6 +1,9 @@
 import { AgentType } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AILanguagePreferences, AISource, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AILanguagePreferences, AIModelKey, AISource, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
 
 import { A1Docs } from '../docs/A1Docs';
@@ -143,7 +146,11 @@ export const getQuadraticContext = (source: AISource, agentType?: AgentType): Ch
   return getMainAgentContext(source);
 };
 
-export const getToolUseContext = (source: AISource): ChatMessage[] => {
+export const getToolUseContext = (source: AISource, modelKey: AIModelKey, agentType?: AgentType): ChatMessage[] => {
+  const aiModelMode = MODELS_CONFIGURATION[modelKey].mode;
+  // Default to MainAgent if no agent type specified
+  const effectiveAgentType = agentType ?? AgentType.MainAgent;
+
   return [
     {
       role: 'user',

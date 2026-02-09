@@ -203,6 +203,7 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         .layer(
             TraceLayer::new(SharedClassifier::new(ServerErrorsAsFailures::new()))
                 .make_span_with(DefaultMakeSpan::default().include_headers(true))
+                .on_failure(()) // disable default on_failure logging (handled in on_response)
                 .on_response(
                     |response: &Response, latency: Duration, _span: &tracing::Span| {
                         let status = response.status();

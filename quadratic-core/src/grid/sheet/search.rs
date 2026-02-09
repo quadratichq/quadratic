@@ -6,6 +6,14 @@ use serde::{Deserialize, Serialize};
 
 const MAX_NEIGHBOR_TEXT: usize = 1000;
 
+fn regex_matches(regex: &Regex, text: &str, whole_cell: bool) -> bool {
+    if whole_cell {
+        regex.find(text).is_some_and(|m| m.as_str() == text)
+    } else {
+        regex.is_match(text)
+    }
+}
+
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SearchOptions {
@@ -38,82 +46,41 @@ impl Sheet {
     ) -> Option<String> {
         match cell_value {
             CellValue::Text(text) => {
-                if let Some(regex) = regex {
-                    if whole_cell {
-                        if regex.find(text).is_some_and(|m| m.as_str() == text) {
-                            Some(text.to_string())
-                        } else {
-                            None
-                        }
-                    } else if regex.is_match(text) {
-                        Some(text.to_string())
-                    } else {
-                        None
-                    }
-                } else if (case_sensitive && text == query)
-                    || (!case_sensitive && text.to_lowercase() == *query)
-                {
-                    Some(text.to_string())
-                } else if !whole_cell {
-                    if (!case_sensitive && text.to_lowercase().contains(&query.to_lowercase()))
-                        || (case_sensitive && text.contains(query))
-                    {
-                        Some(text.to_string())
-                    } else {
-                        None
-                    }
+                let matches = if let Some(regex) = regex {
+                    regex_matches(regex, text, whole_cell)
                 } else {
-                    None
-                }
+                    (case_sensitive && text == query)
+                        || (!case_sensitive && text.to_lowercase() == *query)
+                        || (!whole_cell
+                            && ((!case_sensitive
+                                && text.to_lowercase().contains(&query.to_lowercase()))
+                                || (case_sensitive && text.contains(query))))
+                };
+                matches.then(|| text.to_string())
             }
             CellValue::Number(n) => {
-                let numeric_format = self.formats.numeric_format.get(pos);
-                let numeric_decimals = self.formats.numeric_decimals.get(pos);
-                let numeric_commas = self.formats.numeric_commas.get(pos);
-                let display =
-                    cell_value.to_number_display(numeric_format, numeric_decimals, numeric_commas);
+                let display = self.rendered_value(pos).unwrap_or_else(|| n.to_string());
                 let raw = n.to_string();
 
-                if let Some(regex) = regex {
-                    if whole_cell {
-                        let raw_whole = regex.find(&raw).is_some_and(|m| m.as_str() == raw);
-                        let display_whole =
-                            regex.find(&display).is_some_and(|m| m.as_str() == display);
-                        if raw_whole || display_whole {
-                            Some(display)
-                        } else {
-                            None
-                        }
-                    } else if regex.is_match(&raw) || regex.is_match(&display) {
-                        Some(display)
-                    } else {
-                        None
-                    }
-                } else if raw == *query
-                    || display == *query
-                    || (!whole_cell && (raw.contains(query) || display.contains(query)))
-                {
-                    Some(display)
+                let matches = if let Some(regex) = regex {
+                    regex_matches(regex, &raw, whole_cell)
+                        || regex_matches(regex, &display, whole_cell)
                 } else {
-                    None
-                }
+                    raw == *query
+                        || display == *query
+                        || (!whole_cell && (raw.contains(query) || display.contains(query)))
+                };
+                matches.then(|| display)
             }
             CellValue::Logical(b) => {
                 let text = if *b { "true" } else { "false" };
-                if let Some(regex) = regex {
-                    if regex.is_match(text) {
-                        Some(text.to_string())
-                    } else {
-                        None
-                    }
+                let matches = if let Some(regex) = regex {
+                    regex_matches(regex, text, false)
                 } else {
                     let query = query.to_lowercase();
-                    if (*b && query == "true") || (!(*b) && query == "false") {
-                        Some(text.to_string())
-                    } else {
-                        None
-                    }
-                }
+                    (*b && query == "true") || (!(*b) && query == "false")
+                };
+                matches.then(|| text.to_string())
             }
             _ => None,
         }

@@ -56,6 +56,8 @@ export const authClient: AuthClient = {
     return client.handleSigninRedirect(href);
   },
   async logout() {
+    const { resetAIAnalystInitialized } = await import('@/app/ai/atoms/aiAnalystAtoms');
+    resetAIAnalystInitialized();
     const client = getAuthClient();
     return client.logout();
   },

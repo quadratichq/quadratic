@@ -1604,8 +1604,8 @@ mod tests {
         assert_eq!(label.col, 1);
         assert_eq!(label.row, 1);
         assert_eq!(label.font_size, DEFAULT_FONT_SIZE);
-        assert_eq!(label.bold, false);
-        assert_eq!(label.italic, false);
+        assert!(!label.bold);
+        assert!(!label.italic);
         assert_eq!(label.align, CellAlign::Left);
         assert_eq!(label.vertical_align, CellVerticalAlign::Bottom);
         assert_eq!(label.wrap, CellWrap::Overflow);
@@ -1667,10 +1667,10 @@ mod tests {
         cell.text_color = Some(Rgba::rgb(255, 0, 0));
 
         let label = CellLabel::from_render_cell(&cell);
-        assert_eq!(label.bold, true);
-        assert_eq!(label.italic, true);
-        assert_eq!(label.underline, true);
-        assert_eq!(label.strike_through, true);
+        assert!(label.bold);
+        assert!(label.italic);
+        assert!(label.underline);
+        assert!(label.strike_through);
         assert_eq!(label.font_size, 16.0);
         assert_eq!(label.color, [1.0, 0.0, 0.0, 1.0]);
     }
@@ -1693,8 +1693,8 @@ mod tests {
         cell.language = Some(CodeCellLanguage::Python);
 
         let label = CellLabel::from_render_cell(&cell);
-        assert_eq!(label.is_table_name, true);
-        assert_eq!(label.has_table_icon, true);
+        assert!(label.is_table_name);
+        assert!(label.has_table_icon);
         assert_eq!(label.wrap, CellWrap::Clip);
     }
 
@@ -1705,8 +1705,8 @@ mod tests {
         cell.language = Some(CodeCellLanguage::Import);
 
         let label = CellLabel::from_render_cell(&cell);
-        assert_eq!(label.is_table_name, true);
-        assert_eq!(label.has_table_icon, false); // Import has no icon
+        assert!(label.is_table_name);
+        assert!(!label.has_table_icon); // Import has no icon
         assert_eq!(label.wrap, CellWrap::Clip);
     }
 
@@ -1831,7 +1831,7 @@ mod tests {
 
         assert!(label.text_width > 0.0);
         assert_eq!(label.line_widths.len(), 1);
-        assert!(label.chars.len() > 0);
+        assert!(!label.chars.is_empty());
     }
 
     #[test]
@@ -1856,7 +1856,7 @@ mod tests {
         label.layout(&fonts);
 
         // Should wrap if text is wider than cell
-        assert!(label.line_widths.len() >= 1);
+        assert!(!label.line_widths.is_empty());
     }
 
     #[test]
@@ -1911,8 +1911,7 @@ mod tests {
 
     #[test]
     fn test_get_style_for_char_static() {
-        let mut spans = Vec::new();
-        spans.push(RenderCellFormatSpan {
+        let spans = vec![RenderCellFormatSpan {
             start: 0,
             end: 3,
             bold: Some(true),
@@ -1921,21 +1920,20 @@ mod tests {
             strike_through: None,
             text_color: None,
             link: None,
-        });
+        }];
 
         let (bold, italic) = CellLabel::get_style_for_char_static(1, false, false, &spans);
-        assert_eq!(bold, true);
-        assert_eq!(italic, false);
+        assert!(bold);
+        assert!(!italic);
 
         let (bold, italic) = CellLabel::get_style_for_char_static(5, false, false, &spans);
-        assert_eq!(bold, false); // Outside span
-        assert_eq!(italic, false);
+        assert!(!bold); // Outside span
+        assert!(!italic);
     }
 
     #[test]
     fn test_get_color_for_char_static() {
-        let mut spans = Vec::new();
-        spans.push(RenderCellFormatSpan {
+        let spans = vec![RenderCellFormatSpan {
             start: 0,
             end: 3,
             bold: None,
@@ -1944,7 +1942,7 @@ mod tests {
             strike_through: None,
             text_color: Some(Rgba::rgb(255, 0, 0)),
             link: None,
-        });
+        }];
 
         let color = CellLabel::get_color_for_char_static(1, [0.0, 0.0, 0.0, 1.0], &spans);
         assert_eq!(color, [1.0, 0.0, 0.0, 1.0]);
@@ -2083,7 +2081,7 @@ mod tests {
     #[test]
     fn test_has_emojis() {
         let label = CellLabel::new("Hello".to_string(), 1, 1);
-        assert_eq!(label.has_emojis(), false);
+        assert!(!label.has_emojis());
 
         let mut label = CellLabel::new("Hello 😀".to_string(), 1, 1);
         let fonts = create_test_fonts();
@@ -2093,7 +2091,7 @@ mod tests {
         label.update_bounds(&create_test_offsets());
         label.layout_with_emojis(&fonts, Some(&lookup));
 
-        assert_eq!(label.has_emojis(), true);
+        assert!(label.has_emojis());
     }
 
     #[test]
@@ -2107,7 +2105,7 @@ mod tests {
         label.layout_with_emojis(&fonts, Some(&lookup));
 
         let emoji_strings = label.get_emoji_strings();
-        assert!(emoji_strings.len() >= 1);
+        assert!(!emoji_strings.is_empty());
     }
 
     // =============================================================================
@@ -2133,7 +2131,7 @@ mod tests {
         label.layout(&fonts);
 
         let meshes = label.get_meshes(&fonts);
-        assert!(meshes.len() > 0);
+        assert!(!meshes.is_empty());
     }
 
     #[test]
@@ -2145,7 +2143,7 @@ mod tests {
         label.layout(&fonts);
 
         let lines = label.get_horizontal_lines(&fonts);
-        assert!(lines.len() > 0);
+        assert!(!lines.is_empty());
     }
 
     #[test]
@@ -2157,7 +2155,7 @@ mod tests {
         label.layout(&fonts);
 
         let lines = label.get_horizontal_lines(&fonts);
-        assert!(lines.len() > 0);
+        assert!(!lines.is_empty());
     }
 
     #[test]
@@ -2178,7 +2176,7 @@ mod tests {
     #[test]
     fn test_no_emoji_lookup() {
         let no_emoji = NoEmoji;
-        assert_eq!(no_emoji.is_potential_emoji('😀'), false);
-        assert_eq!(no_emoji.has_emoji("😀"), false);
+        assert!(!no_emoji.is_potential_emoji('😀'));
+        assert!(!no_emoji.has_emoji("😀"));
     }
 }

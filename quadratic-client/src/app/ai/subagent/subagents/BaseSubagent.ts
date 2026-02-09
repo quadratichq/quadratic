@@ -18,9 +18,6 @@ export abstract class BaseSubagent {
   /** Short description shown in UI */
   abstract readonly description: string;
 
-  /** Default model to use for this subagent (can be overridden) */
-  readonly defaultModelKey = undefined;
-
   /** Maximum tool call iterations before stopping */
   readonly maxIterations: number = 10;
 }

@@ -124,8 +124,9 @@ pub struct PendingTransaction {
     /// sheets that need updated SheetDataTablesCache
     pub(crate) sheet_data_tables_cache: HashSet<SheetId>,
 
-    /// sheets that need updated MergeCells
-    pub(crate) merge_cells_updates: HashSet<SheetId>,
+    /// Sheets that need updated MergeCells, with the specific hash positions
+    /// that the render worker should invalidate. 
+    pub(crate) merge_cells_updates: HashMap<SheetId, HashSet<Pos>>,
 
     /// Track positions with pending ComputeCode operations for O(1) duplicate checking
     pub(crate) pending_compute_positions: HashSet<SheetPos>,
@@ -166,7 +167,7 @@ impl Default for PendingTransaction {
             update_selection: None,
             sheet_content_cache: HashSet::new(),
             sheet_data_tables_cache: HashSet::new(),
-            merge_cells_updates: HashSet::new(),
+            merge_cells_updates: HashMap::new(),
             pending_compute_positions: HashSet::new(),
         }
     }
@@ -665,6 +666,18 @@ impl PendingTransaction {
         }
 
         self.sheet_content_cache.insert(sheet_id);
+    }
+
+    /// Marks merge cell hashes as dirty from a list of affected rects.
+    pub fn add_merge_cells_dirty_hashes(&mut self, sheet_id: SheetId, affected_rects: &[Rect]) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let merge_hashes = self.merge_cells_updates.entry(sheet_id).or_default();
+        for rect in affected_rects {
+            merge_hashes.extend(rect.to_hashes());
+        }
     }
 }
 

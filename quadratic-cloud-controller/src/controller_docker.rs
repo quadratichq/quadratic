@@ -5,6 +5,7 @@ use futures::future::join_all;
 use quadratic_rust_shared::{
     docker::container::Container,
     quadratic_cloud::{GetWorkerInitDataResponse, compress_tasks, encode_tasks},
+    storage::Storage,
 };
 use tracing::{error, info, trace};
 use uuid::Uuid;
@@ -147,10 +148,21 @@ impl Controller {
             .files_presigned_url(&file_init_data.presigned_url)?
             .to_string();
 
-        file_init_data.thumbnail_upload_url = self
+        // Generate the thumbnail upload presigned URL directly from S3/storage
+        let thumbnail_key = format!("{file_id}-thumbnail.png");
+        let thumbnail_upload_url = self
             .state
             .settings
-            .files_presigned_url(&file_init_data.thumbnail_upload_url)?
+            .storage
+            .presigned_upload_url(&thumbnail_key, "image/png")
+            .await
+            .map_err(|e| ControllerError::Settings(e.to_string()))?;
+
+        // For filesystem storage, rewrite the URL to point to the files service
+        let thumbnail_upload_url = self
+            .state
+            .settings
+            .files_presigned_url(&thumbnail_upload_url)?
             .to_string();
 
         trace!("[File init data for file {file_id}: {file_init_data:?}");
@@ -160,8 +172,8 @@ impl Controller {
             email: file_init_data.email,
             sequence_number: file_init_data.sequence_number,
             presigned_url: file_init_data.presigned_url,
-            thumbnail_upload_url: file_init_data.thumbnail_upload_url,
-            thumbnail_key: file_init_data.thumbnail_key,
+            thumbnail_upload_url,
+            thumbnail_key,
             timezone: file_init_data.timezone,
         };
 

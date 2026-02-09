@@ -524,9 +524,6 @@ mod tests {
 
         let _pipelines = RenderPipelines::new(&device, format);
 
-        // Pipelines should be created successfully
-        // We can't directly access the pipelines, but if new() didn't panic, they were created
-        assert!(true);
     }
 
     #[test]
@@ -542,8 +539,6 @@ mod tests {
 
         for format in formats.iter() {
             let _pipelines = RenderPipelines::new(&device, *format);
-            // Should not panic
-            assert!(true);
         }
     }
 
@@ -604,8 +599,6 @@ mod tests {
         pipelines.draw_triangles(&mut render_pass, &device, &queue, &vertices, &matrix);
 
         drop(render_pass);
-        // Should not panic
-        assert!(true);
     }
 
     #[test]
@@ -659,7 +652,6 @@ mod tests {
         pipelines.draw_triangles(&mut render_pass, &device, &queue, &vertices, &matrix);
 
         drop(render_pass);
-        assert!(true);
     }
 
     #[test]
@@ -717,7 +709,6 @@ mod tests {
         pipelines.draw_lines(&mut render_pass, &device, &queue, &vertices, &matrix);
 
         drop(render_pass);
-        assert!(true);
     }
 
     #[test]
@@ -808,7 +799,6 @@ mod tests {
         );
 
         drop(render_pass);
-        assert!(true);
     }
 
     #[test]
@@ -896,7 +886,6 @@ mod tests {
         );
 
         drop(render_pass);
-        assert!(true);
     }
 
     #[test]
@@ -984,6 +973,5 @@ mod tests {
         );
 
         drop(render_pass);
-        assert!(true);
     }
 }

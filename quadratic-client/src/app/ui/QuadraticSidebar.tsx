@@ -7,10 +7,12 @@ import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/KernelMenu/KernelMenu';
 import { scheduledTasksAtom } from '@/jotai/scheduledTasksAtom';
@@ -44,7 +46,9 @@ export const QuadraticSidebar = () => {
   const agentMode = useRecoilValue(agentModeAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const [showScheduledTasks, setShowScheduledTasks] = useAtom(scheduledTasksAtom);
+  const { connections, isLoading: connectionsLoading } = useConnectionsFetcher();
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -54,6 +58,10 @@ export const QuadraticSidebar = () => {
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
   const canViewTeam = isAvailableArgs.teamPermissions?.includes('TEAM_VIEW');
+
+  // Check if user has no real connections (only demo or none)
+  const hasOnlyDemoConnections =
+    !connectionsLoading && (connections.length === 0 || connections.every((c) => c.isDemo === true));
 
   return (
     <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent md:flex">
@@ -105,7 +113,14 @@ export const QuadraticSidebar = () => {
           <SidebarTooltip label="Connections">
             <SidebarToggle
               pressed={false}
-              onPressedChange={() => setShowCellTypeMenu('connections')}
+              onPressedChange={() => {
+                // If no real connections, open directly to new connection screen
+                if (hasOnlyDemoConnections) {
+                  setShowConnectionsMenu('new');
+                } else {
+                  setShowCellTypeMenu('connections');
+                }
+              }}
               data-walkthrough="connections"
             >
               <DatabaseIcon />

@@ -43,6 +43,7 @@ pub mod wgpu_backend;
 
 pub mod emoji_loader;
 pub mod font_loader;
+pub mod request;
 
 // Re-exports for convenience
 
@@ -85,6 +86,12 @@ pub use render::CoreState;
 pub use tables::{
     build_table_render_output, TableBounds, TableCache, TableData, TableOutline, TableOutlines,
     TableRenderOutput,
+};
+
+// Grid render request (shared by native and WASM)
+pub use request::{
+    build_render_request, ChartImage, GridExclusionZone, RenderRequest, SelectionRange,
+    TableNameIcon,
 };
 
 // Types

@@ -179,6 +179,7 @@ pub struct OutputSize {
     pub h: i64,
 }
 
+#[allow(dead_code)]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OutputValueValue {
     pub type_field: String,

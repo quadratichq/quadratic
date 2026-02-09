@@ -1,4 +1,4 @@
-import { initializeAIAnalyst } from '@/app/ai/atoms/aiAnalystAtoms';
+import { initializeAIAnalyst, resetAIAnalystInitialized } from '@/app/ai/atoms/aiAnalystAtoms';
 import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
@@ -41,6 +41,14 @@ export const QuadraticApp = memo(() => {
 
   // Initialize AI Analyst with user and file info
   const aiAnalystInitializedRef = useRef(false);
+  const previousFileUuidRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (previousFileUuidRef.current !== null && previousFileUuidRef.current !== fileUuid) {
+      resetAIAnalystInitialized();
+      aiAnalystInitializedRef.current = false;
+    }
+    previousFileUuidRef.current = fileUuid ?? null;
+  }, [fileUuid]);
   useEffect(() => {
     if (aiAnalystInitializedRef.current) return;
     if (loggedInUser?.email && fileUuid) {
