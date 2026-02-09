@@ -58,7 +58,10 @@ export const getConnectionTableInfo = async (
       error: undefined,
     };
   } catch (error) {
-    console.warn(`[getConnectionTableInfo] Failed to get schema for connection ${connection.uuid}:`, error);
+    // Expected for stale/invalid connections - don't log Error object to avoid Sentry capture
+    console.warn(
+      `[getConnectionTableInfo] Failed to get schema for connection ${connection.uuid}: ${error instanceof Error ? error.message : String(error)}`
+    );
     return {
       ...connectionDetailsShared,
       schema: null,

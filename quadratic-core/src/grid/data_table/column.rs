@@ -40,9 +40,19 @@ impl DataTable {
     pub fn get_column_sorted(&self, column_index: usize) -> Result<Vec<CellValue>> {
         let mut column = self.get_column(column_index)?;
         if let Some(display_buffer) = &self.display_buffer {
-            let mut sorted_column = vec![CellValue::Blank; column.len()];
+            let column_len = column.len();
+            let mut sorted_column = vec![CellValue::Blank; column_len];
             for (display_index, row_index) in display_buffer.iter().enumerate() {
-                sorted_column[display_index] = std::mem::take(&mut column[*row_index as usize]);
+                let row_idx = *row_index as usize;
+                if display_index >= column_len || row_idx >= column_len {
+                    return Err(anyhow::anyhow!(
+                        "display_buffer inconsistent with column length: display_index={}, row_index={}, column_len={}",
+                        display_index,
+                        row_idx,
+                        column_len
+                    ));
+                }
+                sorted_column[display_index] = std::mem::take(&mut column[row_idx]);
             }
             column = sorted_column;
         }
