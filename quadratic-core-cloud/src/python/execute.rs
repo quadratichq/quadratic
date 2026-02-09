@@ -4,7 +4,6 @@ use pyo3::prelude::*;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::transaction_types::{JsCellValueResult, JsCodeResult};
-use quadratic_core::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH};
 use tokio::sync::Mutex;
 
 use crate::error::{CoreCloudError, Result};
