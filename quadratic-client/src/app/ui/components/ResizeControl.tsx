@@ -1,3 +1,4 @@
+import { cn } from '@/shared/shadcn/utils';
 import './ResizeControl.css';
 
 interface ResizeControlProps {
@@ -5,12 +6,17 @@ interface ResizeControlProps {
   position: 'HORIZONTAL' | 'VERTICAL';
   setState: (mouseEvent: globalThis.MouseEvent) => void;
   style?: React.CSSProperties;
+  className?: string;
 }
 
-export function ResizeControl({ disabled, setState, position, style }: ResizeControlProps) {
+export function ResizeControl({ disabled, setState, position, style, className }: ResizeControlProps) {
   return (
     <div
-      className={`resize-control resize-control--position-${position} ${disabled ? 'resize-control--disabled' : ''}`}
+      className={cn(
+        `resize-control resize-control--position-${position}`,
+        disabled ? 'resize-control--disabled' : '',
+        className
+      )}
       data-position={position}
       style={style}
       onMouseDown={(e) => {

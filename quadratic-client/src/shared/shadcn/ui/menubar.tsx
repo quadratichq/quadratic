@@ -23,8 +23,10 @@ const Menubar = React.forwardRef<
     <MenubarPrimitive.Root
       ref={ref}
       onValueChange={(value) => {
+        // If nothing changed, rather than return focus back to the menubar, we're going to
+        // return it back to the grid.
         if (!value) {
-          setTimeout(() => focusGrid(pixiAppSettings), 100);
+          focusGrid(pixiAppSettings);
         }
       }}
       className={cn('flex h-9 items-center gap-[1px] rounded-md bg-background p-1', className)}

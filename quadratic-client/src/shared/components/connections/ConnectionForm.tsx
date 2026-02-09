@@ -9,9 +9,15 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { useFetcher, useSubmit } from 'react-router';
+
+export type OnConnectionCreatedCallback = (
+  connectionUuid: string,
+  connectionType: ConnectionType,
+  connectionName: string
+) => void;
 
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
@@ -27,21 +33,42 @@ export function ConnectionFormCreate({
   plaidCategory,
   handleNavigateToListView,
   handleNavigateToNewView,
+  onConnectionCreated,
 }: {
   teamUuid: string;
   type: ConnectionType;
   plaidCategory?: PlaidCategory;
   handleNavigateToListView: () => void;
   handleNavigateToNewView: () => void;
+  onConnectionCreated?: OnConnectionCreatedCallback;
 }) {
-  const submit = useSubmit();
+  const fetcher = useFetcher<{ ok: boolean; connectionUuid?: string }>();
+  const pendingConnectionRef = useRef<{ name: string; type: ConnectionType } | null>(null);
+
+  // Watch for successful connection creation
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data?.ok && fetcher.data.connectionUuid && pendingConnectionRef.current) {
+      const { name, type } = pendingConnectionRef.current;
+      pendingConnectionRef.current = null;
+      onConnectionCreated?.(fetcher.data.connectionUuid, type, name);
+    }
+  }, [fetcher.state, fetcher.data, onConnectionCreated]);
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, semanticDescription, ...typeDetails } = formValues;
     trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);
-    submit(json, { ...options, navigate: false });
-    handleNavigateToListView();
+
+    // Store the connection info to pass to callback after creation
+    pendingConnectionRef.current = { name, type };
+
+    fetcher.submit(json, options);
+
+    // Only navigate to list view if there's no onConnectionCreated callback
+    // If callback exists, it will handle closing the dialog when the API responds
+    if (!onConnectionCreated) {
+      handleNavigateToListView();
+    }
   };
 
   const props: ConnectionFormProps = {

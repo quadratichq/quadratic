@@ -41,7 +41,13 @@ import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
-    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content) => {
+      // Filter out empty text
+      if ('text' in content && !content.text.trim()) return false;
+      // Filter out empty data (images)
+      if ('data' in content && !content.data) return false;
+      return true;
+    })
     .filter(
       (content): content is TextContent | ImageContent =>
         (imageSupport && isContentImage(content)) || isContentText(content)
