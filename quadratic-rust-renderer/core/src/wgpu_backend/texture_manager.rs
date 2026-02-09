@@ -127,18 +127,16 @@ mod tests {
             }))
         })?;
 
-        Some(
-            pollster::block_on(adapter.request_device(
-                &DeviceDescriptor {
-                    label: Some("Test Device"),
-                    required_features: Features::empty(),
-                    required_limits: Limits::default(),
-                    memory_hints: MemoryHints::default(),
-                },
-                None,
-            ))
-            .ok()?,
-        )
+        pollster::block_on(adapter.request_device(
+            &DeviceDescriptor {
+                label: Some("Test Device"),
+                required_features: Features::empty(),
+                required_limits: Limits::default(),
+                memory_hints: MemoryHints::default(),
+            },
+            None,
+        ))
+        .ok()
     }
 
     #[test]

@@ -8,7 +8,6 @@ import { checkMoveDestinationInvalid } from '@/app/gridGL/interaction/pointer/mo
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -17,6 +16,14 @@ import { isMobile } from 'react-device-detect';
 // Distance from top left corner to trigger a cell move.
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
 const BORDER_THRESHOLD = 8;
+
+export interface AdditionalTable {
+  column: number;
+  row: number;
+  width: number;
+  height: number;
+  name: string;
+}
 
 interface MoveCells {
   column?: number;
@@ -28,6 +35,8 @@ interface MoveCells {
   offset: { x: number; y: number };
   original?: Rectangle;
   colRows?: 'columns' | 'rows';
+  additionalTables?: AdditionalTable[];
+  primaryTableName?: string;
 }
 
 export class PointerCellMoving {
@@ -54,7 +63,15 @@ export class PointerCellMoving {
   };
 
   // Starts a table move.
-  tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
+  tableMove = (
+    column: number,
+    row: number,
+    point: Point,
+    width: number,
+    height: number,
+    primaryTableName: string,
+    additionalTables?: AdditionalTable[]
+  ) => {
     if (this.state || inlineEditorHandler.isOpen()) return false;
     this.startCell = new Point(column, row);
     const offset = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
@@ -67,6 +84,8 @@ export class PointerCellMoving {
       toRow: row,
       offset: { x: column - offset.column, y: row - offset.row },
       original: new Rectangle(column, row, width, height),
+      additionalTables,
+      primaryTableName,
     };
     this.startMove();
   };
@@ -157,7 +176,7 @@ export class PointerCellMoving {
       }
     }
 
-    // top/bottom i
+    // top/bottom if not columns
     if (!cols) {
       const top = new Rectangle(
         cursorRectangle.x,
@@ -300,14 +319,20 @@ export class PointerCellMoving {
           this.movingCells.height ?? 1
         );
 
+        // Calculate the delta for all tables to move by
+        const deltaX = (this.movingCells.toColumn ?? 0) - (this.movingCells.column ?? 0);
+        const deltaY = (this.movingCells.toRow ?? 0) - (this.movingCells.row ?? 0);
+
         // Check if any cell in the destination rectangle is an invalid drop zone
+        // This now includes checking all additional tables as well
         const isInvalidDestination = checkMoveDestinationInvalid(
           this.movingCells.toColumn ?? 0,
           this.movingCells.toRow ?? 0,
           this.movingCells.width ?? 1,
           this.movingCells.height ?? 1,
           this.movingCells.colRows,
-          this.movingCells.original
+          this.movingCells.original,
+          this.movingCells.additionalTables
         );
 
         // Don't allow dropping if destination is invalid
@@ -316,27 +341,57 @@ export class PointerCellMoving {
           return true;
         }
 
-        const toColumn = this.movingCells.toColumn ?? 0;
-        const toRow = this.movingCells.toRow ?? 0;
-        const width = this.movingCells.width ?? 1;
-        const height = this.movingCells.height ?? 1;
-        const sheetId = sheets.current;
-
-        quadraticCore
-          .moveCells(
-            rectToSheetRect(rectangle, sheetId),
-            toColumn,
-            toRow,
-            sheetId,
-            this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
-            this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false,
+        // Use moveColsRows for column/row moves (has special handling), moveCellsBatch for everything else
+        if (this.movingCells.colRows) {
+          quadraticCore.moveColsRows(
+            rectToSheetRect(rectangle, sheets.current),
+            this.movingCells.toColumn ?? 0,
+            this.movingCells.toRow ?? 0,
+            sheets.current,
+            this.movingCells.colRows === 'columns',
+            this.movingCells.colRows === 'rows',
             false
-          )
-          .then(() => {
-            const rangeStr = `${xyToA1(toColumn, toRow)}:${xyToA1(toColumn + width - 1, toRow + height - 1)}`;
-            const selection = sheets.stringToSelection(rangeStr, sheetId);
-            events.emit('setCursor', selection.save());
-          });
+          );
+        } else {
+          // Use batch move for table moves (handles single or multiple tables)
+          const moves = [
+            {
+              source: rectToSheetRect(rectangle, sheets.current),
+              targetX: Math.max(1, this.movingCells.toColumn ?? 1),
+              targetY: Math.max(1, this.movingCells.toRow ?? 1),
+              targetSheetId: sheets.current,
+            },
+            ...(this.movingCells.additionalTables ?? []).map((table) => ({
+              source: rectToSheetRect(
+                new Rectangle(table.column, table.row, table.width, table.height),
+                sheets.current
+              ),
+              targetX: Math.max(1, table.column + deltaX),
+              targetY: Math.max(1, table.row + deltaY),
+              targetSheetId: sheets.current,
+            })),
+          ];
+          // Select all moved tables after the move completes
+          const tableNames = this.movingCells.primaryTableName
+            ? [this.movingCells.primaryTableName, ...(this.movingCells.additionalTables?.map((t) => t.name) ?? [])]
+            : undefined;
+
+          const sheetId = sheets.current;
+          quadraticCore
+            .moveCellsBatch(moves, false)
+            .then(() => {
+              // Only update selection if we're still on the same sheet
+              if (tableNames && sheets.current === sheetId) {
+                // Create a selection string from table names (comma-separated)
+                const selectionString = tableNames.join(', ');
+                const jsSelection = sheets.stringToSelection(selectionString, sheetId);
+                sheets.sheet.cursor.loadFromSelection(jsSelection);
+              }
+            })
+            .catch((error) => {
+              console.error('Failed to move cells batch:', error);
+            });
+        }
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
         if (
@@ -349,8 +404,8 @@ export class PointerCellMoving {
             codeCell: {
               ...codeCell,
               pos: {
-                x: codeCell.pos.x + (this.movingCells.toColumn ?? 0) - (this.movingCells.column ?? 0),
-                y: codeCell.pos.y + (this.movingCells.toRow ?? 0) - (this.movingCells.row ?? 0),
+                x: codeCell.pos.x + deltaX,
+                y: codeCell.pos.y + deltaY,
               },
             },
           });

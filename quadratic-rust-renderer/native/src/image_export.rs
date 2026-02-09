@@ -4,20 +4,15 @@ use image::{ImageBuffer, ImageFormat as ImgFormat, Rgba};
 use std::io::Cursor;
 
 /// Output image format
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum ImageFormat {
     /// PNG format (lossless)
+    #[default]
     Png,
     /// JPEG format with quality (0-100)
     Jpeg(u8),
     /// WebP format (lossless only)
     Webp,
-}
-
-impl Default for ImageFormat {
-    fn default() -> Self {
-        Self::Png
-    }
 }
 
 /// Encode RGBA pixels to an image format
