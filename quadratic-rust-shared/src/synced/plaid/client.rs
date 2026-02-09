@@ -491,7 +491,7 @@ impl SyncedClient for PlaidClient {
                     return Ok(None);
                 }
                 match self.get_balances().await {
-                    Ok(data) => process_accounts_snapshot(data, stream, end_date).map(Some),
+                    Ok(data) => process_snapshot(data, stream, end_date).map(Some),
                     Err(e) if is_stream_not_supported(&e) => Ok(None),
                     Err(e) => Err(e),
                 }
@@ -595,7 +595,7 @@ fn flatten_to_records(
     };
 
     for (item_type, item) in items_with_type {
-        let flattened = flatten_to_json(item, true);
+        let flattened = flatten_to_json(item, Some(2));
 
         let mut ordered = serde_json::Map::new();
         if let Some(date) = date_str {
@@ -649,7 +649,9 @@ fn process_time_series(
     }
 
     // Group items by date, then flatten each group
-    let mut date_groups: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
+    // BTreeMap gives deterministic date ordering in the output parquet files
+    let mut date_groups: std::collections::BTreeMap<String, Vec<serde_json::Value>> =
+        std::collections::BTreeMap::new();
     for item in items {
         let date_key = item
             .get("date")
@@ -678,7 +680,7 @@ fn process_time_series(
     grouped_json_to_parquet(grouped)
 }
 
-/// Process snapshot data (liabilities) - all records under single date.
+/// Process snapshot data (liabilities, balances) - all records under single date.
 /// Adds a `date` column to each record for tracking when the snapshot was captured.
 fn process_snapshot(
     data: serde_json::Value,
@@ -689,55 +691,6 @@ fn process_snapshot(
 
     let date_str = date.format(DATE_FORMAT).to_string();
     let records = flatten_to_records(&data, stream, Some(&date_str))?;
-
-    if records.is_empty() {
-        tracing::warn!("No {} found", stream);
-        return Ok(HashMap::new());
-    }
-
-    tracing::trace!(
-        "Processing {} {} records for {}",
-        records.len(),
-        stream,
-        date
-    );
-
-    let mut grouped = HashMap::new();
-    grouped.insert(date_str, records);
-    grouped_json_to_parquet(grouped)
-}
-
-/// Process accounts snapshot data (balance) - array of accounts under single date.
-/// Adds a `date` column to each record for tracking when the balance was captured.
-fn process_accounts_snapshot(
-    data: serde_json::Value,
-    stream: &str,
-    date: NaiveDate,
-) -> Result<HashMap<String, Bytes>> {
-    use crate::parquet::json::grouped_json_to_parquet;
-
-    let mut records = Vec::new();
-    let date_str = date.format(DATE_FORMAT).to_string();
-
-    // Accounts come as a flat array, recursively flatten nested objects like balances
-    if let Some(accounts) = data.as_array() {
-        for account in accounts {
-            let flattened = flatten_to_json(account, true);
-
-            // Create new map with date first, then extend with other fields
-            let mut ordered = serde_json::Map::new();
-            ordered.insert(
-                "date".to_string(),
-                serde_json::Value::String(date_str.clone()),
-            );
-            ordered.extend(flattened);
-
-            let json_str = serde_json::to_string(&ordered).map_err(|e| {
-                SharedError::Synced(format!("Failed to serialize {}: {}", stream, e))
-            })?;
-            records.push(json_str);
-        }
-    }
 
     if records.is_empty() {
         tracing::warn!("No {} found", stream);

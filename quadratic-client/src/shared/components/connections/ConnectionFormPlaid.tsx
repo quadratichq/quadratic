@@ -97,7 +97,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
       console.log('No access token, opening Plaid Link');
       fetchLinkTokenAndOpen();
     }
-  }, [accessToken, teamUuid, primaryProduct]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, teamUuid]);
 
   // Handle messages from Plaid popup via BroadcastChannel
   useEffect(() => {
