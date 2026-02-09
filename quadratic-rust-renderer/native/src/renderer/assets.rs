@@ -4,7 +4,7 @@ use super::{
     DecodedChartInfo, LanguageIconInfo, NativeRenderer, CHART_IMAGE_TEXTURE_BASE,
     ICON_LEFT_PADDING, ICON_SIZE, ICON_TOP_PADDING,
 };
-use crate::request::{ChartImage, RenderRequest, TableNameIcon};
+use crate::request::{decode_chart_image, ChartImage, RenderRequest, TableNameIcon};
 
 /// Create sprite vertices and indices for a rectangle.
 ///
@@ -69,7 +69,7 @@ impl NativeRenderer {
             let texture_uid = CHART_IMAGE_TEXTURE_BASE + i as u32;
 
             // Decode the image to get actual dimensions
-            let (rgba_data, texture_width, texture_height) = chart.decode_image()?;
+            let (rgba_data, texture_width, texture_height) = decode_chart_image(chart)?;
 
             log::debug!(
                 "Uploading chart image {} at ({}, {}): cell span {}x{}, texture {}x{} -> texture UID {}",
