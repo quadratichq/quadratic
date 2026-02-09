@@ -216,7 +216,7 @@ fn main() -> anyhow::Result<()> {
     let request = build_render_request(
         &gc,
         sheet_id,
-        &sheet,
+        sheet,
         selection,
         render_width,
         render_height,
