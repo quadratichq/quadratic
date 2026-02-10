@@ -1,12 +1,16 @@
 import { debugFlags } from '@/app/debugFlags/debugFlags';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, SubagentSession, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  ChatMessage,
+  SubagentSession,
+  ToolResultContent,
+  ToolResultMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 import { aiStore, subagentSessionsAtom } from '../atoms/aiAnalystAtoms';
 import type { SubagentType } from '../subagent/subagentTypes';
 import { parseToolArguments } from '../utils/parseToolArguments';
-import { aiToolsActions } from '../tools/aiToolsActions';
 
 const subagentDebug = () => debugFlags.getFlag('debugShowAISubagent');
 
@@ -176,9 +180,10 @@ export class SubagentSessionManager {
     if (subagentDebug())
       console.log(`[SubagentSessionManager] Found ${toolCallsToRefresh.length} tool calls to refresh`);
 
+    const { aiToolsActions } = await import('../tools/aiToolsActions');
+
     // Re-execute each tool call and collect new results
-    const newResults: Map<string, { id: string; content: Awaited<ReturnType<(typeof aiToolsActions)[AITool]>> }> =
-      new Map();
+    const newResults: Map<string, { id: string; content: ToolResultContent }> = new Map();
     const failedToolIds = new Set<string>();
 
     for (const toolCall of toolCallsToRefresh) {
@@ -194,6 +199,8 @@ export class SubagentSessionManager {
       }
 
       try {
+        // REFRESHABLE_TOOLS are get-style tools only; they don't use agentType/fileUuid/teamUuid/modelKey.
+        // DelegateToSubagent needs that metadata but is not refreshable (subagents cannot delegate).
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = await aiToolsActions[toolCall.name as AITool](parsed.value as any, {
           source: 'AIAnalyst',
@@ -259,7 +266,7 @@ export class SubagentSessionManager {
    */
   private replaceToolResults(
     messages: ChatMessage[],
-    newResults: Map<string, { id: string; content: Awaited<ReturnType<(typeof aiToolsActions)[AITool]>> }>
+    newResults: Map<string, { id: string; content: ToolResultContent }>
   ): ChatMessage[] {
     return messages.map((message) => {
       if (message.role === 'user' && message.contextType === 'toolResult') {

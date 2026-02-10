@@ -33,19 +33,18 @@ const CONTEXT_LIMIT_BY_PROVIDER: Record<string, number> = {
 };
 
 /**
- * Anchored model-id patterns for context limit. Applied to config.model (the API model identifier).
+ * Model-id patterns for context limit. Applied to config.model (the API model identifier).
  * Checked in order; first match wins. More specific patterns must appear before broader ones.
- * Patterns match model-id segments to avoid false positives (e.g. gpt-4.10 matching gpt-4.1, o30 matching o3).
- * Composite ids like "us.anthropic.claude-sonnet-4-5-..." are matched by segment.
+ * Patterns require delimiters (^, -, ., /) around segment names so e.g. "o30" does not match "o3".
  */
 const CONTEXT_LIMIT_BY_MODEL: ReadonlyArray<{ pattern: RegExp; limit: number }> = [
   { pattern: /gpt-4\.1(?:-|$)/i, limit: CONTEXT_LIMIT_1M },
   { pattern: /gpt-5(?:-|\.|$)/i, limit: CONTEXT_LIMIT_400K },
-  { pattern: /(?:^|[-./])o3(?:-|$|\/|\.)/i, limit: CONTEXT_LIMIT_128K },
-  { pattern: /(?:^|[-./])o4(?:-|$|\/|\.)/i, limit: CONTEXT_LIMIT_128K },
-  { pattern: /(?:^|[-./])qwen(?:-|$|\/|\.)/i, limit: CONTEXT_LIMIT_256K },
-  { pattern: /(?:^|[-./])kimi(?:-|$|\/|\.)/i, limit: CONTEXT_LIMIT_128K },
-  { pattern: /(?:^|[-./])deepseek(?:-|$|\/|\.)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])o3(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])o4(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])qwen(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_256K },
+  { pattern: /(?:^|[-./])kimi(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])deepseek(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
 ];
 
 function getContextLimitByModelId(modelId: string): number | undefined {

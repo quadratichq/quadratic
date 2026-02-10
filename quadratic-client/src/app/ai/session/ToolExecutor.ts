@@ -74,6 +74,7 @@ export class ToolExecutor {
         fileUuid: options.fileUuid,
         teamUuid: options.teamUuid,
         modelKey: options.modelKey,
+        abortSignal: options.abortSignal,
       });
 
       return result;

@@ -230,6 +230,7 @@ export const miscToolsActions: MiscToolActions = {
         fileUuid: metaData.fileUuid,
         teamUuid: metaData.teamUuid,
         reset: args.reset,
+        abortSignal: metaData?.abortSignal,
         onToolCall,
         onToolCallComplete,
       });

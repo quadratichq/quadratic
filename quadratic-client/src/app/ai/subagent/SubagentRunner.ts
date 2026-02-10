@@ -161,8 +161,8 @@ export class SubagentRunner {
   /**
    * Run the main tool call loop for the subagent.
    *
-   * Note: This modifies the messages array in-place so changes persist
-   * back to the caller for session storage.
+   * Modifies the messages array in-place and persists after each complete
+   * iteration so partial state is never saved on error.
    */
   private async runToolCallLoop(params: {
     messages: ChatMessage[];
@@ -224,9 +224,10 @@ export class SubagentRunner {
         modelKey,
       });
 
-      // If no tool calls, the subagent is done
+      // If no tool calls, the subagent is done — persist and return
       if (response.toolCalls.length === 0) {
         console.log(`[SubagentRunner] Complete - no more tool calls`);
+        subagentSessionManager.setMessages(subagentType, [...messages]);
         return this.parseResult(response.content);
       }
 
@@ -248,8 +249,14 @@ export class SubagentRunner {
       }
 
       // Execute tool calls sequentially. Core is single-process; parallelizing would not improve throughput.
-      const toolResultMessage = await this.executeToolCalls(response.toolCalls, subagentType);
-      messages.push(toolResultMessage);
+      try {
+        const toolResultMessage = await this.executeToolCalls(response.toolCalls, subagentType, chatId);
+        messages.push(toolResultMessage);
+        subagentSessionManager.setMessages(subagentType, [...messages]);
+      } catch (error) {
+        messages.pop();
+        throw error;
+      }
 
       // Emit tool call complete events
       for (const tc of response.toolCalls) {
@@ -363,6 +370,7 @@ export class SubagentRunner {
 
     const decoder = new TextDecoder();
     let lastMessage: { content: AIResponseContent; toolCalls: AIToolCall[] } | null = null;
+    let buffer = '';
 
     try {
       while (true) {
@@ -370,8 +378,9 @@ export class SubagentRunner {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -400,7 +409,11 @@ export class SubagentRunner {
   /**
    * Execute tool calls, filtering to only allowed tools for this subagent type.
    */
-  private async executeToolCalls(toolCalls: AIToolCall[], subagentType: SubagentType): Promise<ToolResultMessage> {
+  private async executeToolCalls(
+    toolCalls: AIToolCall[],
+    subagentType: SubagentType,
+    chatId: string
+  ): Promise<ToolResultMessage> {
     const toolResultMessage: ToolResultMessage = {
       role: 'user',
       content: [],
@@ -417,7 +430,7 @@ export class SubagentRunner {
         continue;
       }
 
-      const result = await this.executeSingleTool(toolCall);
+      const result = await this.executeSingleTool(toolCall, chatId);
       toolResultMessage.content.push({
         id: toolCall.id,
         content: result,
@@ -430,7 +443,10 @@ export class SubagentRunner {
   /**
    * Execute a single tool call.
    */
-  private async executeSingleTool(toolCall: AIToolCall): Promise<ReturnType<(typeof aiToolsActions)[AITool]>> {
+  private async executeSingleTool(
+    toolCall: AIToolCall,
+    chatId: string
+  ): Promise<ReturnType<(typeof aiToolsActions)[AITool]>> {
     if (!Object.values(AITool).includes(toolCall.name as AITool)) {
       return [createTextContent('Unknown tool')];
     }
@@ -447,7 +463,7 @@ export class SubagentRunner {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await aiToolsActions[aiTool](args as any, {
         source: 'AIAnalyst',
-        chatId: 'subagent',
+        chatId,
         messageIndex: 0,
       });
 
