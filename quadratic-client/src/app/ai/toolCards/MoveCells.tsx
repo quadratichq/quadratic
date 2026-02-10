@@ -15,6 +15,8 @@ interface MoveItem {
   target_top_left_position: string;
 }
 
+type MoveCellsData = MoveCellsResponse & { moves?: MoveItem[] };
+
 export const MoveCells = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<MoveCellsResponse, MoveCellsResponse>>();
@@ -40,16 +42,17 @@ export const MoveCells = memo(
       if (!toolArgs?.success) return [];
 
       // New format: moves array
-      if (toolArgs.data.moves && toolArgs.data.moves.length > 0) {
-        return toolArgs.data.moves;
+      const data = toolArgs.data as MoveCellsData;
+      if (data.moves && data.moves.length > 0) {
+        return data.moves;
       }
 
       // Old format: source_selection_rect and target_top_left_position
-      if (toolArgs.data.source_selection_rect && toolArgs.data.target_top_left_position) {
+      if (data.source_selection_rect && data.target_top_left_position) {
         return [
           {
-            source_selection_rect: toolArgs.data.source_selection_rect,
-            target_top_left_position: toolArgs.data.target_top_left_position,
+            source_selection_rect: data.source_selection_rect,
+            target_top_left_position: data.target_top_left_position,
           },
         ];
       }

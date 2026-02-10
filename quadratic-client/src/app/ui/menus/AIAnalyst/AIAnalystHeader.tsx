@@ -26,8 +26,6 @@ import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec'
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-const THRESHOLD = 10;
-
 interface AIAnalystHeaderProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
@@ -45,14 +43,6 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessagesCount = useAtomValue(currentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetAtom(showAIAnalystWithEffectsAtom);
   const loading = useAtomValue(loadingAtom);
-  const showStartFreshMsg = useMemo(
-    () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
-    [currentUserMessagesCount, showChatHistory]
-  );
-  const showHistoryMsg = useMemo(
-    () => currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
-    [currentUserMessagesCount, showChatHistory, loading, chatsCount]
-  );
 
   const handleExecuteAllToolCalls = useCallback(async () => {
     const currentChat = aiStore.get(currentChatAtom);
