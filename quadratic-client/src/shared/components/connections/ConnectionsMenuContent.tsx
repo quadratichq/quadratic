@@ -1,15 +1,7 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
-import {
-  AddIcon,
-  BankIcon,
-  BrokerageIcon,
-  CheckIcon,
-  CreditCardIcon,
-  DatabaseIcon,
-  SettingsIcon,
-} from '@/shared/components/Icons';
+import { AddIcon, BankIcon, BrokerageIcon, CheckIcon, CreditCardIcon, SettingsIcon } from '@/shared/components/Icons';
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -126,10 +118,6 @@ export const AddConnectionMenuItems = memo(({ onAddConnection }: AddConnectionMe
           <span>{name}</span>
         </DropdownMenuItem>
       ))}
-      <DropdownMenuSeparator className="!block" />
-      <DropdownMenuItem onClick={() => alert('TODO')} className="gap-3">
-        <DatabaseIcon className="flex-shrink-0" /> Other
-      </DropdownMenuItem>
     </>
   );
 });
