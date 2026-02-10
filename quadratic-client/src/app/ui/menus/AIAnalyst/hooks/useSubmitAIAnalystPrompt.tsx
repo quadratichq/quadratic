@@ -158,10 +158,11 @@ export function useSubmitAIAnalystPrompt() {
         queueMicrotask(() => {
           // Skip update if already aborted, as component state may be stale or tearing down.
           if (abortedBefore) return;
-          set(aiAnalystPromptSuggestionsAtom, () => ({
-            abortController: undefined,
-            suggestions: [],
-          }));
+          // Only clear if the atom still has the controller we aborted; a newer submitPrompt may have run.
+          set(aiAnalystPromptSuggestionsAtom, (current) => {
+            if (current.abortController !== prevSuggestions.abortController) return current;
+            return { abortController: undefined, suggestions: [] };
+          });
         });
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);

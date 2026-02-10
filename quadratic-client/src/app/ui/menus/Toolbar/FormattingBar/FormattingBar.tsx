@@ -61,6 +61,8 @@ export const FormattingBar = memo(() => {
       document.body.appendChild(container);
     }
     setPortalContainer(container);
+    // Container is intentionally left in the DOM on unmount to avoid removeChild
+    // races and so it can be reused on next mount (single shared ID = at most one node).
     return () => setPortalContainer(null);
   }, []);
 

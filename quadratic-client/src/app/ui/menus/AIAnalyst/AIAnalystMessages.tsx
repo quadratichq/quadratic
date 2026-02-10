@@ -557,8 +557,8 @@ const PromptSuggestions = memo(() => {
       prevHadSuggestions.current = true;
     } else if (prevHadSuggestions.current) {
       prevHadSuggestions.current = false;
-      const t = setTimeout(() => setDisplaySuggestions([]), 0);
-      return () => clearTimeout(t);
+      const t = requestAnimationFrame(() => setDisplaySuggestions([]));
+      return () => cancelAnimationFrame(t);
     }
   }, [promptSuggestions.suggestions]);
 
