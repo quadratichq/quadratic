@@ -1,3 +1,4 @@
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
@@ -127,8 +128,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         {connection && (
           <div className="flex items-start gap-2 pt-2 text-sm">
             <SyncedConnection
-              connectionUuid={connection.uuid}
-              teamUuid={teamUuid}
+              syncState={deriveSyncStateFromConnectionList(connection)}
+              updatedDate={connection.syncedConnectionUpdatedDate}
+              latestLogError={connection.syncedConnectionLatestLogError}
               createdDate={connection.createdDate}
             />
           </div>

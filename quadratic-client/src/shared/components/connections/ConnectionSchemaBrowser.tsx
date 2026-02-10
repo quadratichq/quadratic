@@ -1,5 +1,6 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { deriveSyncState, syncedConnectionsAtom } from '@/app/atoms/useSyncedConnection';
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { SyncedConnectionLatestStatus } from '@/shared/components/connections/SyncedConnection';
 import {
@@ -26,7 +27,6 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useAtomValue } from 'jotai';
 import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
@@ -60,12 +60,12 @@ export const ConnectionSchemaBrowser = ({
 }: ConnectionSchemaBrowserProps) => {
   const isSynced = isSyncedConnectionType(type);
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
-  const syncedConnections = useAtomValue(syncedConnectionsAtom);
-  const syncState = useMemo(() => {
-    if (!isSynced || !uuid || !syncedConnections[uuid]) return null;
-    const { percentCompleted, latestLogStatus } = syncedConnections[uuid];
-    return deriveSyncState({ percentCompleted, latestLogStatus });
-  }, [isSynced, uuid, syncedConnections]);
+  const { connections } = useConnectionsFetcher();
+  const connection = useMemo(
+    () => (isSynced && uuid ? connections.find((c) => c.uuid === uuid) : undefined),
+    [isSynced, uuid, connections]
+  );
+  const syncState = connection ? (deriveSyncStateFromConnectionList(connection) ?? null) : null;
 
   const [filterQuery, setFilterQuery] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -102,14 +102,17 @@ export const ConnectionSchemaBrowser = ({
                 </div>
                 <div className="flex flex-col gap-0">
                   <h3 className="truncate font-medium leading-4 tracking-tight">{data.name}</h3>
-                  {isSynced && uuid && (
+                  {isSynced && uuid && syncState && (
                     <button
                       onClick={() =>
                         setShowConnectionsMenu({ initialConnectionUuid: uuid, initialConnectionType: type })
                       }
                       className="flex items-center text-xs text-muted-foreground hover:underline"
                     >
-                      <SyncedConnectionLatestStatus connectionUuid={uuid} teamUuid={teamUuid} />
+                      <SyncedConnectionLatestStatus
+                        syncState={syncState}
+                        updatedDate={connection?.syncedConnectionUpdatedDate}
+                      />
                     </button>
                   )}
                 </div>
