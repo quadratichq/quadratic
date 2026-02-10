@@ -115,6 +115,7 @@ impl From<SharedError> for FilesError {
                 StorageError::Read(key, _) => FilesError::NotFound(format!("File {key} not found")),
                 _ => FilesError::Storage(error.to_string()),
             },
+            SharedError::Synced(error) => FilesError::SyncedConnection(error),
             _ => FilesError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }
