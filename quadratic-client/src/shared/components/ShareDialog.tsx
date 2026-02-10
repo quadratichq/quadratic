@@ -38,7 +38,7 @@ import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-s
 import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FetcherSubmitFunction } from 'react-router';
-import { useFetcher, useFetchers, useSubmit } from 'react-router';
+import { useFetcher, useFetchers, useNavigate, useSubmit } from 'react-router';
 
 type UserMakingRequest = ApiTypes['/v0/teams/:uuid.GET.response']['userMakingRequest'];
 type ShareUser = {
@@ -760,6 +760,7 @@ export function InviteForm({
 
   const onSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
+      // Always prevent default form submission to avoid page reload
       e.preventDefault();
 
       // Get the data from the form
@@ -768,7 +769,7 @@ export function InviteForm({
       const role = String(formData.get('role'));
 
       // Validate email
-      let email;
+      let email: string;
       try {
         email = emailSchema.parse(emailFromUser);
       } catch (e) {
@@ -882,6 +883,7 @@ function ManageUser({
   onAddToTeam?: () => void;
 }) {
   const userId = String(user.id);
+  const navigate = useNavigate();
   // Use consistent fetcher keys so updates can be tracked across the app
   const fetcherDelete = useFetcher({ key: `delete-user-${userId}` });
   const fetcherUpdate = useFetcher({ key: `update-user-${userId}` });
@@ -898,6 +900,13 @@ function ManageUser({
   }
 
   const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
+
+  // Handle redirect if user deleted themselves
+  useEffect(() => {
+    if (fetcherDelete.data?.ok && fetcherDelete.data.redirect) {
+      navigate('/');
+    }
+  }, [fetcherDelete.data, navigate]);
 
   // If user is being deleted, hide them
   if (fetcherDelete.state !== 'idle') {
