@@ -102,7 +102,7 @@ export const ConnectionSchemaBrowser = ({
                 </div>
                 <div className="flex flex-col gap-0">
                   <h3 className="truncate font-medium leading-4 tracking-tight">{data.name}</h3>
-                  {syncState && (
+                  {isSynced && uuid && (
                     <button
                       onClick={() =>
                         setShowConnectionsMenu({ initialConnectionUuid: uuid, initialConnectionType: type })
