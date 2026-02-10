@@ -150,13 +150,16 @@ export function useSubmitAIAnalystPrompt() {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
-        // abort and clear prompt suggestions
-        set(aiAnalystPromptSuggestionsAtom, (prev) => {
-          prev.abortController?.abort();
-          return {
+        // Abort any in-flight suggestion request immediately; clear suggestions after this tick
+        // so HoverCard portals (used by PromptSuggestions) can unmount before we hide the list.
+        // Clearing synchronously caused removeChild errors when the portal was torn down in the same commit.
+        const prevSuggestions = snapshot.getLoadable(aiAnalystPromptSuggestionsAtom).getValue();
+        prevSuggestions.abortController?.abort();
+        queueMicrotask(() => {
+          set(aiAnalystPromptSuggestionsAtom, () => ({
             abortController: undefined,
             suggestions: [],
-          };
+          }));
         });
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);

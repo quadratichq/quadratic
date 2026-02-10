@@ -14,6 +14,9 @@ export interface ConnectionInfo {
   syncState: SyncState | null;
 }
 
+/** Demo connection UUID from CONNECTION_DEMO – not a real connection, skip schema fetch to avoid errors. */
+const DEMO_CONNECTION_UUID = '00000000-0000-0000-0000-000000000000';
+
 export const getConnectionTableInfo = async (
   connection: ConnectionList[number],
   teamUuid: string
@@ -34,6 +37,15 @@ export const getConnectionTableInfo = async (
     isSyncedConnection: isSynced,
     syncState,
   };
+
+  const isDemoConnection = connection.isDemo === true || connection.uuid === DEMO_CONNECTION_UUID;
+  if (isDemoConnection) {
+    return {
+      ...connectionDetailsShared,
+      schema: null,
+      error: undefined,
+    };
+  }
 
   try {
     const schema = await connectionClient.schemas.get(
