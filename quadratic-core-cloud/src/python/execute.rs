@@ -326,6 +326,7 @@ mod tests {
     use std::time::Instant;
 
     use super::*;
+    use quadratic_core::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH};
     use serial_test::serial;
 
     fn test_get_cells(a1: String) -> Result<JsCellsA1Response> {
