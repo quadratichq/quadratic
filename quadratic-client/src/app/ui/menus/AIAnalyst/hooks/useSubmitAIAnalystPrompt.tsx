@@ -150,13 +150,19 @@ export function useSubmitAIAnalystPrompt() {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
-        // abort and clear prompt suggestions
-        set(aiAnalystPromptSuggestionsAtom, (prev) => {
-          prev.abortController?.abort();
-          return {
-            abortController: undefined,
-            suggestions: [],
-          };
+        // Abort any in-flight suggestion request and clear suggestions.
+        // PromptSuggestions delays unmounting (see AIAnalystMessages) so HoverCard portals can tear down safely.
+        const prevSuggestions = snapshot.getLoadable(aiAnalystPromptSuggestionsAtom).getValue();
+        const abortedBefore = prevSuggestions.abortController?.signal.aborted;
+        prevSuggestions.abortController?.abort();
+        queueMicrotask(() => {
+          // Skip update if already aborted, as component state may be stale or tearing down.
+          if (abortedBefore) return;
+          // Only clear if the atom still has the controller we aborted; a newer submitPrompt may have run.
+          set(aiAnalystPromptSuggestionsAtom, (current) => {
+            if (current.abortController !== prevSuggestions.abortController) return current;
+            return { abortController: undefined, suggestions: [] };
+          });
         });
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
