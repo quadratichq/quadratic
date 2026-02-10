@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import logger from '../../utils/logger';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -74,7 +75,7 @@ async function handler(req: RequestWithUser, res: Response<{ accessToken: string
       expiresAt,
     });
   } catch (error) {
-    console.error('Error refreshing Google OAuth token:', error);
+    logger.error('Error refreshing Google OAuth token:', error);
     if (error instanceof ApiError) {
       throw error;
     }

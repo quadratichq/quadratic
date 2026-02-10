@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import logger from '../../utils/logger';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -77,7 +78,7 @@ async function handler(
       expiresAt,
     });
   } catch (error) {
-    console.error('Error exchanging Google OAuth code:', error);
+    logger.error('Error exchanging Google OAuth code:', error);
     if (error instanceof ApiError) {
       throw error;
     }
