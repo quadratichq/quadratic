@@ -28,6 +28,7 @@ export enum AITool {
   CodeEditorCompletions = 'code_editor_completions',
   UserPromptSuggestions = 'user_prompt_suggestions',
   EmptyChatPromptSuggestions = 'empty_chat_prompt_suggestions',
+  CategorizedEmptyChatPromptSuggestions = 'categorized_empty_chat_prompt_suggestions',
   PDFImport = 'pdf_import',
   GetCellData = 'get_cell_data',
   HasCellData = 'has_cell_data',
@@ -84,6 +85,7 @@ export const AIToolSchema = z.enum([
   AITool.CodeEditorCompletions,
   AITool.UserPromptSuggestions,
   AITool.EmptyChatPromptSuggestions,
+  AITool.CategorizedEmptyChatPromptSuggestions,
   AITool.PDFImport,
   AITool.GetCellData,
   AITool.HasCellData,
@@ -286,11 +288,26 @@ export const AIToolsArgsSchema = {
     top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
-  [AITool.MoveCells]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    source_selection_rect: stringSchema,
-    target_top_left_position: stringSchema,
-  }),
+  [AITool.MoveCells]: z
+    .object({
+      sheet_name: stringNullableOptionalSchema,
+      // New format: array of moves
+      moves: z
+        .array(
+          z.object({
+            source_selection_rect: stringSchema,
+            target_top_left_position: stringSchema,
+          })
+        )
+        .optional(),
+      // Old format (backward compatibility for loading old chats)
+      source_selection_rect: stringSchema.optional(),
+      target_top_left_position: stringSchema.optional(),
+    })
+    .refine(
+      (data) => (data.moves && data.moves.length > 0) || (data.source_selection_rect && data.target_top_left_position),
+      { message: 'Either moves array or source_selection_rect/target_top_left_position must be provided' }
+    ),
   [AITool.DeleteCells]: z.object({
     sheet_name: stringNullableOptionalSchema,
     selection: stringSchema,
@@ -311,6 +328,32 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.EmptyChatPromptSuggestions]: z.object({
     prompt_suggestions: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+  }),
+  [AITool.CategorizedEmptyChatPromptSuggestions]: z.object({
+    enrich: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    clean: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    visualize: z.array(
+      z.object({
+        label: stringSchema,
+        prompt: stringSchema,
+      })
+    ),
+    analyze: z.array(
       z.object({
         label: stringSchema,
         prompt: stringSchema,
@@ -1192,11 +1235,10 @@ Examples:
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
+Moves one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
+Source location is the top left and bottom right corners of the selection rectangle to be moved (in a1 notation).\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
@@ -1207,26 +1249,34 @@ Target location is the top left corner of the target location on the current ope
           type: 'string',
           description: 'The sheet name of the current sheet in the context',
         },
-        source_selection_rect: {
-          type: 'string',
-          description:
-            'The selection of cells, in a1 notation, to be moved in the current open sheet. This is string representation of the rectangular selection of cells to be moved',
-        },
-        target_top_left_position: {
-          type: 'string',
-          description:
-            'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. This will be the top left corner of the source selection rectangle after moving.',
+        moves: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              source_selection_rect: {
+                type: 'string',
+                description: 'The selection of cells to move, in a1 notation (e.g., "A1:B5")',
+              },
+              target_top_left_position: {
+                type: 'string',
+                description: 'The target position, in a1 notation (single cell, e.g., "D1")',
+              },
+            },
+            required: ['source_selection_rect', 'target_top_left_position'],
+            additionalProperties: false,
+          },
         },
       },
-      required: ['sheet_name', 'source_selection_rect', 'target_top_left_position'],
+      required: ['sheet_name', 'moves'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
     prompt: `
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+You should use the move_cells function to move one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
+Provide the moves array with objects containing source_selection_rect and target_top_left_position for each move.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
   },
@@ -1433,7 +1483,24 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
                   'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
               },
             },
-            required: ['sheet_name', 'selection', 'bold', 'italic', 'underline', 'strike_through', 'text_color', 'fill_color', 'align', 'vertical_align', 'wrap', 'numeric_commas', 'number_type', 'currency_symbol', 'date_time', 'font_size'],
+            required: [
+              'sheet_name',
+              'selection',
+              'bold',
+              'italic',
+              'underline',
+              'strike_through',
+              'text_color',
+              'fill_color',
+              'align',
+              'vertical_align',
+              'wrap',
+              'numeric_commas',
+              'number_type',
+              'currency_symbol',
+              'date_time',
+              'font_size',
+            ],
             additionalProperties: false,
           },
         },
@@ -1492,7 +1559,7 @@ Completion is the delta that will be inserted at the cursor position in the code
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
@@ -1508,7 +1575,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
             properties: {
               label: {
                 type: 'string',
-                description: 'The label of the follow up prompt, maximum 40 characters',
+                description: 'The label of the follow up prompt, maximum 7 words',
               },
               prompt: {
                 type: 'string',
@@ -1528,7 +1595,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
     prompt: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
@@ -1541,7 +1608,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
     description: `
 This tool provides prompt suggestions for the user for an empty chat when user attaches a file or adds a connection or code cell to context, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
 `,
@@ -1555,7 +1622,7 @@ Always maintain strong correlation between the context, the files, the connectio
             properties: {
               label: {
                 type: 'string',
-                description: 'The label of the follow up prompt, maximum 25 characters',
+                description: 'The label of the follow up prompt, maximum 7 words',
               },
               prompt: {
                 type: 'string',
@@ -1575,9 +1642,109 @@ Always maintain strong correlation between the context, the files, the connectio
     prompt: `
 This tool provides prompt suggestions for the user when they attach a file or add a connection to an empty chat. It requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
+`,
+  },
+  [AITool.CategorizedEmptyChatPromptSuggestions]: {
+    sources: ['GetEmptyChatPromptSuggestions'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool provides categorized prompt suggestions for the user when there is data on the spreadsheet. It requires four arrays of three prompt suggestions each, organized by category.\n
+Categories are: enrich (add new data based on existing), clean (fix or standardize data), visualize (create charts or visual representations), analyze (derive insights from data).\n
+Each prompt suggestion is an object with a label and a prompt.\n
+The label is a descriptive label for the prompt suggestion with maximum 7 words, this will be displayed to the user in the UI.\n
+The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
+Always maintain strong correlation between the suggestions and the actual data present on the spreadsheet.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        enrich: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for enriching the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        clean: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for cleaning the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        visualize: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for visualizing the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+        analyze: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the prompt, maximum 7 words',
+              },
+              prompt: {
+                type: 'string',
+                description: 'Detailed prompt for analyzing the data',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['enrich', 'clean', 'visualize', 'analyze'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.CategorizedEmptyChatPromptSuggestions],
+    prompt: `
+This tool provides categorized prompt suggestions when the spreadsheet contains data. Generate three suggestions for each of the four categories.\n
+- enrich: Suggestions to add new data columns, combine fields, look up related information, or calculate derived values based on existing data.\n
+- clean: Suggestions to fix formatting issues, remove duplicates, standardize values, handle missing data, or improve data quality.\n
+- visualize: Suggestions to create charts, graphs, pivot tables, or other visual representations of the data.\n
+- analyze: Suggestions to calculate statistics, find trends, identify patterns, compare values, or derive business insights.\n
+Each suggestion should be specific to the actual data present on the spreadsheet.\n
 `,
   },
   [AITool.PDFImport]: {

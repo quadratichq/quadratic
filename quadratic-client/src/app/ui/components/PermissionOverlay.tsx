@@ -73,13 +73,18 @@ export function PermissionOverlay() {
 
   // If you can't edit the file for other reasons (permission-based), show standard message
   // This is distinct from "Upgrade to edit" (billing-restricted)
-  if (!permissions.includes(FILE_EDIT)) {
+  if (!permissions.includes(FILE_EDIT) && isOpen) {
     return (
       <FixedBottomAlert>
         <Type>
           <strong>View only.</strong> Duplicate or ask the owner for permission to edit.
         </Type>
-        <Button onClick={handleDuplicate}>{duplicateFileAction.label}</Button>
+        <div className="flex flex-shrink-0 gap-2">
+          <Button onClick={handleDuplicate}>{duplicateFileAction.label}</Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <Cross2Icon />
+          </Button>
+        </div>
       </FixedBottomAlert>
     );
   }

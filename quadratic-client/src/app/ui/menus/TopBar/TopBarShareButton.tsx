@@ -14,7 +14,6 @@ export const TopBarShareButton = () => {
     <>
       {isAuthenticated ? (
         <Button
-          variant="outline"
           size="sm"
           onClick={() => {
             setShowShareFileMenu((prev) => !prev);

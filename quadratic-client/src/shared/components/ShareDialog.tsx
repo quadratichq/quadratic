@@ -1,9 +1,11 @@
+import { getActionFileMove, type Action as FileAction } from '@/routes/api.files.$uuid';
 import type { Action as FileShareAction, FilesSharingLoader } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { syncFileLocation } from '@/shared/atom/fileLocationAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { GroupAddIcon } from '@/shared/components/Icons';
+import { GroupAddIcon, GroupIcon, GroupOffIcon, MailIcon, PublicIcon, PublicOffIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -24,14 +26,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tool
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import {
-  Cross2Icon,
-  EnvelopeClosedIcon,
-  ExclamationTriangleIcon,
-  GlobeIcon,
-  LockClosedIcon,
-  PersonIcon,
-} from '@radix-ui/react-icons';
+import { Cross2Icon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import type {
   ApiTypes,
   PublicLinkAccess,
@@ -43,7 +38,7 @@ import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-s
 import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FetcherSubmitFunction } from 'react-router';
-import { useFetcher, useFetchers, useSubmit } from 'react-router';
+import { useFetcher, useFetchers, useNavigate, useSubmit } from 'react-router';
 
 type UserMakingRequest = ApiTypes['/v0/teams/:uuid.GET.response']['userMakingRequest'];
 type ShareUser = {
@@ -292,10 +287,10 @@ function ShareFileDialogBody({
 }) {
   const {
     file: { publicLinkAccess },
-    team: { uuid: teamUuid },
+    team: { uuid: teamUuid, name: teamName },
     users,
     invites,
-    userMakingRequest: { filePermissions, id: loggedInUserId },
+    userMakingRequest: { filePermissions, id: loggedInUserId, teamRole },
     owner,
   } = data;
   const fetchers = useFetchers();
@@ -340,8 +335,6 @@ function ShareFileDialogBody({
     [invites, owner, pendingInvites, users]
   );
 
-  const isTeamFile = useMemo(() => owner.type === 'team', [owner]);
-
   const hasPermissionToUpgradeToTeamMember = useMemo(
     () => data.userMakingRequest.teamRole === 'OWNER' || data.userMakingRequest.teamRole === 'EDITOR',
     [data.userMakingRequest.teamRole]
@@ -359,28 +352,15 @@ function ShareFileDialogBody({
         />
       )}
 
-      {isTeamFile && (
-        <ListItem className="py-1 text-muted-foreground">
-          <div className="flex h-6 w-6 items-center justify-center">
-            <PersonIcon className="-mr-[2px]" />
-            <PersonIcon className="-ml-[2px]" />
-          </div>
-          <Type variant="body2">Everyone at {owner.name}</Type>
-          <Type variant="body2" className="pr-4">
-            Can access
-          </Type>
-        </ListItem>
-      )}
-
       <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
 
-      {owner.type === 'user' && (
-        <ListItemUser
-          isYou={owner.id === data.userMakingRequest.id}
-          email={owner.email}
-          name={owner.name}
-          picture={owner.picture}
-          action={<Type className="pr-4">Owner</Type>}
+      {teamRole && (
+        <ListItemTeamFile
+          teamName={teamName}
+          ownerId={owner.type === 'user' ? owner.id : null}
+          uuid={uuid}
+          loggedInUserId={loggedInUserId}
+          disabled={!filePermissions.includes('FILE_MOVE')}
         />
       )}
 
@@ -591,27 +571,7 @@ function CopyLinkButton({
   isTeamFile: boolean;
   uuid: string;
 }) {
-  const fetchers = useFetchers();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const publicLinkAccessFetcher = useMemo(
-    () =>
-      fetchers.find(
-        (fetcher) =>
-          isJsonObject(fetcher.json) && fetcher.json.intent === 'update-public-link-access' && fetcher.state !== 'idle'
-      ),
-    [fetchers]
-  );
-  const optimisticPublicLinkAccess = useMemo(
-    () =>
-      publicLinkAccessFetcher
-        ? (publicLinkAccessFetcher.json as FileShareAction['request.update-public-link-access']).publicLinkAccess
-        : publicLinkAccess,
-    [publicLinkAccess, publicLinkAccessFetcher]
-  );
-  const disabled = useMemo(
-    () => (publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true),
-    [isTeamFile, optimisticPublicLinkAccess, publicLinkAccess]
-  );
 
   return (
     <>
@@ -636,8 +596,7 @@ function CopyLinkButton({
         Copy link with position
       </Button> */}
       <Button
-        variant={disabled ? 'ghost' : 'link'}
-        disabled={disabled}
+        variant={'link'}
         className="flex-shrink-0"
         onClick={() => {
           trackEvent('[FileSharing].publicLinkAccess.clickCopyLink');
@@ -801,6 +760,7 @@ export function InviteForm({
 
   const onSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
+      // Always prevent default form submission to avoid page reload
       e.preventDefault();
 
       // Get the data from the form
@@ -809,7 +769,7 @@ export function InviteForm({
       const role = String(formData.get('role'));
 
       // Validate email
-      let email;
+      let email: string;
       try {
         email = emailSchema.parse(emailFromUser);
       } catch (e) {
@@ -923,6 +883,7 @@ function ManageUser({
   onAddToTeam?: () => void;
 }) {
   const userId = String(user.id);
+  const navigate = useNavigate();
   // Use consistent fetcher keys so updates can be tracked across the app
   const fetcherDelete = useFetcher({ key: `delete-user-${userId}` });
   const fetcherUpdate = useFetcher({ key: `update-user-${userId}` });
@@ -939,6 +900,13 @@ function ManageUser({
   }
 
   const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
+
+  // Handle redirect if user deleted themselves
+  useEffect(() => {
+    if (fetcherDelete.data?.ok && fetcherDelete.data.redirect) {
+      navigate('/');
+    }
+  }, [fetcherDelete.data, navigate]);
 
   // If user is being deleted, hide them
   if (fetcherDelete.state !== 'idle') {
@@ -1095,7 +1063,7 @@ function ListItemInvite({ email, action, error }: { email: string; action: React
     <ListItem>
       <div>
         <Avatar>
-          <EnvelopeClosedIcon />
+          <MailIcon />
         </Avatar>
       </div>
       <div className={`flex flex-col`}>
@@ -1129,7 +1097,7 @@ function ListItemUser({
   const secondary = error ? error : name ? email : '';
   return (
     <ListItem>
-      <div>
+      <div className="flex h-6 w-6 items-center justify-center">
         <Avatar src={picture} size="small">
           {label}
         </Avatar>
@@ -1146,6 +1114,80 @@ function ListItemUser({
       </div>
 
       <div>{action}</div>
+    </ListItem>
+  );
+}
+
+function ListItemTeamFile({
+  disabled,
+  teamName,
+  ownerId,
+  uuid,
+  loggedInUserId,
+}: {
+  disabled: boolean;
+  teamName: string;
+  ownerId: number | null;
+  uuid: string;
+  loggedInUserId: number;
+}) {
+  const fetcher = useFetcher();
+  const fetcherUrl = ROUTES.API.FILE(uuid);
+
+  let value: 'team-file' | 'personal-file' = ownerId === null ? 'team-file' : 'personal-file';
+
+  // If we're updating, optimistically show the next value
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    const data = fetcher.json as FileAction['request.move'];
+    value = data.ownerUserId === null ? 'team-file' : 'personal-file';
+  }
+
+  const onCheckedChange = useCallback(
+    (checked: boolean) => {
+      // checked = true means make it a team file (ownerUserId: null)
+      // checked = false means make it a personal file (ownerUserId: loggedInUserId)
+      const newOwnerUserId = checked ? null : loggedInUserId;
+
+      if (newOwnerUserId === null) {
+        trackEvent('[FileSharing].moveFileToTeam');
+      } else {
+        trackEvent('[FileSharing].moveFileToPersonal');
+      }
+
+      // Submit via fetcher (handles API call)
+      const data = getActionFileMove(newOwnerUserId);
+      fetcher.submit(data, {
+        method: 'POST',
+        action: fetcherUrl,
+        encType: 'application/json',
+      });
+
+      // Also sync to the atom (if in app context) so TopBar updates immediately
+      syncFileLocation(uuid, newOwnerUserId);
+    },
+    [fetcher, fetcherUrl, loggedInUserId, uuid]
+  );
+
+  return (
+    <ListItem className="py-1">
+      <div className="flex h-6 w-6 items-center justify-center">
+        {value === 'team-file' ? <GroupIcon /> : <GroupOffIcon />}
+      </div>
+      <Type variant="body2">Everyone at {teamName}</Type>
+
+      <Select
+        disabled={disabled}
+        value={value}
+        onValueChange={(value: 'team-file' | 'personal-file') => onCheckedChange(value === 'team-file')}
+      >
+        <SelectTrigger className={`w-auto`}>
+          <SelectValue>{value === 'team-file' ? 'Can access' : 'No access'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="team-file">Can access</SelectItem>
+          <SelectItem value="personal-file">No access</SelectItem>
+        </SelectContent>
+      </Select>
     </ListItem>
   );
 }
@@ -1197,7 +1239,7 @@ function ListItemPublicLink({
   return (
     <ListItem>
       <div className="flex h-6 w-6 items-center justify-center">
-        {publicLinkAccess === 'NOT_SHARED' ? <LockClosedIcon /> : <GlobeIcon />}
+        {publicLinkAccess === 'NOT_SHARED' ? <PublicOffIcon /> : <PublicIcon />}
       </div>
 
       <div className={`flex flex-col`}>
@@ -1210,28 +1252,24 @@ function ListItemPublicLink({
       </div>
 
       <div className="flex items-center gap-1">
-        {disabled ? (
-          <Type className="pr-4">{activeOptionLabel}</Type>
-        ) : (
-          <Select
-            disabled={disabled}
-            value={publicLinkAccess}
-            onValueChange={(value: PublicLinkAccess) => {
-              setPublicLinkAccess(value);
-            }}
-          >
-            <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
-              <SelectValue>{activeOptionLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(optionsByValue).map(([value, label]) => (
-                <SelectItem value={value} key={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <Select
+          disabled={disabled}
+          value={publicLinkAccess}
+          onValueChange={(value: PublicLinkAccess) => {
+            setPublicLinkAccess(value);
+          }}
+        >
+          <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
+            <SelectValue>{activeOptionLabel}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(optionsByValue).map(([value, label]) => (
+              <SelectItem value={value} key={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </ListItem>
   );

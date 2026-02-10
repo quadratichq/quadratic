@@ -945,8 +945,8 @@ export interface CoreClientUndoRedo {
   redo: boolean;
 }
 
-export interface ClientCoreMoveCells {
-  type: 'clientCoreMoveCells';
+export interface ClientCoreMoveColsRows {
+  type: 'clientCoreMoveColsRows';
   id: number;
   source: SheetRect;
   targetSheetId: string;
@@ -958,8 +958,26 @@ export interface ClientCoreMoveCells {
   isAi: boolean;
 }
 
-export interface CoreClientMoveCells {
-  type: 'coreClientMoveCells';
+export interface CoreClientMoveColsRows {
+  type: 'coreClientMoveColsRows';
+  id: number;
+}
+
+export interface MoveItem {
+  source: SheetRect;
+  dest: { x: number; y: number; sheet_id: { id: string } };
+}
+
+export interface ClientCoreMoveCellsBatch {
+  type: 'clientCoreMoveCellsBatch';
+  id: number;
+  moves: MoveItem[];
+  cursor: string;
+  isAi: boolean;
+}
+
+export interface CoreClientMoveCellsBatch {
+  type: 'coreClientMoveCellsBatch';
   id: number;
 }
 
@@ -1628,7 +1646,8 @@ export type ClientCoreMessage =
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreGetTeamUuid
-  | ClientCoreMoveCells
+  | ClientCoreMoveColsRows
+  | ClientCoreMoveCellsBatch
   | ClientCoreGetFormatCell
   | ClientCoreSetDateTimeFormat
   | ClientCoreGetValidations
@@ -1737,7 +1756,8 @@ export type CoreClientMessage =
   | CoreClientA1Context
   | CoreClientAddDataTable
   | CoreClientSetCellValues
-  | CoreClientMoveCells
+  | CoreClientMoveColsRows
+  | CoreClientMoveCellsBatch
   | CoreClientDeleteCellValues
   | CoreClientDataTableMutations
   | CoreClientSetCodeCellValue

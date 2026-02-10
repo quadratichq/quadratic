@@ -1284,7 +1284,7 @@ class QuadraticCore {
     });
   }
 
-  moveCells(
+  moveColsRows(
     source: SheetRect,
     targetX: number,
     targetY: number,
@@ -1299,7 +1299,7 @@ class QuadraticCore {
         resolve(undefined);
       };
       this.send({
-        type: 'clientCoreMoveCells',
+        type: 'clientCoreMoveColsRows',
         id,
         source,
         targetSheetId,
@@ -1307,6 +1307,29 @@ class QuadraticCore {
         targetY,
         columns,
         rows,
+        cursor: sheets.getCursorPosition(),
+        isAi,
+      });
+    });
+  }
+
+  // Move multiple cell regions in a single transaction
+  moveCellsBatch(
+    moves: { source: SheetRect; targetX: number; targetY: number; targetSheetId: string }[],
+    isAi: boolean
+  ) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreMoveCellsBatch',
+        id,
+        moves: moves.map((m) => ({
+          source: m.source,
+          dest: { x: m.targetX, y: m.targetY, sheet_id: { id: m.targetSheetId } },
+        })),
         cursor: sheets.getCursorPosition(),
         isAi,
       });

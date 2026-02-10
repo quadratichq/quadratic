@@ -16,6 +16,9 @@ pub struct EmptyValuesCache {
     cache: Option<Contiguous2D<Option<Option<bool>>>>,
 }
 
+/// Skip building the cache for arrays larger than this to avoid slow import and high memory use.
+const EMPTY_VALUES_CACHE_MAX_CELLS: usize = 100_000;
+
 impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
     fn from((array_size, values): (&ArraySize, &SmallVec<[CellValue; 1]>)) -> Self {
         // required only in app for client side interactions
@@ -28,33 +31,38 @@ impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
             return Self::new();
         }
 
-        let width = array_size.w.get() as usize;
-
-        // collect all the empty cells
-        let mut empty = Vec::<Pos>::new();
-        for (i, value) in values.iter().enumerate() {
-            if value.is_blank_or_empty_string() {
-                let x = i % width;
-                let y = i / width;
-                empty.push((x, y).into());
-            }
-        }
-
-        // if there are no empty cells, we don't need to store the cache
-        if empty.is_empty() {
+        if values.len() > EMPTY_VALUES_CACHE_MAX_CELLS {
             return Self::new();
         }
 
-        let height = array_size.h.get();
+        let width = array_size.w.get() as i64;
+        let height = array_size.h.get() as i64;
+        let width_usize = width as usize;
+
+        // Collect empty positions first, then set only those. For tables with few empty
+        // cells (e.g. 99k cells, 10 empty), this avoids 99k set() calls.
+        let empty_positions: SmallVec<[Pos; 8]> = values
+            .iter()
+            .enumerate()
+            .filter_map(|(i, value)| {
+                if value.is_blank_or_empty_string() {
+                    let x = (i % width_usize) as i64;
+                    let y = (i / width_usize) as i64;
+                    Some(Pos { x, y }.translate(1, 1, 1, 1))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if empty_positions.is_empty() {
+            return Self::new();
+        }
 
         let mut cache = Contiguous2D::new();
-
-        // mark all cells (array rect) as Some(None) -> non-empty
-        cache.set_rect(1, 1, Some(width as i64), Some(height as i64), Some(None));
-
-        // then mark empty cells as Some(Some(true))
-        for pos in empty {
-            cache.set(pos.translate(1, 1, 1, 1), Some(Some(true)));
+        cache.set_rect(1, 1, Some(width), Some(height), Some(None));
+        for pos in empty_positions {
+            cache.set(pos, Some(Some(true)));
         }
 
         Self { cache: Some(cache) }
@@ -86,6 +94,13 @@ impl EmptyValuesCache {
             return;
         }
 
+        // Clear cache when table grows past threshold so cache presence doesn't depend on history.
+        let cell_count = array_size.w.get() as usize * array_size.h.get() as usize;
+        if cell_count > EMPTY_VALUES_CACHE_MAX_CELLS {
+            self.cache = None;
+            return;
+        }
+
         if let Some(cache) = self.cache.as_mut() {
             let val = if blank { Some(Some(true)) } else { Some(None) };
             cache.set(pos.translate(1, 1, 1, 1), val);
@@ -107,6 +122,13 @@ impl EmptyValuesCache {
     pub fn remove_row(&mut self, array_size: &ArraySize, row: i64) {
         // required only in app for client side interactions
         if !cfg!(target_family = "wasm") && !cfg!(test) {
+            self.cache = None;
+            return;
+        }
+
+        // Clear cache when table is over threshold (e.g. started large, then had rows removed).
+        let cell_count = array_size.w.get() as usize * array_size.h.get() as usize;
+        if cell_count > EMPTY_VALUES_CACHE_MAX_CELLS {
             self.cache = None;
             return;
         }

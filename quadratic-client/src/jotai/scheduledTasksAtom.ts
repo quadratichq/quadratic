@@ -45,9 +45,16 @@ export const useLoadScheduledTasks = () => {
 
   useEffect(() => {
     if (fileUuid) {
-      scheduledTasksAPI.get(fileUuid).then((tasks) => {
-        setScheduledTasks((prev) => ({ ...prev, tasks }));
-      });
+      scheduledTasksAPI
+        .get(fileUuid)
+        .then((tasks) => {
+          setScheduledTasks((prev) => ({ ...prev, tasks }));
+        })
+        .catch((error) => {
+          // Silently handle error - tasks will remain empty
+          // This can happen due to network issues or if the file doesn't exist
+          console.warn('Failed to load scheduled tasks:', error);
+        });
     }
   }, [fileUuid, setScheduledTasks]);
 
