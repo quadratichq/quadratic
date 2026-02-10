@@ -1,6 +1,6 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
-import { apiClient } from '@/shared/api/apiClient';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import {
   AddIcon,
   BankIcon,
@@ -10,7 +10,6 @@ import {
   DatabaseIcon,
   SettingsIcon,
 } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -23,7 +22,7 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { connectionsByType } from './connectionsByType';
 
@@ -68,7 +67,7 @@ export const AddConnectionMenuItems = memo(({ onAddConnection }: AddConnectionMe
       <DropdownMenuLabel className="text-xs text-muted-foreground">SaaS</DropdownMenuLabel>
       {connectionTypesByCategory.SaaS.map(([type, { name }]) => (
         <DropdownMenuItem key={type} onClick={() => handleAddConnection(type as ConnectionType)} className="gap-3">
-          <LanguageIcon language={type} className="flex-shrink-0" />
+          <ConnectionIcon type={type} className="flex-shrink-0" />
           <span>{name}</span>
         </DropdownMenuItem>
       ))}
@@ -123,7 +122,7 @@ export const AddConnectionMenuItems = memo(({ onAddConnection }: AddConnectionMe
       <DropdownMenuLabel className="text-xs text-muted-foreground">Databases</DropdownMenuLabel>
       {connectionTypesByCategory.Databases.map(([type, { name }]) => (
         <DropdownMenuItem key={type} onClick={() => handleAddConnection(type as ConnectionType)} className="gap-3">
-          <LanguageIcon language={type} className="flex-shrink-0" />
+          <ConnectionIcon type={type} className="flex-shrink-0" />
           <span>{name}</span>
         </DropdownMenuItem>
       ))}
@@ -141,72 +140,33 @@ AddConnectionMenuItems.displayName = 'AddConnectionMenuItems';
 // Connection Menu Item
 // ============================================================================
 
-const SYNCED_CONNECTION_POLL_INTERVAL_MS = 10000; // 10 seconds
-
 interface ConnectionMenuItemProps {
   connection: ConnectionList[number];
-  teamUuid: string;
   isActive: boolean;
   onClick: () => void;
 }
 
-const ConnectionMenuItem = memo(({ connection, teamUuid, isActive, onClick }: ConnectionMenuItemProps) => {
-  const [syncData, setSyncData] = useState({
-    percentCompleted: connection.syncedConnectionPercentCompleted,
-    latestLogStatus: connection.syncedConnectionLatestLogStatus,
-  });
+const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMenuItemProps) => {
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const syncState = isSyncedConnectionType(connection.type) ? deriveSyncStateFromConnectionList(connection) : null;
+  const isNotSynced = syncState !== null && syncState !== 'synced';
 
-  const isSyncedConnection = isSyncedConnectionType(connection.type);
-
-  // Poll for updated sync data when this is a synced connection type
-  useEffect(() => {
-    if (!isSyncedConnection) {
-      return;
+  const handleClick = useCallback(() => {
+    if (isNotSynced) {
+      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+    } else {
+      onClick();
     }
-
-    const fetchConnection = async () => {
-      try {
-        const fetchedConnection = await apiClient.connections.get({
-          connectionUuid: connection.uuid,
-          teamUuid,
-        });
-        setSyncData({
-          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted,
-          latestLogStatus: fetchedConnection?.syncedConnectionLatestLogStatus,
-        });
-      } catch {
-        // Silently fail - keep using existing sync data
-      }
-    };
-
-    // Fire immediately to get fresh data
-    fetchConnection();
-
-    // Then poll every interval
-    const interval = setInterval(fetchConnection, SYNCED_CONNECTION_POLL_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [connection.uuid, isSyncedConnection, teamUuid]);
-
-  const syncState = isSyncedConnection
-    ? deriveSyncStateFromConnectionList({
-        syncedConnectionPercentCompleted: syncData.percentCompleted,
-        syncedConnectionLatestLogStatus: syncData.latestLogStatus,
-      })
-    : null;
-
-  // Disable if syncing or not yet synced
-  const isSyncing = syncState === 'syncing' || syncState === 'not_synced';
+  }, [isNotSynced, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
   return (
-    <DropdownMenuItem key={connection.uuid} onClick={onClick} className="gap-3" disabled={isSyncing}>
-      <LanguageIcon language={connection.type} className="flex-shrink-0" />
+    <DropdownMenuItem key={connection.uuid} onClick={handleClick} className="gap-3">
+      <ConnectionIcon type={connection.type} syncState={syncState} className="flex-shrink-0" />
       <span className="flex items-center truncate">
         <span className="truncate">
           {connection.name}
           {connection.isDemo && ' (read-only)'}
         </span>
-        {isSyncing && <span className="ml-1 text-xs text-muted-foreground">(syncing)</span>}
       </span>
       <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
     </DropdownMenuItem>
@@ -242,7 +202,6 @@ export const ConnectionsMenuContent = memo(
           <ConnectionMenuItem
             key={connection.uuid}
             connection={connection}
-            teamUuid={teamUuid}
             isActive={activeConnectionId === connection.uuid}
             onClick={() => onSelectConnection(connection.uuid, connection.type, connection.name)}
           />

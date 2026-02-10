@@ -4,7 +4,6 @@ import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/compon
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -207,7 +206,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
         {connection && (
           <div className="flex items-start gap-2 pt-2 text-sm">
-            <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
               teamUuid={teamUuid}

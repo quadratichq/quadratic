@@ -82,12 +82,17 @@ export function deriveSyncState(params: {
  * This is a convenience wrapper for components using ConnectionList items.
  */
 export function deriveSyncStateFromConnectionList(connection: {
-  syncedConnectionPercentCompleted?: number;
-  syncedConnectionLatestLogStatus?: SyncedConnectionLatestLogStatus;
-}): SyncState {
+  syncedConnectionPercentCompleted?: number | null;
+  syncedConnectionLatestLogStatus?: SyncedConnectionLatestLogStatus | null;
+}): SyncState | undefined {
+  // If there's no sync data at all, this isn't a synced connection
+  if (connection.syncedConnectionPercentCompleted == null && connection.syncedConnectionLatestLogStatus == null) {
+    return undefined;
+  }
+
   return deriveSyncState({
-    percentCompleted: connection.syncedConnectionPercentCompleted,
-    latestLogStatus: connection.syncedConnectionLatestLogStatus,
+    percentCompleted: connection.syncedConnectionPercentCompleted ?? undefined,
+    latestLogStatus: connection.syncedConnectionLatestLogStatus ?? undefined,
   });
 }
 

@@ -1,12 +1,10 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionUuid } from '@/app/helpers/codeCellLanguage';
 import { newSingleSelection, validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
-import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -18,7 +16,6 @@ export function CodeEditorHeaderLabel() {
   const [cellRef, setCellRef] = useState<string | undefined>(undefined);
 
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const { connections } = useConnectionsFetcher();
 
   useEffect(() => {
@@ -187,11 +184,6 @@ export function CodeEditorHeaderLabel() {
           <button className="rounded text-left hover:cursor-pointer hover:bg-accent" onClick={focusCellRef}>
             {cellRef}
           </button>
-          {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
-            <span className="px-1">
-              · <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
-            </span>
-          )}
         </div>
       )}
     </div>

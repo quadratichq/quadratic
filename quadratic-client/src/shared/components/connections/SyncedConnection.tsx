@@ -1,4 +1,6 @@
 import { useSyncedConnection } from '@/app/atoms/useSyncedConnection';
+import { Badge } from '@/shared/shadcn/ui/badge';
+import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { type SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
@@ -35,36 +37,55 @@ export const SyncedConnection = ({
 }) => {
   const { syncedConnection, syncState } = useSyncedConnection(connectionUuid, teamUuid);
 
-  const renderSyncStatus = () => {
-    switch (syncState) {
-      case 'not_synced':
-        return 'Not synced';
-      case 'syncing':
-        return 'Syncing';
-      case 'synced':
-        return syncedConnection.updatedDate ? `Last synced ${timeAgo(syncedConnection.updatedDate)}` : 'Synced';
-      case 'failed':
-        return 'Sync failed';
-    }
-  };
-
-  // If there's an error, use flex-col to stack content; otherwise render inline
-  if (syncedConnection.latestLogError) {
-    return (
-      <div className="flex flex-col">
-        <span>
-          {renderSyncStatus()}
-          {createdDate && ` · Created ${timeAgo(createdDate)}`}
-        </span>
-        <span className="mt-1 text-destructive">Error: {syncedConnection.latestLogError}</span>
-      </div>
-    );
-  }
+  const lastSync = syncState === 'synced' && syncedConnection.updatedDate && (
+    <span>Last synced {timeAgo(syncedConnection.updatedDate)}</span>
+  );
+  const created = createdDate && <span>Created {timeAgo(createdDate)}</span>;
 
   return (
-    <span>
-      {renderSyncStatus()}
-      {createdDate && ` · Created ${timeAgo(createdDate)}`}
-    </span>
+    <div className="flex flex-col gap-0">
+      <div className={cn('flex items-center gap-2 text-sm')}>
+        {syncState === 'not_synced' || syncState === 'syncing' ? (
+          <Badge>Syncing</Badge>
+        ) : syncState === 'synced' ? (
+          <Badge variant="success">Synced</Badge>
+        ) : (
+          <Badge variant="destructive">Sync failed</Badge>
+        )}
+        {lastSync}
+        {lastSync && created && <span>·</span>}
+        {created}
+      </div>
+
+      {syncedConnection.latestLogError && (
+        <div className="mt-1 font-mono text-xs text-destructive">Error: {syncedConnection.latestLogError}</div>
+      )}
+    </div>
   );
+};
+
+export const SyncedConnectionLatestStatus = ({
+  connectionUuid,
+  teamUuid,
+  createdDate,
+}: {
+  connectionUuid: string;
+  teamUuid: string;
+  createdDate?: string;
+}): string | null => {
+  const { syncedConnection, syncState } = useSyncedConnection(connectionUuid, teamUuid);
+
+  if (syncState === 'synced' && syncedConnection.updatedDate) {
+    return `Last synced ${timeAgo(syncedConnection.updatedDate)}`;
+  }
+
+  if (syncState === 'syncing') {
+    return `Syncing`;
+  }
+
+  if (syncState === 'failed') {
+    return `Sync failed`;
+  }
+
+  return null;
 };

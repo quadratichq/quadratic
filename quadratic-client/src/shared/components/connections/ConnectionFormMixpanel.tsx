@@ -2,7 +2,6 @@ import { ConnectionFormSemantic } from '@/shared/components/connections/Connecti
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_MIXPANEL_URL } from '@/shared/constants/urls';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -127,7 +126,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
         {connection && (
           <div className="flex items-start gap-2 pt-2 text-sm">
-            <Badge>Status</Badge>
             <SyncedConnection
               connectionUuid={connection.uuid}
               teamUuid={teamUuid}

@@ -3,7 +3,6 @@ import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
-  editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
@@ -12,7 +11,7 @@ import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
-import { apiClient } from '@/shared/api/apiClient';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { AddIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -32,10 +31,8 @@ import {
   type ConnectionList,
   type ConnectionType,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-
-const SYNCED_CONNECTION_POLL_INTERVAL_MS = 10000; // 10 seconds
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 interface CellTypeOption {
   name: string;
@@ -73,7 +70,6 @@ export const CellTypeMenu = memo(() => {
   const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { connections } = useConnectionsFetcher();
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -192,7 +188,6 @@ export const CellTypeMenu = memo(() => {
               <ConnectionCommandItem
                 key={connection.uuid}
                 connection={connection}
-                teamUuid={teamUuid}
                 index={i}
                 onSelect={() => selectConnection(connection.uuid, connection.type, connection.name)}
               />
@@ -217,63 +212,28 @@ export const CellTypeMenu = memo(() => {
 
 interface ConnectionCommandItemProps {
   connection: ConnectionList[number];
-  teamUuid: string;
   index: number;
   onSelect: () => void;
 }
 
-const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: ConnectionCommandItemProps) => {
-  const [syncData, setSyncData] = useState({
-    percentCompleted: connection.syncedConnectionPercentCompleted,
-    latestLogStatus: connection.syncedConnectionLatestLogStatus,
-  });
+const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionCommandItemProps) => {
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const syncState = isSyncedConnectionType(connection.type) ? deriveSyncStateFromConnectionList(connection) : null;
+  const isNotSynced = syncState !== null && syncState !== 'synced';
 
-  const isSyncedConnection = isSyncedConnectionType(connection.type);
-
-  // Poll for updated sync data when this is a synced connection type
-  useEffect(() => {
-    if (!isSyncedConnection) {
-      return;
+  const handleSelect = useCallback(() => {
+    if (isNotSynced) {
+      setShowCellTypeMenu(false);
+      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+    } else {
+      onSelect();
     }
-
-    const fetchConnection = async () => {
-      try {
-        const fetchedConnection = await apiClient.connections.get({
-          connectionUuid: connection.uuid,
-          teamUuid,
-        });
-        setSyncData({
-          percentCompleted: fetchedConnection?.syncedConnectionPercentCompleted,
-          latestLogStatus: fetchedConnection?.syncedConnectionLatestLogStatus,
-        });
-      } catch {
-        // Silently fail - keep using existing sync data
-      }
-    };
-
-    // Fire immediately to get fresh data
-    fetchConnection();
-
-    // Then poll every interval
-    const interval = setInterval(fetchConnection, SYNCED_CONNECTION_POLL_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [connection.uuid, isSyncedConnection, teamUuid]);
-
-  const syncState = isSyncedConnection
-    ? deriveSyncStateFromConnectionList({
-        syncedConnectionPercentCompleted: syncData.percentCompleted,
-        syncedConnectionLatestLogStatus: syncData.latestLogStatus,
-      })
-    : null;
-
-  // Disable if syncing or not yet synced
-  const isSyncing = syncState === 'syncing' || syncState === 'not_synced';
+  }, [isNotSynced, setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type, onSelect]);
 
   return (
     <CommandItem
-      disabled={isSyncing}
-      onSelect={onSelect}
+      onSelect={handleSelect}
       value={`${connection.name}__${index}`}
       onPointerDown={(e) => {
         e.preventDefault();
@@ -281,14 +241,9 @@ const ConnectionCommandItem = memo(({ connection, teamUuid, index, onSelect }: C
       }}
     >
       <div className="mr-4 flex h-5 w-5 items-center">
-        <LanguageIcon language={connection.type} />
+        <ConnectionIcon type={connection.type} syncState={syncState} />
       </div>
-      <div className="flex flex-col truncate">
-        <span className="flex items-center">
-          {connection.name}
-          {isSyncing && <span className="ml-2 text-xs text-muted-foreground">(syncing)</span>}
-        </span>
-      </div>
+      <div className="flex flex-col truncate">{connection.name}</div>
     </CommandItem>
   );
 });

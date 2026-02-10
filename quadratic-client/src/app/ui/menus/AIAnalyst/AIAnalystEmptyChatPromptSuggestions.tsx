@@ -3,6 +3,8 @@ import type {
   SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -12,14 +14,14 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { EmptyChatSection, SuggestionButton } from '@/app/ui/menus/AIAnalyst/AIAnalystEmptyChatSection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { AddConnectionMenuItems } from '@/shared/components/connections/ConnectionsMenuContent';
 import { ChevronLeftIcon, ChevronRightIcon, PromptIcon } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -108,6 +110,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   // Connections data
   const { connections } = useConnectionsFetcher();
   const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
 
   // Get suggestions from centralized state (synced by useEmptyChatSuggestionsSync in QuadraticUI)
   const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
@@ -241,9 +244,9 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
           {!hasConnections && (
             <div className="flex w-full flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm">
               <div className="flex items-center gap-3 pt-3">
-                <LanguageIcon language="POSTGRES" className="h-7 w-7" />
-                <LanguageIcon language="MIXPANEL" className="h-7 w-7" />
-                <LanguageIcon language="SNOWFLAKE" className="h-7 w-7" />
+                <ConnectionIcon type="POSTGRES" className="h-7 w-7" />
+                <ConnectionIcon type="MIXPANEL" className="h-7 w-7" />
+                <ConnectionIcon type="SNOWFLAKE" className="h-7 w-7" />
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -312,14 +315,29 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
               ) : undefined
             }
           >
-            {visibleConnections.map((connection) => (
-              <SuggestionButton
-                key={connection.uuid}
-                icon={<LanguageIcon language={connection.type} />}
-                text={connection.name}
-                onClick={() => handleSelectConnection(connection.uuid, connection.type, connection.name)}
-              />
-            ))}
+            {visibleConnections.map((connection) => {
+              const syncState = isSyncedConnectionType(connection.type)
+                ? deriveSyncStateFromConnectionList(connection)
+                : null;
+              const isNotSynced = syncState !== null && syncState !== 'synced';
+              return (
+                <SuggestionButton
+                  key={connection.uuid}
+                  icon={<ConnectionIcon type={connection.type} syncState={syncState} />}
+                  text={connection.name}
+                  onClick={() => {
+                    if (isNotSynced) {
+                      setShowConnectionsMenu({
+                        initialConnectionUuid: connection.uuid,
+                        initialConnectionType: connection.type,
+                      });
+                    } else {
+                      handleSelectConnection(connection.uuid, connection.type, connection.name);
+                    }
+                  }}
+                />
+              );
+            })}
           </EmptyChatSection>
         )}
       </div>

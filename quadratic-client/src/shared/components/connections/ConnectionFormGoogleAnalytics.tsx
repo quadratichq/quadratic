@@ -2,7 +2,6 @@ import { ConnectionFormSemantic } from '@/shared/components/connections/Connecti
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -127,8 +126,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         <ConnectionFormSemantic form={form} />
 
         {connection && (
-          <div className="flex items-start gap-2 pt-2 text-sm">
-            <Badge>Status</Badge>
+          <div className="flex flex-col items-start pt-2 text-sm">
             <SyncedConnection
               connectionUuid={connection.uuid}
               teamUuid={teamUuid}
