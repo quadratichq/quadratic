@@ -150,12 +150,14 @@ export function useSubmitAIAnalystPrompt() {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
-        // Abort any in-flight suggestion request immediately; clear suggestions after this tick
-        // so HoverCard portals (used by PromptSuggestions) can unmount before we hide the list.
-        // Clearing synchronously caused removeChild errors when the portal was torn down in the same commit.
+        // Abort any in-flight suggestion request and clear suggestions.
+        // PromptSuggestions delays unmounting (see AIAnalystMessages) so HoverCard portals can tear down safely.
         const prevSuggestions = snapshot.getLoadable(aiAnalystPromptSuggestionsAtom).getValue();
+        const abortedBefore = prevSuggestions.abortController?.signal.aborted;
         prevSuggestions.abortController?.abort();
         queueMicrotask(() => {
+          // Skip update if already aborted, as component state may be stale or tearing down.
+          if (abortedBefore) return;
           set(aiAnalystPromptSuggestionsAtom, () => ({
             abortController: undefined,
             suggestions: [],

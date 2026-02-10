@@ -543,13 +543,32 @@ const PromptSuggestions = memo(() => {
 
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-  if (!messagesCount || !promptSuggestions.suggestions.length) {
+
+  // When the atom clears suggestions (e.g. on submit), delay unmounting so HoverCard portals
+  // can tear down in a subsequent commit and avoid removeChild errors.
+  const [displaySuggestions, setDisplaySuggestions] = useState<typeof promptSuggestions.suggestions>(
+    promptSuggestions.suggestions
+  );
+  const prevHadSuggestions = useRef(promptSuggestions.suggestions.length > 0);
+
+  useEffect(() => {
+    if (promptSuggestions.suggestions.length > 0) {
+      setDisplaySuggestions(promptSuggestions.suggestions);
+      prevHadSuggestions.current = true;
+    } else if (prevHadSuggestions.current) {
+      prevHadSuggestions.current = false;
+      const t = setTimeout(() => setDisplaySuggestions([]), 0);
+      return () => clearTimeout(t);
+    }
+  }, [promptSuggestions.suggestions]);
+
+  if (!messagesCount || !displaySuggestions.length) {
     return null;
   }
 
   return (
     <div className="flex flex-row flex-wrap gap-2 px-2">
-      {promptSuggestions.suggestions.map((suggestion, index) => (
+      {displaySuggestions.map((suggestion, index) => (
         <HoverCard key={`${index}-${suggestion.label}-card`}>
           <HoverCardTrigger asChild>
             <div

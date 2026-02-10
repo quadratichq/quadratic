@@ -49,21 +49,19 @@ export const FormattingBar = memo(() => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
 
-  // Use a dedicated container for the measurement portal so React never has to
-  // remove a direct child of document.body, avoiding removeChild conflicts with
-  // Radix and other code that also use body (e.g. after sheet load).
+  // Use a single permanent offscreen container for the measurement portal so React
+  // never has to remove a direct child of document.body, avoiding removeChild
+  // conflicts with Radix and other code that also use body (e.g. after sheet load).
   useLayoutEffect(() => {
     let container = document.getElementById(FORMATTING_BAR_MEASUREMENT_CONTAINER_ID) as HTMLDivElement | null;
     if (!container) {
       container = document.createElement('div');
       container.id = FORMATTING_BAR_MEASUREMENT_CONTAINER_ID;
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;';
       document.body.appendChild(container);
     }
     setPortalContainer(container);
-    return () => {
-      container?.parentNode?.removeChild(container);
-      setPortalContainer(null);
-    };
+    return () => setPortalContainer(null);
   }, []);
 
   useEffect(() => {
