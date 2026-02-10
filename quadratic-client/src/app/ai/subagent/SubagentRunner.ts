@@ -12,8 +12,8 @@ import type {
   ToolResultMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { subagentSessionManager } from '../session/SubagentSessionManager';
+import { parseToolArguments } from '../utils/parseToolArguments';
 import { aiToolsActions } from '../tools/aiToolsActions';
-import { subagentContextBuilder } from './SubagentContextBuilder';
 import {
   getSubagentConfig,
   isToolAllowedForSubagent,
@@ -22,17 +22,8 @@ import {
   type SubagentRange,
   type SubagentResult,
 } from './subagentTypes';
-
-/**
- * Map SubagentType to AgentType for API requests.
- */
-const SUBAGENT_TO_AGENT_TYPE: Record<SubagentType, AgentType> = {
-  [SubagentType.DataFinder]: AgentType.DataFinderSubagent,
-  [SubagentType.FormulaCoder]: AgentType.FormulaCoderSubagent,
-  [SubagentType.PythonCoder]: AgentType.PythonCoderSubagent,
-  [SubagentType.JavascriptCoder]: AgentType.JavascriptCoderSubagent,
-  [SubagentType.ConnectionCoder]: AgentType.ConnectionCoderSubagent,
-};
+import { SUBAGENT_TO_AGENT_TYPE } from './subagentTypeToAgentType';
+import { subagentContextBuilder } from './SubagentContextBuilder';
 
 /**
  * SubagentRunner executes specialized subagents with isolated context.
@@ -64,6 +55,7 @@ export class SubagentRunner {
       reset,
       onToolCall,
       onToolCallComplete,
+      onStreamProgress,
     } = options;
 
     const modelKey = modelKeyOverride ?? sessionModelKey;
@@ -131,27 +123,33 @@ export class SubagentRunner {
         ];
       }
 
-      // Run the tool call loop
-      const result = await this.runToolCallLoop({
-        messages,
-        modelKey,
-        fileUuid,
-        subagentType,
-        maxIterations: config.maxIterations,
-        abortSignal,
-        onToolCall,
-        onToolCallComplete,
-      });
-
-      // Persist the updated messages to the session
-      subagentSessionManager.setMessages(subagentType, messages);
-
-      // Save the summary if successful
-      if (result.success && result.summary) {
-        subagentSessionManager.setLastSummary(subagentType, result.summary);
+      const session = subagentSessionManager.getSession(subagentType);
+      if (!session) {
+        throw new Error(`Subagent session not found for ${subagentType}`);
       }
 
-      return result;
+      try {
+        const result = await this.runToolCallLoop({
+          messages,
+          modelKey,
+          fileUuid,
+          subagentType,
+          chatId: session.id,
+          maxIterations: config.maxIterations,
+          abortSignal,
+          onToolCall,
+          onToolCallComplete,
+          onStreamProgress,
+        });
+
+        if (result.success && result.summary) {
+          subagentSessionManager.setLastSummary(subagentType, result.summary);
+        }
+
+        return result;
+      } finally {
+        subagentSessionManager.setMessages(subagentType, messages);
+      }
     } catch (error) {
       console.error('[SubagentRunner] Error executing subagent:', error);
       return {
@@ -172,13 +170,25 @@ export class SubagentRunner {
     modelKey: AIModelKey;
     fileUuid: string;
     subagentType: SubagentType;
+    chatId: string;
     maxIterations: number;
     abortSignal?: AbortSignal;
     onToolCall?: SubagentExecuteOptions['onToolCall'];
     onToolCallComplete?: SubagentExecuteOptions['onToolCallComplete'];
+    onStreamProgress?: SubagentExecuteOptions['onStreamProgress'];
   }): Promise<SubagentResult> {
-    const { messages, modelKey, fileUuid, subagentType, maxIterations, abortSignal, onToolCall, onToolCallComplete } =
-      params;
+    const {
+      messages,
+      modelKey,
+      fileUuid,
+      subagentType,
+      chatId,
+      maxIterations,
+      abortSignal,
+      onToolCall,
+      onToolCallComplete,
+      onStreamProgress,
+    } = params;
 
     let iterations = 0;
 
@@ -197,7 +207,9 @@ export class SubagentRunner {
         modelKey,
         fileUuid,
         subagentType,
+        chatId,
         abortSignal,
+        onStreamProgress,
       });
 
       if (response.error) {
@@ -236,7 +248,7 @@ export class SubagentRunner {
         });
       }
 
-      // Execute tool calls
+      // Execute tool calls sequentially. Core is single-process; parallelizing would not improve throughput.
       const toolResultMessage = await this.executeToolCalls(response.toolCalls, subagentType);
       messages.push(toolResultMessage);
 
@@ -261,13 +273,15 @@ export class SubagentRunner {
     modelKey: AIModelKey;
     fileUuid: string;
     subagentType: SubagentType;
+    chatId: string;
     abortSignal?: AbortSignal;
+    onStreamProgress?: SubagentExecuteOptions['onStreamProgress'];
   }): Promise<{
     content: AIResponseContent;
     toolCalls: AIToolCall[];
     error?: boolean;
   }> {
-    const { messages, modelKey, fileUuid, subagentType, abortSignal } = params;
+    const { messages, modelKey, fileUuid, subagentType, chatId, abortSignal, onStreamProgress } = params;
 
     try {
       const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
@@ -276,7 +290,7 @@ export class SubagentRunner {
       // Build request body with agent type for proper tool filtering
       const agentType = SUBAGENT_TO_AGENT_TYPE[subagentType];
       const requestBody = {
-        chatId: crypto.randomUUID(),
+        chatId,
         fileUuid,
         source: 'AIAnalyst',
         messageSource: `subagent:${subagentType}`,
@@ -304,7 +318,7 @@ export class SubagentRunner {
       }
 
       // Handle streaming response (SSE format)
-      const responseMessage = await this.consumeStreamingResponse(response);
+      const responseMessage = await this.consumeStreamingResponse(response, abortSignal, onStreamProgress);
       if (!responseMessage) {
         return { content: [], toolCalls: [], error: true };
       }
@@ -335,9 +349,12 @@ export class SubagentRunner {
 
   /**
    * Consume a streaming response and return the final message.
+   * Optionally invokes onStreamProgress for each parsed chunk so the UI can show progress.
    */
   private async consumeStreamingResponse(
-    response: Response
+    response: Response,
+    abortSignal?: AbortSignal,
+    onStreamProgress?: (content: AIResponseContent, toolCalls: AIToolCall[]) => void
   ): Promise<{ content: AIResponseContent; toolCalls: AIToolCall[] } | null> {
     const reader = response.body?.getReader();
     if (!reader) {
@@ -350,6 +367,7 @@ export class SubagentRunner {
 
     try {
       while (true) {
+        if (abortSignal?.aborted) break;
         const { value, done } = await reader.read();
         if (done) break;
 
@@ -364,6 +382,7 @@ export class SubagentRunner {
                 content: parsed.content,
                 toolCalls: parsed.toolCalls,
               };
+              onStreamProgress?.(parsed.content, parsed.toolCalls);
             } catch (error) {
               console.warn('[SubagentRunner] Error parsing streaming chunk:', error);
             }
@@ -417,10 +436,14 @@ export class SubagentRunner {
       return [createTextContent('Unknown tool')];
     }
 
+    const parsed = parseToolArguments(toolCall.arguments);
+    if (!parsed.ok) {
+      return [createTextContent(`Error executing ${toolCall.name}: ${parsed.error}`)];
+    }
+
     try {
       const aiTool = toolCall.name as AITool;
-      const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
-      const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+      const args = aiToolsSpec[aiTool].responseSchema.parse(parsed.value);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await aiToolsActions[aiTool](args as any, {

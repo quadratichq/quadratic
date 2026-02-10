@@ -20,7 +20,7 @@ export class SubagentContextBuilder {
   /**
    * Build context for a subagent based on its type.
    * - DataFinder: Full sheet context with cell values
-   * - Coding subagents: Minimal context, relies on context_hints from main agent
+   * - Coding subagents: Slim sheet overview (structure only) plus context_hints; no cell values
    */
   async buildContext(task: string, contextHints?: string, subagentType?: SubagentType): Promise<ChatMessage[]> {
     // For coding subagents, use a lighter context that relies on context_hints
@@ -46,19 +46,115 @@ export class SubagentContextBuilder {
 
   /**
    * Build context for coding subagents.
-   * These subagents rely on context_hints from the main agent for data context.
-   * They only need the task and hints, not full sheet data.
+   * Includes a slim sheet overview (names and bounds only, no cell values) so
+   * coding subagents have reliable structure awareness without depending on
+   * context_hints. Data details still come from context_hints or tools.
    */
-  private buildCodingSubagentContext(task: string, contextHints?: string): ChatMessage[] {
+  private async buildCodingSubagentContext(task: string, contextHints?: string): Promise<ChatMessage[]> {
     const messages: ChatMessage[] = [];
 
-    // Add current date
     messages.push(...this.getCurrentDateTimeContext());
 
-    // Add the task message with context hints
+    const currentSheetSlim = await this.getCurrentSheetSlimOverview();
+    if (currentSheetSlim.length > 0) {
+      messages.push(...currentSheetSlim);
+    }
+
+    const otherSheetsContext = await this.getOtherSheetsOverview();
+    messages.push(...otherSheetsContext);
+
     messages.push(this.getTaskMessage(task, contextHints));
 
     return messages;
+  }
+
+  /**
+   * Get current sheet structure only (names and bounds, no cell values).
+   * Used by coding subagents to know where tables/charts are without paying for full cell context.
+   */
+  private async getCurrentSheetSlimOverview(): Promise<ChatMessage[]> {
+    if (!fileHasData()) {
+      return [
+        {
+          role: 'user',
+          content: [createTextContent(`The current sheet is empty.`)],
+          contextType: 'fileSummary',
+        },
+      ];
+    }
+
+    const currentSheet = sheets.sheet;
+    const selection = sheets.stringToSelection('*', currentSheet.id).save();
+
+    const sheetContexts = await quadraticCore.getAISelectionContexts({
+      selections: [selection],
+      maxRows: 0,
+    });
+
+    if (!sheetContexts || sheetContexts.length === 0) {
+      return [];
+    }
+
+    const sheetContext = sheetContexts[0];
+    let text = `# Current Sheet: '${sheetContext.sheet_name}'
+
+- Bounds: ${sheets.getAISheetBounds(sheetContext.sheet_name)}
+`;
+
+    const tableCount =
+      (sheetContext.data_tables?.length ?? 0) +
+      (sheetContext.code_tables?.length ?? 0) +
+      (sheetContext.connections?.length ?? 0);
+
+    if (tableCount > 0) {
+      text += `- Tables: `;
+      const parts = [];
+      if (sheetContext.data_tables?.length) {
+        parts.push(`${sheetContext.data_tables.length} data ${pluralize('table', sheetContext.data_tables.length)}`);
+      }
+      if (sheetContext.code_tables?.length) {
+        parts.push(`${sheetContext.code_tables.length} code ${pluralize('table', sheetContext.code_tables.length)}`);
+      }
+      if (sheetContext.connections?.length) {
+        parts.push(
+          `${sheetContext.connections.length} connection ${pluralize('table', sheetContext.connections.length)}`
+        );
+      }
+      text += parts.join(', ') + '\n\n';
+
+      if (sheetContext.data_tables?.length) {
+        for (const table of sheetContext.data_tables) {
+          text += `- Data table '${table.data_table_name}' at ${table.bounds}\n`;
+        }
+      }
+      if (sheetContext.code_tables?.length) {
+        for (const table of sheetContext.code_tables) {
+          text += `- Code table '${table.code_table_name}' (${table.language}) at ${table.bounds}\n`;
+        }
+      }
+      if (sheetContext.connections?.length) {
+        for (const table of sheetContext.connections) {
+          if (typeof table.language === 'object' && table.language.Connection) {
+            text += `- Connection '${table.code_table_name}' at ${table.bounds}\n`;
+          }
+        }
+      }
+    }
+
+    if (sheetContext.charts?.length) {
+      text += `\n- Charts: ${sheetContext.charts.length}\n`;
+      for (const chart of sheetContext.charts) {
+        text += `  - '${chart.chart_name}' (${chart.language}) at ${chart.bounds}\n`;
+      }
+    }
+
+    return [
+      {
+        role: 'user',
+        content: [createTextContent(text)],
+        contextType: 'fileSummary',
+      },
+    ];
   }
 
   /**

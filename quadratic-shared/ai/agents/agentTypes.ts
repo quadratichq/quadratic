@@ -137,3 +137,12 @@ export function getDisabledToolsForAgent(agentType: AgentType): AITool[] {
 
   return [];
 }
+
+/**
+ * Get the allowed tools list for an agent type when it uses a whitelist (allowedTools).
+ * Subagents use this; returns empty array for agent types that use disabledTools or have no restrictions.
+ */
+export function getAllowedToolsForAgentType(agentType: AgentType): AITool[] {
+  const config = AGENT_TOOL_CONFIG[agentType];
+  return config?.allowedTools ?? [];
+}

@@ -16,32 +16,26 @@ export const ContextSizeIndicator = ({ className }: ContextSizeIndicatorProps) =
   const { modelKey: selectedModelKey } = useAIModel();
 
   const usage = contextUsage.usage;
-
-  // Use primitive values as dependencies for better reactivity
   const usageInputTokens = usage?.inputTokens ?? 0;
   const usageCacheReadTokens = usage?.cacheReadTokens ?? 0;
   const usageModelKey = usage?.modelKey;
+  const hasUsage = usage != null;
 
   const { percentage, inputTokens, contextLimit, isVisible } = useMemo(() => {
-    if (!usage) {
+    if (!hasUsage) {
       return { percentage: 0, inputTokens: 0, contextLimit: 0, isVisible: false };
     }
-
-    // Use the model key from the usage response (actual model used) or fall back to selected model
     const actualModelKey = usageModelKey ?? selectedModelKey;
     const limit = getContextLimit(actualModelKey);
-
-    // Calculate total input tokens (including cache reads)
     const totalInput = usageInputTokens + usageCacheReadTokens;
     const pct = Math.min((totalInput / limit) * 100, 100);
-
     return {
       percentage: pct,
       inputTokens: totalInput,
       contextLimit: limit,
       isVisible: true,
     };
-  }, [usage, usageInputTokens, usageCacheReadTokens, usageModelKey, selectedModelKey]);
+  }, [hasUsage, usageInputTokens, usageCacheReadTokens, usageModelKey, selectedModelKey]);
 
   if (!isVisible) {
     return null;

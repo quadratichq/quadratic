@@ -5,6 +5,7 @@ import type { ChatMessage, SubagentSession, ToolResultMessage } from 'quadratic-
 import { v4 } from 'uuid';
 import { aiStore, subagentSessionsAtom } from '../atoms/aiAnalystAtoms';
 import type { SubagentType } from '../subagent/subagentTypes';
+import { parseToolArguments } from '../utils/parseToolArguments';
 import { aiToolsActions } from '../tools/aiToolsActions';
 
 const subagentDebug = () => debugFlags.getFlag('debugShowAISubagent');
@@ -178,12 +179,23 @@ export class SubagentSessionManager {
     // Re-execute each tool call and collect new results
     const newResults: Map<string, { id: string; content: Awaited<ReturnType<(typeof aiToolsActions)[AITool]>> }> =
       new Map();
+    const failedToolIds = new Set<string>();
 
     for (const toolCall of toolCallsToRefresh) {
+      const parsed = parseToolArguments(toolCall.arguments);
+      if (!parsed.ok) {
+        console.error(`[SubagentSessionManager] Invalid JSON for tool call ${toolCall.name}:`, parsed.error);
+        newResults.set(toolCall.id, {
+          id: toolCall.id,
+          content: [createTextContent(`Error refreshing: ${parsed.error}`)],
+        });
+        failedToolIds.add(toolCall.id);
+        continue;
+      }
+
       try {
-        const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await aiToolsActions[toolCall.name as AITool](args as any, {
+        const result = await aiToolsActions[toolCall.name as AITool](parsed.value as any, {
           source: 'AIAnalyst',
           chatId: session.id,
           messageIndex: 0,
@@ -195,16 +207,21 @@ export class SubagentSessionManager {
           id: toolCall.id,
           content: [createTextContent(`Error refreshing: ${error}`)],
         });
+        failedToolIds.add(toolCall.id);
       }
     }
 
     // Update tool results in the message history
     const updatedMessages = this.replaceToolResults(session.messages, newResults);
 
-    // Add a system message noting the context was refreshed
+    const refreshNote =
+      failedToolIds.size > 0
+        ? '(Context refreshed. Some data could not be refreshed—see tool results above for details; that part may be missing or stale.)'
+        : '(Context has been refreshed with the latest data from the spreadsheet.)';
+
     const refreshMessage: ChatMessage = {
       role: 'user',
-      content: [createTextContent('(Context has been refreshed with the latest data from the spreadsheet.)')],
+      content: [createTextContent(refreshNote)],
       contextType: 'quadraticDocs',
     };
 

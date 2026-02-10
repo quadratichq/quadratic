@@ -1,5 +1,5 @@
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AIResponseContent, AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { SUBAGENTS } from './subagents';
 import { SubagentType } from './SubagentType';
 
@@ -76,6 +76,8 @@ export interface SubagentExecuteOptions {
   onToolCall?: (toolCall: SubagentToolCallEvent) => void;
   /** Callback when a tool call completes */
   onToolCallComplete?: (toolCallId: string) => void;
+  /** Callback with partial content/toolCalls as the stream progresses (for UI progress indicators) */
+  onStreamProgress?: (content: AIResponseContent, toolCalls: AIToolCall[]) => void;
 }
 
 /**

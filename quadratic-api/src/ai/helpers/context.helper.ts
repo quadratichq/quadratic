@@ -133,8 +133,8 @@ I will follow all your instructions with context of quadratic documentation, and
  */
 export const getQuadraticContext = (source: AISource, agentType?: AgentType): ChatMessage[] => {
   // Coding subagents get language-specific docs only
-  if (isCodingSubagent(agentType)) {
-    return getSubagentQuadraticContext(agentType!);
+  if (agentType && isCodingSubagent(agentType)) {
+    return getSubagentQuadraticContext(agentType);
   }
 
   // Data finder subagent doesn't need Quadratic docs
