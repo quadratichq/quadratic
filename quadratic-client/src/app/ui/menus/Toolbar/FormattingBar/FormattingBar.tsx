@@ -198,7 +198,11 @@ export const FormattingBar = memo(() => {
               <DateFormatting ref={dateFormattingRef} hideLabel={true} />
               <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
               <FontSizeFormatting ref={fontSizeFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-              <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+              <FillAndBorderFormatting
+                ref={fillAndBorderFormattingRef}
+                formatSummary={formatSummary}
+                hideLabel={true}
+              />
               <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
               <Clear ref={clearRef} hideLabel={true} />
               <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
