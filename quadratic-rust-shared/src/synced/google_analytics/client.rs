@@ -232,12 +232,11 @@ impl SyncedConnection for GoogleAnalyticsConnection {
             }
             GoogleAnalyticsAuth::OAuth {
                 access_token,
-                refresh_token,
+                refresh_token: _,
                 token_expires_at,
             } => {
                 GoogleAnalyticsClient::with_oauth(
                     access_token.clone(),
-                    refresh_token.clone(),
                     *token_expires_at,
                     self.property_id.clone(),
                     self.start_date.format(DATE_FORMAT).to_string(),
@@ -383,10 +382,9 @@ impl GoogleAnalyticsClient {
     /// Create a new client using OAuth tokens (preferred method for end users)
     ///
     /// Note: If the access token is expired, the caller should refresh it before calling this.
-    /// Token refresh should be handled at the API layer before creating the connection.
+    /// Token refresh is handled at the API layer before creating the connection.
     pub async fn with_oauth(
         access_token: String,
-        _refresh_token: String,
         token_expires_at: DateTime<Utc>,
         property_id: String,
         start_date: String,

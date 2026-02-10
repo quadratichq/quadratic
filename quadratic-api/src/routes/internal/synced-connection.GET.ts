@@ -31,6 +31,9 @@ export const SyncedConnectionSchema = z.object({
 // Token refresh buffer: refresh tokens that expire within 10 minutes
 const TOKEN_REFRESH_BUFFER_MS = 10 * 60 * 1000;
 
+// In-flight refresh promises keyed by connection ID to prevent concurrent refreshes
+const activeRefreshes = new Map<number, Promise<ConnectionTypeDetails>>();
+
 /**
  * Check if a Google Analytics OAuth token is expired or about to expire.
  * Returns true if the token should be refreshed.
@@ -46,9 +49,30 @@ function isGoogleOAuthTokenExpired(typeDetails: ConnectionTypeDetails): boolean 
 
 /**
  * Refresh a Google Analytics OAuth token and update the connection in the database.
- * Returns the updated typeDetails with the new access token and expiration.
+ * Deduplicates concurrent refresh attempts for the same connection — if a refresh
+ * is already in progress, callers will await the same promise.
  */
 async function refreshGoogleOAuthToken(
+  connectionId: number,
+  typeDetails: ConnectionTypeDetails
+): Promise<ConnectionTypeDetails> {
+  // If a refresh is already in flight for this connection, reuse it
+  const existing = activeRefreshes.get(connectionId);
+  if (existing) {
+    return existing;
+  }
+
+  const refreshPromise = doRefreshGoogleOAuthToken(connectionId, typeDetails);
+  activeRefreshes.set(connectionId, refreshPromise);
+
+  try {
+    return await refreshPromise;
+  } finally {
+    activeRefreshes.delete(connectionId);
+  }
+}
+
+async function doRefreshGoogleOAuthToken(
   connectionId: number,
   typeDetails: ConnectionTypeDetails
 ): Promise<ConnectionTypeDetails> {
@@ -66,8 +90,9 @@ async function refreshGoogleOAuthToken(
     const { credentials } = await oauth2Client.refreshAccessToken();
 
     if (!credentials.access_token) {
-      logger.error(`Failed to refresh Google OAuth token for connection ${connectionId}: no access token returned`);
-      return typeDetails;
+      throw new Error(
+        `Google OAuth token refresh for connection ${connectionId} returned no access token. The user may need to re-authenticate.`
+      );
     }
 
     const expiresAt = credentials.expiry_date
@@ -94,8 +119,9 @@ async function refreshGoogleOAuthToken(
     return updatedTypeDetails;
   } catch (error) {
     logger.error(`Failed to refresh Google OAuth token for connection ${connectionId}:`, error);
-    // Return original typeDetails so the caller can still try (and get a proper expired-token error)
-    return typeDetails;
+    throw new Error(
+      `Failed to refresh Google OAuth token for connection ${connectionId}. The user may need to re-authenticate in the Quadratic app.`
+    );
   }
 }
 
@@ -139,7 +165,7 @@ router.get(
       },
     });
 
-    const data = await Promise.all(
+    const results = await Promise.all(
       syncedConnections.map(async (syncedConnection) => {
         let typeDetails: ConnectionTypeDetails = JSON.parse(
           decryptFromEnv(Buffer.from(syncedConnection.connection.typeDetails).toString('utf-8'))
@@ -147,7 +173,15 @@ router.get(
 
         // Automatically refresh expired Google Analytics OAuth tokens
         if (syncedConnection.connection.type === 'GOOGLE_ANALYTICS' && isGoogleOAuthTokenExpired(typeDetails)) {
-          typeDetails = await refreshGoogleOAuthToken(syncedConnection.connectionId, typeDetails);
+          try {
+            typeDetails = await refreshGoogleOAuthToken(syncedConnection.connectionId, typeDetails);
+          } catch (error) {
+            // Log and skip this connection — a failed refresh means it can't be processed
+            logger.error(
+              `Skipping Google Analytics connection ${syncedConnection.connection.uuid}: ${error instanceof Error ? error.message : error}`
+            );
+            return null;
+          }
         }
 
         return {
@@ -162,6 +196,9 @@ router.get(
         };
       })
     );
+
+    // Filter out connections that failed token refresh
+    const data = results.filter((r): r is NonNullable<typeof r> => r !== null);
 
     return res.status(200).json(data);
   }

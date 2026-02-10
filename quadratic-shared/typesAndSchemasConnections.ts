@@ -275,22 +275,18 @@ export const ApiSchemasConnections = {
   // Google OAuth endpoints (for Google Analytics)
   '/v0/teams/:uuid/google/auth-url.GET.response': z.object({
     authUrl: z.string(),
+    nonce: z.string(),
+    codeVerifier: z.string(),
   }),
 
   '/v0/teams/:uuid/google/exchange-token.POST.request': z.object({
     code: z.string(),
+    state: z.string().min(1),
+    codeVerifier: z.string().min(1),
   }),
   '/v0/teams/:uuid/google/exchange-token.POST.response': z.object({
     accessToken: z.string(),
     refreshToken: z.string(),
-    expiresAt: z.string().datetime(),
-  }),
-
-  '/v0/teams/:uuid/google/refresh-token.POST.request': z.object({
-    refreshToken: z.string(),
-  }),
-  '/v0/teams/:uuid/google/refresh-token.POST.response': z.object({
-    accessToken: z.string(),
     expiresAt: z.string().datetime(),
   }),
 };

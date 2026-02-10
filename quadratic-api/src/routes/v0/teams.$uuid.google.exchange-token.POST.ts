@@ -15,6 +15,8 @@ export default [validateAccessToken, userMiddleware, handler];
 const schema = z.object({
   body: z.object({
     code: z.string().min(1),
+    state: z.string().min(1),
+    codeVerifier: z.string().min(1),
   }),
   params: z.object({ uuid: z.string().uuid() }),
 });
@@ -35,9 +37,20 @@ async function handler(
     user: { id: userId },
   } = req;
   const {
-    body: { code },
+    body: { code, state, codeVerifier },
     params: { uuid },
   } = parseRequest(req, schema);
+
+  // Verify the OAuth state parameter matches this team to prevent CSRF
+  try {
+    const parsedState = JSON.parse(state);
+    if (parsedState.teamUuid !== uuid) {
+      throw new ApiError(400, 'Invalid OAuth state: team UUID mismatch');
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(400, 'Invalid OAuth state parameter');
+  }
 
   const {
     userMakingRequest: { permissions },
@@ -56,15 +69,18 @@ async function handler(
       GOOGLE_OAUTH_REDIRECT_URI
     );
 
-    // Exchange authorization code for tokens
-    const { tokens } = await oauth2Client.getToken(code);
+    // Exchange authorization code for tokens with PKCE verification
+    const { tokens } = await oauth2Client.getToken({ code, codeVerifier });
 
     if (!tokens.access_token) {
       throw new ApiError(500, 'Failed to get access token from Google');
     }
 
     if (!tokens.refresh_token) {
-      throw new ApiError(500, 'Failed to get refresh token from Google. Please try again and ensure you grant offline access.');
+      throw new ApiError(
+        500,
+        'Failed to get refresh token from Google. Please try again and ensure you grant offline access.'
+      );
     }
 
     // Calculate expiration time
@@ -85,4 +101,3 @@ async function handler(
     throw new ApiError(500, 'Failed to exchange Google OAuth authorization code');
   }
 }
-

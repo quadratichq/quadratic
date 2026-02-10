@@ -91,7 +91,17 @@
     const authUrl = urlParams.get('authUrl');
     const code = urlParams.get('code');
     const error = urlParams.get('error');
-    const state = urlParams.get('state'); // Team UUID passed through OAuth state
+    const stateRaw = urlParams.get('state'); // JSON-encoded { teamUuid, nonce }
+
+    // Parse the state parameter (contains teamUuid and CSRF nonce)
+    var parsedState = {};
+    try {
+      if (stateRaw) {
+        parsedState = JSON.parse(stateRaw);
+      }
+    } catch (e) {
+      // state may be a plain string (legacy) — ignore parse error
+    }
 
     if (error) {
       // OAuth error from Google
@@ -108,11 +118,12 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('status').style.display = 'block';
 
-      // Send the code to the parent window
+      // Send the code and nonce to the parent window for CSRF verification
       channel.postMessage({
         type: 'GOOGLE_SUCCESS',
         code: code,
-        state: state
+        nonce: parsedState.nonce || null,
+        teamUuid: parsedState.teamUuid || stateRaw
       });
 
       // Try to auto-close after a brief delay
@@ -120,9 +131,20 @@
         window.close();
       }, 1500);
     } else if (authUrl) {
-      // Initial load - redirect to Google OAuth
-      document.getElementById('loading').textContent = 'Redirecting to Google...';
-      window.location.href = authUrl;
+      // Initial load — redirect to Google OAuth
+      // Validate the URL is a legitimate Google OAuth endpoint
+      try {
+        const url = new URL(authUrl);
+        if (!url.hostname.endsWith('.google.com') && !url.hostname.endsWith('.googleapis.com')) {
+          throw new Error('Invalid OAuth URL');
+        }
+        document.getElementById('loading').textContent = 'Redirecting to Google...';
+        window.location.href = authUrl;
+      } catch (e) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-status').style.display = 'block';
+        document.getElementById('error-message').textContent = '✗ Invalid authorization URL.';
+      }
     } else {
       // No parameters - show error
       document.getElementById('loading').style.display = 'none';

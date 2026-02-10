@@ -544,24 +544,24 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/google/auth-url.GET.response']
         );
       },
-      exchangeToken({ teamUuid, code }: { teamUuid: string; code: string }) {
+      exchangeToken({
+        teamUuid,
+        code,
+        state,
+        codeVerifier,
+      }: {
+        teamUuid: string;
+        code: string;
+        state: string;
+        codeVerifier: string;
+      }) {
         return fetchFromApi(
           `/v0/teams/${teamUuid}/google/exchange-token`,
           {
             method: 'POST',
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({ code, state, codeVerifier }),
           },
           ApiSchemas['/v0/teams/:uuid/google/exchange-token.POST.response']
-        );
-      },
-      refreshToken({ teamUuid, refreshToken }: { teamUuid: string; refreshToken: string }) {
-        return fetchFromApi(
-          `/v0/teams/${teamUuid}/google/refresh-token`,
-          {
-            method: 'POST',
-            body: JSON.stringify({ refreshToken }),
-          },
-          ApiSchemas['/v0/teams/:uuid/google/refresh-token.POST.response']
         );
       },
     },

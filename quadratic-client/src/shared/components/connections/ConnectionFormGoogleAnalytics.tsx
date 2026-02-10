@@ -64,49 +64,83 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   teamUuid,
 }) => {
   const [hasTokens, setHasTokens] = useState<boolean>(!!connection?.typeDetails?.access_token);
+  const [popupBlocked, setPopupBlocked] = useState(false);
+
+  const openOAuthPopup = async () => {
+    try {
+      setPopupBlocked(false);
+      form.clearErrors('root');
+
+      const data = await apiClient.connections.google.getAuthUrl({
+        teamUuid,
+      });
+
+      // Store nonce and PKCE code verifier in sessionStorage for verification on callback
+      sessionStorage.setItem('google_oauth_nonce', data.nonce);
+      sessionStorage.setItem('google_oauth_code_verifier', data.codeVerifier);
+
+      // Open popup with the auth URL
+      const width = 500;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      const popup = window.open(
+        `/google-oauth-callback.html?authUrl=${encodeURIComponent(data.authUrl)}`,
+        'google-oauth',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+
+      if (!popup) {
+        setPopupBlocked(true);
+      }
+    } catch (error) {
+      console.error('Error fetching Google auth URL:', error);
+      form.setError('root', { message: 'Failed to start Google authentication' });
+    }
+  };
 
   // Auto-open Google OAuth when the component mounts and we don't have tokens
   useEffect(() => {
     if (hasTokens) return;
-
-    const fetchAuthUrlAndOpen = async () => {
-      try {
-        const data = await apiClient.connections.google.getAuthUrl({
-          teamUuid,
-        });
-
-        // Open popup with the auth URL
-        const width = 500;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-
-        window.open(
-          `/google-oauth-callback.html?authUrl=${encodeURIComponent(data.authUrl)}`,
-          'google-oauth',
-          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-        );
-      } catch (error) {
-        console.error('Error fetching Google auth URL:', error);
-        form.setError('root', { message: 'Failed to start Google authentication' });
-      }
-    };
-
-    fetchAuthUrlAndOpen();
-  }, [hasTokens, teamUuid, form]);
+    openOAuthPopup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasTokens]);
 
   // Handle messages from Google OAuth popup via BroadcastChannel
   useEffect(() => {
+    let isMounted = true;
     const channel = new BroadcastChannel('google_oauth');
 
     const handleMessage = async (event: MessageEvent) => {
+      if (!isMounted) return;
+
       if (event.data.type === 'GOOGLE_SUCCESS') {
         try {
-          // Exchange the authorization code for tokens
+          // Verify CSRF nonce and team UUID from the OAuth state
+          const storedNonce = sessionStorage.getItem('google_oauth_nonce');
+          if (!storedNonce || event.data.nonce !== storedNonce) {
+            form.setError('root', { message: 'OAuth state verification failed. Please try again.' });
+            return;
+          }
+          if (event.data.teamUuid !== teamUuid) {
+            form.setError('root', { message: 'OAuth state mismatch — possible security issue.' });
+            return;
+          }
+          const codeVerifier = sessionStorage.getItem('google_oauth_code_verifier') || '';
+          sessionStorage.removeItem('google_oauth_nonce');
+          sessionStorage.removeItem('google_oauth_code_verifier');
+
+          // Exchange the authorization code for tokens, passing the state and PKCE verifier
+          const state = JSON.stringify({ teamUuid: event.data.teamUuid, nonce: event.data.nonce });
           const tokens = await apiClient.connections.google.exchangeToken({
             teamUuid,
             code: event.data.code,
+            state,
+            codeVerifier,
           });
+
+          if (!isMounted) return;
 
           // Update form values with the tokens
           form.setValue('access_token', tokens.accessToken);
@@ -114,6 +148,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           form.setValue('token_expires_at', tokens.expiresAt);
           setHasTokens(true);
         } catch (error) {
+          if (!isMounted) return;
           console.error('Error exchanging Google OAuth code:', error);
           form.setError('root', { message: 'Failed to complete Google authentication' });
         }
@@ -124,6 +159,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
     channel.addEventListener('message', handleMessage);
     return () => {
+      isMounted = false;
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
@@ -133,15 +169,29 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   if (!hasTokens) {
     return (
       <div className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center">
-        <SpinnerIcon className="text-muted-foreground" size="lg" />
-        <h4 className="mt-3 text-lg font-medium">Connecting to Google…</h4>
-        <p className="text-center text-sm text-muted-foreground">
-          Follow the instructions in the pop-up window. If you're having trouble connecting,{' '}
-          <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-            contact us
-          </a>
-          .
-        </p>
+        {popupBlocked ? (
+          <>
+            <h4 className="mt-3 text-lg font-medium">Pop-up blocked</h4>
+            <p className="text-center text-sm text-muted-foreground">
+              Your browser blocked the Google sign-in window. Click below to try again, or allow pop-ups for this site.
+            </p>
+            <Button className="mt-4" onClick={openOAuthPopup}>
+              Connect Google Account
+            </Button>
+          </>
+        ) : (
+          <>
+            <SpinnerIcon className="text-muted-foreground" size="lg" />
+            <h4 className="mt-3 text-lg font-medium">Connecting to Google…</h4>
+            <p className="text-center text-sm text-muted-foreground">
+              Follow the instructions in the pop-up window. If you're having trouble connecting,{' '}
+              <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                contact us
+              </a>
+              .
+            </p>
+          </>
+        )}
         {form.formState.errors.root && (
           <p className="mt-2 text-center text-sm text-destructive">{form.formState.errors.root.message}</p>
         )}
