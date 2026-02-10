@@ -1,6 +1,5 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { AgentType } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
@@ -12,8 +11,9 @@ import type {
   ToolResultMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { subagentSessionManager } from '../session/SubagentSessionManager';
-import { parseToolArguments } from '../utils/parseToolArguments';
 import { aiToolsActions } from '../tools/aiToolsActions';
+import { parseToolArguments } from '../utils/parseToolArguments';
+import { subagentContextBuilder } from './SubagentContextBuilder';
 import {
   getSubagentConfig,
   isToolAllowedForSubagent,
@@ -23,7 +23,6 @@ import {
   type SubagentResult,
 } from './subagentTypes';
 import { SUBAGENT_TO_AGENT_TYPE } from './subagentTypeToAgentType';
-import { subagentContextBuilder } from './SubagentContextBuilder';
 
 /**
  * SubagentRunner executes specialized subagents with isolated context.
