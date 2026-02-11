@@ -89,7 +89,7 @@ describe('cancelIncompleteSubscriptions', () => {
 
   beforeEach(() => {
     mockRetrieve = jest.spyOn(stripeClient.customers, 'retrieve');
-    mockCancel = jest.spyOn(stripeClient.subscriptions, 'cancel').mockResolvedValue({} as Stripe.Subscription);
+    mockCancel = jest.spyOn(stripeClient.subscriptions, 'cancel').mockResolvedValue({} as any);
   });
 
   afterEach(() => {

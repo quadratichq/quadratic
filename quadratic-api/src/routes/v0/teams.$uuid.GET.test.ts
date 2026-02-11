@@ -121,7 +121,7 @@ jest.mock('../../stripe/stripe', () => {
 
       // Cancel non-selected stale subscriptions (same as real implementation)
       const staleSubscriptions = subscriptions.filter(
-        (s) => s.id !== subscription.id && !TERMINAL_STATUSES.includes(s.status)
+        (s: any) => s.id !== subscription.id && !TERMINAL_STATUSES.includes(s.status)
       );
       for (const staleSub of staleSubscriptions) {
         await subscriptionsCancel(staleSub.id);
