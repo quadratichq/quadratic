@@ -23,7 +23,7 @@ import { connectionsByType } from './connectionsByType';
 // ============================================================================
 
 export interface AddConnectionMenuItemsProps {
-  onAddConnection: (type: ConnectionType) => void;
+  onAddConnection?: (type: ConnectionType) => void;
 }
 
 /**
@@ -48,7 +48,7 @@ export const AddConnectionMenuItems = memo(({ onAddConnection }: AddConnectionMe
   const handleAddConnection = useCallback(
     (type: ConnectionType) => {
       setShowConnectionsMenu({ initialConnectionType: type });
-      onAddConnection(type);
+      onAddConnection?.(type);
     },
     [onAddConnection, setShowConnectionsMenu]
   );

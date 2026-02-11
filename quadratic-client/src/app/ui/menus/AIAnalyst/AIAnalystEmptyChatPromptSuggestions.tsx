@@ -255,7 +255,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right">
-                  <AddConnectionMenuItems onAddConnection={() => {}} />
+                  <AddConnectionMenuItems />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
