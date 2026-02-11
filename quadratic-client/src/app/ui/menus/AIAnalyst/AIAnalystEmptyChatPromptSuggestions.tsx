@@ -22,7 +22,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
@@ -241,25 +241,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
             </div>
           </div>
 
-          {!hasConnections && (
-            <div className="flex w-full flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm">
-              <div className="flex items-center gap-3 pt-3">
-                <ConnectionIcon type="POSTGRES" className="h-7 w-7" />
-                <ConnectionIcon type="MIXPANEL" className="h-7 w-7" />
-                <ConnectionIcon type="SNOWFLAKE" className="h-7 w-7" />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="font-normal">
-                    Connect your data…
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right">
-                  <AddConnectionMenuItems />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          {!hasConnections && <EmptyConnections />}
         </div>
 
         {/* Suggestions Section */}
@@ -344,3 +326,42 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
     </div>
   );
 });
+
+function EmptyConnections() {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [clickPos, setClickPos] = useState({ x: 0, y: 0 });
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <div
+        ref={containerRef}
+        className="relative flex w-full cursor-pointer flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setClickPos({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          });
+          setOpen(true);
+        }}
+      >
+        <div className="flex items-center gap-3 pt-3">
+          <ConnectionIcon type="POSTGRES" className="h-7 w-7" />
+          <ConnectionIcon type="MIXPANEL" className="h-7 w-7" />
+          <ConnectionIcon type="SNOWFLAKE" className="h-7 w-7" />
+        </div>
+        <span className="py-2 text-sm font-normal">Connect your data…</span>
+
+        {/* Invisible anchor positioned at click location */}
+        <DropdownMenuTrigger asChild>
+          <div className="pointer-events-none absolute h-px w-px" style={{ left: clickPos.x, top: clickPos.y }} />
+        </DropdownMenuTrigger>
+      </div>
+
+      <DropdownMenuContent side="right">
+        <AddConnectionMenuItems />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
