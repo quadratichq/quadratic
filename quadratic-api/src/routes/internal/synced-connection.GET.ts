@@ -31,8 +31,18 @@ export const SyncedConnectionSchema = z.object({
 // Token refresh buffer: refresh tokens that expire within 10 minutes
 const TOKEN_REFRESH_BUFFER_MS = 10 * 60 * 1000;
 
-// In-flight refresh promises keyed by connection ID to prevent concurrent refreshes
+// In-flight refresh promises keyed by connection ID to prevent concurrent refreshes.
+// Note: This deduplication only works within a single process. In a horizontally
+// scaled deployment, multiple API instances may refresh the same token concurrently.
+// This is acceptable because Google's token endpoint is idempotent — both instances
+// will receive valid access tokens, and the last DB write wins.
 const activeRefreshes = new Map<number, Promise<ConnectionTypeDetails>>();
+
+// Safety cleanup: remove stale entries every 5 minutes in case a finally block is skipped
+const STALE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+setInterval(() => {
+  activeRefreshes.clear();
+}, STALE_CLEANUP_INTERVAL_MS).unref();
 
 /**
  * Check if a Google Analytics OAuth token is expired or about to expire.

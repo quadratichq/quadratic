@@ -94,13 +94,13 @@
     const stateRaw = urlParams.get('state'); // JSON-encoded { teamUuid, nonce }
 
     // Parse the state parameter (contains teamUuid and CSRF nonce)
-    var parsedState = {};
+    let parsedState = {};
     try {
       if (stateRaw) {
         parsedState = JSON.parse(stateRaw);
       }
     } catch (e) {
-      // state may be a plain string (legacy) — ignore parse error
+      console.warn('Failed to parse OAuth state parameter:', e);
     }
 
     if (error) {
@@ -132,10 +132,11 @@
       }, 1500);
     } else if (authUrl) {
       // Initial load — redirect to Google OAuth
-      // Validate the URL is a legitimate Google OAuth endpoint
+      // Validate the URL is a legitimate Google OAuth endpoint (strict allowlist)
+      const allowedHosts = ['accounts.google.com', 'www.googleapis.com'];
       try {
         const url = new URL(authUrl);
-        if (!url.hostname.endsWith('.google.com') && !url.hostname.endsWith('.googleapis.com')) {
+        if (!allowedHosts.includes(url.hostname)) {
           throw new Error('Invalid OAuth URL');
         }
         document.getElementById('loading').textContent = 'Redirecting to Google...';

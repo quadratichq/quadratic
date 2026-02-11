@@ -23,10 +23,10 @@ const ConnectionFormGoogleAnalyticsSchema = z.object({
   semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.GOOGLE_ANALYTICS),
   property_id: z.string().min(1, { message: 'Required' }),
-  // OAuth tokens
+  // OAuth tokens — populated after successful Google OAuth flow
   access_token: z.string().min(1, { message: 'You must connect your Google account' }),
   refresh_token: z.string().min(1, { message: 'Required' }),
-  token_expires_at: z.string().datetime(),
+  token_expires_at: z.string().min(1, { message: 'Required' }).datetime(),
   start_date: z.string().date(),
 });
 type FormValues = z.infer<typeof ConnectionFormGoogleAnalyticsSchema>;
@@ -43,7 +43,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     property_id: connection?.typeDetails?.property_id || '',
     access_token: connection?.typeDetails?.access_token || '',
     refresh_token: connection?.typeDetails?.refresh_token || '',
-    token_expires_at: connection?.typeDetails?.token_expires_at || new Date().toISOString(),
+    token_expires_at: connection?.typeDetails?.token_expires_at || '',
     start_date: connection?.typeDetails?.start_date || defaultStartDate,
   };
 
@@ -65,19 +65,20 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 }) => {
   const [hasTokens, setHasTokens] = useState<boolean>(!!connection?.typeDetails?.access_token);
   const [popupBlocked, setPopupBlocked] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   const openOAuthPopup = async () => {
     try {
       setPopupBlocked(false);
+      setOauthLoading(true);
       form.clearErrors('root');
 
       const data = await apiClient.connections.google.getAuthUrl({
         teamUuid,
       });
 
-      // Store nonce and PKCE code verifier in sessionStorage for verification on callback
+      // Store nonce in sessionStorage for CSRF verification on callback
       sessionStorage.setItem('google_oauth_nonce', data.nonce);
-      sessionStorage.setItem('google_oauth_code_verifier', data.codeVerifier);
 
       // Open popup with the auth URL
       const width = 500;
@@ -93,19 +94,14 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
       if (!popup) {
         setPopupBlocked(true);
+        setOauthLoading(false);
       }
     } catch (error) {
       console.error('Error fetching Google auth URL:', error);
       form.setError('root', { message: 'Failed to start Google authentication' });
+      setOauthLoading(false);
     }
   };
-
-  // Auto-open Google OAuth when the component mounts and we don't have tokens
-  useEffect(() => {
-    if (hasTokens) return;
-    openOAuthPopup();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasTokens]);
 
   // Handle messages from Google OAuth popup via BroadcastChannel
   useEffect(() => {
@@ -121,23 +117,22 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           const storedNonce = sessionStorage.getItem('google_oauth_nonce');
           if (!storedNonce || event.data.nonce !== storedNonce) {
             form.setError('root', { message: 'OAuth state verification failed. Please try again.' });
+            setOauthLoading(false);
             return;
           }
           if (event.data.teamUuid !== teamUuid) {
             form.setError('root', { message: 'OAuth state mismatch — possible security issue.' });
+            setOauthLoading(false);
             return;
           }
-          const codeVerifier = sessionStorage.getItem('google_oauth_code_verifier') || '';
           sessionStorage.removeItem('google_oauth_nonce');
-          sessionStorage.removeItem('google_oauth_code_verifier');
 
-          // Exchange the authorization code for tokens, passing the state and PKCE verifier
+          // Exchange the authorization code for tokens (PKCE verifier is handled server-side)
           const state = JSON.stringify({ teamUuid: event.data.teamUuid, nonce: event.data.nonce });
           const tokens = await apiClient.connections.google.exchangeToken({
             teamUuid,
             code: event.data.code,
             state,
-            codeVerifier,
           });
 
           if (!isMounted) return;
@@ -151,9 +146,12 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
           if (!isMounted) return;
           console.error('Error exchanging Google OAuth code:', error);
           form.setError('root', { message: 'Failed to complete Google authentication' });
+        } finally {
+          if (isMounted) setOauthLoading(false);
         }
       } else if (event.data.type === 'GOOGLE_ERROR') {
         form.setError('root', { message: event.data.error || 'Google authentication failed' });
+        setOauthLoading(false);
       }
     };
 
@@ -165,21 +163,11 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
     };
   }, [teamUuid, form]);
 
-  // Show loading state while waiting for OAuth
+  // Show connect / loading state while waiting for OAuth
   if (!hasTokens) {
     return (
       <div className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center">
-        {popupBlocked ? (
-          <>
-            <h4 className="mt-3 text-lg font-medium">Pop-up blocked</h4>
-            <p className="text-center text-sm text-muted-foreground">
-              Your browser blocked the Google sign-in window. Click below to try again, or allow pop-ups for this site.
-            </p>
-            <Button className="mt-4" onClick={openOAuthPopup}>
-              Connect Google Account
-            </Button>
-          </>
-        ) : (
+        {oauthLoading ? (
           <>
             <SpinnerIcon className="text-muted-foreground" size="lg" />
             <h4 className="mt-3 text-lg font-medium">Connecting to Google…</h4>
@@ -190,6 +178,20 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               </a>
               .
             </p>
+          </>
+        ) : (
+          <>
+            <h4 className="mt-3 text-lg font-medium">
+              {popupBlocked ? 'Pop-up blocked' : 'Connect your Google account'}
+            </h4>
+            <p className="text-center text-sm text-muted-foreground">
+              {popupBlocked
+                ? 'Your browser blocked the Google sign-in window. Click below to try again, or allow pop-ups for this site.'
+                : 'Click the button below to sign in with Google and authorize access to Google Analytics.'}
+            </p>
+            <Button className="mt-4" onClick={openOAuthPopup}>
+              Connect Google Account
+            </Button>
           </>
         )}
         {form.formState.errors.root && (

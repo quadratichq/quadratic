@@ -17,6 +17,33 @@ const schema = z.object({
 });
 
 /**
+ * Server-side store for PKCE code verifiers, keyed by nonce.
+ * The code verifier is a secret that must never leave the server.
+ * Entries are automatically cleaned up after 10 minutes.
+ */
+const CODE_VERIFIER_TTL_MS = 10 * 60 * 1000;
+const pendingCodeVerifiers = new Map<string, { codeVerifier: string; expiresAt: number }>();
+
+// Periodically clean up expired entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [nonce, entry] of pendingCodeVerifiers) {
+    if (entry.expiresAt <= now) {
+      pendingCodeVerifiers.delete(nonce);
+    }
+  }
+}, CODE_VERIFIER_TTL_MS).unref();
+
+/** Retrieve and consume a stored code verifier by nonce. Returns undefined if not found or expired. */
+export function consumeCodeVerifier(nonce: string): string | undefined {
+  const entry = pendingCodeVerifiers.get(nonce);
+  if (!entry) return undefined;
+  pendingCodeVerifiers.delete(nonce);
+  if (entry.expiresAt <= Date.now()) return undefined;
+  return entry.codeVerifier;
+}
+
+/**
  * Generate Google OAuth authorization URL
  *
  * This endpoint creates an OAuth URL that the frontend uses to redirect
@@ -24,7 +51,7 @@ const schema = z.object({
  *
  * GET /v0/teams/:uuid/google/auth-url
  */
-async function handler(req: RequestWithUser, res: Response<{ authUrl: string; nonce: string; codeVerifier: string }>) {
+async function handler(req: RequestWithUser, res: Response<{ authUrl: string; nonce: string }>) {
   const {
     user: { id: userId },
   } = req;
@@ -50,6 +77,12 @@ async function handler(req: RequestWithUser, res: Response<{ authUrl: string; no
   // Generate PKCE code verifier and challenge
   const { codeVerifier, codeChallenge } = await oauth2Client.generateCodeVerifierAsync();
 
+  // Store code verifier server-side, keyed by the nonce — it must never reach the client
+  pendingCodeVerifiers.set(nonce, {
+    codeVerifier,
+    expiresAt: Date.now() + CODE_VERIFIER_TTL_MS,
+  });
+
   // Encode team UUID and nonce in the state parameter for CSRF protection
   const state = JSON.stringify({ teamUuid: uuid, nonce });
 
@@ -63,5 +96,5 @@ async function handler(req: RequestWithUser, res: Response<{ authUrl: string; no
     code_challenge_method: 'S256',
   });
 
-  return res.status(200).json({ authUrl, nonce, codeVerifier });
+  return res.status(200).json({ authUrl, nonce });
 }

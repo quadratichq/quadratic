@@ -144,16 +144,27 @@ export const ConnectionTypeDetailsMixpanelSchema = z.object({
 // Google Analytics connection - supports both Service Account (legacy) and OAuth authentication
 // Service Account: Uses service_account_configuration JSON
 // OAuth: Uses access_token, refresh_token, and token_expires_at
-export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
+const GoogleAnalyticsBaseSchema = z.object({
   property_id: z.string().min(1, { message: 'Required' }),
   start_date: z.string().date(),
-  // Service Account authentication (legacy)
-  service_account_configuration: z.string().optional(),
-  // OAuth authentication (preferred)
-  access_token: z.string().optional(),
-  refresh_token: z.string().optional(),
-  token_expires_at: z.string().datetime().optional(),
 });
+
+export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.union([
+  // Service Account authentication (legacy)
+  GoogleAnalyticsBaseSchema.extend({
+    service_account_configuration: z.string().min(1),
+    access_token: z.undefined().optional(),
+    refresh_token: z.undefined().optional(),
+    token_expires_at: z.undefined().optional(),
+  }),
+  // OAuth authentication (preferred)
+  GoogleAnalyticsBaseSchema.extend({
+    service_account_configuration: z.undefined().optional(),
+    access_token: z.string().min(1),
+    refresh_token: z.string().min(1),
+    token_expires_at: z.string().datetime(),
+  }),
+]);
 
 export const ConnectionTypeDetailsPlaidSchema = z.object({
   access_token: z.string().min(1, { message: 'Required' }),
@@ -276,13 +287,11 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/google/auth-url.GET.response': z.object({
     authUrl: z.string(),
     nonce: z.string(),
-    codeVerifier: z.string(),
   }),
 
   '/v0/teams/:uuid/google/exchange-token.POST.request': z.object({
     code: z.string(),
     state: z.string().min(1),
-    codeVerifier: z.string().min(1),
   }),
   '/v0/teams/:uuid/google/exchange-token.POST.response': z.object({
     accessToken: z.string(),

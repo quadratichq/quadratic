@@ -11,7 +11,7 @@ use arrow::datatypes::{DataType, Date32Type, Field, Schema};
 use arrow_array::{Date32Array, Float64Array, RecordBatch, StringArray};
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use google_analyticsdata1_beta::{
     AnalyticsData,
     api::{DateRange, Dimension, Metric, RunReportRequest, RunReportResponse},
@@ -397,8 +397,8 @@ impl GoogleAnalyticsClient {
 
         let property_id = Self::normalize_property_id(property_id)?;
 
-        // Check if the token is expired
-        if token_expires_at <= Utc::now() {
+        // Check if the token is expired or about to expire (30 second buffer for network latency)
+        if token_expires_at <= Utc::now() + Duration::seconds(30) {
             return Err(SharedError::Synced(
                 "OAuth access token has expired. Please refresh the token before connecting."
                     .to_string(),
