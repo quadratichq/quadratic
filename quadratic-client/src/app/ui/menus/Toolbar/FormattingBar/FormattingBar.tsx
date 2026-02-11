@@ -7,6 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import {
   AlignmentFormatting,
   Clear,
@@ -218,7 +219,7 @@ export const FormattingBar = memo(() => {
 
       <div className="flex h-full w-full flex-grow" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
-          <div className="flex flex-shrink select-none">
+          <div className="flex flex-shrink select-none items-center">
             {!hiddenItems.includes('NumberFormatting') && (
               <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
             )}
@@ -229,6 +230,7 @@ export const FormattingBar = memo(() => {
             {!hiddenItems.includes('FontSizeFormatting') && (
               <FontSizeFormatting key="main-font-size-formatting" formatSummary={formatSummary} />
             )}
+            <FormatPainterButton />
             {!hiddenItems.includes('FillAndBorderFormatting') && (
               <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
             )}

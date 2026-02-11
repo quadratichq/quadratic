@@ -1,6 +1,5 @@
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { CursorPosition } from '@/app/ui/menus/Toolbar/CursorPosition';
-import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import { FormattingBar } from '@/app/ui/menus/Toolbar/FormattingBar/FormattingBar';
 import { ZoomMenu } from '@/app/ui/menus/Toolbar/ZoomMenu';
 import { memo } from 'react';
@@ -15,12 +14,6 @@ export const Toolbar = memo(() => {
       <div className="w-48 flex-shrink-0 border-r border-border xl:w-64 2xl:w-80">
         <CursorPosition />
       </div>
-
-      {canEdit && (
-        <div className="flex items-center border-r border-border px-2">
-          <FormatPainterButton />
-        </div>
-      )}
 
       <div className="no-scrollbar flex flex-1 items-center justify-center overflow-y-hidden overflow-x-scroll">
         {canEdit && <FormattingBar />}

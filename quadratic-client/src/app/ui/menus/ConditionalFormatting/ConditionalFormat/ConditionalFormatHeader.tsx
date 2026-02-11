@@ -26,7 +26,7 @@ export const ConditionalFormatHeader = ({ isNew }: Props) => {
             <ArrowBackIcon />
           </Button>
         </TooltipPopover>
-        <h2 className="font-semibold">{isNew ? 'New Conditional Format' : 'Edit Conditional Format'}</h2>
+        <h2 className="font-semibold">{isNew ? 'New rule' : 'Edit rule'}</h2>
       </div>
       <Button
         variant="ghost"

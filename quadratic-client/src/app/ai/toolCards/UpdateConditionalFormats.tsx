@@ -116,7 +116,7 @@ export const UpdateConditionalFormats = memo(
     const { label, description } = useMemo(() => {
       if (!toolArgs?.data?.rules) {
         return {
-          label: loading ? 'Updating conditional formatting' : 'Updated conditional formatting',
+          label: loading ? 'Applying conditional formatting' : 'Applied conditional formatting',
           description: undefined,
         };
       }
@@ -131,7 +131,7 @@ export const UpdateConditionalFormats = memo(
       if (updateCount > 0) parts.push(`${updateCount} updated`);
       if (deleteCount > 0) parts.push(`${deleteCount} deleted`);
 
-      const verb = loading ? 'Updating' : 'Updated';
+      const verb = loading ? 'Applying' : 'Applied';
 
       if (rules.length === 1) {
         const rule = rules[0];
