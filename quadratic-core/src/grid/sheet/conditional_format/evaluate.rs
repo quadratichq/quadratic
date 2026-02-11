@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     CellValue, Pos, Rect, RefAdjust, SheetPos, Value,
-    a1::{A1Context, A1Selection},
+    a1::{A1Context, A1Selection, CellRefRange},
     color::contrasting_text_color_hex,
     controller::GridController,
     formulas::{Ctx, adjust_references, ast::Formula, parse_formula},
@@ -47,6 +47,28 @@ impl GridController {
         }
     }
 
+    /// Returns the formula anchor: the top-left of the first range (min col, min row).
+    /// For denormalized ranges (e.g. B1:A10) this is A1, so "=A1>5" is interpreted consistently.
+    fn formula_anchor_from_selection(
+        selection: &A1Selection,
+        a1_context: &A1Context,
+    ) -> Option<Pos> {
+        selection.ranges.first().and_then(|range| match range {
+            CellRefRange::Sheet { range } => {
+                let x = range.start.col().min(range.end.col());
+                let y = range.start.row().min(range.end.row());
+                if x != crate::a1::UNBOUNDED && y != crate::a1::UNBOUNDED {
+                    Some(Pos { x, y })
+                } else {
+                    None
+                }
+            }
+            CellRefRange::Table { .. } => {
+                ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context)
+            }
+        })
+    }
+
     /// Evaluates a formula-based conditional format rule at a specific cell position.
     /// Translates the formula references relative to the anchor (top-left of first range).
     fn evaluate_formula_rule(
@@ -56,12 +78,8 @@ impl GridController {
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> bool {
-        // Get the anchor from the first cell of the first range in the selection.
-        // The formula is defined relative to this anchor, and all ranges in the
-        // selection should use the same anchor for consistent translation.
-        // We use get_first_cell_from_selection to properly handle table column
-        // selections where the first data cell may differ from the range's min bounds.
-        let anchor = ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context)
+        let anchor = Self::formula_anchor_from_selection(selection, a1_context)
+            .or_else(|| ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context))
             .unwrap_or(selection.cursor);
 
         // Calculate offset from anchor to current position
@@ -1124,6 +1142,67 @@ mod tests {
             !fills.iter().any(|(rect, _)| rect.contains(pos_a2)),
             "A2 should NOT have fill"
         );
+    }
+
+    #[test]
+    fn test_conditional_format_denormalized_range() {
+        // Conditional format with denormalized range B1:A10 (same rect as A1:B10).
+        // Formula translation anchor is B1 (first range start), so at A1 we evaluate A1>5.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a2 = crate::Pos::test_a1("A2");
+        let pos_b1 = crate::Pos::test_a1("B1");
+        let pos_b2 = crate::Pos::test_a1("B2");
+        let pos_c1 = crate::Pos::test_a1("C1");
+
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
+        gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "3".to_string(), None, false);
+        gc.set_cell_value(pos_b1.to_sheet_pos(sheet_id), "8".to_string(), None, false);
+        gc.set_cell_value(pos_b2.to_sheet_pos(sheet_id), "2".to_string(), None, false);
+        gc.set_cell_value(pos_c1.to_sheet_pos(sheet_id), "99".to_string(), None, false);
+
+        let cf = create_test_conditional_format(
+            &gc,
+            "B1:A10",
+            "=A1>5",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+
+        let a1_context = gc.a1_context();
+        assert!(
+            cf.selection.contains_pos(pos_a1, a1_context),
+            "Selection B1:A10 should contain A1 (denormalized range)"
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Cells inside the rect (A1:B10) with value >5 should have style
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a1.is_some(), "A1 (10>5) inside B1:A10 should have style");
+
+        let style_b1 =
+            gc.get_conditional_format_style(pos_b1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_b1.is_some(), "B1 (8>5) inside B1:A10 should have style");
+
+        // Cells inside the rect with value <=5 should not have style
+        let style_a2 =
+            gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a2.is_none(), "A2 (3>5 false) should not have style");
+
+        let style_b2 =
+            gc.get_conditional_format_style(pos_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_b2.is_none(), "B2 (2>5 false) should not have style");
+
+        // Cell outside the range (C1) should not have style even if value >5
+        let style_c1 =
+            gc.get_conditional_format_style(pos_c1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_c1.is_none(), "C1 is outside B1:A10, should not have style");
     }
 
     #[test]
