@@ -24,9 +24,9 @@ export const SyncedConnection = ({
           <Badge>Syncing</Badge>
         ) : syncState === 'synced' ? (
           <Badge variant="success">Synced</Badge>
-        ) : (
+        ) : syncState === 'failed' ? (
           <Badge variant="destructive">Sync failed</Badge>
-        )}
+        ) : null}
         {lastSync}
         {lastSync && created && <span>·</span>}
         {created}

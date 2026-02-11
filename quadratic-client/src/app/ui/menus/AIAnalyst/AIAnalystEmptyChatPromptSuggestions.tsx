@@ -215,7 +215,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
     };
   }, []);
 
-  const hasConnections = connections.length > 1;
+  const hasConnections = connections.length > 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-1">
