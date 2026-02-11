@@ -36,3 +36,9 @@ export const claude_opus_4_5_20251101_rate: AIRates = {
   rate_per_million_cache_read_tokens: 0.5,
   rate_per_million_cache_write_tokens: 6.25,
 };
+export const claude_opus_4_6_20260205_rate: AIRates = {
+  rate_per_million_input_tokens: 5,
+  rate_per_million_output_tokens: 25,
+  rate_per_million_cache_read_tokens: 0.5,
+  rate_per_million_cache_write_tokens: 6.25,
+};

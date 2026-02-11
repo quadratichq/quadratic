@@ -48,9 +48,10 @@ import type {
   ClientCoreAddDataTable,
   ClientCoreImportFile,
   ClientCoreLoad,
-  ClientCoreMoveCells,
+  ClientCoreMoveCellsBatch,
   ClientCoreMoveCodeCellHorizontally,
   ClientCoreMoveCodeCellVertically,
+  ClientCoreMoveColsRows,
   ClientCoreSummarizeSelection,
   CoreClientImportFile,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -988,7 +989,7 @@ class Core {
     }
   }
 
-  moveCells(message: ClientCoreMoveCells) {
+  moveColsRows(message: ClientCoreMoveColsRows) {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       const dest: SheetPos = {
@@ -996,7 +997,7 @@ class Core {
         y: BigInt(message.targetY),
         sheet_id: { id: message.targetSheetId },
       };
-      this.gridController.moveCells(
+      this.gridController.moveColsRows(
         JSON.stringify(message.source, bigIntReplacer),
         JSON.stringify(dest, bigIntReplacer),
         message.columns,
@@ -1005,7 +1006,25 @@ class Core {
         message.isAi
       );
     } catch (e) {
-      this.handleCoreError('moveCells', e);
+      this.handleCoreError('moveColsRows', e);
+    }
+  }
+
+  moveCellsBatch(message: ClientCoreMoveCellsBatch) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      // Convert moves to the format expected by Rust: Vec<(SheetRect, SheetPos)>
+      const moves = message.moves.map((move) => [
+        move.source,
+        {
+          x: BigInt(move.dest.x),
+          y: BigInt(move.dest.y),
+          sheet_id: move.dest.sheet_id,
+        },
+      ]);
+      this.gridController.moveCellsBatch(JSON.stringify(moves, bigIntReplacer), message.cursor, message.isAi);
+    } catch (e) {
+      this.handleCoreError('moveCellsBatch', e);
     }
   }
 

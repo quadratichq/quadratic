@@ -1490,6 +1490,7 @@ mod tests {
         }
 
         #[test]
+        #[allow(clippy::approx_constant)]
         fn test_format_number_decimals() {
             assert_eq!(format_number(3.15), "3.15");
             assert_eq!(format_number(-3.15), "-3.15");

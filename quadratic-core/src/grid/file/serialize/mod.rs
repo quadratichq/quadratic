@@ -1,6 +1,7 @@
 #![allow(unused)] // TODO: remove this
 
 use anyhow::Result;
+use indexmap::IndexMap;
 use itertools::Itertools;
 use sheets::{export_sheet, import_sheet};
 
@@ -21,14 +22,12 @@ pub mod sheets;
 pub(crate) mod validations;
 
 pub fn import(file: current::GridSchema) -> Result<Grid> {
-    let mut grid = Grid {
-        sheets: file
-            .sheets
-            .into_iter()
-            .map(import_sheet)
-            .map_ok(|sheet| (sheet.id, sheet))
-            .collect::<Result<_>>()?,
-    };
+    let mut sheets = IndexMap::new();
+    for sheet_schema in file.sheets {
+        let sheet = import_sheet(sheet_schema)?;
+        sheets.insert(sheet.id, sheet);
+    }
+    let mut grid = Grid { sheets };
     let a1_context = grid.expensive_make_a1_context();
     for sheet in grid.sheets.values_mut() {
         sheet.recalculate_bounds(&a1_context);
