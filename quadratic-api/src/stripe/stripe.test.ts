@@ -2,7 +2,7 @@
 jest.unmock('./stripe');
 
 import type Stripe from 'stripe';
-import { selectBestSubscription } from './stripe';
+import { cancelIncompleteSubscriptions, selectBestSubscription, stripe as stripeClient } from './stripe';
 
 // Helper to create a mock subscription with the minimum fields needed
 const mockSubscription = (
@@ -68,5 +68,96 @@ describe('selectBestSubscription', () => {
     selectBestSubscription(input);
     expect(input[0]).toBe(first);
     expect(input[1]).toBe(second);
+  });
+});
+
+describe('cancelIncompleteSubscriptions', () => {
+  let mockRetrieve: jest.SpyInstance;
+  let mockCancel: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockRetrieve = jest.spyOn(stripeClient.customers, 'retrieve');
+    mockCancel = jest.spyOn(stripeClient.subscriptions, 'cancel').mockResolvedValue({} as Stripe.Subscription);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('returns 0 for a deleted customer', async () => {
+    mockRetrieve.mockResolvedValue({ id: 'cus_1', deleted: true });
+    const count = await cancelIncompleteSubscriptions('cus_1');
+    expect(count).toBe(0);
+    expect(mockCancel).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 when there are no subscriptions', async () => {
+    mockRetrieve.mockResolvedValue({
+      id: 'cus_1',
+      deleted: false,
+      subscriptions: { data: [] },
+    });
+    const count = await cancelIncompleteSubscriptions('cus_1');
+    expect(count).toBe(0);
+    expect(mockCancel).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 and does not cancel active subscriptions', async () => {
+    mockRetrieve.mockResolvedValue({
+      id: 'cus_1',
+      deleted: false,
+      subscriptions: {
+        data: [mockSubscription({ id: 'sub_active', status: 'active' })],
+      },
+    });
+    const count = await cancelIncompleteSubscriptions('cus_1');
+    expect(count).toBe(0);
+    expect(mockCancel).not.toHaveBeenCalled();
+  });
+
+  it('cancels incomplete subscriptions', async () => {
+    mockRetrieve.mockResolvedValue({
+      id: 'cus_1',
+      deleted: false,
+      subscriptions: {
+        data: [mockSubscription({ id: 'sub_incomplete', status: 'incomplete' })],
+      },
+    });
+    const count = await cancelIncompleteSubscriptions('cus_1');
+    expect(count).toBe(1);
+    expect(mockCancel).toHaveBeenCalledWith('sub_incomplete');
+  });
+
+  it('does not cancel incomplete_expired subscriptions (already terminal)', async () => {
+    mockRetrieve.mockResolvedValue({
+      id: 'cus_1',
+      deleted: false,
+      subscriptions: {
+        data: [mockSubscription({ id: 'sub_expired', status: 'incomplete_expired' })],
+      },
+    });
+    const count = await cancelIncompleteSubscriptions('cus_1');
+    expect(count).toBe(0);
+    expect(mockCancel).not.toHaveBeenCalled();
+  });
+
+  it('cancels only incomplete subs when mixed with active and incomplete_expired', async () => {
+    mockRetrieve.mockResolvedValue({
+      id: 'cus_1',
+      deleted: false,
+      subscriptions: {
+        data: [
+          mockSubscription({ id: 'sub_active', status: 'active' }),
+          mockSubscription({ id: 'sub_incomplete_1', status: 'incomplete' }),
+          mockSubscription({ id: 'sub_incomplete_2', status: 'incomplete' }),
+          mockSubscription({ id: 'sub_expired', status: 'incomplete_expired' }),
+        ],
+      },
+    });
+    const count = await cancelIncompleteSubscriptions('cus_1');
+    expect(count).toBe(2);
+    expect(mockCancel).toHaveBeenCalledTimes(2);
+    expect(mockCancel).toHaveBeenCalledWith('sub_incomplete_1');
+    expect(mockCancel).toHaveBeenCalledWith('sub_incomplete_2');
   });
 });

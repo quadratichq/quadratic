@@ -297,6 +297,42 @@ export const selectBestSubscription = (subscriptions: Stripe.Subscription[]): St
   })[0];
 };
 
+/**
+ * Cancels any incomplete subscriptions for a Stripe customer.
+ * This prevents duplicate subscriptions when a user retries checkout after
+ * an abandoned or failed payment attempt.
+ *
+ * Returns the number of subscriptions canceled.
+ */
+export const cancelIncompleteSubscriptions = async (stripeCustomerId: string): Promise<number> => {
+  const customer = await stripe.customers.retrieve(stripeCustomerId, {
+    expand: ['subscriptions'],
+  });
+
+  if (customer.deleted) {
+    return 0;
+  }
+
+  const subscriptions = customer.subscriptions?.data ?? [];
+  const incompleteSubscriptions = subscriptions.filter(
+    (s) => s.status === 'incomplete' || s.status === 'incomplete_expired'
+  );
+
+  // incomplete_expired subscriptions are already terminal and don't need cancellation,
+  // but incomplete ones represent abandoned checkout attempts that should be cleaned up.
+  const cancelable = incompleteSubscriptions.filter((s) => s.status === 'incomplete');
+
+  for (const sub of cancelable) {
+    logger.info('Canceling incomplete subscription before new checkout', {
+      customerId: stripeCustomerId,
+      subscriptionId: sub.id,
+    });
+    await stripe.subscriptions.cancel(sub.id);
+  }
+
+  return cancelable.length;
+};
+
 export const updateBilling = async (team: Team | DecryptedTeam) => {
   if (!team.stripeCustomerId) {
     return;
