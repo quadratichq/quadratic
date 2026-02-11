@@ -30,7 +30,8 @@ export type QuadraticModel = 'quadratic-auto';
 export type VertexAnthropicModel =
   | 'claude-sonnet-4-5@20250929'
   | 'claude-haiku-4-5@20251001'
-  | 'claude-opus-4-5@20251101';
+  | 'claude-opus-4-5@20251101'
+  | 'claude-opus-4-6@20260205';
 
 export type VertexAIModel = 'gemini-2.5-flash' | 'gemini-2.5-flash-lite' | 'gemini-2.5-pro';
 
@@ -42,7 +43,11 @@ export type BedrockAnthropicModel =
 
 export type BedrockModel = 'us.deepseek.r1-v1:0';
 
-export type AnthropicModel = 'claude-sonnet-4-5-20250929' | 'claude-haiku-4-5-20251001' | 'claude-opus-4-5-20251101';
+export type AnthropicModel =
+  | 'claude-sonnet-4-5-20250929'
+  | 'claude-haiku-4-5-20251001'
+  | 'claude-opus-4-5-20251101'
+  | 'claude-opus-4-6';
 
 export type OpenAIModel =
   | 'gpt-5-codex'
@@ -98,7 +103,10 @@ export type VertexAIAnthropicModelKey =
   | 'vertexai-anthropic:claude-haiku-4-5@20251001'
   | 'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off'
   | 'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on'
-  | 'vertexai-anthropic:claude-opus-4-5@20251101';
+  | 'vertexai-anthropic:claude-opus-4-5@20251101'
+  | 'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-off'
+  | 'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-on'
+  | 'vertexai-anthropic:claude-opus-4-6@20260205';
 
 export type VertexAIModelKey =
   | 'vertexai:gemini-2.5-flash:thinking-toggle-off'
@@ -123,7 +131,9 @@ export type AnthropicModelKey =
   | 'anthropic:claude-haiku-4.5:thinking-toggle-off'
   | 'anthropic:claude-haiku-4.5:thinking-toggle-on'
   | 'anthropic:claude-opus-4.5:thinking-toggle-off'
-  | 'anthropic:claude-opus-4.5:thinking-toggle-on';
+  | 'anthropic:claude-opus-4.5:thinking-toggle-on'
+  | 'anthropic:claude-opus-4.6:thinking-toggle-off'
+  | 'anthropic:claude-opus-4.6:thinking-toggle-on';
 
 export type OpenAIModelKey =
   | 'openai:gpt-5-codex'
@@ -563,6 +573,7 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-sonnet-4-5@20250929',
   'claude-haiku-4-5@20251001',
   'claude-opus-4-5@20251101',
+  'claude-opus-4-6@20260205',
 ]) satisfies z.ZodType<VertexAnthropicModel>;
 
 const VertexAIModelSchema = z.enum([
@@ -584,6 +595,7 @@ const AnthropicModelSchema = z.enum([
   'claude-sonnet-4-5-20250929',
   'claude-haiku-4-5-20251001',
   'claude-opus-4-5-20251101',
+  'claude-opus-4-6',
 ]) satisfies z.ZodType<AnthropicModel>;
 
 const OpenAIModelSchema = z.enum([
@@ -652,6 +664,9 @@ const VertexAIAnthropicModelKeySchema = z.enum([
   'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-off',
   'vertexai-anthropic:claude-opus-4-5@20251101:thinking-toggle-on',
   'vertexai-anthropic:claude-opus-4-5@20251101',
+  'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-off',
+  'vertexai-anthropic:claude-opus-4-6@20260205:thinking-toggle-on',
+  'vertexai-anthropic:claude-opus-4-6@20260205',
 ]) satisfies z.ZodType<VertexAIAnthropicModelKey>;
 
 const VertexAIModelKeySchema = z.enum([
@@ -682,6 +697,8 @@ const AnthropicModelKeySchema = z.enum([
   'anthropic:claude-haiku-4.5:thinking-toggle-on',
   'anthropic:claude-opus-4.5:thinking-toggle-off',
   'anthropic:claude-opus-4.5:thinking-toggle-on',
+  'anthropic:claude-opus-4.6:thinking-toggle-off',
+  'anthropic:claude-opus-4.6:thinking-toggle-on',
 ]) satisfies z.ZodType<AnthropicModelKey>;
 
 const OpenAIModelKeySchema = z.enum([
