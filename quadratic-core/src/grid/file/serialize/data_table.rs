@@ -7,7 +7,7 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
-    ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
+    Array, ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
         CellsAccessed, CodeRun, DataTable, DataTableKind, SheetId,
@@ -279,7 +279,7 @@ pub(crate) fn import_data_table_builder(
 ) -> Result<SheetDataTables> {
     let mut sheet_data_tables = SheetDataTables::new();
 
-    for (pos, data_table) in data_tables.into_iter() {
+    for (pos, data_table) in data_tables {
         let pos = Pos { x: pos.x, y: pos.y };
 
         // Skip this DataTable if there's already a CellValue::Code at this position.
@@ -288,6 +288,21 @@ pub(crate) fn import_data_table_builder(
         if matches!(columns.get_value(&pos), Some(CellValue::Code(_))) {
             continue;
         }
+
+        let value = match data_table.value {
+            current::OutputValueSchema::Single(value) => Value::Single(import_cell_value(value)),
+            current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
+                Value::Array(Array::from(
+                    values
+                        .into_iter()
+                        .chunks(size.w as usize)
+                        .into_iter()
+                        .map(|row| row.into_iter().map(import_cell_value).collect::<Vec<_>>())
+                        .collect::<Vec<Vec<_>>>(),
+                ))
+            }
+        };
+
         let mut data_table = DataTable {
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
@@ -300,21 +315,7 @@ pub(crate) fn import_data_table_builder(
                 }
             },
             name: CellValue::Text(data_table.name),
-            value: match data_table.value {
-                current::OutputValueSchema::Single(value) => {
-                    Value::Single(import_cell_value(value))
-                }
-                current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
-                    Value::Array(crate::Array::from(
-                        values
-                            .into_iter()
-                            .chunks(size.w as usize)
-                            .into_iter()
-                            .map(|row| row.into_iter().map(import_cell_value).collect::<Vec<_>>())
-                            .collect::<Vec<Vec<_>>>(),
-                    ))
-                }
-            },
+            value,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             header_is_first_row: data_table.header_is_first_row,
             show_name: data_table.show_name,
