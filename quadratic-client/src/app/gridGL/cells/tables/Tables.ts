@@ -291,6 +291,17 @@ export class Tables extends Container<Table> {
     );
   };
 
+  /// Resets all floating table headers back to their normal grid positions.
+  /// Used before copy-as-PNG to ensure headers render at their true locations.
+  resetFloatingHeaders = () => {
+    for (const table of this.children) {
+      if (table.inOverHeadings) {
+        table.header.toGrid();
+        table.inOverHeadings = false;
+      }
+    }
+  };
+
   /// Forces an update of all tables to the given bounds (used by thumbnail generation)
   forceUpdate = (bounds: Rectangle) => {
     const gridHeading = content.headings.headingSize.unscaledHeight;
