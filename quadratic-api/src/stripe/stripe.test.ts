@@ -61,6 +61,18 @@ describe('selectBestSubscription', () => {
     expect(selectBestSubscription([incomplete, active, pastDue]).id).toBe('sub_active');
   });
 
+  it('prefers active over paused', () => {
+    const paused = mockSubscription({ id: 'sub_paused', status: 'paused', created: 200 });
+    const active = mockSubscription({ id: 'sub_active', status: 'active', created: 100 });
+    expect(selectBestSubscription([paused, active]).id).toBe('sub_active');
+  });
+
+  it('ranks paused as lowest priority', () => {
+    const paused = mockSubscription({ id: 'sub_paused', status: 'paused', created: 200 });
+    const incompleteExpired = mockSubscription({ id: 'sub_expired', status: 'incomplete_expired', created: 100 });
+    expect(selectBestSubscription([paused, incompleteExpired]).id).toBe('sub_expired');
+  });
+
   it('does not mutate the input array', () => {
     const first = mockSubscription({ id: 'sub_1', status: 'active', created: 100 });
     const second = mockSubscription({ id: 'sub_2', status: 'trialing', created: 200 });

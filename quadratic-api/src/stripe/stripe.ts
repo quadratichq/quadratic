@@ -170,6 +170,9 @@ export const updateTeamStatus = async (
     case 'unpaid':
       stripeSubscriptionStatus = SubscriptionStatus.UNPAID;
       break;
+    case 'paused':
+      stripeSubscriptionStatus = SubscriptionStatus.PAUSED;
+      break;
     default:
       logger.error('Unhandled subscription status', { status });
       return;
@@ -382,4 +385,31 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
     team.stripeCustomerId,
     new Date(subscription.current_period_end * 1000)
   );
+
+  // Cancel non-selected subscriptions that are still in a cancelable state.
+  // This cleans up stale subscriptions left behind by retried checkouts.
+  // Terminal statuses (canceled, incomplete_expired) don't need cancellation.
+  const TERMINAL_STATUSES: Stripe.Subscription.Status[] = ['canceled', 'incomplete_expired'];
+  const staleSubscriptions = subscriptions.filter(
+    (s) => s.id !== subscription.id && !TERMINAL_STATUSES.includes(s.status)
+  );
+
+  for (const staleSub of staleSubscriptions) {
+    try {
+      logger.info('Canceling non-selected stale subscription during billing sync', {
+        customerId: team.stripeCustomerId,
+        canceledSubscriptionId: staleSub.id,
+        canceledStatus: staleSub.status,
+        selectedSubscriptionId: subscription.id,
+      });
+      await stripe.subscriptions.cancel(staleSub.id);
+    } catch (err) {
+      // Log but don't fail — the primary subscription was already synced successfully
+      logger.error('Failed to cancel stale subscription', {
+        customerId: team.stripeCustomerId,
+        subscriptionId: staleSub.id,
+        error: err,
+      });
+    }
+  }
 };
