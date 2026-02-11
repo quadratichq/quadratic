@@ -266,6 +266,34 @@ export const getIsMonthlySubscription = async (stripeSubscriptionId: string): Pr
   return isMonthly;
 };
 
+// Priority order for choosing the best subscription when multiple exist.
+// Lower index = higher priority.
+const SUBSCRIPTION_STATUS_PRIORITY: Stripe.Subscription.Status[] = [
+  'active',
+  'trialing',
+  'past_due',
+  'incomplete',
+  'unpaid',
+  'canceled',
+  'incomplete_expired',
+  'paused',
+];
+
+/**
+ * Selects the best subscription from a list of subscriptions.
+ * Prefers active subscriptions; falls back to the highest-priority status.
+ * Among subscriptions with the same status, prefers the most recently created one.
+ */
+export const selectBestSubscription = (subscriptions: Stripe.Subscription[]): Stripe.Subscription => {
+  return subscriptions.sort((a, b) => {
+    const priorityA = SUBSCRIPTION_STATUS_PRIORITY.indexOf(a.status);
+    const priorityB = SUBSCRIPTION_STATUS_PRIORITY.indexOf(b.status);
+    if (priorityA !== priorityB) return priorityA - priorityB;
+    // Same status: prefer more recently created
+    return b.created - a.created;
+  })[0];
+};
+
 export const updateBilling = async (team: Team | DecryptedTeam) => {
   if (!team.stripeCustomerId) {
     return;
@@ -282,17 +310,10 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
     return;
   }
 
-  if (customer.subscriptions && customer.subscriptions.data.length === 1) {
-    // if we have exactly one subscription, update the team
-    const subscription = customer.subscriptions.data[0];
-    await updateTeamStatus(
-      subscription.id,
-      subscription.status,
-      team.stripeCustomerId,
-      new Date(subscription.current_period_end * 1000)
-    );
-  } else if (customer.subscriptions && customer.subscriptions.data.length === 0) {
-    // if we have zero subscriptions, update the team
+  const subscriptions = customer.subscriptions?.data ?? [];
+
+  if (subscriptions.length === 0) {
+    // No subscriptions — clear subscription data
     await dbClient.team.update({
       where: { id: team.id },
       data: {
@@ -302,11 +323,24 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
         stripeSubscriptionLastUpdated: null,
       },
     });
-  } else {
-    // If we have more than one subscription, log an error
-    // This should not happen.
-    logger.error('Unexpected Error: Unhandled number of subscriptions', {
-      subscriptions: customer.subscriptions?.data,
+    return;
+  }
+
+  if (subscriptions.length > 1) {
+    // Multiple subscriptions is unexpected but can happen when users retry checkout.
+    // Log a warning and pick the best one instead of bailing out.
+    logger.warn('Multiple subscriptions found for customer, selecting best one', {
+      customerId: team.stripeCustomerId,
+      subscriptionCount: subscriptions.length,
+      statuses: subscriptions.map((s) => s.status),
     });
   }
+
+  const subscription = selectBestSubscription(subscriptions);
+  await updateTeamStatus(
+    subscription.id,
+    subscription.status,
+    team.stripeCustomerId,
+    new Date(subscription.current_period_end * 1000)
+  );
 };
