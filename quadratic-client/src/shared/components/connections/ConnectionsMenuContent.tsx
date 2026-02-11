@@ -148,7 +148,7 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
   }, [isNotSynced, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
   return (
-    <DropdownMenuItem key={connection.uuid} onClick={handleClick} className="gap-3">
+    <DropdownMenuItem onClick={handleClick} className="gap-3">
       <ConnectionIcon type={connection.type} syncState={syncState} className="flex-shrink-0" />
       <span className="flex items-center truncate">
         <span className="truncate">
