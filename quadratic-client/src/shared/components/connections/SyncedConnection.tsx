@@ -48,8 +48,8 @@ export const SyncedConnectionLatestStatus = ({
     return `Last synced ${timeAgo(updatedDate)}`;
   }
 
-  if (syncState === 'syncing') {
-    return `Syncing`;
+  if (syncState === 'syncing' || syncState === 'not_synced') {
+    return `Syncing…`;
   }
 
   if (syncState === 'failed') {
