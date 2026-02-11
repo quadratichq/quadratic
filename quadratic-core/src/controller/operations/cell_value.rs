@@ -420,6 +420,7 @@ impl GridController {
         // If we don't skip, the RichText clearing operations would overwrite
         // the blank values set by delete_cells_operations.
         ops.extend(self.clear_format_borders_operations(selection, true, true));
+        ops.extend(self.unmerge_cells_a1_selection_operations(selection.clone()));
         ops
     }
 

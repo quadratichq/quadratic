@@ -128,6 +128,9 @@ export class Content extends Container {
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     this.formatPainter.visible = false;
+    this.cellsSheet.tables.resetFloatingHeaders();
+    this.hoverTableHeaders.visible = false;
+    this.hoverTableColumnsSelection.visible = false;
     this.cellsSheets.cull(options.cull);
     if (options.thumbnail) {
       this.cellsSheet.tables.forceUpdate(options.cull);
@@ -146,6 +149,8 @@ export class Content extends Container {
     this.cellsSheets.toggleOutlines();
     this.copy.visible = true;
     this.formatPainter.visible = true;
+    this.hoverTableHeaders.visible = true;
+    this.hoverTableColumnsSelection.visible = true;
     this.cellsSheets.cull(bounds);
     this.cellsSheet.tables.forceUpdate(bounds);
     this.copying = false;

@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -126,12 +127,18 @@ function FileLocation() {
         to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)}
         reloadDocument
         className={'flex items-center gap-1 hover:text-foreground hover:underline'}
+        onClick={() => trackEvent('[FileLocation].click', { fileType: 'personal', teamName })}
       >
         {label}
       </Link>
     ) : (
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-1 hover:text-foreground">{label}</DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          className="flex items-center gap-1 hover:text-foreground"
+          onClick={() => trackEvent('[FileLocation].menu.open', { fileType: 'personal', teamName })}
+        >
+          {label}
+        </DropdownMenuTrigger>
         <DropdownMenuContent
           onCloseAutoFocus={(e) => {
             e.preventDefault();
@@ -164,12 +171,18 @@ function FileLocation() {
         to={ROUTES.TEAM_FILES(team.uuid, { type: 'team' })}
         reloadDocument
         className={'flex items-center gap-1 hover:text-foreground hover:underline'}
+        onClick={() => trackEvent('[FileLocation].click', { fileType: 'team', teamName })}
       >
         {label}
       </Link>
     ) : (
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-1 hover:text-foreground">{label}</DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          className="flex items-center gap-1 hover:text-foreground"
+          onClick={() => trackEvent('[FileLocation].menu.open', { fileType: 'team', teamName })}
+        >
+          {label}
+        </DropdownMenuTrigger>
         <DropdownMenuContent
           onCloseAutoFocus={(e) => {
             e.preventDefault();
@@ -199,6 +212,7 @@ function FileLocation() {
         reloadDocument
         className="block max-w-40 truncate"
         data-testid="file-location-link-shared-with-me"
+        onClick={() => trackEvent('[FileLocation].click', { fileType: 'shared-invite', teamName })}
       >
         {label}
       </Link>

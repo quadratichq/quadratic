@@ -405,7 +405,9 @@ mod tests {
 
     /// Full thumbnail generation flow: build_render_request, prepare_renderer, render_to_png.
     /// Validates PNG output when rendering succeeds (e.g. local with GPU); does not fail in CI without GPU.
+    /// Ignored by default because rendered output varies across OSes and GPU drivers.
     #[test]
+    #[ignore]
     fn test_generates_thumbnail() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

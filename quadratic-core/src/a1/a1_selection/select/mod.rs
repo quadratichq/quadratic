@@ -38,16 +38,22 @@ impl A1Selection {
             return;
         }
 
+        // When ctrl+clicking (appending) a merged cell, select the anchor
+        // (top-left) cell rather than the clicked cell within the merge.
+        let pos = if append {
+            merge_cells.get_anchor(new_pos).unwrap_or(new_pos)
+        } else {
+            new_pos
+        };
+
         if append {
-            self.ranges
-                .push(CellRefRange::new_relative_pos(new_pos));
+            self.ranges.push(CellRefRange::new_relative_pos(pos));
         } else {
             self.ranges.clear();
-            self.ranges
-                .push(CellRefRange::new_relative_pos(new_pos));
+            self.ranges.push(CellRefRange::new_relative_pos(pos));
         }
-        self.cursor.x = x;
-        self.cursor.y = y;
+        self.cursor.x = pos.x;
+        self.cursor.y = pos.y;
     }
 
     /// Helper to convert last range to RefRangeBounds (for set_columns_selected and set_rows_selected)
@@ -152,6 +158,34 @@ mod tests {
         // Non-append click within the same merged cell — should move (replace)
         selection.move_to(3, 18, false, &merge_cells);
         assert_eq!(selection.test_to_string(), "C18");
+    }
+
+    #[test]
+    fn test_move_to_append_selects_merge_anchor() {
+        let mut merge_cells = MergeCells::default();
+        merge_cells.merge_cells(Rect::new(3, 16, 4, 18)); // C16:D18
+        merge_cells.merge_cells(Rect::new(6, 1, 8, 3)); // F1:H3
+
+        // Start at A1 (outside any merge)
+        let mut selection = A1Selection::test_a1("A1");
+
+        // Ctrl+click D18 (non-anchor cell within C16:D18) — should select C16
+        selection.move_to(4, 18, true, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A1,C16");
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 16);
+
+        // Ctrl+click H3 (non-anchor cell within F1:H3) — should select F1
+        selection.move_to(8, 3, true, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A1,C16,F1");
+        assert_eq!(selection.cursor.x, 6);
+        assert_eq!(selection.cursor.y, 1);
+
+        // Ctrl+click on a non-merged cell — should select that exact cell
+        selection.move_to(10, 10, true, &merge_cells);
+        assert_eq!(selection.test_to_string(), "A1,C16,F1,J10");
+        assert_eq!(selection.cursor.x, 10);
+        assert_eq!(selection.cursor.y, 10);
     }
 
     #[test]

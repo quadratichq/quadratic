@@ -76,21 +76,6 @@ impl GridController {
                     let dx = dest.x - source_rect.min.x;
                     let dy = dest.y - source_rect.min.y;
 
-                    for merge_rect in &source_merges {
-                        let mut unmerge_source = MergeCellsUpdate::default();
-                        unmerge_source.set_rect(
-                            merge_rect.min.x,
-                            merge_rect.min.y,
-                            Some(merge_rect.max.x),
-                            Some(merge_rect.max.y),
-                            Some(ClearOption::Clear),
-                        );
-                        ops.push(Operation::SetMergeCells {
-                            sheet_id,
-                            merge_cells_updates: unmerge_source,
-                        });
-                    }
-
                     for existing_rect in &existing_merges_at_dest {
                         let mut unmerge = MergeCellsUpdate::default();
                         unmerge.set_rect(
@@ -376,6 +361,95 @@ mod tests {
         assert!(
             transaction.merge_cells_updates.contains_key(&sheet_id),
             "Moving a selection that includes a merged cell should set merge_cells_updates so the client refreshes"
+        );
+    }
+
+    /// Moving a merged cell should move its content and all formatting to the destination.
+    /// The source rect must be empty: no content and no longer part of any merge.
+    #[test]
+    fn test_move_merged_cell_content_and_formatting_move_old_position_empty() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(pos![sheet_id!A1], "MergedContent".to_string(), None, false);
+        gc.merge_cells(
+            A1Selection::test_a1_sheet_id("A1:B2", sheet_id),
+            None,
+            false,
+        );
+        let _ = gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("A1:B2", sheet_id),
+            Some("red".to_string()),
+            None,
+            false,
+        );
+        gc.set_bold(
+            &A1Selection::test_a1_sheet_id("A1:B2", sheet_id),
+            Some(true),
+            None,
+            false,
+        )
+        .unwrap();
+
+        let source_rect = Rect::new(1, 1, 2, 2);
+        let source = crate::SheetRect::new(1, 1, 2, 2, sheet_id);
+        let dest = pos![sheet_id!D3];
+        gc.move_cells(source, dest, false, false, None, false);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Destination: content and formatting moved with the merged cell
+        assert_eq!(
+            sheet.cell_value(pos![D3]),
+            Some(crate::CellValue::Text("MergedContent".to_string())),
+            "Merged cell content should be at destination anchor"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![D3]),
+            Some("red".to_string()),
+            "Fill color should move with merged cell"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(pos![D3]),
+            Some(true),
+            "Bold should move with merged cell"
+        );
+        let dest_merges = sheet.merge_cells.get_merge_cells(Rect::new(4, 3, 5, 4));
+        assert_eq!(
+            dest_merges.len(),
+            1,
+            "Destination should have one merged cell (D3:E4)"
+        );
+
+        // Source: must be empty — no content and no longer in merge cells
+        let source_merges = sheet.merge_cells.get_merge_cells(source_rect);
+        assert!(
+            source_merges.is_empty(),
+            "Source rect A1:B2 should not be in any merge after move"
+        );
+        assert!(
+            sheet.cell_value(pos![A1]).is_none(),
+            "Source anchor A1 should have no content after move"
+        );
+        assert!(
+            sheet.cell_value(pos![B1]).is_none(),
+            "Source B1 should have no content after move"
+        );
+        assert!(
+            sheet.cell_value(pos![A2]).is_none(),
+            "Source A2 should have no content after move"
+        );
+        assert!(
+            sheet.cell_value(pos![B2]).is_none(),
+            "Source B2 should have no content after move"
+        );
+        assert!(
+            sheet.formats.fill_color.get(pos![A1]).is_none(),
+            "Source A1 should have no fill after move"
+        );
+        assert!(
+            sheet.formats.bold.get(pos![A1]).is_none(),
+            "Source A1 should have no bold after move"
         );
     }
 }
