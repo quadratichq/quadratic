@@ -21,6 +21,7 @@ import { AIThinkingBlock } from '@/app/ui/components/AIThinkingBlock';
 import { GoogleSearchSources } from '@/app/ui/components/GoogleSearchSources';
 import { ImportFilesToGrid } from '@/app/ui/components/ImportFilesToGrid';
 import { Markdown } from '@/app/ui/components/Markdown';
+import { AIAnalystContextLengthError } from '@/app/ui/menus/AIAnalyst/AIAnalystContextLengthError';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
@@ -442,40 +443,50 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ))
             ) : (
               <>
-                {message.content.map((item, contentIndex) =>
-                  isContentThinking(item) ? (
-                    <AIThinkingBlock
-                      key={`${index}-${contentIndex}-${item.type}`}
-                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
-                      isLoading={loading}
-                      thinkingContent={item}
-                      onContentChange={
-                        debugAIAnalystChatEditing &&
-                        ((newItem) => {
-                          const newMessage = { ...message, content: [...message.content] };
-                          newMessage.content[contentIndex] = newItem;
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
-                  ) : isContentText(item) ? (
-                    <Markdown
-                      key={`${index}-${contentIndex}-${item.type}`}
-                      text={item.text}
-                      onChange={
-                        debugAIAnalystChatEditing &&
-                        ((text) => {
-                          const newMessage = { ...message, content: [...message.content] };
-                          newMessage.content[contentIndex] = { ...item, text };
-                          const newMessages = [...messages];
-                          (newMessages as typeof messages)[index] = newMessage as typeof message;
-                          setMessages(newMessages);
-                        })
-                      }
-                    />
-                  ) : null
+                {/* Check for context length error and render special component */}
+                {'errorType' in message && message.errorType === 'context_length' ? (
+                  <AIAnalystContextLengthError
+                    message={
+                      message.content.find(isContentText)?.text ??
+                      "Your conversation is too long for the AI model's context window."
+                    }
+                  />
+                ) : (
+                  message.content.map((item, contentIndex) =>
+                    isContentThinking(item) ? (
+                      <AIThinkingBlock
+                        key={`${index}-${contentIndex}-${item.type}`}
+                        isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                        isLoading={loading}
+                        thinkingContent={item}
+                        onContentChange={
+                          debugAIAnalystChatEditing &&
+                          ((newItem) => {
+                            const newMessage = { ...message, content: [...message.content] };
+                            newMessage.content[contentIndex] = newItem;
+                            const newMessages = [...messages];
+                            (newMessages as typeof messages)[index] = newMessage as typeof message;
+                            setMessages(newMessages);
+                          })
+                        }
+                      />
+                    ) : isContentText(item) ? (
+                      <Markdown
+                        key={`${index}-${contentIndex}-${item.type}`}
+                        text={item.text}
+                        onChange={
+                          debugAIAnalystChatEditing &&
+                          ((text) => {
+                            const newMessage = { ...message, content: [...message.content] };
+                            newMessage.content[contentIndex] = { ...item, text };
+                            const newMessages = [...messages];
+                            (newMessages as typeof messages)[index] = newMessage as typeof message;
+                            setMessages(newMessages);
+                          })
+                        }
+                      />
+                    ) : null
+                  )
                 )}
 
                 {message.contextType === 'userPrompt' &&
@@ -532,13 +543,32 @@ const PromptSuggestions = memo(() => {
 
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-  if (!messagesCount || !promptSuggestions.suggestions.length) {
+
+  // When the atom clears suggestions (e.g. on submit), delay unmounting so HoverCard portals
+  // can tear down in a subsequent commit and avoid removeChild errors.
+  const [displaySuggestions, setDisplaySuggestions] = useState<typeof promptSuggestions.suggestions>(
+    promptSuggestions.suggestions
+  );
+  const prevHadSuggestions = useRef(promptSuggestions.suggestions.length > 0);
+
+  useEffect(() => {
+    if (promptSuggestions.suggestions.length > 0) {
+      setDisplaySuggestions(promptSuggestions.suggestions);
+      prevHadSuggestions.current = true;
+    } else if (prevHadSuggestions.current) {
+      prevHadSuggestions.current = false;
+      const t = requestAnimationFrame(() => setDisplaySuggestions([]));
+      return () => cancelAnimationFrame(t);
+    }
+  }, [promptSuggestions.suggestions]);
+
+  if (!messagesCount || !displaySuggestions.length) {
     return null;
   }
 
   return (
     <div className="flex flex-row flex-wrap gap-2 px-2">
-      {promptSuggestions.suggestions.map((suggestion, index) => (
+      {displaySuggestions.map((suggestion, index) => (
         <HoverCard key={`${index}-${suggestion.label}-card`}>
           <HoverCardTrigger asChild>
             <div

@@ -288,11 +288,26 @@ export const AIToolsArgsSchema = {
     top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
-  [AITool.MoveCells]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    source_selection_rect: stringSchema,
-    target_top_left_position: stringSchema,
-  }),
+  [AITool.MoveCells]: z
+    .object({
+      sheet_name: stringNullableOptionalSchema,
+      // New format: array of moves
+      moves: z
+        .array(
+          z.object({
+            source_selection_rect: stringSchema,
+            target_top_left_position: stringSchema,
+          })
+        )
+        .optional(),
+      // Old format (backward compatibility for loading old chats)
+      source_selection_rect: stringSchema.optional(),
+      target_top_left_position: stringSchema.optional(),
+    })
+    .refine(
+      (data) => (data.moves && data.moves.length > 0) || (data.source_selection_rect && data.target_top_left_position),
+      { message: 'Either moves array or source_selection_rect/target_top_left_position must be provided' }
+    ),
   [AITool.DeleteCells]: z.object({
     sheet_name: stringNullableOptionalSchema,
     selection: stringSchema,
@@ -1220,11 +1235,10 @@ Examples:
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
+Moves one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
+Source location is the top left and bottom right corners of the selection rectangle to be moved (in a1 notation).\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
@@ -1235,26 +1249,34 @@ Target location is the top left corner of the target location on the current ope
           type: 'string',
           description: 'The sheet name of the current sheet in the context',
         },
-        source_selection_rect: {
-          type: 'string',
-          description:
-            'The selection of cells, in a1 notation, to be moved in the current open sheet. This is string representation of the rectangular selection of cells to be moved',
-        },
-        target_top_left_position: {
-          type: 'string',
-          description:
-            'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. This will be the top left corner of the source selection rectangle after moving.',
+        moves: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              source_selection_rect: {
+                type: 'string',
+                description: 'The selection of cells to move, in a1 notation (e.g., "A1:B5")',
+              },
+              target_top_left_position: {
+                type: 'string',
+                description: 'The target position, in a1 notation (single cell, e.g., "D1")',
+              },
+            },
+            required: ['source_selection_rect', 'target_top_left_position'],
+            additionalProperties: false,
+          },
         },
       },
-      required: ['sheet_name', 'source_selection_rect', 'target_top_left_position'],
+      required: ['sheet_name', 'moves'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
     prompt: `
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+You should use the move_cells function to move one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
+Provide the moves array with objects containing source_selection_rect and target_top_left_position for each move.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
   },
@@ -1461,7 +1483,24 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
                   'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
               },
             },
-            required: ['sheet_name', 'selection', 'bold', 'italic', 'underline', 'strike_through', 'text_color', 'fill_color', 'align', 'vertical_align', 'wrap', 'numeric_commas', 'number_type', 'currency_symbol', 'date_time', 'font_size'],
+            required: [
+              'sheet_name',
+              'selection',
+              'bold',
+              'italic',
+              'underline',
+              'strike_through',
+              'text_color',
+              'fill_color',
+              'align',
+              'vertical_align',
+              'wrap',
+              'numeric_commas',
+              'number_type',
+              'currency_symbol',
+              'date_time',
+              'font_size',
+            ],
             additionalProperties: false,
           },
         },

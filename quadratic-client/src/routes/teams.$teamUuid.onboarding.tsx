@@ -211,7 +211,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   // A/B test: 50% of new users start with agent mode ON, 50% with agent mode OFF
   const startWithAgentModeOn = Math.random() < 0.5;
-  trackEvent('[Onboarding].postOnboardingFlow', {
+  await trackEvent('[Onboarding].postOnboardingFlow', {
     flow: startWithAgentModeOn ? 'startWithAgentModeOn' : 'startWithAgentModeOff',
   });
 
