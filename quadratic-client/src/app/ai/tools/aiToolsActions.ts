@@ -9,7 +9,7 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
-import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { PlaidDocs, getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { countWords } from '@/app/ai/utils/wordCount';
@@ -387,6 +387,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Format the response
       const schemaText = connectionsInfo.map(getConnectionSchemaMarkdown).join('\n---\n\n');
 
+      // Add connection-type-specific documentation
+      const hasPlaidConnection = connectionsInfo.some(
+        (info) => info.connectionType.toUpperCase() === 'PLAID' && !info.error
+      );
+      const connectionDocs = hasPlaidConnection ? `\n\n${PlaidDocs}` : '';
+
       // Add connection summary for future reference
       const connectionSummary = connectionsInfo
         .filter((item) => item && !item.error)
@@ -400,7 +406,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [
         createTextContent(
           schemaText
-            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${connectionDocs}${summaryText}`
             : `No database schema information available.${summaryText}`
         ),
       ];
