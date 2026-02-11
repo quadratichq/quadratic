@@ -507,8 +507,18 @@ export class AISession {
     promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'];
     updatedChatMessages: ChatMessage[];
   }> {
-    const { toolCalls, chatId, lastMessageIndex, importPDF, search, agentType, fileUuid, teamUuid, modelKey, abortSignal } =
-      params;
+    const {
+      toolCalls,
+      chatId,
+      lastMessageIndex,
+      importPDF,
+      search,
+      agentType,
+      fileUuid,
+      teamUuid,
+      modelKey,
+      abortSignal,
+    } = params;
     let chatMessages = params.chatMessages;
 
     // Execute tool calls

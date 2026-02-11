@@ -2,6 +2,7 @@
 
 // Main action registry
 export { aiToolsActions } from './aiToolsActions';
+export { executeAIToolFromJson } from './executeAITool';
 
 // Helpers and types
 export {

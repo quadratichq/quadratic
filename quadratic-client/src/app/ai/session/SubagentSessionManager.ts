@@ -10,7 +10,6 @@ import type {
 import { v4 } from 'uuid';
 import { aiStore, subagentSessionsAtom } from '../atoms/aiAnalystAtoms';
 import type { SubagentType } from '../subagent/subagentTypes';
-import { parseToolArguments } from '../utils/parseToolArguments';
 
 const subagentDebug = () => debugFlags.getFlag('debugShowAISubagent');
 
@@ -159,12 +158,19 @@ export class SubagentSessionManager {
    * This is called when resuming a session to ensure the subagent has fresh data.
    * It finds all tool results from refreshable tools and re-executes them with
    * the same parameters, replacing the old results.
+   *
+   * Respects abortSignal: if the user aborts mid-refresh, this throws and no
+   * message updates are applied.
    */
-  async refreshContext(type: SubagentType): Promise<void> {
+  async refreshContext(type: SubagentType, options?: { abortSignal?: AbortSignal }): Promise<void> {
     const session = this.getSession(type);
     if (!session) {
       if (subagentDebug()) console.warn(`[SubagentSessionManager] No session to refresh for ${type}`);
       return;
+    }
+
+    if (options?.abortSignal?.aborted) {
+      throw new Error('Aborted by user');
     }
 
     if (subagentDebug()) console.log(`[SubagentSessionManager] Refreshing context for ${type}`);
@@ -180,29 +186,22 @@ export class SubagentSessionManager {
     if (subagentDebug())
       console.log(`[SubagentSessionManager] Found ${toolCallsToRefresh.length} tool calls to refresh`);
 
-    const { aiToolsActions } = await import('../tools/aiToolsActions');
+    const { executeAIToolFromJson } = await import('../tools/executeAITool');
 
     // Re-execute each tool call and collect new results
     const newResults: Map<string, { id: string; content: ToolResultContent }> = new Map();
     const failedToolIds = new Set<string>();
 
     for (const toolCall of toolCallsToRefresh) {
-      const parsed = parseToolArguments(toolCall.arguments);
-      if (!parsed.ok) {
-        console.error(`[SubagentSessionManager] Invalid JSON for tool call ${toolCall.name}:`, parsed.error);
-        newResults.set(toolCall.id, {
-          id: toolCall.id,
-          content: [createTextContent(`Error refreshing: ${parsed.error}`)],
-        });
-        failedToolIds.add(toolCall.id);
-        continue;
+      if (options?.abortSignal?.aborted) {
+        throw new Error('Aborted by user');
       }
 
       try {
         // REFRESHABLE_TOOLS are get-style tools only; they don't use agentType/fileUuid/teamUuid/modelKey.
         // DelegateToSubagent needs that metadata but is not refreshable (subagents cannot delegate).
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await aiToolsActions[toolCall.name as AITool](parsed.value as any, {
+        const toolName = toolCall.name as AITool;
+        const result = await executeAIToolFromJson(toolName, toolCall.arguments, {
           source: 'AIAnalyst',
           chatId: session.id,
           messageIndex: 0,

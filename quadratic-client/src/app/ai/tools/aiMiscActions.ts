@@ -221,7 +221,8 @@ export const miscToolsActions: MiscToolActions = {
         }
       };
 
-      // Execute the subagent with callbacks (uses current session model unless overridden)
+      // Execute the subagent with callbacks (uses current session model unless overridden).
+      // Forward the main session's abort signal so the subagent stops when the user cancels.
       const result = await subagentRunner.execute({
         subagentType,
         task: args.task,
