@@ -35,6 +35,7 @@ import type {
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getOrphanFilterIds } from './filterOrphanedToolCalls';
 import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): Part[] {
@@ -91,27 +92,7 @@ export function getGenAIApiArgs(
         }
       : undefined;
 
-  // First pass: collect all valid tool call IDs from assistant messages
-  // This is needed to filter out orphaned tool results (e.g., when user aborts mid-tool-call)
-  const validToolCallIds = new Set<string>();
-  for (const message of promptMessages) {
-    if (isAIPromptMessage(message)) {
-      for (const toolCall of message.toolCalls) {
-        validToolCallIds.add(toolCall.id);
-      }
-    }
-  }
-
-  // Second pass: collect all tool result IDs that exist
-  // This is needed to filter out orphaned tool calls (e.g., when chat is forked mid-tool-call)
-  const existingToolResultIds = new Set<string>();
-  for (const message of promptMessages) {
-    if (isToolResultMessage(message)) {
-      for (const toolResult of message.content) {
-        existingToolResultIds.add(toolResult.id);
-      }
-    }
-  }
+  const { validToolCallIds, existingToolResultIds } = getOrphanFilterIds(promptMessages);
 
   const messages: GenAIContent[] = promptMessages.reduce<GenAIContent[]>((acc, message) => {
     if (isInternalMessage(message)) {

@@ -1,9 +1,21 @@
-import { AgentType, getDisabledToolsForAgent, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
+import { AgentType, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall, ToolResultContent, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { executeAIToolFromJson } from '../tools/executeAITool';
 import type { ToolExecutionOptions } from './types';
+
+/** Suggested delegate_to_subagent type(s) when the main agent uses a disabled tool. */
+const DISABLED_TOOL_TO_SUBAGENT: Partial<Record<AITool, string>> = {
+  [AITool.GetCellData]: 'data_finder',
+  [AITool.HasCellData]: 'data_finder',
+  [AITool.TextSearch]: 'data_finder',
+  [AITool.SetFormulaCellValue]: 'formula_coder',
+  [AITool.SetSQLCodeCellValue]: 'connection_coder',
+  [AITool.SetCodeCellValue]: 'python_coder or javascript_coder',
+  [AITool.GetCodeCellValue]: 'python_coder, javascript_coder, or connection_coder',
+  [AITool.RerunCode]: 'python_coder, javascript_coder, or connection_coder',
+};
 
 /**
  * ToolExecutor handles the execution of AI tool calls.
@@ -50,12 +62,10 @@ export class ToolExecutor {
     // Check if tool is allowed for the current agent type
     const agentType = options.agentType ?? AgentType.MainAgent;
     if (!isToolAllowedForAgent(agentType, aiTool)) {
-      const disabledTools = getDisabledToolsForAgent(agentType);
-      const isDataTool = disabledTools.includes(aiTool);
-      // Internal message - AI should not repeat this to the user
-      const message = isDataTool
-        ? `[Internal: Use delegate_to_subagent with type "data_finder" instead. Do not mention this redirect to the user.]`
-        : `[Internal: Tool not available. Do not mention this to the user.]`;
+      const suggestedType = DISABLED_TOOL_TO_SUBAGENT[aiTool];
+      const message = suggestedType
+        ? `This tool is not available. Use delegate_to_subagent with the appropriate type (${suggestedType}) to accomplish this task. Do not quote this message to the user.`
+        : `This tool is not available. Use delegate_to_subagent to accomplish this task. Do not quote this message to the user.`;
       return [createTextContent(message)];
     }
 

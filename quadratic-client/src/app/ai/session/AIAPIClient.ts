@@ -218,6 +218,18 @@ export class AIAPIClient {
           }
         }
       }
+
+      if (buffer.trim()) {
+        if (buffer.startsWith('data: ')) {
+          try {
+            const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(buffer.slice(6)));
+            onMessage?.(cloneMessageForCallback(newResponseMessage));
+            responseMessage = newResponseMessage;
+          } catch (error) {
+            console.warn('Error parsing AI response: ', { error, line: buffer });
+          }
+        }
+      }
     } finally {
       reader.releaseLock();
     }

@@ -1,5 +1,5 @@
 import { MAX_ROWS } from '@/app/ai/constants/context';
-import { SubagentType } from '@/app/ai/subagent/subagentTypes';
+import { isCodingSubagent, SubagentType } from '@/app/ai/subagent/subagentTypes';
 import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -24,24 +24,12 @@ export class SubagentContextBuilder {
    */
   async buildContext(task: string, contextHints?: string, subagentType?: SubagentType): Promise<ChatMessage[]> {
     // For coding subagents, use a lighter context that relies on context_hints
-    if (this.isCodingSubagent(subagentType)) {
+    if (isCodingSubagent(subagentType)) {
       return this.buildCodingSubagentContext(task, contextHints);
     }
 
     // For DataFinder and other exploration subagents, use full sheet context
     return this.buildDataExplorationContext(task, contextHints);
-  }
-
-  /**
-   * Check if a subagent type is a coding subagent.
-   */
-  private isCodingSubagent(subagentType?: SubagentType): boolean {
-    return (
-      subagentType === SubagentType.FormulaCoder ||
-      subagentType === SubagentType.PythonCoder ||
-      subagentType === SubagentType.JavascriptCoder ||
-      subagentType === SubagentType.ConnectionCoder
-    );
   }
 
   /**

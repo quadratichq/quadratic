@@ -16,6 +16,7 @@ import { executeAIToolFromJson } from '../tools/executeAITool';
 import { subagentContextBuilder } from './SubagentContextBuilder';
 import {
   getSubagentConfig,
+  isCodingSubagent,
   isToolAllowedForSubagent,
   SubagentType,
   type SubagentExecuteOptions,
@@ -95,11 +96,7 @@ export class SubagentRunner {
         const contextMessages = await subagentContextBuilder.buildContext(task, contextHints, subagentType);
 
         // Create initial messages with system prompt
-        const isCodingSubagent =
-          subagentType === SubagentType.FormulaCoder ||
-          subagentType === SubagentType.PythonCoder ||
-          subagentType === SubagentType.JavascriptCoder ||
-          subagentType === SubagentType.ConnectionCoder;
+        const codingSubagent = isCodingSubagent(subagentType);
 
         messages = [
           {
@@ -111,7 +108,7 @@ export class SubagentRunner {
             role: 'assistant',
             content: [
               createTextContent(
-                isCodingSubagent
+                codingSubagent
                   ? 'I understand my role. I will write and debug code until it works correctly.'
                   : 'I understand my role. I will explore the data and provide a summary.'
               ),

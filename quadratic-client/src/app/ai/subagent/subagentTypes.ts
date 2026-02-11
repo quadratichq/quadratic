@@ -127,3 +127,15 @@ export function isToolAllowedForSubagent(type: SubagentType, tool: AITool): bool
 export function getAllSubagentTypes(): SubagentType[] {
   return Object.values(SubagentType);
 }
+
+/**
+ * Whether the subagent type is a coding subagent (formula, Python, JS, or connection coder).
+ */
+export function isCodingSubagent(type: SubagentType | undefined): boolean {
+  return (
+    type === SubagentType.FormulaCoder ||
+    type === SubagentType.PythonCoder ||
+    type === SubagentType.JavascriptCoder ||
+    type === SubagentType.ConnectionCoder
+  );
+}
