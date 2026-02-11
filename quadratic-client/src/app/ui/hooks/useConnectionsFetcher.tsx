@@ -3,7 +3,7 @@ import type { GetConnections } from '@/routes/api.connections';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFetcher } from 'react-router';
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
@@ -23,6 +23,7 @@ export const useConnectionsFetcher = () => {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+  const fetcherRef = useRef(fetcher);
 
   // Keep the ref in sync so interval callbacks see the latest fetcher state
   fetcherRef.current = fetcher;
