@@ -161,7 +161,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
       // Focus the AI analyst input
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     },
     [setAIAnalystActiveSchemaConnectionUuid]
   );

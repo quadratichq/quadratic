@@ -33,7 +33,7 @@ export function ConnectionsMenu() {
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
       // Focus the AI analyst input
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     },
     [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );

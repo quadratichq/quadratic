@@ -73,8 +73,8 @@ export function useConnectionsDropdownHandlers(trackingPrefix: string) {
       // Add the connection as context in AI chat (without auto-submitting a prompt)
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
-      // Focus the AI analyst input (after the panel has time to render)
-      setTimeout(focusAIAnalyst, 100);
+      // Focus the AI analyst input (waits for panel to render if needed)
+      focusAIAnalyst();
     },
     [activeConnectionId, connections, setActiveConnectionId, setShowAIAnalyst, trackingPrefix]
   );

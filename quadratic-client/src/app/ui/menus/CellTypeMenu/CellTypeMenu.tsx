@@ -142,7 +142,7 @@ export const CellTypeMenu = memo(() => {
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
       // Focus the AI analyst input
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     },
     [includeLanguages, openEditor, setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
