@@ -2,7 +2,7 @@ import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnecti
 import { apiClient } from '@/shared/api/apiClient';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
-import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { SyncedConnectionStatus } from '@/shared/components/connections/SyncedConnection';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -207,7 +207,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
         {connection && (
           <div className="flex items-start gap-2 pt-2 text-sm">
-            <SyncedConnection
+            <SyncedConnectionStatus
               syncState={deriveSyncStateFromConnectionList(connection)}
               updatedDate={connection.syncedConnectionUpdatedDate}
               latestLogError={connection.syncedConnectionLatestLogError}

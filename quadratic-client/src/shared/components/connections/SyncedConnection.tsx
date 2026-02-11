@@ -1,9 +1,10 @@
 import type { SyncState } from '@/app/atoms/useSyncedConnection';
-import { Badge } from '@/shared/shadcn/ui/badge';
-import { cn } from '@/shared/shadcn/utils';
+import { CheckCircleIcon, ErrorIcon, SyncIcon } from '@/shared/components/Icons';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { timeAgo } from '@/shared/utils/timeAgo';
 
-export const SyncedConnection = ({
+export const SyncedConnectionStatus = ({
   syncState,
   updatedDate,
   latestLogError,
@@ -14,30 +15,53 @@ export const SyncedConnection = ({
   latestLogError?: string | null;
   createdDate?: string;
 }) => {
-  const lastSync = syncState === 'synced' && updatedDate && <span>Last synced {timeAgo(updatedDate)}</span>;
-  const created = createdDate && <span>Created {timeAgo(createdDate)}</span>;
+  if (syncState === 'syncing' || syncState === 'not_synced') {
+    return (
+      <Alert variant="warning">
+        <SyncIcon className="animate-spin" />
+        <AlertTitle>Syncing</AlertTitle>
+        <AlertDescription>
+          The data for this connection is currently syncing. This may take a few minutes. You can use your connection
+          when it’s done. {createdDate && <>(Created {timeAgo(createdDate)})</>}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
-  return (
-    <div className="flex flex-col gap-0">
-      <div className={cn('flex items-center gap-2 text-sm')}>
-        {syncState === 'not_synced' || syncState === 'syncing' ? (
-          <Badge>Syncing</Badge>
-        ) : syncState === 'synced' ? (
-          <Badge variant="success">Synced</Badge>
-        ) : syncState === 'failed' ? (
-          <Badge variant="destructive">Sync failed</Badge>
-        ) : null}
-        {lastSync}
-        {lastSync && created && <span>·</span>}
-        {created}
-      </div>
+  if (syncState === 'synced') {
+    return (
+      <Alert variant="success">
+        <CheckCircleIcon />
+        <AlertTitle>Synced</AlertTitle>
+        <AlertDescription>
+          This data is up to date. {updatedDate && <>(Last synced {timeAgo(updatedDate)})</>}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
-      {latestLogError && <div className="mt-1 font-mono text-xs text-destructive">Error: {latestLogError}</div>}
-    </div>
-  );
+  if (syncState === 'failed') {
+    return (
+      <Alert variant="destructive">
+        <ErrorIcon />
+        <AlertTitle>Sync failed</AlertTitle>
+        <AlertDescription>
+          <p>
+            Check the details and try again. If you need help,{' '}
+            <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="underline">
+              contact us.
+            </a>
+          </p>
+          {latestLogError && <p className="mt-1 font-mono text-xs">{latestLogError}</p>}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return null;
 };
 
-export const SyncedConnectionLatestStatus = ({
+export const SyncedConnectionStatusMinimal = ({
   syncState,
   updatedDate,
 }: {
