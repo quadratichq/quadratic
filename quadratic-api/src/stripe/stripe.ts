@@ -285,7 +285,10 @@ const SUBSCRIPTION_STATUS_PRIORITY: Stripe.Subscription.Status[] = [
  * Among subscriptions with the same status, prefers the most recently created one.
  */
 export const selectBestSubscription = (subscriptions: Stripe.Subscription[]): Stripe.Subscription => {
-  return subscriptions.sort((a, b) => {
+  if (subscriptions.length === 0) {
+    throw new Error('selectBestSubscription called with empty array');
+  }
+  return [...subscriptions].sort((a, b) => {
     const priorityA = SUBSCRIPTION_STATUS_PRIORITY.indexOf(a.status);
     const priorityB = SUBSCRIPTION_STATUS_PRIORITY.indexOf(b.status);
     if (priorityA !== priorityB) return priorityA - priorityB;

@@ -15,6 +15,10 @@ const mockSubscription = (
   }) as Stripe.Subscription;
 
 describe('selectBestSubscription', () => {
+  it('throws when given an empty array', () => {
+    expect(() => selectBestSubscription([])).toThrow('selectBestSubscription called with empty array');
+  });
+
   it('returns the only subscription when there is exactly one', () => {
     const sub = mockSubscription({ id: 'sub_1', status: 'active' });
     expect(selectBestSubscription([sub])).toBe(sub);
@@ -55,5 +59,14 @@ describe('selectBestSubscription', () => {
     const active = mockSubscription({ id: 'sub_active', status: 'active', created: 200 });
     const pastDue = mockSubscription({ id: 'sub_past_due', status: 'past_due', created: 100 });
     expect(selectBestSubscription([incomplete, active, pastDue]).id).toBe('sub_active');
+  });
+
+  it('does not mutate the input array', () => {
+    const first = mockSubscription({ id: 'sub_1', status: 'active', created: 100 });
+    const second = mockSubscription({ id: 'sub_2', status: 'trialing', created: 200 });
+    const input = [first, second];
+    selectBestSubscription(input);
+    expect(input[0]).toBe(first);
+    expect(input[1]).toBe(second);
   });
 });
