@@ -70,6 +70,7 @@ impl GridController {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
+                        formula_ast: None,
                         ..existing_code_run.clone()
                     }),
                     ..existing_data_table.clone()
@@ -88,6 +89,7 @@ impl GridController {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
+                        formula_ast: None,
                         ..existing_code_cell.code_run.clone()
                     }),
                     name,
@@ -1108,6 +1110,59 @@ mod test {
         assert!(
             result.is_empty(),
             "Should return empty when position was already seen"
+        );
+    }
+
+    #[test]
+    fn test_changing_formula_clears_cached_ast() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None, false);
+
+        // Set A2 = A1+1, should evaluate to 2
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "A1+1".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(2.into())),
+            "A2 should be 2 (A1+1 = 1+1)"
+        );
+
+        // Change A2 to =A1, should evaluate to 1
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "A1".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(1.into())),
+            "A2 should be 1 after changing formula to =A1"
+        );
+
+        // Change A2 to =A1*10, should evaluate to 10
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "A1*10".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(10.into())),
+            "A2 should be 10 after changing formula to =A1*10"
         );
     }
 }
