@@ -56,7 +56,6 @@ export function ConnectionFormCreate({
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, semanticDescription, ...typeDetails } = formValues;
-    trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);
 
     // Store the connection info to pass to callback after creation
@@ -150,6 +149,7 @@ function ConnectionFormWrapper({
   const { form, percentCompleted } = connectionsByType[type].useConnectionForm(props.connection);
 
   // This is a middleware that tests the connection before saving
+  const isCreate = !props.connection;
   const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
     if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
       props.handleSubmitForm(formValues);
@@ -165,14 +165,17 @@ function ConnectionFormWrapper({
         teamUuid,
       });
       if (connected === false) {
+        if (isCreate) trackEvent('[Connections].create', { type, success: false });
         form.setError('root', { message: message ?? 'Unknown error' });
         return;
       }
 
       // If it worked, update the connection
+      if (isCreate) trackEvent('[Connections].create', { type, success: true });
       props.handleSubmitForm(formValues);
     } catch (e) {
       console.error(e);
+      if (isCreate) trackEvent('[Connections].create', { type, success: false });
       form.setError('root', { message: 'Network error: failed to make connection.' });
       return;
     }
