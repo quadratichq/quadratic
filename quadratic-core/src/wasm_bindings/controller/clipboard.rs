@@ -2,7 +2,7 @@ use std::str::FromStr;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
-use crate::controller::operations::clipboard::{ClipboardOperation};
+use crate::controller::operations::clipboard::ClipboardOperation;
 use crate::grid::js_types::JsClipboard;
 use crate::wasm_bindings::capture_core_error;
 use crate::{
@@ -61,8 +61,8 @@ impl GridController {
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "moveCells")]
-    pub fn js_move_cells(
+    #[wasm_bindgen(js_name = "moveColsRows")]
+    pub fn js_move_cols_rows(
         &mut self,
         source: String,
         dest: String,
@@ -73,7 +73,22 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let source = SheetRect::from_str(&source)?;
         let dest = SheetPos::from_str(&dest)?;
-        self.move_cells(source, dest, columns, rows, cursor, is_ai);
+        self.move_cols_rows(source, dest, columns, rows, cursor, is_ai);
+        Ok(())
+    }
+
+    /// Move multiple cell regions in a single transaction
+    /// moves_json is a JSON array of objects with source and dest properties
+    #[wasm_bindgen(js_name = "moveCellsBatch")]
+    pub fn js_move_cells_batch(
+        &mut self,
+        moves_json: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), JsValue> {
+        let moves: Vec<(SheetRect, SheetPos)> =
+            serde_json::from_str(&moves_json).map_err(|e| e.to_string())?;
+        self.move_cells_batch(moves, cursor, is_ai);
         Ok(())
     }
 
