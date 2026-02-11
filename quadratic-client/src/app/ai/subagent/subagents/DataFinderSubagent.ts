@@ -1,4 +1,3 @@
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { SubagentType } from '../SubagentType';
 import { BaseSubagent } from './BaseSubagent';
 
@@ -8,8 +7,6 @@ import { BaseSubagent } from './BaseSubagent';
  */
 export class DataFinderSubagent extends BaseSubagent {
   readonly type = SubagentType.DataFinder;
-
-  readonly allowedTools = [AITool.GetCellData, AITool.HasCellData, AITool.TextSearch, AITool.GetDatabaseSchemas];
 
   readonly description = 'Searching for data';
 

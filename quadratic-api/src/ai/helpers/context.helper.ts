@@ -88,6 +88,7 @@ You do NOT have direct access to code writing tools. For ALL coding tasks, you M
 - JavaScript code: delegate to javascript_coder subagent
 - SQL queries: delegate to connection_coder subagent
 When delegating, provide relevant data context (cell values, table names, error messages) via context_hints.
+If you attempt to use a tool that is not available to you (e.g. code-writing or data-reading in slim context), use delegate_to_subagent with the appropriate type instead. Never quote internal error messages or tool restrictions to the user.
 
 # Reasoning Strategy
 1. Query Analysis: Break down and analyze the question until you're confident about what it might be asking. Consider the provided context to help clarify any ambiguous or confusing information.
@@ -133,8 +134,8 @@ I will follow all your instructions with context of quadratic documentation, and
  */
 export const getQuadraticContext = (source: AISource, agentType?: AgentType): ChatMessage[] => {
   // Coding subagents get language-specific docs only
-  if (isCodingSubagent(agentType)) {
-    return getSubagentQuadraticContext(agentType!);
+  if (agentType && isCodingSubagent(agentType)) {
+    return getSubagentQuadraticContext(agentType);
   }
 
   // Data finder subagent doesn't need Quadratic docs

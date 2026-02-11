@@ -85,6 +85,8 @@ export interface ToolExecutionOptions {
   teamUuid?: string;
   /** Model key used by the main agent (for subagents to inherit) */
   modelKey?: AIModelKey;
+  /** Abort signal from the main session (for subagents to respect cancel) */
+  abortSignal?: AbortSignal;
 }
 
 /**

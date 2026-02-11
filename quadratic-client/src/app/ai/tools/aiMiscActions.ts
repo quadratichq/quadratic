@@ -164,6 +164,9 @@ export const miscToolsActions: MiscToolActions = {
       if (!subagentType) {
         return [createTextContent(`Error: Unknown subagent type '${args.subagent_type}'`)];
       }
+      if (!metaData?.modelKey || !metaData?.fileUuid || !metaData?.teamUuid) {
+        return [createTextContent('Error: Missing required context (modelKey, fileUuid, or teamUuid) for subagent.')];
+      }
 
       // Track active tool calls for this subagent execution
       const activeToolCalls = new Map<string, AIToolCall>();
@@ -218,19 +221,17 @@ export const miscToolsActions: MiscToolActions = {
         }
       };
 
-      if (!metaData?.modelKey) {
-        return [createTextContent('Error: No model key available for subagent.')];
-      }
-
-      // Execute the subagent with callbacks (uses current session model unless overridden)
+      // Execute the subagent with callbacks (uses current session model unless overridden).
+      // Forward the main session's abort signal so the subagent stops when the user cancels.
       const result = await subagentRunner.execute({
         subagentType,
         task: args.task,
         contextHints: args.context_hints,
         modelKey: metaData.modelKey,
-        fileUuid: metaData?.fileUuid ?? '',
-        teamUuid: metaData?.teamUuid ?? '',
+        fileUuid: metaData.fileUuid,
+        teamUuid: metaData.teamUuid,
         reset: args.reset,
+        abortSignal: metaData?.abortSignal,
         onToolCall,
         onToolCallComplete,
       });

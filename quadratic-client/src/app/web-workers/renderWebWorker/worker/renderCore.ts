@@ -172,7 +172,6 @@ class RenderCore {
     const response = this.waitingForResponse[id];
     delete this.waitingForResponse[id];
     if (!response) {
-      console.warn('No callback for requestRenderCells');
       return;
     }
 

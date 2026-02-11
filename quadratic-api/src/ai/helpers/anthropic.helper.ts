@@ -34,6 +34,7 @@ import type {
   ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { getOrphanFilterIds } from './filterOrphanedToolCalls';
 import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
@@ -137,27 +138,7 @@ export function getAnthropicApiArgs(
     ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
-  // First pass: collect all valid tool_use IDs from assistant messages
-  // This is needed to filter out orphaned tool_results (e.g., when user aborts mid-tool-call)
-  const validToolUseIds = new Set<string>();
-  for (const message of promptMessages) {
-    if (isAIPromptMessage(message)) {
-      for (const toolCall of message.toolCalls) {
-        validToolUseIds.add(toolCall.id);
-      }
-    }
-  }
-
-  // Second pass: collect all tool_result IDs that exist
-  // This is needed to filter out orphaned tool_use blocks (e.g., when chat is forked mid-tool-call)
-  const existingToolResultIds = new Set<string>();
-  for (const message of promptMessages) {
-    if (isToolResultMessage(message)) {
-      for (const toolResult of message.content) {
-        existingToolResultIds.add(toolResult.id);
-      }
-    }
-  }
+  const { validToolCallIds: validToolUseIds, existingToolResultIds } = getOrphanFilterIds(promptMessages);
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {

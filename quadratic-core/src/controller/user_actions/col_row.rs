@@ -37,9 +37,10 @@ impl GridController {
     ///   column + 1 (or merge max.x + 1). The new column copies formatting
     ///   from the column before it (CopyFormats::Before).
     ///
-    /// When the cursor is on a merged cell, the column is adjusted to the
-    /// merge boundary so the insertion goes outside the merge rather than
-    /// splitting it.
+    /// The caller (TS client) is responsible for adjusting the column to
+    /// the merge boundary when the cursor is on a merged cell. If the
+    /// column falls inside a merge cell that is NOT the selection, the
+    /// merge will expand to accommodate the new column.
     pub fn insert_columns(
         &mut self,
         sheet_id: SheetId,
@@ -49,13 +50,6 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        // Snap the column to a merge boundary when it falls strictly
-        // inside a merged cell (avoids expanding / breaking the merge).
-        let column = self
-            .try_sheet(sheet_id)
-            .map(|s| s.merge_cells.adjust_column_for_insert(column, after))
-            .unwrap_or(column);
-
         let mut ops = vec![];
         for i in 0..count as i64 {
             ops.push(Operation::InsertColumn {
@@ -106,9 +100,10 @@ impl GridController {
     ///   (or merge max.y + 1). The new row copies formatting from the row
     ///   before it (CopyFormats::Before).
     ///
-    /// When the cursor is on a merged cell, the row is adjusted to the
-    /// merge boundary so the insertion goes outside the merge rather than
-    /// splitting it.
+    /// The caller (TS client) is responsible for adjusting the row to the
+    /// merge boundary when the cursor is on a merged cell. If the row
+    /// falls inside a merge cell that is NOT the selection, the merge will
+    /// expand to accommodate the new row.
     pub fn insert_rows(
         &mut self,
         sheet_id: SheetId,
@@ -118,13 +113,6 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) {
-        // Snap the row to a merge boundary when it falls strictly inside
-        // a merged cell (avoids expanding / breaking the merge).
-        let row = self
-            .try_sheet(sheet_id)
-            .map(|s| s.merge_cells.adjust_row_for_insert(row, after))
-            .unwrap_or(row);
-
         let mut ops = vec![];
         for i in 0..count as i64 {
             ops.push(Operation::InsertRow {
@@ -600,30 +588,24 @@ mod tests {
     // ---------------------------------------------------------------
     // Merge-cell insertion tests.
     //
-    // These simulate a cursor positioned INSIDE the merge cell (C3)
-    // and pass the raw cursor position to insert_columns / insert_rows
-    // (the same values the TS client computes from cursor.position).
+    // The TS client adjusts the column/row to the merge boundary when
+    // the cursor is on a merged cell. These tests simulate that by
+    // passing the pre-adjusted values (merge min/max).
     //
-    // For "insert LEFT / ABOVE" (after=true): column/row = cursor pos
-    //   (e.g. column=3 for cursor at C3).
-    // For "insert RIGHT / BELOW" (after=false): column/row = cursor + 1
-    //   (e.g. column=4 for cursor at C3).
-    //
-    // The Rust code must detect that the position falls inside a merge
-    // and adjust to the merge boundary so the merge is never expanded
-    // or broken.
+    // When the insertion column/row falls strictly inside a merge that
+    // is NOT the selection (e.g., cursor on a non-merge cell in the
+    // same column), the merge should EXPAND to accommodate the insert.
     // ---------------------------------------------------------------
 
-    /// Insert column LEFT with cursor inside a merge.
-    /// Cursor at C3 → column=3, after=true.
-    /// The merge B2:D4 should shift right to C2:E4 (not expand).
+    /// Insert column LEFT with cursor on a merge cell.
+    /// TS adjusts column to merge.min.x = 2, after=true.
+    /// The merge B2:D4 should shift right to C2:E4.
     #[test]
-    fn insert_column_left_cursor_in_merge() {
+    fn insert_column_left_cursor_on_merge() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        // Cursor is at C3 (column 3, inside merge B2:D4).
-        // "Insert column LEFT": column = cursor.x = 3, after = true
-        gc.insert_columns(sheet_id, 3, 1, true, None, false);
+        // TS: cursor on merge B2:D4, "insert LEFT" → column = merge.min.x = 2
+        gc.insert_columns(sheet_id, 2, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -640,16 +622,15 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 5, 4, "red"); // E4
     }
 
-    /// Insert column RIGHT with cursor inside a merge.
-    /// Cursor at C3 → column=4, after=false.
-    /// The merge B2:D4 should stay unchanged (not expand).
+    /// Insert column RIGHT with cursor on a merge cell.
+    /// TS adjusts column to merge.max.x + 1 = 5, after=false.
+    /// The merge B2:D4 should stay unchanged.
     #[test]
-    fn insert_column_right_cursor_in_merge() {
+    fn insert_column_right_cursor_on_merge() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        // Cursor is at C3 (column 3, inside merge B2:D4).
-        // "Insert column RIGHT": column = cursor.x + 1 = 4, after = false
-        gc.insert_columns(sheet_id, 4, 1, false, None, false);
+        // TS: cursor on merge B2:D4, "insert RIGHT" → column = merge.max.x + 1 = 5
+        gc.insert_columns(sheet_id, 5, 1, false, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -666,16 +647,15 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 4, 4, "red"); // D4
     }
 
-    /// Insert row ABOVE with cursor inside a merge.
-    /// Cursor at C3 → row=3, after=true.
-    /// The merge B2:D4 should shift down to B3:D5 (not expand).
+    /// Insert row ABOVE with cursor on a merge cell.
+    /// TS adjusts row to merge.min.y = 2, after=true.
+    /// The merge B2:D4 should shift down to B3:D5.
     #[test]
-    fn insert_row_above_cursor_in_merge() {
+    fn insert_row_above_cursor_on_merge() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        // Cursor is at C3 (row 3, inside merge B2:D4).
-        // "Insert row ABOVE": row = cursor.y = 3, after = true
-        gc.insert_rows(sheet_id, 3, 1, true, None, false);
+        // TS: cursor on merge B2:D4, "insert ABOVE" → row = merge.min.y = 2
+        gc.insert_rows(sheet_id, 2, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -692,16 +672,15 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 4, 5, "red"); // D5
     }
 
-    /// Insert row BELOW with cursor inside a merge.
-    /// Cursor at C3 → row=4, after=false.
-    /// The merge B2:D4 should stay unchanged (not expand).
+    /// Insert row BELOW with cursor on a merge cell.
+    /// TS adjusts row to merge.max.y + 1 = 5, after=false.
+    /// The merge B2:D4 should stay unchanged.
     #[test]
-    fn insert_row_below_cursor_in_merge() {
+    fn insert_row_below_cursor_on_merge() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        // Cursor is at C3 (row 3, inside merge B2:D4).
-        // "Insert row BELOW": row = cursor.y + 1 = 4, after = false
-        gc.insert_rows(sheet_id, 4, 1, false, None, false);
+        // TS: cursor on merge B2:D4, "insert BELOW" → row = merge.max.y + 1 = 5
+        gc.insert_rows(sheet_id, 5, 1, false, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -718,12 +697,12 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 4, 4, "red"); // D4
     }
 
-    /// Insert column LEFT with cursor inside a merge, then undo.
+    /// Insert column LEFT with cursor on a merge cell, then undo.
     #[test]
-    fn insert_column_left_cursor_in_merge_undo() {
+    fn insert_column_left_cursor_on_merge_undo() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        gc.insert_columns(sheet_id, 3, 1, true, None, false);
+        gc.insert_columns(sheet_id, 2, 1, true, None, false);
         gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
@@ -738,12 +717,12 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 4, 4, "red");
     }
 
-    /// Insert row ABOVE with cursor inside a merge, then undo.
+    /// Insert row ABOVE with cursor on a merge cell, then undo.
     #[test]
-    fn insert_row_above_cursor_in_merge_undo() {
+    fn insert_row_above_cursor_on_merge_undo() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        gc.insert_rows(sheet_id, 3, 1, true, None, false);
+        gc.insert_rows(sheet_id, 2, 1, true, None, false);
         gc.undo(1, None, false);
 
         let sheet = gc.sheet(sheet_id);
@@ -758,14 +737,15 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 4, 4, "red");
     }
 
-    /// Insert 2 columns LEFT with cursor inside a merge.
-    /// Both columns should go outside the merge. The merge shifts right by 2.
+    /// Insert 2 columns LEFT with cursor on a merge cell.
+    /// TS adjusts column to merge.min.x = 2, both columns go outside
+    /// the merge. The merge shifts right by 2.
     #[test]
-    fn insert_multiple_columns_left_cursor_in_merge() {
+    fn insert_multiple_columns_left_cursor_on_merge() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        // Cursor at C3, "insert 2 columns LEFT": column = 3, count = 2, after = true
-        gc.insert_columns(sheet_id, 3, 2, true, None, false);
+        // TS: cursor on merge B2:D4, "insert 2 LEFT" → column = merge.min.x = 2
+        gc.insert_columns(sheet_id, 2, 2, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -779,14 +759,15 @@ mod tests {
         assert_cell_format_fill_color(&gc, sheet_id, 6, 4, "red"); // F4
     }
 
-    /// Insert 2 rows ABOVE with cursor inside a merge.
-    /// Both rows should go outside the merge. The merge shifts down by 2.
+    /// Insert 2 rows ABOVE with cursor on a merge cell.
+    /// TS adjusts row to merge.min.y = 2, both rows go outside the
+    /// merge. The merge shifts down by 2.
     #[test]
-    fn insert_multiple_rows_above_cursor_in_merge() {
+    fn insert_multiple_rows_above_cursor_on_merge() {
         let (mut gc, sheet_id) = setup_merge_gc();
 
-        // Cursor at C3, "insert 2 rows ABOVE": row = 3, count = 2, after = true
-        gc.insert_rows(sheet_id, 3, 2, true, None, false);
+        // TS: cursor on merge B2:D4, "insert 2 ABOVE" → row = merge.min.y = 2
+        gc.insert_rows(sheet_id, 2, 2, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
 
@@ -798,5 +779,90 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "merged"); // B4
         assert_cell_format_fill_color(&gc, sheet_id, 2, 4, "red"); // B4
         assert_cell_format_fill_color(&gc, sheet_id, 4, 6, "red"); // D6
+    }
+
+    // ---------------------------------------------------------------
+    // Intersection tests: cursor is NOT on the merge, but the
+    // inserted col/row intersects it. The merge should EXPAND.
+    // ---------------------------------------------------------------
+
+    /// Insert a column that intersects a merge (cursor not on merge).
+    /// Merge B2:D4, cursor at C5 → column=3, after=true.
+    /// The merge should expand: B2:D4 → B2:E4.
+    #[test]
+    fn insert_column_intersects_merge_expands() {
+        let (mut gc, sheet_id) = setup_merge_gc();
+
+        // Cursor at C5 (not on merge B2:D4). TS does NOT adjust.
+        // "Insert column LEFT": column = cursor.x = 3
+        gc.insert_columns(sheet_id, 3, 1, true, None, false);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Merge should expand: B2:D4 → B2:E4
+        let rects: Vec<crate::Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1, "should still have exactly one merge");
+        assert_eq!(rects[0], crate::Rect::test_a1("B2:E4"));
+
+        // Value should remain at anchor B2
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "merged");
+    }
+
+    /// Insert a row that intersects a merge (cursor not on merge).
+    /// Merge B2:D4, cursor at A3 → row=3, after=true.
+    /// The merge should expand: B2:D4 → B2:D5.
+    #[test]
+    fn insert_row_intersects_merge_expands() {
+        let (mut gc, sheet_id) = setup_merge_gc();
+
+        // Cursor at A3 (not on merge B2:D4). TS does NOT adjust.
+        // "Insert row ABOVE": row = cursor.y = 3
+        gc.insert_rows(sheet_id, 3, 1, true, None, false);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Merge should expand: B2:D4 → B2:D5
+        let rects: Vec<crate::Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1, "should still have exactly one merge");
+        assert_eq!(rects[0], crate::Rect::test_a1("B2:D5"));
+
+        // Value should remain at anchor B2
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "merged");
+    }
+
+    /// Insert column intersects merge, then undo. Merge should restore.
+    #[test]
+    fn insert_column_intersects_merge_undo() {
+        let (mut gc, sheet_id) = setup_merge_gc();
+
+        gc.insert_columns(sheet_id, 3, 1, true, None, false);
+        gc.undo(1, None, false);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Merge should be restored to B2:D4
+        let rects: Vec<crate::Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], crate::Rect::test_a1("B2:D4"));
+
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "merged");
+    }
+
+    /// Insert row intersects merge, then undo. Merge should restore.
+    #[test]
+    fn insert_row_intersects_merge_undo() {
+        let (mut gc, sheet_id) = setup_merge_gc();
+
+        gc.insert_rows(sheet_id, 3, 1, true, None, false);
+        gc.undo(1, None, false);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Merge should be restored to B2:D4
+        let rects: Vec<crate::Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], crate::Rect::test_a1("B2:D4"));
+
+        assert_display_cell_value(&gc, sheet_id, 2, 2, "merged");
     }
 }

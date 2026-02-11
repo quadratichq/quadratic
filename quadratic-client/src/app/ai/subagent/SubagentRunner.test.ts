@@ -1,25 +1,52 @@
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIResponseContent, AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SubagentType } from './subagentTypes';
+
+/** Creates a streaming Response that emits SSE chunks the SubagentRunner expects */
+function createStreamingResponse(chunk: {
+  content: AIResponseContent;
+  toolCalls: AIToolCall[];
+  modelKey?: string;
+}): Response {
+  const sseChunk = {
+    ...chunk,
+    role: 'assistant' as const,
+    contextType: 'userPrompt' as const,
+    modelKey: chunk.modelKey ?? 'vertexai-anthropic:claude-haiku-4-5@20251001',
+    isOnPaidPlan: true,
+    exceededBillingLimit: false,
+  };
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+      controller.close();
+    },
+  });
+  return new Response(body, {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
+}
 
 // ============================================================================
 // Hoisted Mocks
 // ============================================================================
 
-const { mockAuthGetToken, mockApiFetch, mockContextBuilderBuildContext, mockToolsActions } = vi.hoisted(() => {
-  return {
-    mockAuthGetToken: vi.fn(() => Promise.resolve('test-token')),
-    mockApiFetch: vi.fn(),
-    mockContextBuilderBuildContext: vi.fn(),
-    mockToolsActions: {
-      [AITool.GetCellData]: vi.fn(() => Promise.resolve([createTextContent('Cell data result')])),
-      [AITool.HasCellData]: vi.fn(() => Promise.resolve([createTextContent('true')])),
-      [AITool.TextSearch]: vi.fn(() => Promise.resolve([createTextContent('Search result')])),
-      [AITool.GetDatabaseSchemas]: vi.fn(() => Promise.resolve([createTextContent('Schema result')])),
-    },
-  };
-});
+const { mockAuthGetToken, mockContextBuilderBuildContext, mockExecuteAIToolFromJson } = vi.hoisted(() => ({
+  mockAuthGetToken: vi.fn(() => Promise.resolve('test-token')),
+  mockContextBuilderBuildContext: vi.fn(),
+  mockExecuteAIToolFromJson: vi.fn((toolName: string) => {
+    const results: Record<string, ReturnType<typeof createTextContent>[]> = {
+      [AITool.GetCellData]: [createTextContent('Cell data result')],
+      [AITool.HasCellData]: [createTextContent('true')],
+      [AITool.TextSearch]: [createTextContent('Search result')],
+      [AITool.GetDatabaseSchemas]: [createTextContent('Schema result')],
+    };
+    return Promise.resolve(results[toolName] ?? [createTextContent('Unknown tool result')]);
+  }),
+}));
 
 // ============================================================================
 // Module Mocks
@@ -43,11 +70,29 @@ vi.mock('./SubagentContextBuilder', () => ({
   },
 }));
 
-vi.mock('../tools/aiToolsActions', () => ({
-  aiToolsActions: mockToolsActions,
+vi.mock('../tools/executeAITool', () => ({
+  executeAIToolFromJson: mockExecuteAIToolFromJson,
 }));
 
-// Mock global fetch
+const mockSession = {
+  id: 'test-session-id',
+  type: 'data_finder',
+  messages: [] as import('quadratic-shared/typesAndSchemasAI').ChatMessage[],
+  lastUpdated: Date.now(),
+};
+vi.mock('../session/SubagentSessionManager', () => ({
+  subagentSessionManager: {
+    hasSession: vi.fn(() => false),
+    clearAllSessions: vi.fn(),
+    createSession: vi.fn(() => mockSession),
+    getSession: vi.fn(() => mockSession),
+    getMessages: vi.fn(() => []),
+    setMessages: vi.fn(),
+    setLastSummary: vi.fn(),
+    refreshContext: vi.fn(),
+  },
+}));
+
 const originalFetch = global.fetch;
 
 // ============================================================================
@@ -57,12 +102,12 @@ const originalFetch = global.fetch;
 describe('SubagentRunner', () => {
   let SubagentRunner: typeof import('./SubagentRunner').SubagentRunner;
   let subagentRunner: import('./SubagentRunner').SubagentRunner;
+  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-
-    // Reset fetch mock
-    global.fetch = vi.fn(mockApiFetch);
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
 
     // Re-import to get fresh instance
     const module = await import('./SubagentRunner');
@@ -85,22 +130,16 @@ describe('SubagentRunner', () => {
 
   describe('execute', () => {
     it('should execute a data_finder subagent and return result', async () => {
-      // Mock API response with no tool calls (subagent finished)
-      mockApiFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            role: 'assistant',
-            content: [
-              createTextContent(
-                'I found the data you were looking for.\n\nSummary: Sales data in Sheet1\nRanges found:\n- Sheet1!A1:D100: Sales records'
-              ),
-            ],
-            contextType: 'userPrompt',
-            toolCalls: [],
-            modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
-          }),
-      });
+      fetchMock.mockResolvedValueOnce(
+        createStreamingResponse({
+          content: [
+            createTextContent(
+              'I found the data you were looking for.\n\nSummary: Sales data in Sheet1\nRanges found:\n- Sheet1!A1:D100: Sales records'
+            ),
+          ],
+          toolCalls: [],
+        })
+      );
 
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
@@ -117,37 +156,26 @@ describe('SubagentRunner', () => {
     });
 
     it('should execute tool calls and continue the loop', async () => {
-      // First API call - returns a tool call
-      mockApiFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            role: 'assistant',
-            content: [createTextContent('Let me search for that data.')],
-            contextType: 'userPrompt',
-            toolCalls: [
-              {
-                id: 'tool-1',
-                name: AITool.GetCellData,
-                arguments: JSON.stringify({ selection: 'A1:D10' }),
-              },
-            ],
-            modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
-          }),
-      });
+      fetchMock.mockResolvedValueOnce(
+        createStreamingResponse({
+          content: [createTextContent('Let me search for that data.')],
+          toolCalls: [
+            {
+              id: 'tool-1',
+              name: AITool.GetCellData,
+              arguments: JSON.stringify({ selection: 'A1:D10' }),
+              loading: false,
+            },
+          ],
+        })
+      );
 
-      // Second API call - no tool calls (finished)
-      mockApiFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            role: 'assistant',
-            content: [createTextContent('Found the data at Sheet1!A1:D10: Contains sales records')],
-            contextType: 'userPrompt',
-            toolCalls: [],
-            modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
-          }),
-      });
+      fetchMock.mockResolvedValueOnce(
+        createStreamingResponse({
+          content: [createTextContent('Found the data at Sheet1!A1:D10: Contains sales records')],
+          toolCalls: [],
+        })
+      );
 
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
@@ -158,41 +186,30 @@ describe('SubagentRunner', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockToolsActions[AITool.GetCellData]).toHaveBeenCalled();
+      expect(mockExecuteAIToolFromJson).toHaveBeenCalled();
     });
 
     it('should filter out disallowed tool calls', async () => {
-      // API returns a disallowed tool call (e.g., SetCellValues)
-      mockApiFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            role: 'assistant',
-            content: [createTextContent('Trying to set values')],
-            contextType: 'userPrompt',
-            toolCalls: [
-              {
-                id: 'tool-1',
-                name: AITool.SetCellValues, // Not allowed for data_finder
-                arguments: JSON.stringify({ selection: 'A1', values: [['test']] }),
-              },
-            ],
-            modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
-          }),
-      });
+      fetchMock.mockResolvedValueOnce(
+        createStreamingResponse({
+          content: [createTextContent('Trying to set values')],
+          toolCalls: [
+            {
+              id: 'tool-1',
+              name: AITool.SetCellValues,
+              arguments: JSON.stringify({ selection: 'A1', values: [['test']] }),
+              loading: false,
+            },
+          ],
+        })
+      );
 
-      // Second call with no tool calls
-      mockApiFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            role: 'assistant',
-            content: [createTextContent('No data found')],
-            contextType: 'userPrompt',
-            toolCalls: [],
-            modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
-          }),
-      });
+      fetchMock.mockResolvedValueOnce(
+        createStreamingResponse({
+          content: [createTextContent('No data found')],
+          toolCalls: [],
+        })
+      );
 
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
@@ -208,10 +225,7 @@ describe('SubagentRunner', () => {
     });
 
     it('should handle API errors', async () => {
-      mockApiFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 500 }));
 
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,
@@ -245,22 +259,17 @@ describe('SubagentRunner', () => {
 
   describe('extractRanges', () => {
     it('should extract ranges from text', async () => {
-      mockApiFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            role: 'assistant',
-            content: [
-              createTextContent(`Found the following data:
+      fetchMock.mockResolvedValueOnce(
+        createStreamingResponse({
+          content: [
+            createTextContent(`Found the following data:
 - Sheet1!A1:D100: Sales data
 - Sheet2!B5:F50: Customer info
 - C10:E20: Local data`),
-            ],
-            contextType: 'userPrompt',
-            toolCalls: [],
-            modelKey: 'vertexai-anthropic:claude-haiku-4-5@20251001',
-          }),
-      });
+          ],
+          toolCalls: [],
+        })
+      );
 
       const result = await subagentRunner.execute({
         subagentType: SubagentType.DataFinder,

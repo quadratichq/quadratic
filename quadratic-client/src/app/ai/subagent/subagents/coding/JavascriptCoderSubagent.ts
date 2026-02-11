@@ -1,4 +1,3 @@
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { SubagentType } from '../../SubagentType';
 import { CodingSubagentBase } from './CodingSubagentBase';
 
@@ -8,8 +7,6 @@ import { CodingSubagentBase } from './CodingSubagentBase';
  */
 export class JavascriptCoderSubagent extends CodingSubagentBase {
   readonly type = SubagentType.JavascriptCoder;
-
-  readonly allowedTools = [AITool.SetCodeCellValue, AITool.GetCodeCellValue, AITool.RerunCode, AITool.HasCellData];
 
   readonly description = 'Writing JavaScript code';
 
