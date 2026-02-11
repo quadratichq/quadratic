@@ -170,7 +170,7 @@ pub(crate) fn create_stock_prices_function(
 
             let result =
                 fetch_stock_prices.borrow_mut()(identifier, start_date, end_date, frequency)
-                    .map_err(|e| PyErr::new::<PyException, _>(e))?;
+                    .map_err(PyErr::new::<PyException, _>)?;
 
             // Convert serde_json::Value to Python object
             Python::with_gil(|py| {
