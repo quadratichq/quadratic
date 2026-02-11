@@ -382,6 +382,7 @@ export class AISession {
         fileUuid,
         teamUuid,
         modelKey,
+        abortSignal: abortController.signal,
       });
 
       chatMessages = updatedChatMessages;
@@ -500,12 +501,24 @@ export class AISession {
     fileUuid?: string;
     teamUuid?: string;
     modelKey?: AIModelKey;
+    abortSignal?: AbortSignal;
   }): Promise<{
     toolResultMessage: ToolResultMessage;
     promptSuggestions: AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'];
     updatedChatMessages: ChatMessage[];
   }> {
-    const { toolCalls, chatId, lastMessageIndex, importPDF, search, agentType, fileUuid, teamUuid, modelKey } = params;
+    const {
+      toolCalls,
+      chatId,
+      lastMessageIndex,
+      importPDF,
+      search,
+      agentType,
+      fileUuid,
+      teamUuid,
+      modelKey,
+      abortSignal,
+    } = params;
     let chatMessages = params.chatMessages;
 
     // Execute tool calls
@@ -517,6 +530,7 @@ export class AISession {
       fileUuid,
       teamUuid,
       modelKey,
+      abortSignal,
     });
 
     // Check for prompt suggestions

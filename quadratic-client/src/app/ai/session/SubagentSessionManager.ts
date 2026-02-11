@@ -1,11 +1,15 @@
 import { debugFlags } from '@/app/debugFlags/debugFlags';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, SubagentSession, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  ChatMessage,
+  SubagentSession,
+  ToolResultContent,
+  ToolResultMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 import { aiStore, subagentSessionsAtom } from '../atoms/aiAnalystAtoms';
 import type { SubagentType } from '../subagent/subagentTypes';
-import { aiToolsActions } from '../tools/aiToolsActions';
 
 const subagentDebug = () => debugFlags.getFlag('debugShowAISubagent');
 
@@ -154,12 +158,19 @@ export class SubagentSessionManager {
    * This is called when resuming a session to ensure the subagent has fresh data.
    * It finds all tool results from refreshable tools and re-executes them with
    * the same parameters, replacing the old results.
+   *
+   * Respects abortSignal: if the user aborts mid-refresh, this throws and no
+   * message updates are applied.
    */
-  async refreshContext(type: SubagentType): Promise<void> {
+  async refreshContext(type: SubagentType, options?: { abortSignal?: AbortSignal }): Promise<void> {
     const session = this.getSession(type);
     if (!session) {
       if (subagentDebug()) console.warn(`[SubagentSessionManager] No session to refresh for ${type}`);
       return;
+    }
+
+    if (options?.abortSignal?.aborted) {
+      throw new Error('Aborted by user');
     }
 
     if (subagentDebug()) console.log(`[SubagentSessionManager] Refreshing context for ${type}`);
@@ -175,15 +186,22 @@ export class SubagentSessionManager {
     if (subagentDebug())
       console.log(`[SubagentSessionManager] Found ${toolCallsToRefresh.length} tool calls to refresh`);
 
+    const { executeAIToolFromJson } = await import('../tools/executeAITool');
+
     // Re-execute each tool call and collect new results
-    const newResults: Map<string, { id: string; content: Awaited<ReturnType<(typeof aiToolsActions)[AITool]>> }> =
-      new Map();
+    const newResults: Map<string, { id: string; content: ToolResultContent }> = new Map();
+    const failedToolIds = new Set<string>();
 
     for (const toolCall of toolCallsToRefresh) {
+      if (options?.abortSignal?.aborted) {
+        throw new Error('Aborted by user');
+      }
+
       try {
-        const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await aiToolsActions[toolCall.name as AITool](args as any, {
+        // REFRESHABLE_TOOLS are get-style tools only; they don't use agentType/fileUuid/teamUuid/modelKey.
+        // DelegateToSubagent needs that metadata but is not refreshable (subagents cannot delegate).
+        const toolName = toolCall.name as AITool;
+        const result = await executeAIToolFromJson(toolName, toolCall.arguments, {
           source: 'AIAnalyst',
           chatId: session.id,
           messageIndex: 0,
@@ -195,16 +213,21 @@ export class SubagentSessionManager {
           id: toolCall.id,
           content: [createTextContent(`Error refreshing: ${error}`)],
         });
+        failedToolIds.add(toolCall.id);
       }
     }
 
     // Update tool results in the message history
     const updatedMessages = this.replaceToolResults(session.messages, newResults);
 
-    // Add a system message noting the context was refreshed
+    const refreshNote =
+      failedToolIds.size > 0
+        ? '(Context refreshed. Some data could not be refreshed—see tool results above for details; that part may be missing or stale.)'
+        : '(Context has been refreshed with the latest data from the spreadsheet.)';
+
     const refreshMessage: ChatMessage = {
       role: 'user',
-      content: [createTextContent('(Context has been refreshed with the latest data from the spreadsheet.)')],
+      content: [createTextContent(refreshNote)],
       contextType: 'quadraticDocs',
     };
 
@@ -242,7 +265,7 @@ export class SubagentSessionManager {
    */
   private replaceToolResults(
     messages: ChatMessage[],
-    newResults: Map<string, { id: string; content: Awaited<ReturnType<(typeof aiToolsActions)[AITool]>> }>
+    newResults: Map<string, { id: string; content: ToolResultContent }>
   ): ChatMessage[] {
     return messages.map((message) => {
       if (message.role === 'user' && message.contextType === 'toolResult') {

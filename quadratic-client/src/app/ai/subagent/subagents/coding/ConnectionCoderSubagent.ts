@@ -1,4 +1,3 @@
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { SubagentType } from '../../SubagentType';
 import { BaseSubagent } from '../BaseSubagent';
 
@@ -11,14 +10,6 @@ import { BaseSubagent } from '../BaseSubagent';
  */
 export class ConnectionCoderSubagent extends BaseSubagent {
   readonly type = SubagentType.ConnectionCoder;
-
-  readonly allowedTools = [
-    AITool.SetSQLCodeCellValue,
-    AITool.GetDatabaseSchemas,
-    AITool.GetCodeCellValue,
-    AITool.RerunCode,
-    AITool.HasCellData,
-  ];
 
   override readonly maxIterations = 20;
 

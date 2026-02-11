@@ -1,4 +1,3 @@
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { SubagentType } from '../../SubagentType';
 import { BaseSubagent } from '../BaseSubagent';
 
@@ -11,8 +10,6 @@ import { BaseSubagent } from '../BaseSubagent';
  */
 export class FormulaCoderSubagent extends BaseSubagent {
   readonly type = SubagentType.FormulaCoder;
-
-  readonly allowedTools = [AITool.SetFormulaCellValue, AITool.HasCellData];
 
   override readonly maxIterations = 20;
 

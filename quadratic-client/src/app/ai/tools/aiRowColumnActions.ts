@@ -4,13 +4,13 @@ import { content } from '@/app/gridGL/pixiApp/Content';
 import { columnNameToIndex, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
-    CELL_HEIGHT,
-    CELL_TEXT_MARGIN_LEFT,
-    CELL_WIDTH,
-    MAX_CELL_HEIGHT,
-    MAX_CELL_WIDTH,
-    MIN_CELL_HEIGHT,
-    MIN_CELL_WIDTH,
+  CELL_HEIGHT,
+  CELL_TEXT_MARGIN_LEFT,
+  CELL_WIDTH,
+  MAX_CELL_HEIGHT,
+  MAX_CELL_WIDTH,
+  MIN_CELL_HEIGHT,
+  MIN_CELL_WIDTH,
 } from '@/shared/constants/gridConstants';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';

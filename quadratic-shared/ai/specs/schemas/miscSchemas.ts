@@ -615,7 +615,6 @@ Session management:
       properties: {
         subagent_type: {
           type: 'string',
-          enum: [...DELEGATE_SUBAGENT_TYPE_VALUES],
           description: `Type of subagent: ${DELEGATE_SUBAGENT_TYPE_VALUES.map((v) => `"${v}"`).join(', ')}.`,
         },
         task: {

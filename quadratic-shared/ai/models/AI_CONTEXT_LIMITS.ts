@@ -33,23 +33,44 @@ const CONTEXT_LIMIT_BY_PROVIDER: Record<string, number> = {
 };
 
 /**
+ * Model-id patterns for context limit. Applied to config.model (the API model identifier).
+ * Checked in order; first match wins. More specific patterns must appear before broader ones.
+ * Patterns require delimiters (^, -, ., /) around segment names so e.g. "o30" does not match "o3".
+ */
+const CONTEXT_LIMIT_BY_MODEL: ReadonlyArray<{ pattern: RegExp; limit: number }> = [
+  { pattern: /gpt-4\.1(?:-|$)/i, limit: CONTEXT_LIMIT_1M },
+  { pattern: /gpt-5(?:-|\.|$)/i, limit: CONTEXT_LIMIT_400K },
+  { pattern: /(?:^|[-./])o3(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])o4(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])qwen(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_256K },
+  { pattern: /(?:^|[-./])kimi(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+  { pattern: /(?:^|[-./])deepseek(?:-|\/|\.|$)/i, limit: CONTEXT_LIMIT_128K },
+];
+
+function getContextLimitByModelId(modelId: string): number | undefined {
+  for (const { pattern, limit } of CONTEXT_LIMIT_BY_MODEL) {
+    if (pattern.test(modelId)) return limit;
+  }
+  return undefined;
+}
+
+/**
  * Returns the context limit (input tokens) for a model key.
- * Uses MODELS_CONFIGURATION.contextLimit when set, otherwise model-specific overrides and provider defaults.
+ * Uses MODELS_CONFIGURATION.contextLimit when set, then model-id overrides (from config.model),
+ * then provider default. Model keys are "provider:modelId" or "provider:modelId:suffix".
  */
 export function getContextLimit(modelKey: AIModelKey | undefined): number {
   if (!modelKey) return DEFAULT_CONTEXT_LIMIT;
 
   const config = MODELS_CONFIGURATION[modelKey as AIModelKey];
-  if (config?.contextLimit != null) return config.contextLimit;
+  if (!config) {
+    const provider = modelKey.split(':')[0];
+    return CONTEXT_LIMIT_BY_PROVIDER[provider] ?? DEFAULT_CONTEXT_LIMIT;
+  }
+  if (config.contextLimit != null) return config.contextLimit;
 
-  if (modelKey.includes('claude-sonnet') || modelKey.includes('claude-opus')) return CONTEXT_LIMIT_1M;
-  if (modelKey.includes('gpt-4.1')) return CONTEXT_LIMIT_1M;
-  if (modelKey.includes('gpt-5')) return CONTEXT_LIMIT_400K;
-  if (modelKey.includes('o3') || modelKey.includes('o4')) return CONTEXT_LIMIT_128K;
-  if (modelKey.includes('qwen') || modelKey.includes('Qwen')) return CONTEXT_LIMIT_256K;
-  if (modelKey.includes('kimi') || modelKey.includes('Kimi')) return CONTEXT_LIMIT_128K;
-  if (modelKey.includes('deepseek') || modelKey.includes('DeepSeek')) return CONTEXT_LIMIT_128K;
+  const modelLimit = getContextLimitByModelId(config.model);
+  if (modelLimit != null) return modelLimit;
 
-  const provider = modelKey.split(':')[0];
-  return CONTEXT_LIMIT_BY_PROVIDER[provider] ?? DEFAULT_CONTEXT_LIMIT;
+  return CONTEXT_LIMIT_BY_PROVIDER[config.provider] ?? DEFAULT_CONTEXT_LIMIT;
 }

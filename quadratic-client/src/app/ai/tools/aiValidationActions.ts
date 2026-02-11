@@ -15,7 +15,8 @@ import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool, type AIToolsArgs, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
 
@@ -205,9 +206,7 @@ const getSheetFromSheetName = (sheetName: string | null | undefined): Sheet => {
 
 const updateAICursorForSelection = (selection: string, sheetName: string | null | undefined): void => {
   try {
-    const sheetId = sheetName
-      ? (sheets.getSheetByName(sheetName)?.id ?? sheets.current)
-      : sheets.current;
+    const sheetId = sheetName ? (sheets.getSheetByName(sheetName)?.id ?? sheets.current) : sheets.current;
     const jsSelection = sheets.stringToSelection(selection, sheetId);
     const selectionString = jsSelection.save();
     aiUser.updateSelection(selectionString, sheetId);

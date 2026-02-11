@@ -1129,7 +1129,7 @@ mod test {
             let source_c = SheetRect::new(1, 9, 1, 9, sheet_id);
             let dest_c = SheetPos::new(sheet_id, 10, 9);
 
-            let all_moves = vec![(source_a, dest_a), (source_b, dest_b), (source_c, dest_c)];
+            let all_moves = [(source_a, dest_a), (source_b, dest_b), (source_c, dest_c)];
 
             order.iter().map(|&i| all_moves[i]).collect()
         }

@@ -1,7 +1,6 @@
 import { apiClient } from '@/shared/api/apiClient';
 import type { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { redirectDocument } from 'react-router';
 
 export type FilesSharingLoader = {
   ok: boolean;
@@ -47,7 +46,7 @@ export type Action = {
     | Action['request.delete-file-invite']
     | Action['request.update-file-user']
     | Action['request.delete-file-user'];
-  response: { ok: boolean };
+  response: { ok: boolean; redirect?: boolean };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs): Promise<Action['response']> => {
@@ -99,10 +98,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
     try {
       const { userId } = json as Action['request.delete-file-user'];
       const { redirect } = await apiClient.files.users.delete(uuid, userId);
-      if (redirect) {
-        return redirectDocument('/');
-      }
-      return { ok: true };
+      return { ok: true, redirect };
     } catch (e) {
       return { ok: false };
     }

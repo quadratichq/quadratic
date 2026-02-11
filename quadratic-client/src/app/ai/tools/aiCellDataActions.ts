@@ -183,7 +183,7 @@ export const cellDataToolsActions: CellDataToolActions = {
         console.warn('Failed to update AI user selection:', e);
       }
 
-      await quadraticCore.moveCells(sheetRect, x, y, sheetId, false, false, true);
+      await quadraticCore.moveCellsBatch([{ source: sheetRect, targetX: x, targetY: y, targetSheetId: sheetId }], true);
 
       // Move viewport to the target destination so the user can see where the content was moved
       ensureRectVisible(sheetId, { x, y }, { x: x + rangeWidth, y: y + rangeHeight });
