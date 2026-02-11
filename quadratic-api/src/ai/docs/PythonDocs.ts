@@ -95,6 +95,58 @@ q.cells('A$1:B$20)
 q.cells('A1:B$20')
 \`\`\`
 
+## Financial data
+
+You can access financial data directly using \`q.financial\`. This provides built-in functions for retrieving stock prices and other financial data without needing external API keys or libraries.
+
+### Stock prices
+
+Use \`q.financial.stock_prices()\` to get historical stock price data. This function is async, so you must use \`await\`.
+
+\`\`\`python
+# Get daily stock prices for Apple
+data = await q.financial.stock_prices("AAPL")
+
+# Get stock prices for a specific date range
+data = await q.financial.stock_prices("AAPL", "2025-01-01", "2025-01-31")
+
+# Get weekly stock prices for a date range
+data = await q.financial.stock_prices("AAPL", "2025-01-01", "2025-06-30", "weekly")
+\`\`\`
+
+#### Parameters
+
+- \`identifier\` (required): Stock ticker symbol (e.g., "AAPL", "MSFT", "GOOGL")
+- \`start_date\` (optional): Start date in YYYY-MM-DD format
+- \`end_date\` (optional): End date in YYYY-MM-DD format
+- \`frequency\` (optional): Frequency for price data. One of: "daily" (default), "weekly", "monthly", "quarterly", "yearly"
+
+#### Return value
+
+The function returns a dictionary with the following keys:
+
+- \`stock_prices\`: A list of stock price records. Each record contains:
+  - \`date\`: The calendar date for the stock price. For non-daily frequencies, this is the last day in the period (end of the week, month, quarter, year, etc.)
+  - \`open\`: Price at the beginning of the period
+  - \`high\`: Highest price over the span of the period
+  - \`low\`: Lowest price over the span of the period
+  - \`close\`: Price at the end of the period
+  - \`volume\`: Number of shares exchanged during the period
+  - \`frequency\`: The type of period the stock price represents
+  - \`intraperiod\`: If True, the stock price represents an unfinished period, meaning the close price is the latest price available, not the official close price for the period
+  - \`adj_open\`, \`adj_high\`, \`adj_low\`, \`adj_close\`, \`adj_volume\`: Adjusted values for splits and dividends
+  - \`factor\`: Factor by which to multiply stock prices before this date to calculate historically-adjusted stock prices
+  - \`split_ratio\`: Ratio of the stock split, if a stock split occurred
+  - \`dividend\`: Dividend amount, if a dividend was paid
+  - \`change\`: Difference in price from the last price for this frequency
+  - \`percent_change\`: Percent difference in price from the last price for this frequency
+  - \`fifty_two_week_high\`: The 52 week high price (daily only)
+  - \`fifty_two_week_low\`: The 52 week low price (daily only)
+- \`security\`: Information about the security, including \`id\`, \`ticker\`, \`name\`, \`exchange\`, \`currency\`, and other identifiers.
+- \`next_page\`: A pagination token. If null, no further results are available.
+
+To work with stock price data, extract the \`stock_prices\` list and convert it to a DataFrame.
+
 ## Return data to the sheet
 
 Return the data from your Python code to the spreadsheet.
