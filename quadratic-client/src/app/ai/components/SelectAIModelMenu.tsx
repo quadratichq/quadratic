@@ -28,7 +28,7 @@ import { memo, useMemo, useState } from 'react';
 
 type UIModels = 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
-  max: { label: 'Auto', description: 'Claude Opus 4.5' },
+  max: { label: 'Auto', description: 'Claude Opus 4.6' },
   others: { label: 'Others', description: 'Experimental models' },
 };
 
@@ -123,7 +123,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       open={false}
       setOpen={() => setKnowsAboutModelPicker(true)}
       title="AI model choices"
-      description="Auto uses Claude Opus 4.5, or choose from other available models."
+      description="Auto uses Claude Opus 4.6, or choose from other available models."
     >
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         {/* Needs a min-width or it shifts as the popover closes */}
