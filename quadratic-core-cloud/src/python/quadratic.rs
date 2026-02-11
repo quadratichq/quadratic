@@ -6,19 +6,24 @@ use quadratic_core::controller::execution::run_code::get_cells::{
 };
 use std::cell::RefCell;
 use std::ffi::CString;
-use std::sync::LazyLock;
 
-use crate::connection::fetch_stock_prices;
 use crate::error::Result;
 
 static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
 
-/// Shared tokio runtime for async operations in sync Python callbacks.
-/// This avoids the expense of creating a new runtime per call and prevents
-/// nested runtime panics.
-static TOKIO_RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
-    tokio::runtime::Runtime::new().expect("Failed to create tokio runtime")
-});
+/// Callback type for fetching stock prices. The callback is created in core.rs
+/// where the auth token is available, keeping the token out of the Python
+/// execution context.
+pub(crate) type FetchStockPricesFn = Box<
+    dyn FnMut(
+            String,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ) -> std::result::Result<serde_json::Value, String>
+        + Send
+        + 'static,
+>;
 
 /// Extract an optional string argument from positional args or kwargs
 fn extract_optional_arg(
@@ -30,9 +35,10 @@ fn extract_optional_arg(
     // Try positional arg first
     if args.len() > index
         && let Ok(item) = args.get_item(index)
-            && let Ok(value) = item.extract::<String>() {
-                return Some(value);
-            }
+        && let Ok(value) = item.extract::<String>()
+    {
+        return Some(value);
+    }
     // Fall back to kwargs
     kwargs
         .and_then(|kw| kw.get_item(name).ok().flatten())
@@ -140,16 +146,14 @@ pub(crate) fn create_get_cells_function(
     Ok(function.into())
 }
 
-/// Creates a Python function that wraps the Rust fetch_stock_prices function
+/// Creates a Python function that fetches stock prices via an opaque callback.
+/// The callback is created in core.rs and handles authentication internally,
+/// so the auth token never enters the Python execution context.
 pub(crate) fn create_stock_prices_function(
     py: Python,
-    token: String,
-    team_id: String,
-    connection_url: String,
+    fetch_stock_prices: FetchStockPricesFn,
 ) -> PyResult<PyObject> {
-    let token = RefCell::new(token);
-    let team_id = RefCell::new(team_id);
-    let connection_url = RefCell::new(connection_url);
+    let fetch_stock_prices = RefCell::new(fetch_stock_prices);
 
     let function = pyo3::types::PyCFunction::new_closure(
         py,
@@ -164,21 +168,9 @@ pub(crate) fn create_stock_prices_function(
             let end_date = extract_optional_arg(args, kwargs, 2, "end_date");
             let frequency = extract_optional_arg(args, kwargs, 3, "frequency");
 
-            let token = token.borrow().clone();
-            let team_id = team_id.borrow().clone();
-            let url = connection_url.borrow().clone();
-
-            // Use shared tokio runtime to call async function
-            let result = TOKIO_RUNTIME.block_on(fetch_stock_prices(
-                    &token,
-                    &team_id,
-                    &url,
-                    &identifier,
-                    start_date.as_deref(),
-                    end_date.as_deref(),
-                    frequency.as_deref(),
-                ))
-                .map_err(|e| PyErr::new::<PyException, _>(e.to_string()))?;
+            let result =
+                fetch_stock_prices.borrow_mut()(identifier, start_date, end_date, frequency)
+                    .map_err(|e| PyErr::new::<PyException, _>(e))?;
 
             // Convert serde_json::Value to Python object
             Python::with_gil(|py| {
@@ -288,44 +280,10 @@ mod tests {
     #[test]
     fn test_create_stock_prices_function() {
         Python::with_gil(|py| {
-            let func = create_stock_prices_function(
-                py,
-                "M2M_AUTH_TOKEN".to_string(),
-                "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string(),
-                "http://localhost:3003".to_string(),
-            );
+            let mock_fetch: FetchStockPricesFn =
+                Box::new(|_id, _start, _end, _freq| Ok(serde_json::json!({"test": true})));
+            let func = create_stock_prices_function(py, mock_fetch);
             assert!(func.is_ok(), "Should create stock prices function");
         });
-    }
-
-    #[tokio::test]
-    async fn test_fetch_stock_prices() {
-        // This test requires the connection service to be running
-        let token = "M2M_AUTH_TOKEN".to_string();
-        let team_id = "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05".to_string();
-        let result = fetch_stock_prices(
-            &token,
-            &team_id,
-            "http://localhost:3003",
-            "AAPL",
-            Some("2025-01-01"),
-            Some("2025-01-31"),
-            None, // defaults to daily
-        )
-        .await;
-
-        match result {
-            Ok(data) => {
-                println!("Stock prices data: {:?}", data);
-                assert!(
-                    data.is_object() || data.is_array(),
-                    "Should return JSON object or array"
-                );
-            }
-            Err(e) => {
-                // Connection service may not be running in CI
-                println!("Skipping test - connection service not available: {}", e);
-            }
-        }
     }
 }

@@ -248,31 +248,7 @@ impl GridController {
                     };
 
                     let (mut return_type, value) = if is_stock_history {
-                        // StockHistory receives JSON data
-                        if let Some(ref err) = std_err {
-                            parse_error(err)
-                        } else {
-                            let parse_json = || -> std::result::Result<crate::Array, String> {
-                                let json_str =
-                                    String::from_utf8(data.clone()).map_err(|e| e.to_string())?;
-                                let json_data: serde_json::Value =
-                                    serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
-
-                                process_stock_history_json(&json_data, &code.code)
-                            };
-
-                            match parse_json() {
-                                Ok(array) => {
-                                    let return_type = format!(
-                                        "{}×{} Array",
-                                        array.width(),
-                                        array.height().saturating_sub(1)
-                                    );
-                                    (return_type, Value::Array(array))
-                                }
-                                Err(e) => parse_error(&e),
-                            }
-                        }
+                        parse_stock_history_data(&data, &std_err, &code.code, &parse_error)
                     } else {
                         // Standard connections receive Parquet data
                         let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
@@ -335,6 +311,38 @@ impl GridController {
         self.finalize_transaction(transaction);
 
         Ok(())
+    }
+}
+
+/// Parses StockHistory JSON data into a return type string and Value.
+fn parse_stock_history_data(
+    data: &[u8],
+    std_err: &Option<String>,
+    code: &str,
+    parse_error: &impl Fn(&String) -> (String, Value),
+) -> (String, Value) {
+    if let Some(err) = std_err {
+        parse_error(err)
+    } else {
+        let parse_json = || -> std::result::Result<crate::Array, String> {
+            let json_str = String::from_utf8(data.to_vec()).map_err(|e| e.to_string())?;
+            let json_data: serde_json::Value =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+
+            process_stock_history_json(&json_data, code)
+        };
+
+        match parse_json() {
+            Ok(array) => {
+                let return_type = format!(
+                    "{}×{} Array",
+                    array.width(),
+                    array.height().saturating_sub(1)
+                );
+                (return_type, Value::Array(array))
+            }
+            Err(e) => parse_error(&e),
+        }
     }
 }
 

@@ -43,7 +43,7 @@ class CoreConnection {
     // that uses the financial API (not a user-manageable connection)
     // Note: Rust serializes ConnectionKind with UPPERCASE (serde rename_all)
     if ((connector_type as string) === 'STOCKHISTORY') {
-      await this.sendStockHistoryConnection(transactionId, x, y, sheetId, code, connection_id);
+      await this.sendStockHistoryConnection(transactionId, code, connection_id);
       return;
     }
 
@@ -102,14 +102,7 @@ class CoreConnection {
   };
 
   // Handle StockHistory connections - these use the financial API and return JSON
-  private sendStockHistoryConnection = async (
-    transactionId: string,
-    x: number,
-    y: number,
-    sheetId: string,
-    code: string,
-    paramsJson: string
-  ) => {
+  private sendStockHistoryConnection = async (transactionId: string, code: string, paramsJson: string) => {
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const url = `${base}/financial/stock-prices`;
     const jwt = await coreClient.getJwt();

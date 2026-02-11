@@ -7,7 +7,9 @@ use quadratic_core::controller::transaction_types::{JsCellValueResult, JsCodeRes
 use tokio::sync::Mutex;
 
 use crate::error::{CoreCloudError, Result};
-use crate::python::quadratic::{create_get_cells_function, create_stock_prices_function, pos};
+use crate::python::quadratic::{
+    FetchStockPricesFn, create_get_cells_function, create_stock_prices_function, pos,
+};
 use crate::python::utils::{analyze_code, c_string, process_imports};
 
 static PROCESS_OUTPUT_CODE: &str = include_str!("py_code/process_output.py");
@@ -28,23 +30,14 @@ pub(crate) async fn run_python(
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
-    token: &str,
-    team_id: &str,
-    connection_url: String,
+    fetch_stock_prices: FetchStockPricesFn,
 ) -> Result<()> {
     tracing::info!(
         "[Python] Starting execution for transaction: {}",
         transaction_id
     );
 
-    let js_code_result = execute(
-        code,
-        transaction_id,
-        get_cells,
-        token,
-        team_id,
-        connection_url,
-    )?;
+    let js_code_result = execute(code, transaction_id, get_cells, fetch_stock_prices)?;
 
     grid.lock()
         .await
@@ -57,9 +50,7 @@ pub(crate) fn execute(
     code: &str,
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
-    token: &str,
-    team_id: &str,
-    connection_url: String,
+    fetch_stock_prices: FetchStockPricesFn,
 ) -> Result<JsCodeResult> {
     let result: std::result::Result<JsCodeResult, PyErr> = Python::with_gil(|py| {
         let empty_result = empty_js_code_result(transaction_id);
@@ -86,13 +77,8 @@ pub(crate) fn execute(
         globals.set_item("rust_cells", get_cells_py)?;
         globals.set_item("rust_pos", wrap_pyfunction!(pos, py)?)?;
 
-        // create stock_prices function that calls the connection service
-        let stock_prices_py = create_stock_prices_function(
-            py,
-            token.to_string(),
-            team_id.to_string(),
-            connection_url,
-        )?;
+        // create stock_prices function that calls back to the authenticated handler
+        let stock_prices_py = create_stock_prices_function(py, fetch_stock_prices)?;
         globals.set_item("rust_stock_prices", stock_prices_py)?;
 
         // quadratic (`q`) module
@@ -325,15 +311,22 @@ mod tests {
         })
     }
 
+    fn test_fetch_stock_prices(
+        identifier: String,
+        _start_date: Option<String>,
+        _end_date: Option<String>,
+        _frequency: Option<String>,
+    ) -> std::result::Result<serde_json::Value, String> {
+        Ok(serde_json::json!({"identifier": identifier, "mock": true}))
+    }
+
     fn test_execute(code: &str) -> JsCodeResult {
         let start = Instant::now();
         let result = execute(
             code,
             "test",
             Box::new(test_get_cells),
-            "M2M_AUTH_TOKEN",
-            "5b5dd6a8-04d8-4ca5-baeb-2cf3e80c1d05",
-            "http://localhost:3003".to_string(),
+            Box::new(test_fetch_stock_prices),
         )
         .unwrap();
         let end = Instant::now();
