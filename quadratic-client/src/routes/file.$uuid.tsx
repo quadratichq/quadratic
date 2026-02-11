@@ -28,6 +28,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
@@ -213,6 +214,18 @@ export const Component = memo(() => {
     userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
   const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
+
+  const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Check for initial-connection-type param to auto-open the connections dialog
+  const initialConnectionTypeParam = searchParams.get('initial-connection-type');
+  const parsedInitialConnectionType = initialConnectionTypeParam
+    ? ConnectionTypeSchema.safeParse(initialConnectionTypeParam)
+    : null;
+  const initialConnectionType = parsedInitialConnectionType?.success ? parsedInitialConnectionType.data : undefined;
+
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -222,14 +235,11 @@ export const Component = memo(() => {
         user: loggedInUser,
         fileUuid,
         teamUuid,
+        ...(initialConnectionType ? { showConnectionsMenu: { initialConnectionType } } : {}),
       }));
     },
-    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid]
+    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, initialConnectionType]
   );
-
-  const { setIsOnPaidPlan } = useIsOnPaidPlan();
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     setIsOnPaidPlan(isOnPaidPlan);

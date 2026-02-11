@@ -53,6 +53,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     connectionUuid: url.searchParams.get('connection-uuid'),
     connectionType: parsedConnectionType?.success ? parsedConnectionType.data : null,
     connectionName: url.searchParams.get('connection-name'),
+    // Auto-open connections dialog to create a specific connection type (validated in file.$uuid)
+    initialConnectionType: url.searchParams.get('initial-connection-type'),
   });
   return redirect(redirectUrl);
 };
