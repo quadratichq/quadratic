@@ -165,7 +165,6 @@ ConnectionMenuItem.displayName = 'ConnectionMenuItem';
 
 export interface ConnectionsMenuContentProps {
   connections: ConnectionList;
-  teamUuid: string;
   activeConnectionId?: string;
   /** When true, shows Add/Manage actions before connections list. Default: false (connections first) */
   actionsFirst?: boolean;
@@ -177,7 +176,6 @@ export interface ConnectionsMenuContentProps {
 export const ConnectionsMenuContent = memo(
   ({
     connections,
-    teamUuid,
     activeConnectionId,
     actionsFirst = false,
     onSelectConnection,
