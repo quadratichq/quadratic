@@ -19,6 +19,7 @@ use crate::error::{FilesError, Result};
 
 // TODO(ddimaria): this is duplicated in files, abstract in quadratic-rust-shared
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[allow(dead_code)]
 pub struct Claims {
     pub email: String,
     pub exp: usize,

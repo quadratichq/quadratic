@@ -3124,12 +3124,10 @@ where
         }
 
         // Shrink: move all points toward best
+        let best = simplex[best_idx].clone();
         for &idx in &indices[1..] {
-            #[allow(clippy::needless_range_loop)]
-            for j in 0..n {
-                simplex[idx][j] =
-                    simplex[best_idx][j] + sigma * (simplex[idx][j] - simplex[best_idx][j]);
-                simplex[idx][j] = simplex[idx][j].clamp(0.0, 1.0);
+            for (val, &b) in simplex[idx].iter_mut().zip(best.iter()) {
+                *val = (b + sigma * (*val - b)).clamp(0.0, 1.0);
             }
             values[idx] = objective(&simplex[idx]);
         }
