@@ -38,22 +38,6 @@ impl From<crate::Pos> for Pos {
 
 #[allow(dead_code)]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetPos {
-    pub x: i64,
-    pub y: i64,
-    pub sheet_id: Id,
-}
-impl From<crate::SheetPos> for SheetPos {
-    fn from(pos: crate::SheetPos) -> Self {
-        Self {
-            x: pos.x,
-            y: pos.y,
-            sheet_id: pos.sheet_id.into(),
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SheetRect {
     pub min: Pos,
     pub max: Pos,
