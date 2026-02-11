@@ -14,14 +14,11 @@ pub struct BoundsRect {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default)]
 pub enum GridBounds {
+    #[default]
     Empty,
     NonEmpty(Rect),
-}
-impl Default for GridBounds {
-    fn default() -> Self {
-        Self::Empty
-    }
 }
 impl From<Rect> for GridBounds {
     fn from(rect: Rect) -> Self {
