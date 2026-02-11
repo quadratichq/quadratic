@@ -1,4 +1,4 @@
 [toolchain]
-channel = "1.89.0"
+channel = "1.91.0"
 components = ["clippy", "rustfmt", "llvm-tools-preview"]
 targets = ["wasm32-unknown-unknown"]
