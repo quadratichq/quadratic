@@ -306,11 +306,6 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Row {
-    pub id: String,
-}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -319,12 +314,3 @@ pub struct CellBorder {
     pub line: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[repr(u8)]
-pub enum CellSide {
-    Left = 0,
-    Top = 1,
-    Right = 2,
-    Bottom = 3,
-}

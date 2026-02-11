@@ -179,11 +179,6 @@ pub struct OutputSize {
     pub h: i64,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OutputValueValue {
-    pub type_field: String,
-    pub value: String,
-}
 
 pub type RenderSize = v1_5::RenderSize;
 
