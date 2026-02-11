@@ -1,13 +1,10 @@
-import { aiAnalystActiveSchemaConnectionUuidAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
-import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
@@ -31,8 +28,8 @@ import {
   type ConnectionList,
   type ConnectionType,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import React, { memo, useCallback, useEffect, useMemo } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import React, { memo, useCallback, useEffect } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 interface CellTypeOption {
   name: string;
@@ -64,17 +61,13 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export const CellTypeMenu = memo(() => {
-  const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
-  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { connections } = useConnectionsFetcher();
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const includeLanguages = useMemo(() => showCellTypeMenu !== 'connections', [showCellTypeMenu]);
-  const searchLabel = useMemo(() => `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`, [includeLanguages]);
 
   useEffect(() => {
     trackEvent('[CellTypeMenu].opened');
@@ -125,26 +118,9 @@ export const CellTypeMenu = memo(() => {
   const selectConnection = useCallback(
     (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
       trackEvent('[CellTypeMenu].selectConnection', { type: connectionType });
-
-      if (includeLanguages) {
-        openEditor({ Connection: { kind: connectionType, id: connectionUuid } });
-        return;
-      }
-
-      // Close the menu
-      setShowCellTypeMenu(false);
-
-      // Open the AI analyst panel with schema viewer
-      setShowAIAnalyst(true);
-      setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
-
-      // Emit event to set the connection context in AI chat
-      events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
-
-      // Focus the AI analyst input
-      focusAIAnalyst();
+      openEditor({ Connection: { kind: connectionType, id: connectionUuid } });
     },
-    [includeLanguages, openEditor, setShowCellTypeMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
+    [openEditor]
   );
 
   return (
@@ -159,28 +135,24 @@ export const CellTypeMenu = memo(() => {
       }}
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
-      <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
+      <CommandInput placeholder="Choose a cell type…" id="CellTypeMenuInputID" />
 
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
 
-        {includeLanguages && (
-          <>
-            <CommandGroup heading="Languages">
-              {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
-                <CommandItemWrapper
-                  key={name}
-                  disabled={disabled}
-                  icon={icon}
-                  name={name}
-                  badge={experimental ? 'Experimental' : ''}
-                  onSelect={() => openEditor(mode)}
-                />
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-          </>
-        )}
+        <CommandGroup heading="Languages">
+          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
+            <CommandItemWrapper
+              key={name}
+              disabled={disabled}
+              icon={icon}
+              name={name}
+              badge={experimental ? 'Experimental' : ''}
+              onSelect={() => openEditor(mode)}
+            />
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
 
         {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
