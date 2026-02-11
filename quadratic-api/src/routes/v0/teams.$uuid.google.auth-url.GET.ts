@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import type { Response } from 'express';
-import { OAuth2Client } from 'google-auth-library';
+import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
 import { GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT_URI } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
@@ -93,7 +93,7 @@ async function handler(req: RequestWithUser, res: Response<{ authUrl: string; no
     prompt: 'consent', // Force consent to always get refresh token
     state,
     code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
+    code_challenge_method: CodeChallengeMethod.S256,
   });
 
   return res.status(200).json({ authUrl, nonce });
