@@ -22,16 +22,19 @@ impl GridController {
             return;
         }
 
-        // Collect new code cell positions to add
+        // Collect new code cell positions to add (only dependents outside the modified rect;
+        // positions inside were just overwritten e.g. by SetCellValues clear and have no code run)
         let mut new_code_cell_positions = Vec::new();
         self.get_dependent_code_cells(output)
             .iter()
             .for_each(|sheet_positions| {
                 sheet_positions.iter().for_each(|code_cell_sheet_pos| {
+                    if output.contains(*code_cell_sheet_pos) {
+                        return;
+                    }
                     if !skip_compute
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
                     {
-                        // O(1) check using HashSet instead of O(n) iteration
                         if !transaction
                             .pending_compute_positions
                             .contains(code_cell_sheet_pos)
