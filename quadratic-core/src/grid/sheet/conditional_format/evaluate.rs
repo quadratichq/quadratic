@@ -19,7 +19,18 @@ use crate::{
     values::IsBlank,
 };
 
+use crate::grid::sheet::merge_cells::MergeCells;
+
 use super::rules::ConditionalFormatRule;
+
+/// For conditional formatting, merged cells are treated as one cell: use the
+/// merge's anchor position for rule evaluation so the result applies to the whole merge.
+fn effective_cf_pos(merge_cells: &MergeCells, pos: Pos) -> Pos {
+    merge_cells
+        .get_merge_cell_rect(pos)
+        .map(|r| r.min)
+        .unwrap_or(pos)
+}
 
 impl GridController {
     /// Checks if a cell is blank.
@@ -322,6 +333,8 @@ impl GridController {
             x: sheet_pos.x,
             y: sheet_pos.y,
         };
+        let effective_pos = effective_cf_pos(&sheet.merge_cells, pos);
+        let effective_sheet_pos = effective_pos.to_sheet_pos(sheet_pos.sheet_id);
 
         // Get the preview format ID (if any) to exclude persisted formats with the same ID
         let preview_id = sheet.preview_conditional_format.as_ref().map(|p| p.id);
@@ -349,8 +362,8 @@ impl GridController {
         let mut any_applied = false;
 
         for cf in formats {
-            // Evaluate the formula with translated references
-            if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
+            // Evaluate the formula with translated references (use effective pos for merged cells)
+            if self.evaluate_conditional_format_rule(cf, effective_sheet_pos, a1_context) {
                 // Apply the style (later rules override earlier ones)
                 // Only formula-based formats have styles; color scales are handled separately
                 if let Some(style) = cf.style() {
@@ -437,7 +450,8 @@ impl GridController {
                 x: cell.x,
                 y: cell.y,
             };
-            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let effective_pos = effective_cf_pos(&sheet.merge_cells, pos);
+            let effective_sheet_pos = effective_pos.to_sheet_pos(sheet_id);
 
             // Only check the pre-filtered formats
             let mut combined_style = ConditionalFormatStyle::default();
@@ -445,7 +459,7 @@ impl GridController {
 
             for cf in &overlapping_formats {
                 if cf.selection.contains_pos(pos, a1_context)
-                    && self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context)
+                    && self.evaluate_conditional_format_rule(cf, effective_sheet_pos, a1_context)
                 {
                     // Handle formula-based formats with explicit styles
                     if let Some(style) = cf.style() {
@@ -476,7 +490,7 @@ impl GridController {
                             color_scale,
                             sheet_id,
                             &cf.selection,
-                            sheet_pos,
+                            effective_sheet_pos,
                             a1_context,
                         )
                         && let Some(text_color) = contrasting_text_color_hex(&fill_color)
@@ -556,13 +570,14 @@ impl GridController {
         for y in rect.y_range() {
             for x in rect.x_range() {
                 let pos = Pos { x, y };
-                let sheet_pos = pos.to_sheet_pos(sheet_id);
+                let effective_pos = effective_cf_pos(&sheet.merge_cells, pos);
+                let effective_sheet_pos = effective_pos.to_sheet_pos(sheet_id);
 
                 // Check each format with a fill (in order, first to last)
                 for cf in &formats_with_fills {
                     if cf.selection.contains_pos(pos, a1_context) {
-                        // Evaluate the conditional format
-                        if self.evaluate_conditional_format_rule(cf, sheet_pos, a1_context) {
+                        // Evaluate the conditional format (use effective pos for merged cells)
+                        if self.evaluate_conditional_format_rule(cf, effective_sheet_pos, a1_context) {
                             // Get the fill color based on format type
                             let fill_color = match &cf.config {
                                 ConditionalFormatConfig::Formula { style, .. } => {
@@ -576,7 +591,7 @@ impl GridController {
                                         color_scale,
                                         sheet_id,
                                         &cf.selection,
-                                        sheet_pos,
+                                        effective_sheet_pos,
                                         a1_context,
                                     )
                                 }
@@ -835,6 +850,45 @@ mod tests {
         assert_eq!(fills.len(), 1);
         assert!(fills[0].0.contains(pos_a1));
         assert_eq!(fills[0].1, "green".to_string());
+    }
+
+    /// Conditional formatting should treat a merged cell as one cell: the rule is
+    /// evaluated once using the merge's anchor value, and the result applies to the
+    /// entire merged area. Without this, only the anchor cell gets the format.
+    #[test]
+    fn test_conditional_format_merged_cell_treated_as_one() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_b1 = crate::Pos::test_a1("B1");
+
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
+        gc.merge_cells(A1Selection::test_a1_sheet_id("A1:B1", sheet_id), None, false);
+
+        let cf = create_test_conditional_format(
+            &gc,
+            "A1:B1",
+            "=A1>5",
+            ConditionalFormatStyle {
+                fill_color: Some("red".to_string()),
+                ..Default::default()
+            },
+        );
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        let rect = Rect::new_span(pos_a1, pos_b1);
+        let fills = gc.get_conditional_format_fills(sheet_id, rect, gc.a1_context());
+
+        let any_rect_contains = |pos: crate::Pos| fills.iter().any(|(r, _)| r.contains(pos));
+        assert!(
+            any_rect_contains(pos_a1),
+            "Conditional format fill should cover anchor A1"
+        );
+        assert!(
+            any_rect_contains(pos_b1),
+            "Conditional format fill should cover B1 (merged with A1); entire merge must be treated as one cell"
+        );
     }
 
     #[test]
