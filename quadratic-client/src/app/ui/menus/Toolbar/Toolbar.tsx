@@ -7,6 +7,7 @@ import { useRecoilValue } from 'recoil';
 
 export const Toolbar = memo(() => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEdit = permissions.includes('FILE_EDIT');
 
   return (
     <div className="pointer-up-ignore hidden h-10 select-none justify-between border-b border-border md:flex">
@@ -15,7 +16,7 @@ export const Toolbar = memo(() => {
       </div>
 
       <div className="no-scrollbar flex flex-1 items-center justify-center overflow-y-hidden overflow-x-scroll">
-        {permissions.includes('FILE_EDIT') && <FormattingBar />}
+        {canEdit && <FormattingBar />}
       </div>
 
       <div className="flex items-center justify-end xl:w-64 2xl:w-80">

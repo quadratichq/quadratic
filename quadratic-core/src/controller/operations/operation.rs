@@ -20,6 +20,8 @@ use crate::{
                 BordersUpdates,
                 borders_old::{BorderStyleCellUpdates, SheetBorders},
             },
+            conditional_format::ConditionalFormat,
+            merge_cells::MergeCellsUpdate,
             validations::validation::Validation,
         },
     },
@@ -472,5 +474,20 @@ pub enum Operation {
 
         #[serde(default)]
         ignore_tables: bool,
+    },
+
+    SetMergeCells {
+        sheet_id: SheetId,
+        merge_cells_updates: MergeCellsUpdate,
+    },
+
+    /// Creates or updates a conditional format rule.
+    SetConditionalFormat {
+        conditional_format: ConditionalFormat,
+    },
+    /// Deletes a conditional format rule.
+    RemoveConditionalFormat {
+        sheet_id: SheetId,
+        conditional_format_id: Uuid,
     },
 }

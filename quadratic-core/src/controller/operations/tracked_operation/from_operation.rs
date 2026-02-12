@@ -142,6 +142,7 @@ impl TrackedOperation {
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
                 sheet_name: match schema.as_ref() {
+                    SheetSchema::V1_13(schema) => schema.name.to_string(),
                     SheetSchema::V1_12(schema) => schema.name.to_string(),
                     SheetSchema::V1_11(schema) => schema.name.to_string(),
                     SheetSchema::V1_10(schema) => schema.name.to_string(),
@@ -275,6 +276,22 @@ impl TrackedOperation {
                 selection: selection.to_string(Some(*sheet_id), gc.a1_context()),
             }),
 
+            // Conditional formatting
+            Operation::SetConditionalFormat { conditional_format } => {
+                Some(Self::ConditionalFormatSet {
+                    selection: conditional_format
+                        .selection
+                        .to_string(None, gc.a1_context()),
+                })
+            }
+            Operation::RemoveConditionalFormat {
+                sheet_id,
+                conditional_format_id,
+            } => Some(Self::ConditionalFormatRemoved {
+                sheet_name: get_sheet_name(*sheet_id, gc),
+                conditional_format_id: *conditional_format_id,
+            }),
+
             // Column/row structure changes
             Operation::InsertColumn {
                 sheet_id, column, ..
@@ -352,6 +369,10 @@ impl TrackedOperation {
             Operation::SwitchDataTableKind { sheet_pos, kind } => Some(Self::SwitchDataTableKind {
                 selection: sheet_pos_to_selection(*sheet_pos, gc),
                 kind: kind.to_string(),
+            }),
+
+            Operation::SetMergeCells { sheet_id, .. } => Some(Self::SetMergeCells {
+                sheet_name: get_sheet_name(*sheet_id, gc),
             }),
 
             // Deprecated operations that we don't need to support

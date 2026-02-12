@@ -13,7 +13,6 @@ use crate::{
 use anyhow::{Result, anyhow};
 
 pub mod cache;
-mod single_cell_tables_cache;
 
 use cache::SheetDataTablesCache;
 
@@ -97,21 +96,17 @@ impl SheetDataTables {
 
         // remove data table from cache
         if let Some(old_spilled_output_rect) = old_output_rect {
-            if old_spilled_output_rect.len() == 1 {
-                self.cache.single_cell_tables.set(pos, false);
-            } else {
-                let rects = self
-                    .cache
-                    .multi_cell_tables
-                    .nondefault_rects_in_rect(old_spilled_output_rect)
-                    .filter(|(_, b)| b == &Some(pos))
-                    .map(|(rect, _)| rect)
-                    .collect::<Vec<_>>();
-                for rect in rects {
-                    self.cache
-                        .multi_cell_tables
-                        .set_rect(rect.min.x, rect.min.y, rect.max.x, rect.max.y, None);
-                }
+            let rects = self
+                .cache
+                .data_tables
+                .nondefault_rects_in_rect(old_spilled_output_rect)
+                .filter(|(_, b)| b == &Some(pos))
+                .map(|(rect, _)| rect)
+                .collect::<Vec<_>>();
+            for rect in rects {
+                self.cache
+                    .data_tables
+                    .set_rect(rect.min.x, rect.min.y, rect.max.x, rect.max.y, None);
             }
 
             self.un_spilled_output_rects.remove_pos(pos);
@@ -138,17 +133,13 @@ impl SheetDataTables {
             data_table.spill_data_table = current_data_table_spill;
 
             let new_spilled_output_rect = data_table.output_rect(pos, false);
-            if new_spilled_output_rect.len() == 1 {
-                self.cache.single_cell_tables.set(pos, true);
-            } else {
-                self.cache.multi_cell_tables.set_rect(
-                    new_spilled_output_rect.min.x,
-                    new_spilled_output_rect.min.y,
-                    new_spilled_output_rect.max.x,
-                    new_spilled_output_rect.max.y,
-                    Some(data_table),
-                );
-            }
+            self.cache.data_tables.set_rect(
+                new_spilled_output_rect.min.x,
+                new_spilled_output_rect.min.y,
+                new_spilled_output_rect.max.x,
+                new_spilled_output_rect.max.y,
+                Some(data_table),
+            );
 
             let new_un_spilled_output_rect = data_table.output_rect(pos, true);
             if new_un_spilled_output_rect.len() > 1 {
@@ -261,28 +252,23 @@ impl SheetDataTables {
         rect: Rect,
         ignore_spill_error: bool,
     ) -> impl Iterator<Item = Pos> {
-        self.cache
-            .single_cell_tables
-            .nondefault_rects_in_rect(rect)
-            .flat_map(|(rect, _)| {
-                rect.x_range()
-                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
-            })
-            .chain(
-                if !ignore_spill_error {
-                    self.cache.multi_cell_tables.unique_values_in_rect(rect)
-                } else {
-                    HashSet::new()
-                }
-                .into_iter()
-                .flatten(),
-            )
-            .chain(if ignore_spill_error {
-                self.un_spilled_output_rects
-                    .get_positions_associated_with_region(rect)
-            } else {
-                HashSet::new()
-            })
+        let cache_positions = if !ignore_spill_error {
+            self.cache.data_tables.unique_values_in_rect(rect)
+        } else {
+            HashSet::new()
+        };
+
+        let unspilled_positions = if ignore_spill_error {
+            self.un_spilled_output_rects
+                .get_positions_associated_with_region(rect)
+        } else {
+            HashSet::new()
+        };
+
+        cache_positions
+            .into_iter()
+            .flatten()
+            .chain(unspilled_positions)
             .sorted_unstable()
             .dedup()
     }

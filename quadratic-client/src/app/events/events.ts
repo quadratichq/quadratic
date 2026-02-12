@@ -4,6 +4,7 @@ import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import type {
+  ConditionalFormatClient,
   JsBordersSheet,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -16,7 +17,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import type { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -39,7 +40,6 @@ export interface DirtyObject {
   cellHighlights?: boolean;
   multiplayerCursor?: boolean;
   boxCells?: boolean;
-  singleCellOutlines?: boolean;
   cellMoving?: boolean;
   cellImages?: boolean;
 }
@@ -135,6 +135,7 @@ interface EventTypes {
   insertCodeEditorText: (text: string) => void;
 
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
+  sheetConditionalFormats: (sheetId: string, conditionalFormats: ConditionalFormatClient[]) => void;
   validationWarnings: (warnings: JsHashValidationWarnings[]) => void;
 
   // pointer down on the grid
@@ -192,8 +193,14 @@ interface EventTypes {
   aiAnalystReady: () => void;
   aiAnalystSelectConnection: (connectionUuid: string, connectionType: string, connectionName: string) => void;
 
+  mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
+
   // Formatting button keyboard triggers (for visual feedback)
   formatButtonKeyboard: (action: string) => void;
+
+  // Format painter events
+  formatPainterStart: (sourceSelection: string, sourceSheetId: string) => void;
+  formatPainterEnd: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -81,6 +81,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
                 handleClose();
                 focusGrid();
               }}
+              onClose={handleClose}
             />
           </DropdownMenuSubContent>
         </DropdownMenuSub>

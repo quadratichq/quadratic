@@ -28,6 +28,7 @@ import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
+import { ConditionalFormatPanel } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormatPanel';
 import { ConnectionsMenu } from '@/app/ui/menus/ConnectionsMenu/ConnectionsMenu';
 import { FeedbackMenu } from '@/app/ui/menus/FeedbackMenu/FeedbackMenu';
 import { ScheduledTasks } from '@/app/ui/menus/ScheduledTasks/ScheduledTasks';
@@ -200,6 +201,7 @@ export default function QuadraticUI() {
                 </FileDragDropWrapper>
                 <CodeEditor />
                 <ValidationPanel />
+                <ConditionalFormatPanel />
                 <ScheduledTasks />
               </div>
             </div>

@@ -23,6 +23,7 @@ import { useAtom } from 'jotai';
 import { Component, useEffect, useMemo, useState } from 'react';
 import { AISettings } from './SettingsTabs/AISettings';
 import { DebugSettings } from './SettingsTabs/DebugSettings';
+import { FileContentsSettings } from './SettingsTabs/FileContentsSettings';
 import { GeneralSettings } from './SettingsTabs/GeneralSettings';
 import { TeamAISettings } from './SettingsTabs/TeamAISettings';
 import { TeamMembersSettings } from './SettingsTabs/TeamMembersSettings';
@@ -229,13 +230,29 @@ export function SettingsDialog() {
                   </>
                 )}
                 {hasDebugAvailable && (
-                  <TabsTrigger
-                    value="debug"
-                    className="mt-6 flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
-                  >
-                    <CodeIcon className={classNameIcons} />
-                    Debug
-                  </TabsTrigger>
+                  <>
+                    <Type
+                      as="h3"
+                      variant="overline"
+                      className="mb-2 mt-6 flex items-baseline justify-between px-4 indent-2 text-muted-foreground"
+                    >
+                      Debug
+                    </Type>
+                    <TabsTrigger
+                      value="debug"
+                      className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      <CodeIcon className={classNameIcons} />
+                      Debug Flags
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="file-contents"
+                      className="flex w-full items-center justify-start gap-2 rounded-none border-b-0 border-l-2 border-transparent px-4 py-2 text-left data-[state=active]:border-l-primary data-[state=active]:bg-background"
+                    >
+                      <CodeIcon className={classNameIcons} />
+                      File Contents
+                    </TabsTrigger>
+                  </>
                 )}
                 {/* Add more tabs here as needed */}
               </TabsList>
@@ -308,9 +325,14 @@ export function SettingsDialog() {
               </>
             )}
             {hasDebugAvailable && (
-              <TabsContent value="debug" className="m-0 border-0 p-6 pb-16">
-                <DebugSettings />
-              </TabsContent>
+              <>
+                <TabsContent value="debug" className="m-0 border-0 p-6 pb-16">
+                  <DebugSettings />
+                </TabsContent>
+                <TabsContent value="file-contents" className="m-0 h-full border-0 p-6 pb-16">
+                  <FileContentsSettings />
+                </TabsContent>
+              </>
             )}
             {/* Add more tab content here as needed */}
           </div>

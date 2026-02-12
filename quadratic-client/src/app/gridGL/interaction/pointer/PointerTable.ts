@@ -41,6 +41,7 @@ export class PointerTable {
         });
       } else {
         pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
+        const isSingleCell = table.w === 1 && table.h === 1 && !table.show_name && !table.show_columns;
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           aiAssistant: {
@@ -57,6 +58,7 @@ export class PointerTable {
               pos: { x: table.x, y: table.y },
               language: table.language,
               lastModified: Number(table.last_modified),
+              isSingleCell,
             },
             showCellTypeMenu: false,
             initialCode: '',
@@ -124,6 +126,11 @@ export class PointerTable {
         });
       } else {
         pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
+        const isSingleCell =
+          tableDown.table.w === 1 &&
+          tableDown.table.h === 1 &&
+          !tableDown.table.show_name &&
+          !tableDown.table.show_columns;
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           aiAssistant: {
@@ -140,6 +147,7 @@ export class PointerTable {
               pos: { x: tableDown.table.x, y: tableDown.table.y },
               language: tableDown.table.language,
               lastModified: Number(tableDown.table.last_modified),
+              isSingleCell,
             },
             showCellTypeMenu: false,
             initialCode: '',

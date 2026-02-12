@@ -144,11 +144,11 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        // Set a code cell with a table name
+        // Use a formula that produces multi-cell output so it stays as DataTable (1x1 becomes CellValue::Code)
         gc.set_code_cell(
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
-            "=SUM(1, 2)".to_owned(),
+            "{1;2}".to_owned(), // 1x2 array output
             Some("MyCode".to_string()),
             None,
             false,
@@ -157,11 +157,11 @@ mod tests {
         let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();
         assert_eq!(dt.name(), "MyCode".to_string());
 
-        // Set a code cell with a table name
+        // Set a code cell with a table name - existing name should be preserved
         gc.set_code_cell(
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
-            "=SUM(1, 2)".to_owned(),
+            "{1;2}".to_owned(),
             Some("NameShouldNotChange".to_string()),
             None,
             false,
