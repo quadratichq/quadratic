@@ -785,6 +785,7 @@ impl GridController {
 
     /// Collect the operations to paste the clipboard cells
     /// For cell values, formats and borders, we just add to the data structure to avoid extra operations
+    /// Caller must pass a clone of clipboard.cells for this tile so we can adjust refs in place (avoids double-clone in multi-tile paste).
     #[allow(clippy::too_many_arguments)]
     fn get_clipboard_ops(
         &self,
@@ -794,6 +795,7 @@ impl GridController {
         formats: &mut SheetFormatUpdates,
         borders: &mut BordersUpdates,
         selection: &A1Selection,
+        cells: &mut CellValues,
         clipboard: &Clipboard,
         special: PasteSpecial,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
@@ -831,13 +833,11 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let mut cells = clipboard.cells.to_owned();
-
                 // Adjust CellValue::Code references and track positions for compute operations
                 let code_cell_positions = self.adjust_clipboard_code_cell_references(
                     start_pos.to_sheet_pos(selection.sheet_id),
                     clipboard,
-                    &mut cells,
+                    cells,
                 );
 
                 if !cells.is_empty() {
@@ -846,7 +846,7 @@ impl GridController {
                         start_pos.to_sheet_pos(selection.sheet_id),
                         cell_value_pos,
                         cell_values,
-                        cells,
+                        std::mem::take(cells),
                         delete_value,
                     )?;
                     ops.extend(cell_value_ops);
@@ -1047,7 +1047,7 @@ impl GridController {
         insert_at: Pos,
         end_pos: Pos,
         selection: &A1Selection,
-        mut clipboard: Clipboard,
+        clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut clipboard_ops = vec![];
@@ -1127,7 +1127,7 @@ impl GridController {
         let mut cell_values = CellValues::new(cell_value_width as u32, cell_value_height as u32);
         let mut formats = SheetFormatUpdates::default();
         let mut borders = BordersUpdates::default();
-        let source_columns = clipboard.cells.columns;
+        let source_columns = clipboard.cells.columns.clone();
 
         // Remove code tables if their anchor cell is within the paste area.
         // This applies to both pasting code tables and regular cell values.
@@ -1201,13 +1201,9 @@ impl GridController {
                     },
                 };
 
-                // restore the original columns for each pass to avoid replacing the replaced code cells
-                clipboard.cells.columns = source_columns.to_owned();
-
                 if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
-                    for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                        for (&cols_y, cell) in col {
-                            // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
+                    for (cols_x, col) in source_columns.iter().enumerate() {
+                        for (&cols_y, cell) in col.iter() {
                             if should_expand_data_table && let Some(sheet) = sheet {
                                 let new_x = tile_start_x + cols_x as i64;
                                 let new_y = tile_start_y + cols_y as i64;
@@ -1215,9 +1211,6 @@ impl GridController {
                                 let within_data_table =
                                     sheet.data_table_pos_that_contains(current_pos).is_some();
 
-                                // we're not within a data table
-                                // expand the data table to the right or bottom if the
-                                // cell value is touching the right or bottom edge
                                 if !within_data_table {
                                     GridController::grow_data_table(
                                         sheet,
@@ -1233,6 +1226,7 @@ impl GridController {
                     }
                 }
 
+                let mut cells = clipboard.cells.to_owned();
                 let (clipboard_op, code_ops) = self.get_clipboard_ops(
                     Pos::new(tile_start_x, tile_start_y),
                     Pos::new(tile_start_x - insert_at.x, tile_start_y - insert_at.y),
@@ -1240,6 +1234,7 @@ impl GridController {
                     &mut formats,
                     &mut borders,
                     selection,
+                    &mut cells,
                     &clipboard,
                     special,
                 )?;

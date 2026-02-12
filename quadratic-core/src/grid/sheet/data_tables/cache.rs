@@ -173,7 +173,8 @@ impl DataTablesCache {
 
             // For single-cell tables, no need to track empty values
             if new_rect.len() == 1 {
-                self.data_tables_empty.set_rect(x1, y1, Some(x2), Some(y2), None);
+                self.data_tables_empty
+                    .set_rect(x1, y1, Some(x2), Some(y2), None);
                 return;
             }
 
@@ -273,8 +274,7 @@ impl DataTablesCache {
         }
         // table is removed, set all to None
         else {
-            self.data_tables
-                .set_rect(x1, y1, Some(x2), Some(y2), None);
+            self.data_tables.set_rect(x1, y1, Some(x2), Some(y2), None);
 
             self.data_tables_empty
                 .set_rect(x1, y1, Some(x2), Some(y2), None);

@@ -36,12 +36,20 @@ impl GridController {
             );
         }
 
-        // Notify client about pending code operations before execution starts
-        if transaction
-            .operations
-            .iter()
-            .any(|op| matches!(op, Operation::ComputeCode { .. }))
-        {
+        // Notify client about pending code operations before execution starts.
+        // Skip when there are many ComputeCode ops (e.g. bulk formula recalc) to avoid
+        // O(n) iteration in notify_code_running_state; formulas don't need code-running UI.
+        const MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY: usize = 100;
+        let mut compute_code_count = 0usize;
+        for op in transaction.operations.iter() {
+            if matches!(op, Operation::ComputeCode { .. }) {
+                compute_code_count += 1;
+                if compute_code_count > MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY {
+                    break;
+                }
+            }
+        }
+        if compute_code_count > 0 && compute_code_count <= MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY {
             self.notify_code_running_state(transaction, None);
         }
 
