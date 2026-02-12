@@ -8,8 +8,7 @@ import { Connections } from '@/shared/components/connections/Connections';
 import { ConnectionSyncingStatusModal } from '@/shared/components/connections/ConnectionSyncingStatusModal';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
@@ -20,22 +19,16 @@ interface PendingSyncedConnection {
 }
 
 export function ConnectionsMenu() {
+  // State for the syncing status modal
+  const [pendingSyncedConnection, setPendingSyncedConnection] = useState<PendingSyncedConnection | null>(null);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
-
-  // State for the syncing status modal
-  const [pendingSyncedConnection, setPendingSyncedConnection] = useState<PendingSyncedConnection | null>(null);
 
   const {
     team: { uuid: teamUuid, sshPublicKey },
   } = useFileRouteLoaderData();
   const { connections, staticIps, isLoading } = useConnectionsFetcher();
-
-  // Show 'new' view if explicitly requested, or if user has no real connections (only demo or none)
-  const hasOnlyDemoConnections =
-    !isLoading && (connections.length === 0 || connections.every((c) => c.isDemo === true));
-  const initialView = showConnectionsMenu === 'new' || hasOnlyDemoConnections ? 'new' : 'list';
 
   // Shared logic for completing connection creation (opening AI panel, adding context pill)
   const completeConnectionCreation = useCallback(
@@ -98,6 +91,12 @@ export function ConnectionsMenu() {
     }
   }, [pendingSyncedConnection, completeConnectionCreation]);
 
+  const isOpen = showConnectionsMenu !== false;
+  const menuState = typeof showConnectionsMenu === 'object' ? showConnectionsMenu : undefined;
+  const initialView = menuState?.initialView ?? (showConnectionsMenu === true ? 'list' : undefined);
+  const initialConnectionType = menuState?.initialConnectionType;
+  const initialConnectionUuid = menuState?.initialConnectionUuid;
+
   return (
     <>
       <Dialog open={!!showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
@@ -112,7 +111,7 @@ export function ConnectionsMenu() {
             <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
           </DialogHeader>
           {/* Unmount it so we reset the state */}
-          {showConnectionsMenu && (
+          {isOpen && (
             <Connections
               connections={connections}
               connectionsAreLoading={isLoading}
@@ -121,11 +120,12 @@ export function ConnectionsMenu() {
               staticIps={staticIps}
               initialView={initialView}
               onConnectionCreated={onConnectionCreated}
+              initialConnectionType={initialConnectionType}
+              initialConnectionUuid={initialConnectionUuid}
             />
           )}
         </DialogContent>
       </Dialog>
-
       {/* Syncing status modal for newly created synced connections */}
       {pendingSyncedConnection && (
         <ConnectionSyncingStatusModal
