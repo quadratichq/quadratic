@@ -209,11 +209,19 @@ export const FillAndBorderFormatting = memo(
         setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells() && !isMultiRange && !isColumnRow);
       };
 
+      const onMergeCellsChanged = (sheetId: string) => {
+        if (sheetId === sheets.sheet.id) {
+          updateMergeState();
+        }
+      };
+
       updateMergeState();
       events.on('cursorPosition', updateMergeState);
+      events.on('mergeCells', onMergeCellsChanged);
 
       return () => {
         events.off('cursorPosition', updateMergeState);
+        events.off('mergeCells', onMergeCellsChanged);
       };
     }, []);
 

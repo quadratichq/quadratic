@@ -21,8 +21,10 @@ import { getFileLimitInfo, getFreeEditableFileLimit, getIsOnPaidPlan } from '../
 import { getFilePermissions } from '../../utils/permissions';
 import { getDecryptedTeam } from '../../utils/teams';
 
-// Status when checkout is in progress but webhook hasn't been received yet
-const INCOMPLETE_STATUS: SubscriptionStatus = 'INCOMPLETE';
+// Statuses that indicate the subscription may need to be synced with Stripe:
+// - INCOMPLETE: checkout in progress, webhook may be delayed
+// - INCOMPLETE_EXPIRED: previous attempt failed, user may have retried with a new subscription
+const NEEDS_SYNC_STATUSES: SubscriptionStatus[] = ['INCOMPLETE', 'INCOMPLETE_EXPIRED'];
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -42,8 +44,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
   // Update billing info to ensure we have the latest subscription status
-  // Do this if: 1) explicitly requested, or 2) status is INCOMPLETE (checkout in progress, webhook may be delayed)
-  const shouldUpdateBilling = req.query.updateBilling === 'true' || team.stripeSubscriptionStatus === INCOMPLETE_STATUS;
+  // Do this if: 1) explicitly requested, or 2) status indicates subscription may be stale
+  const shouldUpdateBilling =
+    req.query.updateBilling === 'true' ||
+    (team.stripeSubscriptionStatus !== null && NEEDS_SYNC_STATUSES.includes(team.stripeSubscriptionStatus));
 
   if (shouldUpdateBilling) {
     await updateBilling(team);
@@ -175,8 +179,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   // Get file limit info (includes editable file IDs and whether team is over limit)
   // For free teams, only the N most recently created files are editable
-  const isPaidPlan = await getIsOnPaidPlan(team);
-  const { editableFileIds, isOverLimit, totalFiles } = await getFileLimitInfo(team, isPaidPlan);
+  // Use dbTeam (re-fetched after potential updateBilling) to avoid stale billing data
+  const isPaidPlan = await getIsOnPaidPlan(dbTeam);
+  const { editableFileIds, isOverLimit, totalFiles } = await getFileLimitInfo(dbTeam, isPaidPlan);
 
   // Helper to apply edit restriction to file permissions
   const applyEditRestriction = (fileId: number, permissions: FilePermission[]): FilePermission[] => {

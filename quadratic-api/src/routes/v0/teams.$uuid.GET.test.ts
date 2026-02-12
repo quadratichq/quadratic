@@ -47,6 +47,14 @@ jest.mock('../../stripe/stripe', () => {
   const dbClient = jest.requireActual('../../dbClient').default;
   const logger = jest.requireActual('../../utils/logger').default;
 
+  // Subscription status priority (same as real implementation in stripe.ts)
+  const STATUS_PRIORITY = ['active', 'trialing', 'past_due', 'incomplete', 'unpaid', 'canceled', 'incomplete_expired', 'paused'];
+
+  const subscriptionsCancel = jest.fn().mockResolvedValue({});
+  (global as any).__mockSubscriptionsCancel = subscriptionsCancel;
+
+  const TERMINAL_STATUSES = ['canceled', 'incomplete_expired'];
+
   return {
     stripe: {
       customers: {
@@ -57,6 +65,7 @@ jest.mock('../../stripe/stripe', () => {
       },
       subscriptions: {
         update: jest.fn().mockResolvedValue({}),
+        cancel: subscriptionsCancel,
       },
     },
     updateBilling: jest.fn().mockImplementation(async (team) => {
@@ -75,12 +84,10 @@ jest.mock('../../stripe/stripe', () => {
         return;
       }
 
-      if (customer.subscriptions && customer.subscriptions.data.length === 1) {
-        // For this test, we're only testing the zero subscription case
-        // so this branch doesn't need full implementation
-        throw new Error('Test does not handle single subscription case');
-      } else if (customer.subscriptions && customer.subscriptions.data.length === 0) {
-        // if we have zero subscriptions, update the team
+      const subscriptions = customer.subscriptions?.data ?? [];
+
+      if (subscriptions.length === 0) {
+        // No subscriptions — clear subscription data
         await dbClient.team.update({
           where: { id: team.id },
           data: {
@@ -90,11 +97,34 @@ jest.mock('../../stripe/stripe', () => {
             stripeSubscriptionLastUpdated: null,
           },
         });
-      } else {
-        // If we have more than one subscription, log an error
-        logger.error('Unexpected Error: Unhandled number of subscriptions', {
-          subscriptions: customer.subscriptions?.data,
-        });
+        return;
+      }
+
+      // Select the best subscription (prefer active, then by priority)
+      const sorted = [...subscriptions].sort((a, b) => {
+        const pA = STATUS_PRIORITY.indexOf(a.status);
+        const pB = STATUS_PRIORITY.indexOf(b.status);
+        if (pA !== pB) return pA - pB;
+        return b.created - a.created;
+      });
+      const subscription = sorted[0];
+
+      await dbClient.team.update({
+        where: { id: team.id },
+        data: {
+          stripeSubscriptionId: subscription.id,
+          stripeSubscriptionStatus: subscription.status.toUpperCase(),
+          stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          stripeSubscriptionLastUpdated: new Date(),
+        },
+      });
+
+      // Cancel non-selected stale subscriptions (same as real implementation)
+      const staleSubscriptions = subscriptions.filter(
+        (s: any) => s.id !== subscription.id && !TERMINAL_STATUSES.includes(s.status)
+      );
+      for (const staleSub of staleSubscriptions) {
+        await subscriptionsCancel(staleSub.id);
       }
     }),
     updateCustomer: jest.fn().mockImplementation(async () => {}),
@@ -103,9 +133,10 @@ jest.mock('../../stripe/stripe', () => {
   };
 });
 
-// Access mock from global scope - it's set up in the jest.mock factory above
-// The factory runs early due to hoisting, so this will be available when tests run
+// Access mocks from global scope - they're set up in the jest.mock factory above
+// The factory runs early due to hoisting, so these will be available when tests run
 const mockCustomersRetrieve = (global as any).__mockCustomersRetrieve as jest.Mock;
+const mockSubscriptionsCancel = (global as any).__mockSubscriptionsCancel as jest.Mock;
 
 beforeEach(async () => {
   const user_1 = await createUser({ auth0Id: 'team_1_owner' });
@@ -139,6 +170,7 @@ beforeEach(async () => {
 
   // Reset mocks
   mockCustomersRetrieve.mockClear();
+  mockSubscriptionsCancel.mockClear();
 });
 
 afterEach(clearDb);
@@ -246,6 +278,156 @@ describe('GET /v0/teams/:uuid', () => {
 
       // updateBilling should return early if no stripeCustomerId, so Stripe shouldn't be called
       expect(mockCustomersRetrieve).not.toHaveBeenCalled();
+    });
+
+    it('auto-syncs billing when team status is INCOMPLETE_EXPIRED', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+
+      // Set team to INCOMPLETE_EXPIRED with a Stripe customer
+      await dbClient.team.update({
+        where: { id: team.id },
+        data: {
+          stripeCustomerId: 'cus_test123',
+          stripeSubscriptionStatus: 'INCOMPLETE_EXPIRED',
+          stripeSubscriptionId: 'sub_old',
+        },
+      });
+
+      // Mock: Stripe returns a new active subscription
+      mockCustomersRetrieve.mockResolvedValue({
+        id: 'cus_test123',
+        deleted: false,
+        subscriptions: {
+          data: [
+            {
+              id: 'sub_new_active',
+              status: 'active',
+              current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              created: Math.floor(Date.now() / 1000),
+            },
+          ],
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.billing.status).toBe('ACTIVE');
+        });
+
+      // Should have synced without explicit updateBilling param
+      expect(mockCustomersRetrieve).toHaveBeenCalledTimes(1);
+    });
+
+    it('selects the active subscription when multiple subscriptions exist', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+
+      await dbClient.team.update({
+        where: { id: team.id },
+        data: {
+          stripeCustomerId: 'cus_test123',
+          stripeSubscriptionStatus: 'INCOMPLETE',
+          stripeSubscriptionId: 'sub_incomplete',
+        },
+      });
+
+      // Mock: Stripe returns both an incomplete and an active subscription
+      mockCustomersRetrieve.mockResolvedValue({
+        id: 'cus_test123',
+        deleted: false,
+        subscriptions: {
+          data: [
+            {
+              id: 'sub_incomplete',
+              status: 'incomplete',
+              current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              created: Math.floor(Date.now() / 1000) - 3600,
+            },
+            {
+              id: 'sub_active',
+              status: 'active',
+              current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              created: Math.floor(Date.now() / 1000),
+            },
+          ],
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?updateBilling=true`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.billing.status).toBe('ACTIVE');
+        });
+
+      // Verify the active subscription ID was stored
+      const updatedTeam = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+      expect(updatedTeam.stripeSubscriptionId).toBe('sub_active');
+    });
+
+    it('cancels non-selected stale subscriptions during billing sync', async () => {
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: { uuid: '00000000-0000-4000-8000-000000000001' },
+      });
+
+      await dbClient.team.update({
+        where: { id: team.id },
+        data: {
+          stripeCustomerId: 'cus_test123',
+          stripeSubscriptionStatus: 'INCOMPLETE',
+          stripeSubscriptionId: 'sub_incomplete_1',
+        },
+      });
+
+      // Mock: Stripe returns active + incomplete + incomplete_expired subscriptions
+      mockCustomersRetrieve.mockResolvedValue({
+        id: 'cus_test123',
+        deleted: false,
+        subscriptions: {
+          data: [
+            {
+              id: 'sub_active',
+              status: 'active',
+              current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              created: Math.floor(Date.now() / 1000),
+            },
+            {
+              id: 'sub_incomplete_1',
+              status: 'incomplete',
+              current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              created: Math.floor(Date.now() / 1000) - 3600,
+            },
+            {
+              id: 'sub_expired',
+              status: 'incomplete_expired',
+              current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+              created: Math.floor(Date.now() / 1000) - 7200,
+            },
+          ],
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001?updateBilling=true`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.billing.status).toBe('ACTIVE');
+        });
+
+      // The incomplete subscription should have been canceled (not terminal)
+      // The incomplete_expired subscription should NOT have been canceled (already terminal)
+      expect(mockSubscriptionsCancel).toHaveBeenCalledTimes(1);
+      expect(mockSubscriptionsCancel).toHaveBeenCalledWith('sub_incomplete_1');
     });
 
     it('returns team settings including aiRules', async () => {

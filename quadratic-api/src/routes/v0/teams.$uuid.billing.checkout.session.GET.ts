@@ -6,7 +6,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { createCheckoutSession, createCustomer, getProPriceId, getBusinessPriceId } from '../../stripe/stripe';
+import { cancelIncompleteSubscriptions, createCheckoutSession, createCustomer, getProPriceId, getBusinessPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { getIsOnPaidPlan } from '../../utils/billing';
@@ -59,6 +59,10 @@ async function handler(
 
     team.stripeCustomerId = stripeCustomer.id;
   }
+
+  // Cancel any incomplete subscriptions from previous abandoned checkout attempts.
+  // This prevents duplicate subscriptions when users retry checkout.
+  await cancelIncompleteSubscriptions(team.stripeCustomerId);
 
   // Get the price ID for the selected plan
   let priceId: string;
