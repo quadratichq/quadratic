@@ -75,17 +75,17 @@ impl GridController {
         };
 
         // Apply template properties if provided, otherwise use defaults
-        let (show_name, show_columns, header_is_first_row, chart_output) =
-            if let Some(t) = template {
-                (
-                    t.show_name,
-                    t.show_columns,
-                    t.header_is_first_row,
-                    t.chart_output,
-                )
-            } else {
-                (None, None, false, None)
-            };
+        let (show_name, show_columns, header_is_first_row, chart_output) = if let Some(t) = template
+        {
+            (
+                t.show_name,
+                t.show_columns,
+                t.header_is_first_row,
+                t.chart_output,
+            )
+        } else {
+            (None, None, false, None)
+        };
 
         let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
@@ -527,5 +527,68 @@ mod test {
         let result = sheet.data_table_at(&pos).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
+    }
+
+    #[test]
+    fn test_formula_unbounded_column_row_trigger() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set initial values in column B
+        gc.set_cell_value(pos![sheet_id!B1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "20".into(), None, false);
+
+        // Create formula that sums entire column B (formula at A1, outside column B)
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(B:B)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial result
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A1]),
+            Some(CellValue::Number(30.into()))
+        );
+
+        // Add a new value to column B - formula should recalculate
+        gc.set_cell_value(pos![sheet_id!B3], "15".into(), None, false);
+
+        // Verify formula was triggered and recalculated
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A1]),
+            Some(CellValue::Number(45.into()))
+        );
+
+        // Test unbounded row reference (formula at A5, outside row 4)
+        gc.set_cell_value(pos![sheet_id!A4], "5".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B4], "10".into(), None, false);
+
+        gc.set_code_cell(
+            pos![sheet_id!A5],
+            CodeCellLanguage::Formula,
+            "SUM(4:4)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial row sum result
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Number(15.into())) // 5 + 10
+        );
+
+        // Add a new value to row 4 - formula should recalculate
+        gc.set_cell_value(pos![sheet_id!C4], "7".into(), None, false);
+
+        // Verify formula was triggered
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Number(22.into())) // 5 + 10 + 7
+        );
     }
 }

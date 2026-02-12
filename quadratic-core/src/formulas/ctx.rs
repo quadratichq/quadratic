@@ -177,6 +177,12 @@ impl<'ctx> Ctx<'ctx> {
         span: Span,
         ignore_formatting: bool,
     ) -> CodeResult<Spanned<SheetRect>> {
+        // Add the ORIGINAL cell reference (with unbounded coordinates preserved)
+        // to cells_accessed for proper dependency tracking
+        self.cells_accessed
+            .borrow_mut()
+            .add(range.sheet_id, range.cells.clone());
+
         let sheet = self
             .grid_controller
             .try_sheet(range.sheet_id)
@@ -246,8 +252,6 @@ impl<'ctx> Ctx<'ctx> {
             return Err(RunErrorMsg::BadCellReference.with_span(span));
         };
         let bounds = sheet.bounds(true);
-
-        self.cells_accessed.borrow_mut().add_sheet_rect(rect);
 
         let mut bounded_rect = rect;
 

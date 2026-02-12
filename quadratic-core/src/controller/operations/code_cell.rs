@@ -412,6 +412,8 @@ impl GridController {
         sheet_pos: &SheetPos,
         set: &HashSet<SheetPos>,
     ) -> Vec<SheetPos> {
+        use crate::a1::UNBOUNDED;
+
         let Some(code_run) = self.code_run_at(sheet_pos) else {
             return vec![];
         };
@@ -428,6 +430,11 @@ impl GridController {
                 if set.contains(&parent_pos) {
                     result.push(parent_pos);
                 }
+            }
+            // Skip iteration for unbounded rects (would be infinite loop)
+            // CellValue::Code cells are rare; most code is stored as DataTables
+            if rect.max.x == UNBOUNDED || rect.max.y == UNBOUNDED {
+                continue;
             }
             for y in rect.y_range() {
                 for x in rect.x_range() {
@@ -688,6 +695,8 @@ mod test {
             let sheet_id_2 = gc.sheet_ids()[1];
             let operations = gc.rerun_all_code_cells_operations();
             assert_eq!(operations.len(), 3);
+
+            // (1,1) on sheet_id must come first since both other formulas depend on it
             assert_eq!(
                 operations[0],
                 Operation::ComputeCode {
@@ -698,25 +707,31 @@ mod test {
                     },
                 }
             );
-            assert_eq!(
+
+            // (2,2) on sheet_id and (1,1) on sheet_id_2 can be in either order
+            // since they don't depend on each other
+            let op_2_2 = Operation::ComputeCode {
+                sheet_pos: SheetPos {
+                    x: 2,
+                    y: 2,
+                    sheet_id,
+                },
+            };
+            let op_1_1_sheet2 = Operation::ComputeCode {
+                sheet_pos: SheetPos {
+                    x: 1,
+                    y: 1,
+                    sheet_id: sheet_id_2,
+                },
+            };
+            assert!(
+                (operations[1] == op_2_2 && operations[2] == op_1_1_sheet2)
+                    || (operations[1] == op_1_1_sheet2 && operations[2] == op_2_2),
+                "Expected operations[1] and operations[2] to be {:?} and {:?} in either order, but got {:?} and {:?}",
+                op_2_2,
+                op_1_1_sheet2,
                 operations[1],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id,
-                    },
-                }
-            );
-            assert_eq!(
-                operations[2],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id: sheet_id_2,
-                    },
-                }
+                operations[2]
             );
         };
 

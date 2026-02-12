@@ -701,7 +701,20 @@ export class Tables extends Container<Table> {
   };
 
   hasCodeCellInCurrentSelection = () => {
-    return this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
+    // Check DataTables (multi-cell code outputs)
+    if (this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context)) {
+      return true;
+    }
+
+    // Check single-cell code cells (CellValue::Code)
+    for (const key in this.singleCellTables) {
+      const [x, y] = key.split(',').map(Number);
+      if (sheets.sheet.cursor.contains(x, y)) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   //#endregion
