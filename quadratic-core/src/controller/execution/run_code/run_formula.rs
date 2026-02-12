@@ -148,7 +148,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
-        Array, ArraySize, CellValue, Pos, SheetPos, Value, assert_code_language,
+        Array, ArraySize, CellValue, Pos, RunErrorMsg, SheetPos, Value, assert_code_language,
         controller::{
             GridController,
             active_transactions::pending_transaction::PendingTransaction,
@@ -589,6 +589,86 @@ mod test {
         assert_eq!(
             gc.sheet(sheet_id).display_value(pos![A5]),
             Some(CellValue::Number(22.into())) // 5 + 10 + 7
+        );
+    }
+
+    #[test]
+    fn test_self_referential_formula_does_not_hang() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set =SUM(A1) at A1 - this references itself
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(A1)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should complete (not hang) and produce an error
+        let sheet = gc.sheet(sheet_id);
+        let display = sheet.display_value(pos![A1]);
+
+        // Should have a value (error value, not blank from hanging)
+        assert!(
+            display.is_some(),
+            "Formula should produce a value, not hang"
+        );
+
+        // Verify the error is CircularReference
+        if let Some(CellValue::Error(err)) = display {
+            assert_eq!(err.msg, RunErrorMsg::CircularReference);
+        } else {
+            panic!("Expected CircularReference error, got {:?}", display);
+        }
+
+        // Verify subsequent operations still work
+        gc.set_cell_value(pos![sheet_id!B1], "test".into(), None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![B1]),
+            Some(CellValue::Text("test".into()))
+        );
+    }
+
+    #[test]
+    fn test_self_referential_range_formula_does_not_hang() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set =SUM(A:A) at A1 - this references entire column A including A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(A:A)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should complete (not hang) and produce an error
+        let sheet = gc.sheet(sheet_id);
+        let display = sheet.display_value(pos![A1]);
+
+        // Should have a value (error value, not blank from hanging)
+        assert!(
+            display.is_some(),
+            "Formula should produce a value, not hang"
+        );
+
+        // Verify the error is CircularReference
+        if let Some(CellValue::Error(err)) = display {
+            assert_eq!(err.msg, RunErrorMsg::CircularReference);
+        } else {
+            panic!("Expected CircularReference error, got {:?}", display);
+        }
+
+        // Verify subsequent operations still work
+        gc.set_cell_value(pos![sheet_id!B1], "test".into(), None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![B1]),
+            Some(CellValue::Text("test".into()))
         );
     }
 }
