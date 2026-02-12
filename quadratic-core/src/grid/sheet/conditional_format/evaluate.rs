@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     CellValue, Pos, Rect, RefAdjust, SheetPos, Value,
-    a1::{A1Context, A1Selection},
+    a1::{A1Context, A1Selection, CellRefRange},
     color::contrasting_text_color_hex,
     controller::GridController,
     formulas::{Ctx, adjust_references, ast::Formula, parse_formula},
@@ -47,6 +47,28 @@ impl GridController {
         }
     }
 
+    /// Returns the formula anchor: the top-left of the first range (min col, min row).
+    /// For denormalized ranges (e.g. B1:A10) this is A1, so "=A1>5" is interpreted consistently.
+    fn formula_anchor_from_selection(
+        selection: &A1Selection,
+        a1_context: &A1Context,
+    ) -> Option<Pos> {
+        selection.ranges.first().and_then(|range| match range {
+            CellRefRange::Sheet { range } => {
+                let x = range.start.col().min(range.end.col());
+                let y = range.start.row().min(range.end.row());
+                if x != crate::a1::UNBOUNDED && y != crate::a1::UNBOUNDED {
+                    Some(Pos { x, y })
+                } else {
+                    None
+                }
+            }
+            CellRefRange::Table { .. } => {
+                ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context)
+            }
+        })
+    }
+
     /// Evaluates a formula-based conditional format rule at a specific cell position.
     /// Translates the formula references relative to the anchor (top-left of first range).
     fn evaluate_formula_rule(
@@ -56,12 +78,8 @@ impl GridController {
         sheet_pos: SheetPos,
         a1_context: &A1Context,
     ) -> bool {
-        // Get the anchor from the first cell of the first range in the selection.
-        // The formula is defined relative to this anchor, and all ranges in the
-        // selection should use the same anchor for consistent translation.
-        // We use get_first_cell_from_selection to properly handle table column
-        // selections where the first data cell may differ from the range's min bounds.
-        let anchor = ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context)
+        let anchor = Self::formula_anchor_from_selection(selection, a1_context)
+            .or_else(|| ConditionalFormatRule::get_first_cell_from_selection(selection, a1_context))
             .unwrap_or(selection.cursor);
 
         // Calculate offset from anchor to current position
@@ -577,7 +595,11 @@ impl GridController {
                 for cf in &formats_with_fills {
                     if cf.selection.contains_pos(pos, a1_context) {
                         // Evaluate the conditional format (use effective pos for merged cells)
-                        if self.evaluate_conditional_format_rule(cf, effective_sheet_pos, a1_context) {
+                        if self.evaluate_conditional_format_rule(
+                            cf,
+                            effective_sheet_pos,
+                            a1_context,
+                        ) {
                             // Get the fill color based on format type
                             let fill_color = match &cf.config {
                                 ConditionalFormatConfig::Formula { style, .. } => {
@@ -658,7 +680,9 @@ mod tests {
         controller::GridController,
         formulas::parse_formula,
         grid::{
-            sheet::conditional_format::{ConditionalFormat, ConditionalFormatStyle},
+            sheet::conditional_format::{
+                ConditionalFormat, ConditionalFormatRule, ConditionalFormatStyle,
+            },
             sort::SortDirection,
         },
         test_util::*,
@@ -692,6 +716,32 @@ mod tests {
             selection: a1_selection,
             config: ConditionalFormatConfig::Formula { rule, style },
             apply_to_blank,
+        }
+    }
+
+    /// Creates a conditional format with a table column reference selection
+    /// (e.g., "test_table[Column 1]"). Uses a1_context for parsing table refs.
+    fn create_test_conditional_format_table_ref(
+        gc: &GridController,
+        selection: &str,
+        formula: &str,
+        style: ConditionalFormatStyle,
+    ) -> ConditionalFormat {
+        let sheet_id = gc.sheet_ids()[0];
+        let a1_context = gc.a1_context();
+        let a1_selection =
+            A1Selection::parse(selection, sheet_id, a1_context, None).expect("parse table ref");
+        let anchor =
+            ConditionalFormatRule::get_first_cell_from_selection(&a1_selection, a1_context)
+                .unwrap_or(a1_selection.cursor);
+        let pos = anchor.to_sheet_pos(sheet_id);
+        let rule = parse_formula(formula, a1_context, pos).unwrap();
+
+        ConditionalFormat {
+            id: Uuid::new_v4(),
+            selection: a1_selection,
+            config: ConditionalFormatConfig::Formula { rule, style },
+            apply_to_blank: None,
         }
     }
 
@@ -864,7 +914,11 @@ mod tests {
         let pos_b1 = crate::Pos::test_a1("B1");
 
         gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
-        gc.merge_cells(A1Selection::test_a1_sheet_id("A1:B1", sheet_id), None, false);
+        gc.merge_cells(
+            A1Selection::test_a1_sheet_id("A1:B1", sheet_id),
+            None,
+            false,
+        );
 
         let cf = create_test_conditional_format(
             &gc,
@@ -1088,6 +1142,67 @@ mod tests {
             !fills.iter().any(|(rect, _)| rect.contains(pos_a2)),
             "A2 should NOT have fill"
         );
+    }
+
+    #[test]
+    fn test_conditional_format_denormalized_range() {
+        // Conditional format with denormalized range B1:A10 (same rect as A1:B10).
+        // Formula translation anchor is B1 (first range start), so at A1 we evaluate A1>5.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos_a1 = crate::Pos::test_a1("A1");
+        let pos_a2 = crate::Pos::test_a1("A2");
+        let pos_b1 = crate::Pos::test_a1("B1");
+        let pos_b2 = crate::Pos::test_a1("B2");
+        let pos_c1 = crate::Pos::test_a1("C1");
+
+        gc.set_cell_value(pos_a1.to_sheet_pos(sheet_id), "10".to_string(), None, false);
+        gc.set_cell_value(pos_a2.to_sheet_pos(sheet_id), "3".to_string(), None, false);
+        gc.set_cell_value(pos_b1.to_sheet_pos(sheet_id), "8".to_string(), None, false);
+        gc.set_cell_value(pos_b2.to_sheet_pos(sheet_id), "2".to_string(), None, false);
+        gc.set_cell_value(pos_c1.to_sheet_pos(sheet_id), "99".to_string(), None, false);
+
+        let cf = create_test_conditional_format(
+            &gc,
+            "B1:A10",
+            "=A1>5",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
+
+        let a1_context = gc.a1_context();
+        assert!(
+            cf.selection.contains_pos(pos_a1, a1_context),
+            "Selection B1:A10 should contain A1 (denormalized range)"
+        );
+
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        // Cells inside the rect (A1:B10) with value >5 should have style
+        let style_a1 =
+            gc.get_conditional_format_style(pos_a1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a1.is_some(), "A1 (10>5) inside B1:A10 should have style");
+
+        let style_b1 =
+            gc.get_conditional_format_style(pos_b1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_b1.is_some(), "B1 (8>5) inside B1:A10 should have style");
+
+        // Cells inside the rect with value <=5 should not have style
+        let style_a2 =
+            gc.get_conditional_format_style(pos_a2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_a2.is_none(), "A2 (3>5 false) should not have style");
+
+        let style_b2 =
+            gc.get_conditional_format_style(pos_b2.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_b2.is_none(), "B2 (2>5 false) should not have style");
+
+        // Cell outside the range (C1) should not have style even if value >5
+        let style_c1 =
+            gc.get_conditional_format_style(pos_c1.to_sheet_pos(sheet_id), gc.a1_context());
+        assert!(style_c1.is_none(), "C1 is outside B1:A10, should not have style");
     }
 
     #[test]
@@ -2454,5 +2569,183 @@ mod tests {
             style_b4_ascending.is_some(),
             "B4 (displaying 1000) should have conditional format after ascending sort"
         );
+    }
+
+    /// Helper to assert conditional format is applied correctly to table data cells.
+    /// Values: B2=10 (>5), B3=3 (<5), B4=7 (>5). Expects B2 and B4 styled, B3 not.
+    fn assert_conditional_format_colors_table_cells(
+        gc: &GridController,
+        sheet_id: crate::grid::SheetId,
+        selection_type: &str,
+    ) {
+        let rect = Rect::new_span(pos![B2], pos![B4]);
+        let mut cells = gc.sheet(sheet_id).get_render_cells(rect, gc.a1_context());
+        gc.apply_conditional_formatting_to_cells(sheet_id, rect, &mut cells);
+
+        let cell_b2 = cells.iter().find(|c| c.x == 2 && c.y == 2);
+        let cell_b3 = cells.iter().find(|c| c.x == 2 && c.y == 3);
+        let cell_b4 = cells.iter().find(|c| c.x == 2 && c.y == 4);
+
+        assert!(
+            cell_b2.is_some(),
+            "[{}] Render cells should include B2",
+            selection_type
+        );
+        assert!(
+            cell_b2.unwrap().bold == Some(true),
+            "[{}] B2 (10>5) should have conditional format bold",
+            selection_type
+        );
+
+        assert!(
+            cell_b3.is_some(),
+            "[{}] Render cells should include B3",
+            selection_type
+        );
+        assert!(
+            cell_b3.unwrap().bold != Some(true),
+            "[{}] B3 (3<5) should NOT have conditional format",
+            selection_type
+        );
+
+        assert!(
+            cell_b4.is_some(),
+            "[{}] Render cells should include B4",
+            selection_type
+        );
+        assert!(
+            cell_b4.unwrap().bold == Some(true),
+            "[{}] B4 (7>5) should have conditional format bold",
+            selection_type
+        );
+
+        let fills = gc.get_conditional_format_fills(sheet_id, rect, gc.a1_context());
+        assert!(
+            fills.iter().any(|(r, _)| r.contains(pos![B2])),
+            "[{}] B2 should have fill",
+            selection_type
+        );
+        assert!(
+            fills.iter().any(|(r, _)| r.contains(pos![B4])),
+            "[{}] B4 should have fill",
+            selection_type
+        );
+        assert!(
+            !fills.iter().any(|(r, _)| r.contains(pos![B3])),
+            "[{}] B3 should NOT have fill",
+            selection_type
+        );
+    }
+
+    /// Tests that conditional formatting works on table data with an A1 range selection
+    /// (e.g., "B2:B4") - no table refs. Both styles and fills should color cells properly.
+    #[test]
+    fn test_conditional_format_on_table_data_a1_selection() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let table_pos = pos![B2];
+        test_create_data_table_no_ui(&mut gc, sheet_id, table_pos, 1, 3);
+
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y,
+                sheet_id,
+            },
+            "10".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "3".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 2,
+                sheet_id,
+            },
+            "7".to_string(),
+            None,
+            false,
+        );
+
+        let cf = create_test_conditional_format(
+            &gc,
+            "B2:B4",
+            "=B2>5",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                fill_color: Some("green".to_string()),
+                ..Default::default()
+            },
+        );
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        assert_conditional_format_colors_table_cells(&gc, sheet_id, "A1 selection");
+    }
+
+    /// Tests that conditional formatting works on table data with a table column ref
+    /// selection (e.g., "test_table[Column 1]"). Both styles and fills should color cells properly.
+    #[test]
+    fn test_conditional_format_on_table_data_table_ref_selection() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let table_pos = pos![B2];
+        test_create_data_table_no_ui(&mut gc, sheet_id, table_pos, 1, 3);
+
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y,
+                sheet_id,
+            },
+            "10".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 1,
+                sheet_id,
+            },
+            "3".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            crate::SheetPos {
+                x: table_pos.x,
+                y: table_pos.y + 2,
+                sheet_id,
+            },
+            "7".to_string(),
+            None,
+            false,
+        );
+
+        let cf = create_test_conditional_format_table_ref(
+            &gc,
+            "test_table[Column 1]",
+            "=B2>5",
+            ConditionalFormatStyle {
+                bold: Some(true),
+                fill_color: Some("green".to_string()),
+                ..Default::default()
+            },
+        );
+        gc.sheet_mut(sheet_id).conditional_formats.set(cf, sheet_id);
+
+        assert_conditional_format_colors_table_cells(&gc, sheet_id, "table ref selection");
     }
 }

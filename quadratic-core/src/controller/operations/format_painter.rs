@@ -1,4 +1,5 @@
 use crate::Pos;
+use crate::Rect;
 use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::controller::operations::operation::Operation;
@@ -25,9 +26,9 @@ impl GridController {
         let source_sheet = self
             .try_sheet(source_selection.sheet_id)
             .ok_or_else(|| anyhow::anyhow!("Source sheet not found"))?;
-        if self.try_sheet(target_selection.sheet_id).is_none() {
-            anyhow::bail!("Target sheet not found");
-        }
+        let target_sheet = self
+            .try_sheet(target_selection.sheet_id)
+            .ok_or_else(|| anyhow::anyhow!("Target sheet not found"))?;
 
         // Get the source rect (finite bounds)
         let source_rect = source_selection.largest_rect_finite(self.a1_context());
@@ -47,13 +48,31 @@ impl GridController {
         // Get borders from source
         let source_borders = source_sheet.borders.to_clipboard(source_selection);
 
-        // Get the target rect
-        let target_rect = target_selection.largest_rect_finite(self.a1_context());
-        let target_width = target_rect.width();
-        let target_height = target_rect.height();
+        // Get the target rect. When the user clicks on a cell within a merged block,
+        // expand to the full merged rect so formatting is applied to all cells in the merge.
+        let base_target_rect = target_selection.largest_rect_finite(self.a1_context());
+        let mut target_rect = target_sheet
+            .merge_cells
+            .get_merge_cell_rect(target_selection.cursor)
+            .map_or(base_target_rect, |merge_rect| {
+                base_target_rect.union(&merge_rect)
+            });
+        let mut target_width = target_rect.width();
+        let mut target_height = target_rect.height();
 
         if target_width == 0 || target_height == 0 {
             return Ok(ops);
+        }
+
+        // When painting from a range to a single cell (or smaller target), apply the full
+        // source range at the target anchor so the output matches the source size.
+        if target_width < source_width || target_height < source_height {
+            let w = target_width.max(source_width);
+            let h = target_height.max(source_height);
+            target_rect =
+                Rect::from_numbers(target_rect.min.x, target_rect.min.y, w as i64, h as i64);
+            target_width = w;
+            target_height = h;
         }
 
         // Create tiled formats for the target
@@ -365,6 +384,222 @@ mod tests {
         // Apply format painter should succeed even with no source formatting
         let result = gc.apply_format_painter(&source_selection, &target_selection, None, false);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_painter_merged_cells_applies_to_entire_merge() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge A1:B2
+        gc.merge_cells(A1Selection::test_a1("A1:B2"), None, false);
+
+        // Set up source formatting at C1
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.formats.bold.set(Pos { x: 3, y: 1 }, Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 3, y: 1 }, Some("red".to_string()));
+
+        // Simulate user clicking on B2 within the merged A1:B2 block.
+        // Selection is just the clicked cell (B2), cursor at B2.
+        let target_selection = A1Selection::test_a1("B2");
+
+        let source_selection = A1Selection::test_a1("C1");
+
+        // Apply format painter - should apply to entire merge (A1:B2)
+        gc.apply_format_painter(&source_selection, &target_selection, None, false)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Both A1 and B2 (entire merged block) should have the format
+        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 1 }), Some(true));
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 1, y: 1 }),
+            Some("red".to_string())
+        );
+        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 2 }), Some(true));
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 2, y: 2 }),
+            Some("red".to_string())
+        );
+    }
+
+    #[test]
+    fn test_format_painter_range_to_single_cell_outputs_full_range() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up 2x2 source formatting at A1:B2
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.formats.bold.set(Pos { x: 1, y: 1 }, Some(true));
+        sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 1, y: 2 }, Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 2, y: 2 }, Some("green".to_string()));
+
+        // Paint from range A1:B2 to single cell C3
+        let source_selection = A1Selection::test_a1("A1:B2");
+        let target_selection = A1Selection::test_a1("C3");
+
+        gc.apply_format_painter(&source_selection, &target_selection, None, false)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Entire 2x2 block C3:D4 should get the source pattern (same as A1:B2)
+        assert_eq!(sheet.formats.bold.get(Pos { x: 3, y: 3 }), Some(true));
+        assert_eq!(sheet.formats.italic.get(Pos { x: 4, y: 3 }), Some(true));
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 3, y: 4 }),
+            Some("blue".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 4, y: 4 }),
+            Some("green".to_string())
+        );
+    }
+
+    #[test]
+    fn test_format_painter_single_cell_to_3x3_merge_non_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge A1:C3 (3x3 block)
+        gc.merge_cells(A1Selection::test_a1("A1:C3"), None, false);
+
+        // Set up source formatting at E1 (outside the merge)
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.formats.bold.set(Pos { x: 5, y: 1 }, Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 5, y: 1 }, Some("red".to_string()));
+
+        // Target: click on B2 (non-anchor cell within the merged A1:C3)
+        let source_selection = A1Selection::test_a1("E1");
+        let target_selection = A1Selection::test_a1("B2");
+
+        gc.apply_format_painter(&source_selection, &target_selection, None, false)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // All 9 cells in the 3x3 merge should have the format
+        for y in 1..=3 {
+            for x in 1..=3 {
+                let pos = Pos { x, y };
+                assert_eq!(
+                    sheet.formats.bold.get(pos),
+                    Some(true),
+                    "bold missing at ({x}, {y})"
+                );
+                assert_eq!(
+                    sheet.formats.fill_color.get(pos),
+                    Some("red".to_string()),
+                    "fill_color missing at ({x}, {y})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_format_painter_range_to_3x3_merge_non_anchor() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Merge A1:C3 (3x3 block)
+        gc.merge_cells(A1Selection::test_a1("A1:C3"), None, false);
+
+        // Set up 2x2 source formatting at E1:F2 (outside the merge)
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.formats.bold.set(Pos { x: 5, y: 1 }, Some(true));
+        sheet.formats.italic.set(Pos { x: 6, y: 1 }, Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 5, y: 2 }, Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 6, y: 2 }, Some("green".to_string()));
+
+        // Target: click on C3 (bottom-right non-anchor cell within the merged A1:C3)
+        let source_selection = A1Selection::test_a1("E1:F2");
+        let target_selection = A1Selection::test_a1("C3");
+
+        gc.apply_format_painter(&source_selection, &target_selection, None, false)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // The 2x2 pattern should tile across the 3x3 merge:
+        // Source pattern (relative positions):
+        //   (0,0)=bold   (1,0)=italic
+        //   (0,1)=blue   (1,1)=green
+        //
+        // Tiled onto target A1:C3 (3x3):
+        //   A1=bold   B1=italic  C1=bold   (tile wraps)
+        //   A2=blue   B2=green   C2=blue
+        //   A3=bold   B3=italic  C3=bold   (tile wraps vertically)
+
+        // Row 1: bold, italic, bold (tiled)
+        assert_eq!(
+            sheet.formats.bold.get(Pos { x: 1, y: 1 }),
+            Some(true),
+            "A1 should be bold"
+        );
+        assert_eq!(
+            sheet.formats.italic.get(Pos { x: 2, y: 1 }),
+            Some(true),
+            "B1 should be italic"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(Pos { x: 3, y: 1 }),
+            Some(true),
+            "C1 should be bold (tiled)"
+        );
+
+        // Row 2: blue, green, blue (tiled)
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 1, y: 2 }),
+            Some("blue".to_string()),
+            "A2 should be blue"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 2, y: 2 }),
+            Some("green".to_string()),
+            "B2 should be green"
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(Pos { x: 3, y: 2 }),
+            Some("blue".to_string()),
+            "C2 should be blue (tiled)"
+        );
+
+        // Row 3: bold, italic, bold (tiled vertically)
+        assert_eq!(
+            sheet.formats.bold.get(Pos { x: 1, y: 3 }),
+            Some(true),
+            "A3 should be bold (vertical tile)"
+        );
+        assert_eq!(
+            sheet.formats.italic.get(Pos { x: 2, y: 3 }),
+            Some(true),
+            "B3 should be italic (vertical tile)"
+        );
+        assert_eq!(
+            sheet.formats.bold.get(Pos { x: 3, y: 3 }),
+            Some(true),
+            "C3 should be bold (tiled both)"
+        );
     }
 
     #[test]

@@ -136,7 +136,7 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
     case AITool.SetBorders:
       return <SetBorders toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
     case AITool.MergeCells:
-      return <MergeCells toolCall={toolCall} className={cn('tool-card', className)} />;
+      return <MergeCells toolCall={toolCall} className={cn('tool-card', className)} hideIcon={hideIcon} />;
     case AITool.UnmergeCells:
       return <UnmergeCells toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.InsertColumns:
