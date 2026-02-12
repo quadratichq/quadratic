@@ -34,13 +34,11 @@ impl GridController {
                     }
                     if !skip_compute
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
-                    {
-                        if !transaction
+                        && !transaction
                             .pending_compute_positions
                             .contains(code_cell_sheet_pos)
-                        {
-                            new_code_cell_positions.push(*code_cell_sheet_pos);
-                        }
+                    {
+                        new_code_cell_positions.push(*code_cell_sheet_pos);
                     }
                 });
             });
