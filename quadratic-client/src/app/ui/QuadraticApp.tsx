@@ -15,7 +15,7 @@ import { preloadUserAILanguages } from '@/shared/hooks/useUserAILanguages';
 import { preloadUserAIRules } from '@/shared/hooks/useUserAIRules';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 
 // Preload user AI preferences early so they're ready when settings menu opens
@@ -23,8 +23,9 @@ preloadUserAIRules();
 preloadUserAILanguages();
 
 export const QuadraticApp = memo(() => {
-  // ensure GridSettings are loaded before app starts
-  useSetRecoilState(gridSettingsAtom);
+  // Read gridSettings so its effect runs (localStorage) before any child reads aiAnalystAtom.
+  // Otherwise aiAnalystAtom's effect can run first and see the default showAIAnalystOnStartup (true).
+  useRecoilValue(gridSettingsAtom);
 
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
