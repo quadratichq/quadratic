@@ -6,7 +6,13 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { cancelIncompleteSubscriptions, createCheckoutSession, createCustomer, getProPriceId, getBusinessPriceId } from '../../stripe/stripe';
+import {
+  cancelIncompleteSubscriptions,
+  createCheckoutSession,
+  createCustomer,
+  getBusinessPriceId,
+  getProPriceId,
+} from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { getIsOnPaidPlan } from '../../utils/billing';
