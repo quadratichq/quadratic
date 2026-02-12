@@ -1,5 +1,20 @@
 import 'fake-indexeddb/auto';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mock dependencies that import WASM module
+vi.mock('./core.ts', () => ({
+  core: {
+    applyOfflineUnsavedTransaction: vi.fn(() => true),
+  },
+}));
+
+vi.mock('./coreClient.ts', () => ({
+  coreClient: {
+    sendOfflineTransactionStats: vi.fn(),
+    sendOfflineTransactionsApplied: vi.fn(),
+  },
+}));
+
 import { offline } from './offline';
 
 declare var self: WorkerGlobalScope &
