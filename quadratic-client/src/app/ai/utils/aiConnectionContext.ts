@@ -1,7 +1,7 @@
 import { deriveSyncStateFromConnectionList, type SyncState } from '@/app/atoms/useSyncedConnection';
 import { connectionClient, type SqlSchemaResponse } from '@/shared/api/connectionClient';
 import { GET_SCHEMA_TIMEOUT } from '@/shared/constants/connectionsConstant';
-import { isSyncedConnectionType, type ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 
 export interface ConnectionInfo {
   connectionId: string;
@@ -10,7 +10,6 @@ export interface ConnectionInfo {
   semanticDescription: string | undefined;
   schema: SqlSchemaResponse | null;
   error: string | undefined;
-  isSyncedConnection: boolean;
   syncState: SyncState | null;
 }
 
@@ -18,20 +17,17 @@ export const getConnectionTableInfo = async (
   connection: ConnectionList[number],
   teamUuid: string
 ): Promise<ConnectionInfo> => {
-  const isSynced = isSyncedConnectionType(connection.type);
-  const syncState = isSynced
-    ? deriveSyncStateFromConnectionList({
-        syncedConnectionPercentCompleted: connection.syncedConnectionPercentCompleted,
-        syncedConnectionLatestLogStatus: connection.syncedConnectionLatestLogStatus,
-      })
-    : null;
+  const syncState =
+    deriveSyncStateFromConnectionList({
+      syncedConnectionPercentCompleted: connection.syncedConnectionPercentCompleted,
+      syncedConnectionLatestLogStatus: connection.syncedConnectionLatestLogStatus,
+    }) ?? null;
 
   const connectionDetailsShared = {
     connectionId: connection.uuid,
     connectionName: connection.name,
     connectionType: connection.type,
     semanticDescription: connection.semanticDescription,
-    isSyncedConnection: isSynced,
     syncState,
   };
 
@@ -76,15 +72,12 @@ export const getConnectionMarkdown = (connectionInfo: ConnectionInfo): string =>
 
   // Add sync state information for synced connections
   let syncStateText = '';
-  if (connectionInfo.isSyncedConnection && connectionInfo.syncState) {
+  if (connectionInfo.syncState) {
     switch (connectionInfo.syncState) {
       case 'not_synced':
-        syncStateText =
-          '\nsyncStatus: NOT_SYNCED (Initial sync has not started. This connection cannot be queried yet.)';
-        break;
       case 'syncing':
         syncStateText =
-          '\nsyncStatus: SYNCING (Data is currently being synced. This connection may have partial data or may not be queryable.)';
+          '\nsyncStatus: SYNCING (Data is currently being synced. This connection may not be queryable yet.)';
         break;
       case 'synced':
         syncStateText = '\nsyncStatus: SYNCED (Data sync is complete. This connection is ready to query.)';
@@ -117,15 +110,12 @@ ${tablesText}
 export const getConnectionSchemaMarkdown = (connectionInfo: ConnectionInfo): string => {
   // Add sync state information for synced connections
   let syncStateInfo = '';
-  if (connectionInfo.isSyncedConnection && connectionInfo.syncState) {
+  if (connectionInfo.syncState) {
     switch (connectionInfo.syncState) {
       case 'not_synced':
-        syncStateInfo =
-          'Sync Status: NOT_SYNCED (Initial sync has not started. This connection cannot be queried yet.)\n';
-        break;
       case 'syncing':
         syncStateInfo =
-          'Sync Status: SYNCING (Data is currently being synced. This connection may have partial data or may not be queryable.)\n';
+          'Sync Status: SYNCING (Data is currently being synced. This connection may not be queryable yet.)\n';
         break;
       case 'synced':
         syncStateInfo = 'Sync Status: SYNCED (Data sync is complete. This connection is ready to query.)\n';

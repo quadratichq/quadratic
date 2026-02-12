@@ -192,6 +192,7 @@ interface EventTypes {
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
   aiAnalystSelectConnection: (connectionUuid: string, connectionType: string, connectionName: string) => void;
+  aiAnalystUnselectConnection: () => void;
 
   mergeCells: (sheetId: string, mergeCells: JsMergeCells) => void;
 

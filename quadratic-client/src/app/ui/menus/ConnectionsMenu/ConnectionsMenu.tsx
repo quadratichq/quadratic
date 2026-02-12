@@ -3,8 +3,8 @@ import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/edito
 import { events } from '@/app/events/events';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { Connections } from '@/shared/components/connections/Connections';
 import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
+import { Connections } from '@/shared/components/connections/Connections';
 import { ConnectionSyncingStatusModal } from '@/shared/components/connections/ConnectionSyncingStatusModal';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
@@ -51,7 +51,7 @@ export function ConnectionsMenu() {
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
       // Focus the AI analyst input
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     },
     [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );

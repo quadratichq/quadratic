@@ -889,3 +889,15 @@ export const SyncingInProgressIcon: IconComponent = (props) => {
 export const SyncingAlertIcon: IconComponent = (props) => {
   return <Icon {...props}>cloud_alert</Icon>;
 };
+
+export const BankIcon: IconComponent = (props) => {
+  return <Icon {...props}>account_balance</Icon>;
+};
+
+export const BrokerageIcon: IconComponent = (props) => {
+  return <Icon {...props}>finance_mode</Icon>;
+};
+
+export const CreditCardIcon: IconComponent = (props) => {
+  return <Icon {...props}>credit_card</Icon>;
+};
