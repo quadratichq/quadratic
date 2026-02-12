@@ -19,10 +19,10 @@ pub struct BulkDownloadsResponse {
 pub struct BulkDownload {
     pub id: String,
     pub name: String,
-    pub format: String,
-    pub data_length_bytes: u64,
-    pub update_frequency: String,
-    pub last_updated: String,
+    pub format: Option<String>,
+    pub data_length_bytes: Option<u64>,
+    pub update_frequency: Option<String>,
+    pub last_updated: Option<String>,
     pub links: Vec<BulkDownloadLink>,
 }
 
@@ -119,11 +119,38 @@ mod tests {
             response.bulk_downloads[0].name,
             "US Stock Prices, 50+ years"
         );
+        assert_eq!(response.bulk_downloads[0].format.as_deref(), Some("csv"));
         assert_eq!(response.bulk_downloads[0].links.len(), 1);
         assert_eq!(
             response.bulk_downloads[0].links[0].name,
             "stock_prices_uscomp_all_file-1.zip"
         );
         assert!(response.next_page.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_bulk_downloads_response_with_nulls() {
+        let json = r#"{
+            "bulk_downloads": [
+                {
+                    "id": "bdt_test",
+                    "name": "US Stock Prices",
+                    "format": null,
+                    "data_length_bytes": null,
+                    "update_frequency": null,
+                    "last_updated": null,
+                    "links": []
+                }
+            ],
+            "next_page": null
+        }"#;
+
+        let response: BulkDownloadsResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.bulk_downloads.len(), 1);
+        assert_eq!(response.bulk_downloads[0].name, "US Stock Prices");
+        assert!(response.bulk_downloads[0].format.is_none());
+        assert!(response.bulk_downloads[0].data_length_bytes.is_none());
+        assert!(response.bulk_downloads[0].update_frequency.is_none());
+        assert!(response.bulk_downloads[0].last_updated.is_none());
     }
 }
