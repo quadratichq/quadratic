@@ -1,0 +1,12 @@
+---
+globs: **/*.rs
+alwaysApply: true
+---
+
+Rust Import Style
+
+Always prefer importing types at the top of the file using `use` statements instead of using `crate::...` paths within function calls (unless absolutely necessary). Don't use super more than once, so super::super should be refactored.
+
+Example: Use `use crate::{CellValue, Pos, SheetPos};` at the top, then use `Pos { x, y }` instead of `crate::Pos { x, y }` in the code.
+
+This makes dependencies explicit and keeps the code cleaner.

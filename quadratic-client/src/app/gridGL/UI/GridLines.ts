@@ -1,16 +1,22 @@
 //! Draws grid lines on the canvas. The grid lines fade as the user zooms out,
 //! and disappears at higher zoom levels. We remove lines between cells that
-//! overflow (and in the future, merged cells). Grid lines also respect the
-//! sheet.clamp value.
+//! overflow and merged cells. Grid lines also respect the sheet.clamp value.
 
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import {
+  calculateAlphaForGridLines,
+  getColumnVerticalRangesToDraw,
+  getMergedCellExcludedColumnsForRow,
+  getMergedCellExcludedRowsForColumn,
+  getRowHorizontalRangesToDraw,
+} from '@/app/gridGL/UI/gridUtils';
+import type { Rect } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import type { ILineStyleOptions, Rectangle } from 'pixi.js';
-import { Graphics } from 'pixi.js';
+import type { ILineStyleOptions } from 'pixi.js';
+import { Graphics, Rectangle } from 'pixi.js';
 
 interface GridLine {
   column?: number;
@@ -32,15 +38,23 @@ export class GridLines extends Graphics {
   constructor() {
     super();
     events.on('setDirty', this.setDirty);
+    events.on('mergeCells', this.onMergeCellsChanged);
   }
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    events.off('mergeCells', this.onMergeCellsChanged);
     super.destroy();
   }
 
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.gridLines) {
+      this.dirty = true;
+    }
+  };
+
+  private onMergeCellsChanged = (sheetId: string) => {
+    if (sheetId === sheets.current) {
       this.dirty = true;
     }
   };
@@ -78,11 +92,26 @@ export class GridLines extends Graphics {
     this.gridLinesX = [];
     this.gridLinesY = [];
 
-    const range = this.drawHorizontalLines(bounds); //, this.getColumns(bounds));
-    this.drawVerticalLines(bounds, range);
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
+    const startCol = offsets.getColumnFromScreen(bounds.left);
+    const endCol = offsets.getColumnFromScreen(bounds.right);
+    const startRow = offsets.getRowFromScreen(bounds.top);
+    const endRow = offsets.getRowFromScreen(bounds.bottom);
+    const cellBounds = new Rectangle(startCol, startRow, endCol - startCol + 1, endRow - startRow + 1);
+    const mergedRects = sheet.getMergeCellsInRect(cellBounds);
+
+    const range = this.drawHorizontalLines(bounds, mergedRects, startCol, endCol);
+    this.drawVerticalLines(bounds, range, mergedRects, startRow, endRow);
   };
 
-  private drawVerticalLines(bounds: Rectangle, range: [number, number]) {
+  private drawVerticalLines(
+    bounds: Rectangle,
+    range: [number, number],
+    mergedRects: Rect[],
+    startRow: number,
+    endRow: number
+  ) {
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
     const columnPlacement = offsets.getXPlacement(bounds.left);
@@ -105,18 +134,37 @@ export class GridLines extends Graphics {
     for (let x = bounds.left; x <= bounds.right + size - 1; x += size) {
       // don't draw grid lines when hidden
       if (size !== 0 && x >= sheet.clamp.left) {
-        const lines = gridOverflowLines.getColumnVerticalRange(column, range);
-        if (lines) {
-          for (const [y0, y1] of lines) {
+        // Get overflow lines (excludes overflow areas)
+        const overflowLines = gridOverflowLines.getColumnVerticalRange(column, range);
+
+        // Precalculate excluded row ranges due to merged cells
+        // Use the full visible row range, not just 'range' from horizontal lines
+        const mergedExcludedRows = getMergedCellExcludedRowsForColumn(column, [startRow, endRow], mergedRects);
+
+        // Get the full row range for this column
+        const topRow = offsets.getRowFromScreen(top);
+        const bottomRow = offsets.getRowFromScreen(bounds.bottom);
+        const fullRowRange: [number, number] = [topRow, bottomRow];
+
+        // Compute ranges to draw, combining overflow and merged cell exclusions
+        // Follows the same pattern as GridOverflowLines
+        const linesToDraw = getColumnVerticalRangesToDraw(column, fullRowRange, overflowLines, mergedExcludedRows);
+
+        // Draw the calculated line segments
+        if (linesToDraw && linesToDraw.length > 0) {
+          for (const [y0, y1] of linesToDraw) {
             const start = offsets.getRowPlacement(y0).position;
             const end = offsets.getRowPlacement(y1 + 1).position;
             this.moveTo(x - offset, start);
             this.lineTo(x - offset, end);
           }
-        } else {
+        } else if (linesToDraw === undefined) {
+          // No exclusions, draw the full line
           this.moveTo(x - offset, top);
           this.lineTo(x - offset, bounds.bottom);
         }
+        // If linesToDraw is empty array, don't draw anything
+
         this.gridLinesX.push({ column, x: x - offset, y: top, w: 1, h: bounds.bottom - top });
       }
       size = sheets.sheet.offsets.getColumnWidth(column);
@@ -125,11 +173,14 @@ export class GridLines extends Graphics {
   }
 
   // @returns the vertical range of [rowStart, rowEnd]
-  private drawHorizontalLines(bounds: Rectangle): [number, number] {
+  private drawHorizontalLines(
+    bounds: Rectangle,
+    mergedRects: Rect[],
+    startCol: number,
+    endCol: number
+  ): [number, number] {
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
-    const startX = offsets.getColumnFromScreen(bounds.left);
-    const endX = offsets.getColumnFromScreen(bounds.right);
     const rowPlacement = offsets.getYPlacement(bounds.top);
     const index = rowPlacement.index;
     const position = rowPlacement.position;
@@ -149,18 +200,31 @@ export class GridLines extends Graphics {
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0 && y >= sheet.clamp.top) {
-        const lines = gridOverflowLines.getRowHorizontalRange(row, [startX, endX]);
-        if (lines) {
-          for (const [x0, x1] of lines) {
+        // Get overflow lines (excludes overflow areas)
+        const overflowLines = gridOverflowLines.getRowHorizontalRange(row, [startCol, endCol]);
+
+        // Precalculate excluded column ranges due to merged cells
+        const mergedExcludedCols = getMergedCellExcludedColumnsForRow(row, [startCol, endCol], mergedRects);
+
+        // Compute ranges to draw, combining overflow and merged cell exclusions
+        // Follows the same pattern as GridOverflowLines
+        const linesToDraw = getRowHorizontalRangesToDraw(row, [startCol, endCol], overflowLines, mergedExcludedCols);
+
+        // Draw the calculated line segments
+        if (linesToDraw && linesToDraw.length > 0) {
+          for (const [x0, x1] of linesToDraw) {
             const start = offsets.getColumnPlacement(x0).position;
             const end = offsets.getColumnPlacement(x1 + 1).position;
             this.moveTo(start, y - offset);
             this.lineTo(end, y - offset);
           }
-        } else {
+        } else if (linesToDraw === undefined) {
+          // No exclusions, draw the full line
           this.moveTo(left, y - offset);
           this.lineTo(bounds.right, y - offset);
         }
+        // If linesToDraw is empty array, don't draw anything
+
         this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - left, h: 1 });
       }
       size = offsets.getRowHeight(row);

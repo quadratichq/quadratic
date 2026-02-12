@@ -151,8 +151,8 @@ export const AIUserMessageFormConnectionsButton = memo(
         }
 
         // Otherwise set it as the newly selected connection
-        trackEvent('[AIConnectionsPicker].selectConnection');
         const connection = connections.find((connection) => connection.uuid === connectionUuid);
+        trackEvent('[AIConnectionsPicker].selectConnection', { language: connection?.type });
         if (connection === undefined) {
           Sentry.captureException(new Error('A connection that was picked in the UI is not stored in local state.'));
           return;

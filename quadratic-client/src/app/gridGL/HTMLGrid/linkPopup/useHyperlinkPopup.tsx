@@ -1,19 +1,34 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { openLink } from '@/app/helpers/links';
+import { ensureHttpProtocol, hasHttpProtocol, openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CopyIcon } from '@/shared/components/Icons';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLinkMetadata } from './useLinkMetadata';
 import { FADE_OUT_DELAY, type PopupMode, usePopupVisibility } from './usePopupVisibility';
+
+// Helper to get cell bounds, accounting for merged cells
+function getCellBounds(sheet: Sheet, x: number, y: number): Rectangle {
+  const mergeRect = sheet.getMergeCellRect(x, y);
+  if (mergeRect) {
+    return sheet.getScreenRectangle(
+      Number(mergeRect.min.x),
+      Number(mergeRect.min.y),
+      Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+      Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+    );
+  }
+  return sheet.getCellOffsets(x, y);
+}
 
 const HOVER_DELAY = 500;
 
@@ -34,6 +49,8 @@ export interface LinkData {
   spanStart?: number;
   // Character end position of this hyperlink span within the cell text
   spanEnd?: number;
+  // True if this is creating a new link (should replace entire cell content on save)
+  isNewLink?: boolean;
 }
 
 const FADE_DURATION = 150; // Match CSS transition duration
@@ -52,6 +69,7 @@ export function useHyperlinkPopup() {
 
   // Edit form state
   const [mode, setMode] = useState<PopupMode>('view');
+  const modeRef = useRef<PopupMode>('view');
   const [editUrl, setEditUrl] = useState('');
   const [editText, setEditText] = useState('');
 
@@ -69,6 +87,10 @@ export function useHyperlinkPopup() {
   useEffect(() => {
     linkDataRef.current = linkData;
   }, [linkData]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   // Sync displayData and visibility with linkData
   useEffect(() => {
@@ -123,8 +145,17 @@ export function useHyperlinkPopup() {
         return;
       }
 
-      const { x, y } = cursor.position;
+      let { x, y } = cursor.position;
 
+      // If the cursor is on a merged cell, use the top-left cell of the merge
+      // since that's where the data is stored
+      const mergeRect = sheet.getMergeCellRect(x, y);
+      if (mergeRect) {
+        x = Number(mergeRect.min.x);
+        y = Number(mergeRect.min.y);
+      }
+
+      // Close cursor-sourced popup if cursor moved to a different cell
       // Close cursor-sourced popup if cursor moved to a different cell
       const current = linkDataRef.current;
       if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
@@ -140,11 +171,21 @@ export function useHyperlinkPopup() {
         if (v.isJustClosed()) return;
         if (inlineEditorHandler.isOpen()) return;
 
-        // Verify cursor is still at the same position
+        // Verify cursor is still at the same position (check original position)
         const currentCursor = sheets.sheet.cursor;
         if (currentCursor.isMultiCursor()) return;
         const currentPos = currentCursor.position;
-        if (currentPos.x !== x || currentPos.y !== y) return;
+
+        // For merged cells, check if cursor is still within the same merge
+        const currentMergeRect = sheet.getMergeCellRect(currentPos.x, currentPos.y);
+        if (mergeRect && currentMergeRect) {
+          // Both positions are in merged cells - check if it's the same merge
+          if (Number(currentMergeRect.min.x) !== x || Number(currentMergeRect.min.y) !== y) {
+            return;
+          }
+        } else if (currentPos.x !== x || currentPos.y !== y) {
+          return;
+        }
 
         const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
 
@@ -155,8 +196,7 @@ export function useHyperlinkPopup() {
           const linkSpan = cellValue.spans.length === 1 ? cellValue.spans[0] : undefined;
           const linkUrl = linkSpan?.link;
           if (linkSpan && linkUrl) {
-            const offsets = sheet.getCellOffsets(x, y);
-            const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+            const rect = getCellBounds(sheet, x, y);
             const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
             const isFormula = codeCell?.language === 'Formula';
 
@@ -178,50 +218,111 @@ export function useHyperlinkPopup() {
 
   // Handle insert link event
   useEffect(() => {
-    const handleInsertLink = () => {
+    const handleInsertLink = async () => {
+      // Don't handle insertLink when inline editor is open - use showInlineHyperlinkInput instead
+      if (inlineEditorHandler.isOpen()) return;
+
       const sheet = sheets.sheet;
       const cursor = sheet.cursor;
       if (cursor.isMultiCursor()) return;
 
-      const { x, y } = cursor.position;
-      const offsets = sheet.getCellOffsets(x, y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      let { x, y } = cursor.position;
 
-      setLinkData({ x, y, url: '', rect, source: 'cursor', isFormula: false });
-      setMode('edit');
-      setEditUrl('');
-      setEditText('');
+      // If the cursor is on a merged cell, use the top-left cell of the merge
+      const mergeRect = sheet.getMergeCellRect(x, y);
+      if (mergeRect) {
+        x = Number(mergeRect.min.x);
+        y = Number(mergeRect.min.y);
+      }
+
+      const rect = getCellBounds(sheet, x, y);
+
+      try {
+        // Check if the cell is a single-span hyperlink (entire cell is one link)
+        const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
+        const isSingleSpanHyperlink =
+          cellValue?.kind === 'RichText' && cellValue.spans?.length === 1 && cellValue.spans[0].link;
+        const linkSpan = isSingleSpanHyperlink ? cellValue.spans![0] : undefined;
+
+        let urlValue = '';
+        let textValue = '';
+        let isNewLink = false;
+
+        if (linkSpan) {
+          // Cell is a single hyperlink span - pre-populate URL and text for editing
+          urlValue = linkSpan.link ?? '';
+          // Only set text if it differs from the URL
+          textValue = linkSpan.text !== linkSpan.link ? linkSpan.text : '';
+        } else {
+          // Rich text with multiple spans or plain text - user wants to create a new link
+          // Get the plain text display value for the text field, leave URL blank
+          isNewLink = true;
+          const displayValue = await quadraticCore.getDisplayCell(sheet.id, x, y);
+          if (displayValue && hasHttpProtocol(displayValue)) {
+            // Content is a URL - pre-populate URL field, leave text empty
+            urlValue = displayValue;
+          } else {
+            // Content is not a URL - pre-populate text field with plain text value
+            textValue = displayValue ?? '';
+          }
+        }
+
+        setLinkData({ x, y, url: urlValue, rect, source: 'cursor', isFormula: false, isNewLink });
+        setMode('edit');
+        setEditUrl(urlValue);
+        setEditText(textValue);
+      } catch (error) {
+        console.error('Failed to open hyperlink popup:', error);
+        addGlobalSnackbar('Failed to open hyperlink editor. Please try again.');
+      }
     };
 
     events.on('insertLink', handleInsertLink);
     return () => {
       events.off('insertLink', handleInsertLink);
     };
-  }, []);
+  }, [addGlobalSnackbar]);
 
   // Handle inline hyperlink input (Ctrl+K in inline editor)
   useEffect(() => {
-    const handleShowInlineHyperlinkInput = (data: { selectedText: string }) => {
+    const handleShowInlineHyperlinkInput = (data: { selectedText: string; existingUrl?: string }) => {
       // Get the inline editor's position to use for the popup
       const location = inlineEditorHandler.location;
       if (!location) return;
 
       const sheet = sheets.sheet;
-      const offsets = sheet.getCellOffsets(location.x, location.y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      let { x, y } = location;
+
+      // If the inline editor is on a merged cell, use the top-left cell of the merge
+      const mergeRect = sheet.getMergeCellRect(x, y);
+      if (mergeRect) {
+        x = Number(mergeRect.min.x);
+        y = Number(mergeRect.min.y);
+      }
+
+      const rect = getCellBounds(sheet, x, y);
+
+      // If the selection precisely matches an existing hyperlink, pre-populate URL and text
+      // Otherwise, leave URL blank and use the selected text (plain text)
+      const urlValue = data.existingUrl ?? '';
+      const textValue = data.selectedText;
+
+      // Set mode ref synchronously to prevent inlineEditorCursorOnHyperlink from overwriting values
+      // (The useEffect that syncs mode to modeRef runs after state updates, creating a race condition)
+      visibilityRef.current.setModeRef('edit');
 
       setLinkData({
-        x: location.x,
-        y: location.y,
-        url: '',
+        x,
+        y,
+        url: urlValue,
         rect,
         source: 'inline',
         isFormula: false,
         hasSelection: !!data.selectedText,
       });
       setMode('edit');
-      setEditUrl('');
-      setEditText(data.selectedText);
+      setEditUrl(urlValue);
+      setEditText(textValue);
     };
 
     events.on('showInlineHyperlinkInput', handleShowInlineHyperlinkInput);
@@ -307,8 +408,7 @@ export function useHyperlinkPopup() {
 
         v.setHoverTimeout(async () => {
           const sheet = sheets.sheet;
-          const offsets = sheet.getCellOffsets(link.x, link.y);
-          const cellRect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+          const cellRect = getCellBounds(sheet, link.x, link.y);
           const codeCell = await quadraticCore.getCodeCell(sheet.id, link.x, link.y);
           const isFormula = codeCell?.language === 'Formula';
 
@@ -586,7 +686,7 @@ export function useHyperlinkPopup() {
   const handleSaveEdit = useCallback(async () => {
     if (!linkData || !editUrl.trim()) return;
 
-    const normalizedUrl = editUrl.match(/^https?:\/\//i) ? editUrl : `https://${editUrl}`;
+    const normalizedUrl = ensureHttpProtocol(editUrl);
     const text = editText.trim() || normalizedUrl;
     const hasCustomTitle = text !== normalizedUrl;
 
@@ -602,9 +702,27 @@ export function useHyperlinkPopup() {
         inlineEditorSpans.updateHyperlinkAtCursor(normalizedUrl, text);
       }
       inlineEditorMonaco.focus();
-    } else if (linkData.isNakedUrl && !hasCustomTitle) {
+      closePopup(true);
+      return;
+    }
+
+    if (linkData.isNakedUrl && !hasCustomTitle) {
       // For naked URLs without a custom title, keep as plain text
       quadraticCore.setCellValue(sheets.current, linkData.x, linkData.y, normalizedUrl, false);
+    } else if (linkData.isNewLink) {
+      // Creating a new link - replace entire cell content with the new hyperlink
+      quadraticCore.setCellRichText(sheets.current, linkData.x, linkData.y, [
+        {
+          text,
+          link: normalizedUrl,
+          bold: null,
+          italic: null,
+          underline: null,
+          strike_through: null,
+          text_color: null,
+          font_size: null,
+        },
+      ]);
     } else {
       // Get the current cell value to check if it has multiple spans
       const cellValue = await quadraticCore.getCellValue(sheets.current, linkData.x, linkData.y);
@@ -657,12 +775,15 @@ export function useHyperlinkPopup() {
       }
     }
     closePopup(true);
+    focusGrid();
   }, [linkData, editUrl, editText, closePopup]);
 
   const handleCancelEdit = useCallback(() => {
     if (linkData?.source === 'inline') {
       inlineEditorSpans.cancelPendingHyperlink();
       inlineEditorMonaco.focus();
+    } else {
+      focusGrid();
     }
     closePopup(true);
   }, [linkData, closePopup]);
@@ -688,6 +809,36 @@ export function useHyperlinkPopup() {
     e.stopPropagation();
   }, []);
 
+  // Click-outside detection
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const setPopupRef = useCallback((node: HTMLDivElement | null) => {
+    popupRef.current = node;
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      // Only handle click-outside in edit mode (check via ref to avoid re-running effect)
+      if (modeRef.current !== 'edit' || !popupRef.current) return;
+
+      // Check if click was outside the popup
+      if (!popupRef.current.contains(e.target as Node)) {
+        // Cancel edit: handle inline source cleanup, then close popup
+        if (linkDataRef.current?.source === 'inline') {
+          inlineEditorSpans.cancelPendingHyperlink();
+          inlineEditorMonaco.focus();
+        } else {
+          focusGrid();
+        }
+        closePopup(true);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [closePopup]); // closePopup has no dependencies, uses refs internally
+
   // When editing in inline mode with a text selection, hide the text field
   const hideTextField = displayData?.source === 'inline' && displayData?.hasSelection;
 
@@ -701,6 +852,7 @@ export function useHyperlinkPopup() {
     isVisible,
     skipFade: visibility.skipFade,
     hideTextField,
+    setPopupRef,
     setEditUrl,
     setEditText,
     handleMouseEnter,

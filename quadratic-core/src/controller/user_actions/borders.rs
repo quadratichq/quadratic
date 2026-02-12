@@ -58,14 +58,14 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
 
         gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None, false);
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_none());
-        assert!(sheet.borders.vertical_borders(None).is_none());
+        assert!(sheet.borders.horizontal_borders(None, None).is_none());
+        assert!(sheet.borders.vertical_borders(None, None).is_none());
     }
 
     #[test]
@@ -80,14 +80,14 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
 
         gc.clear_format_borders(&A1Selection::test_a1("*"), None, false);
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_none());
-        assert!(sheet.borders.vertical_borders(None).is_none());
+        assert!(sheet.borders.horizontal_borders(None, None).is_none());
+        assert!(sheet.borders.vertical_borders(None, None).is_none());
     }
 
     #[test]
@@ -102,8 +102,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
 
         gc.set_borders(
             A1Selection::test_a1("B3:D5"),
@@ -113,8 +113,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_none());
-        assert!(sheet.borders.vertical_borders(None).is_none());
+        assert!(sheet.borders.horizontal_borders(None, None).is_none());
+        assert!(sheet.borders.vertical_borders(None, None).is_none());
     }
 
     #[test]
@@ -129,8 +129,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
 
         gc.set_borders(
             A1Selection::test_a1("B2"),
@@ -140,8 +140,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_none());
-        assert!(sheet.borders.vertical_borders(None).is_none());
+        assert!(sheet.borders.horizontal_borders(None, None).is_none());
+        assert!(sheet.borders.vertical_borders(None, None).is_none());
     }
 
     #[test]
@@ -156,8 +156,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
 
         gc.set_borders(
             A1Selection::test_a1("A1:B2"),
@@ -167,8 +167,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_none());
-        assert!(sheet.borders.vertical_borders(None).is_none());
+        assert!(sheet.borders.horizontal_borders(None, None).is_none());
+        assert!(sheet.borders.vertical_borders(None, None).is_none());
     }
 
     #[test]
@@ -183,8 +183,8 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
 
         gc.set_borders(
             A1Selection::test_a1("A1:B2"),
@@ -194,7 +194,7 @@ mod tests {
             false,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders(None).is_some());
-        assert!(sheet.borders.vertical_borders(None).is_some());
+        assert!(sheet.borders.horizontal_borders(None, None).is_some());
+        assert!(sheet.borders.vertical_borders(None, None).is_some());
     }
 }

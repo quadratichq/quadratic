@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::operation::Operation;
 use crate::cell_values::CellValues;
@@ -184,6 +184,51 @@ impl GridController {
                 &self.a1_context,
             );
 
+            // Expand each rect to include full merged cells
+            let expanded_rects: Vec<Rect> = rects
+                .into_iter()
+                .map(|rect| {
+                    let mut expanded = rect;
+
+                    // Check all corner positions to find merged cells that might partially overlap
+                    for pos in [
+                        Pos {
+                            x: rect.min.x,
+                            y: rect.min.y,
+                        },
+                        Pos {
+                            x: rect.max.x,
+                            y: rect.min.y,
+                        },
+                        Pos {
+                            x: rect.min.x,
+                            y: rect.max.y,
+                        },
+                        Pos {
+                            x: rect.max.x,
+                            y: rect.max.y,
+                        },
+                    ] {
+                        if let Some(merge_rect) = sheet.merge_cells.get_merge_cell_rect(pos) {
+                            expanded = expanded.union(&merge_rect);
+                        }
+                    }
+
+                    // Also get all merged cells fully contained in the rect
+                    let merged_cells = sheet.merge_cells.get_merge_cells(expanded);
+                    for merge_rect in merged_cells {
+                        expanded = expanded.union(&merge_rect);
+                    }
+
+                    expanded
+                })
+                .collect();
+
+            let rects = expanded_rects;
+            // Track data tables already scheduled for deletion across all rects
+            // to avoid duplicate DeleteDataTable operations
+            let mut already_scheduled_for_deletion: HashSet<Pos> = HashSet::new();
+
             // reverse the order to delete from right to left
             for rect in rects.into_iter().rev() {
                 let mut can_delete_column = false;
@@ -270,19 +315,28 @@ impl GridController {
                 }
 
                 if !can_delete_column {
-                    if save_data_table_anchors.is_empty() {
+                    // Combine positions to exclude: saved anchors, data tables being deleted in this rect,
+                    // and data tables already scheduled for deletion from previous rects
+                    // (DeleteDataTable handles deletion, so we don't need SetCellValues on those cells)
+                    let positions_to_exclude: Vec<Pos> = save_data_table_anchors
+                        .into_iter()
+                        .chain(delete_data_tables.iter().copied())
+                        .chain(already_scheduled_for_deletion.iter().copied())
+                        .collect();
+
+                    if positions_to_exclude.is_empty() {
                         ops.push(Operation::SetCellValues {
                             sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
                             values: CellValues::new_blank(rect.width(), rect.height()),
                         });
                     } else {
-                        // remove all saved_data_table_anchors from the rect
+                        // remove all positions_to_exclude from the rect
                         // (which may result in multiple resulting rects)
                         let mut rects = vec![rect];
-                        for data_table_pos in save_data_table_anchors {
+                        for pos in positions_to_exclude {
                             let mut next_rects = vec![];
                             for rect in rects {
-                                let result = rect.subtract(Rect::single_pos(data_table_pos));
+                                let result = rect.subtract(Rect::single_pos(pos));
                                 next_rects.extend(result);
                             }
                             rects = next_rects;
@@ -302,11 +356,14 @@ impl GridController {
                     }
                 }
 
-                delete_data_tables.iter().for_each(|data_table_pos| {
-                    ops.push(Operation::DeleteDataTable {
-                        sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                    });
-                });
+                // Only create DeleteDataTable operations for tables not already scheduled
+                for data_table_pos in delete_data_tables {
+                    if already_scheduled_for_deletion.insert(data_table_pos) {
+                        ops.push(Operation::DeleteDataTable {
+                            sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                        });
+                    }
+                }
 
                 // need to update the selection if a table was deleted (since we
                 // can no longer use the table ref)
@@ -363,6 +420,7 @@ impl GridController {
         // If we don't skip, the RichText clearing operations would overwrite
         // the blank values set by delete_cells_operations.
         ops.extend(self.clear_format_borders_operations(selection, true, true));
+        ops.extend(self.unmerge_cells_a1_selection_operations(selection.clone()));
         ops
     }
 
@@ -527,12 +585,13 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use crate::a1::A1Selection;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::{CellValue, SheetPos, a1::A1Selection};
-    use crate::{SheetRect, test_util::*};
+    use crate::test_util::*;
+    use crate::{CellValue, Pos, SheetPos, SheetRect};
 
     #[test]
     fn test() {
@@ -586,18 +645,15 @@ mod test {
         let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = pos![sheet_id!A2];
 
-        assert_eq!(operations.len(), 2);
+        // 1x1 formulas are stored as CellValue::Code, so they're deleted by SetCellValues
+        // (not DeleteDataTable), meaning a single SetCellValues covers both A2 and B2
+        assert_eq!(operations.len(), 1);
         assert_eq!(
             operations,
-            vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: CellValues::new_blank(2, 1)
-                },
-                Operation::DeleteDataTable {
-                    sheet_pos: sheet_pos_2,
-                }
-            ]
+            vec![Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::new_blank(2, 1) // Covers A2:B2
+            }]
         );
     }
 
@@ -620,27 +676,19 @@ mod test {
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
 
-        assert_eq!(operations.len(), 4);
-
-        // FYI: this ends up with two delete data tables since we don't track
-        // which ops are already created and both A2: and B return the existing
-        // table before it's deleted. todo: maybe improve this?
+        // 1x1 formulas are stored as CellValue::Code, so they're deleted by SetCellValues
+        // (not DeleteDataTable). Column B covers B1:B2 and row 2 covers A2:B2.
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
             vec![
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new_blank(1, 2)
-                },
-                Operation::DeleteDataTable {
-                    sheet_pos: sheet_pos_2,
+                    values: CellValues::new_blank(1, 2) // B1:B2
                 },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new_blank(2, 1)
-                },
-                Operation::DeleteDataTable {
-                    sheet_pos: sheet_pos_2,
+                    values: CellValues::new_blank(2, 1) // A2:B2
                 },
             ]
         );
@@ -713,5 +761,48 @@ mod test {
 
         gc.redo(1, None, false);
         assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["", "", "2"]);
+    }
+
+    #[test]
+    fn test_delete_merged_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set a value at B1
+        gc.set_cell_value(
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+            false,
+        );
+
+        // Merge cells B1:C2
+        let merge_selection = crate::a1::A1Selection::test_a1_sheet_id("B1:C2", sheet_id);
+        gc.merge_cells(merge_selection, None, false);
+
+        // Verify the value exists at the anchor
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+
+        // Delete with cursor on C2 (not the anchor B1)
+        let delete_selection = crate::a1::A1Selection::test_a1_sheet_id("C2", sheet_id);
+        gc.delete_cells(&delete_selection, None, false);
+
+        // Value should be deleted from the entire merged cell
+        assert_eq!(gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }), None);
+        assert_eq!(gc.sheet(sheet_id).display_value(Pos { x: 3, y: 2 }), None);
+
+        // Undo should restore the value
+        gc.undo(1, None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
     }
 }

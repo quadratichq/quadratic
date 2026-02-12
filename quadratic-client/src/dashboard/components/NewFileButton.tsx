@@ -59,17 +59,6 @@ export function NewFileButton() {
   return (
     <div className="hidden flex-row-reverse gap-2 md:flex">
       <Button
-        variant="default"
-        className="gap-2"
-        onClick={() => {
-          navigate(`${ROUTES.TEAM_FILES_CREATE_AI(teamUuid)}${isPrivate ? '?private=true' : ''}`);
-        }}
-      >
-        <AIIcon className="mr-0" />
-        Start with AI
-      </Button>
-
-      <Button
         data-testid="files-list-new-file-button"
         variant="default"
         onClick={(e) => {

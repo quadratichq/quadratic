@@ -77,6 +77,9 @@ export const AddIcon: IconComponent = (props) => {
 export const AIIcon: IconComponent = (props) => {
   return <Icon {...props}>auto_awesome</Icon>;
 };
+export const AgentModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>robot_2</Icon>;
+};
 export const AppearanceLightModeIcon: IconComponent = (props) => {
   return <Icon {...props}>light_mode</Icon>;
 };
@@ -243,6 +246,14 @@ export const CutIcon: IconComponent = (props) => {
 
 export const CropFreeIcon: IconComponent = (props) => {
   return <Icon {...props}>crop_free</Icon>;
+};
+
+export const ColorizeIcon: IconComponent = (props) => {
+  return <Icon {...props}>colorize</Icon>;
+};
+
+export const PaletteIcon: IconComponent = (props) => {
+  return <Icon {...props}>palette</Icon>;
 };
 
 export const CancelIcon: IconComponent = (props) => {
@@ -473,6 +484,10 @@ export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
 };
 
+export const GroupOffIcon: IconComponent = (props) => {
+  return <Icon {...props}>group_off</Icon>;
+};
+
 export const HomeIcon: IconComponent = (props) => {
   return <Icon {...props}>home</Icon>;
 };
@@ -537,12 +552,20 @@ export const MemoryIcon: IconComponent = (props) => {
   return <Icon {...props}>memory</Icon>;
 };
 
+export const MergeCellsIcon: IconComponent = (props) => {
+  return <Icon {...props}>merge_type</Icon>;
+};
+
 export const MoreVertIcon: IconComponent = (props) => {
   return <Icon {...props}>more_vert</Icon>;
 };
 
 export const MoreHorizIcon: IconComponent = (props) => {
   return <Icon {...props}>more_horiz</Icon>;
+};
+
+export const MoveItemIcon: IconComponent = (props) => {
+  return <Icon {...props}>move_item</Icon>;
 };
 
 export const Number123Icon: IconComponent = (props) => {
@@ -582,6 +605,10 @@ export const PDFIcon: IconComponent = (props) => {
 
 export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
+};
+
+export const PromptIcon: IconComponent = (props) => {
+  return <Icon {...props}>chat_paste_go</Icon>;
 };
 
 export const PersonAddIcon: IconComponent = (props) => {
@@ -704,6 +731,10 @@ export const UndoIcon: IconComponent = (props) => {
   return <Icon {...props}>undo</Icon>;
 };
 
+export const UnmergeCellsIcon: IconComponent = (props) => {
+  return <Icon {...props}>call_split</Icon>;
+};
+
 export const ZoomInIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_in</Icon>;
 };
@@ -799,6 +830,10 @@ export const LightedBulbIcon: IconComponent = (props) => {
 
 export const PublicIcon: IconComponent = (props) => {
   return <Icon {...props}>public</Icon>;
+};
+
+export const PublicOffIcon: IconComponent = (props) => {
+  return <Icon {...props}>public_off</Icon>;
 };
 
 export const SheetComeFromIcon: IconComponent = (props) => {

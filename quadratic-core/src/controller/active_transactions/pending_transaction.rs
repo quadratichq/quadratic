@@ -77,6 +77,9 @@ pub struct PendingTransaction {
     /// sheets w/updated validations warnings
     pub(crate) validations_warnings: HashMap<SheetId, SheetValidationsWarnings>,
 
+    /// sheets w/updated conditional formats
+    pub(crate) conditional_formats: HashSet<SheetId>,
+
     /// sheets w/updated rows to resize
     pub(crate) resize_rows: HashMap<SheetId, HashSet<i64>>,
 
@@ -120,6 +123,13 @@ pub struct PendingTransaction {
 
     /// sheets that need updated SheetDataTablesCache
     pub(crate) sheet_data_tables_cache: HashSet<SheetId>,
+
+    /// Sheets that need updated MergeCells, with the specific hash positions
+    /// that the render worker should invalidate. 
+    pub(crate) merge_cells_updates: HashMap<SheetId, HashSet<Pos>>,
+
+    /// Track positions with pending ComputeCode operations for O(1) duplicate checking
+    pub(crate) pending_compute_positions: HashSet<SheetPos>,
 }
 
 impl Default for PendingTransaction {
@@ -141,6 +151,7 @@ impl Default for PendingTransaction {
             cursor_undo_redo: None,
             validations: HashSet::new(),
             validations_warnings: HashMap::new(),
+            conditional_formats: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             sheet_borders: HashSet::new(),
@@ -156,6 +167,8 @@ impl Default for PendingTransaction {
             update_selection: None,
             sheet_content_cache: HashSet::new(),
             sheet_data_tables_cache: HashSet::new(),
+            merge_cells_updates: HashMap::new(),
+            pending_compute_positions: HashSet::new(),
         }
     }
 }
@@ -549,6 +562,27 @@ impl PendingTransaction {
         self.fill_cells.entry(sheet_id).or_default().extend(hashes);
     }
 
+    /// Adds dirty fill hashes from a list of selections.
+    /// Uses finitize_selection to handle unbounded selections (like column "A").
+    pub fn add_fill_cells_from_selections(
+        &mut self,
+        sheet: &Sheet,
+        a1_context: &A1Context,
+        selections: Vec<A1Selection>,
+    ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        selections.iter().for_each(|selection| {
+            let fill_hashes = selection.rects_to_hashes(sheet, a1_context);
+            self.fill_cells
+                .entry(sheet.id)
+                .or_default()
+                .extend(fill_hashes);
+        });
+    }
+
     /// Marks all fills for a sheet as dirty (for operations like add sheet that affect entire sheet).
     pub fn add_all_fill_cells(&mut self, sheet: &Sheet) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
@@ -632,6 +666,18 @@ impl PendingTransaction {
         }
 
         self.sheet_content_cache.insert(sheet_id);
+    }
+
+    /// Marks merge cell hashes as dirty from a list of affected rects.
+    pub fn add_merge_cells_dirty_hashes(&mut self, sheet_id: SheetId, affected_rects: &[Rect]) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let merge_hashes = self.merge_cells_updates.entry(sheet_id).or_default();
+        for rect in affected_rects {
+            merge_hashes.extend(rect.to_hashes());
+        }
     }
 }
 
@@ -790,6 +836,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
@@ -816,6 +863,7 @@ mod tests {
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: "".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

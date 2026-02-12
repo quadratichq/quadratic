@@ -52,6 +52,10 @@ impl Sheet {
         self.borders.insert_column(column, copy_formats);
         transaction.sheet_borders.insert(self.id);
 
+        // update merge cells and track affected hashes for re-rendering
+        let affected_rects = self.merge_cells.insert_column(column);
+        transaction.add_merge_cells_dirty_hashes(self.id, &affected_rects);
+
         // update validations
         let changed_selections =
             self.validations
@@ -326,5 +330,60 @@ mod tests {
             !transaction.sheet_meta_fills.contains(&sheet.id),
             "sheet_meta_fills should NOT be marked for finite fills only"
         );
+    }
+
+    #[test]
+    fn insert_column_adjusts_merge_cells() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a merge at C2:E4
+        sheet.merge_cells.merge_cells(Rect::test_a1("C2:E4"));
+
+        let mut transaction = PendingTransaction::default();
+
+        // Insert column at D (column 4) - inside the merge
+        sheet.insert_column(
+            &mut transaction,
+            4,
+            CopyFormats::None,
+            false,
+            &A1Context::default(),
+        );
+
+        // Merge should expand: C2:E4 -> C2:F4
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:F4"));
+
+        // Verify transaction has merge_cells_updates marked
+        assert!(transaction.merge_cells_updates.contains_key(&sheet.id));
+    }
+
+    #[test]
+    fn insert_column_shifts_merge_cells() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a merge at C2:E4
+        sheet.merge_cells.merge_cells(Rect::test_a1("C2:E4"));
+
+        let mut transaction = PendingTransaction::default();
+
+        // Insert column at B (column 2) - before the merge
+        sheet.insert_column(
+            &mut transaction,
+            2,
+            CopyFormats::None,
+            false,
+            &A1Context::default(),
+        );
+
+        // Merge should shift right: C2:E4 -> D2:F4
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("D2:F4"));
     }
 }

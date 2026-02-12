@@ -1,7 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon, EditIcon, FileIcon } from '@/shared/components/Icons';
+import { CloseIcon, EditIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -10,7 +10,6 @@ import type {
   OnConnectionSelectedCallback,
 } from '@/shared/components/connections/Connections';
 import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
-import { ROUTES } from '@/shared/constants/routes';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -19,7 +18,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -223,29 +222,14 @@ function ListItems({
                   </div>
 
                   {showDashboardActions && (
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" asChild>
-                        <Link
-                          to={ROUTES.CREATE_FILE(teamUuid, {
-                            connectionUuid: uuid,
-                            connectionType: type,
-                            connectionName: name,
-                            private: true,
-                          })}
-                        >
-                          <FileIcon />
-                          Open in spreadsheet
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
-                      >
-                        <EditIcon />
-                        Edit
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
+                    >
+                      <EditIcon />
+                      Edit
+                    </Button>
                   )}
                 </div>
               )}

@@ -27,7 +27,21 @@ export const InlineEditor = () => {
   height += CURSOR_THICKNESS * 1.5;
   const inlineShowing = inlineEditorHandler.getShowing();
   if (inlineShowing) {
-    height = Math.max(height, sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y).height);
+    // Check if the cell is part of a merged cell and get the full merged cell rect
+    const mergeRect = sheets.sheet.getMergeCellRect(inlineShowing.x, inlineShowing.y);
+    let cellHeight: number;
+    if (mergeRect) {
+      const cellBounds = sheets.sheet.getScreenRectangle(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+        Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+      );
+      cellHeight = cellBounds.height;
+    } else {
+      cellHeight = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y).height;
+    }
+    height = Math.max(height, cellHeight);
   }
 
   return (

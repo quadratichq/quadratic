@@ -25,9 +25,9 @@ const ConnectionFormMixpanelSchema = z.object({
 type FormValues = z.infer<typeof ConnectionFormMixpanelSchema>;
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const defaultStartDate = threeMonthsAgo.toISOString().split('T')[0];
 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
@@ -56,7 +56,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
-        <p className="pb-2 text-sm text-muted-foreground">
+        <p className="pb-2 text-sm">
           Find your Project ID and API secret in your Mixpanel project's Settings → Access Keys.{' '}
           <a
             href={DOCUMENTATION_CONNECTIONS_MIXPANEL_URL}

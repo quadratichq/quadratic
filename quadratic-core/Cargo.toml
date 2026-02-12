@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.23.9"
+version = "0.23.11"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -110,7 +110,7 @@ arrow-buffer = "54.2.1"
 arrow-data = "54.2.1"
 half = "2.4.0"
 # pull from git@github.com:ddimaria/calamine.git until the branch is accepted at calamine
-calamine = { git = "https://github.com/ddimaria/calamine.git", rev = "ac3c438", features = [
+calamine = { git = "https://github.com/ddimaria/calamine.git", rev = "084d73b", features = [
   "dates",
 ] }
 bincode = { version = "2.0.0", features = ["serde"] }

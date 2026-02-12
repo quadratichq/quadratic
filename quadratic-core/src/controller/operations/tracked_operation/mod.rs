@@ -145,6 +145,15 @@ pub enum TrackedOperation {
         selection: String,
     },
 
+    /// Conditional formatting
+    ConditionalFormatSet {
+        selection: String,
+    },
+    ConditionalFormatRemoved {
+        sheet_name: String,
+        conditional_format_id: Uuid,
+    },
+
     /// Column/row structure changes
     ColumnInserted {
         sheet_name: String,
@@ -183,5 +192,9 @@ pub enum TrackedOperation {
 
     ComputeCode {
         selection: String,
+    },
+
+    SetMergeCells {
+        sheet_name: String,
     },
 }

@@ -1,6 +1,7 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
@@ -48,6 +49,9 @@ export function ConnectionsMenu() {
 
       // Add the connection as context in AI chat (without auto-submitting a prompt)
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
+
+      // Focus the AI analyst input
+      setTimeout(focusAIAnalyst, 100);
     },
     [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );

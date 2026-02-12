@@ -91,14 +91,6 @@ pub enum Any {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Value {
-    #[serde(rename = "type")]
-    pub type_field: String,
-    pub value: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Column {
     pub id: i64,
     pub size: f64,

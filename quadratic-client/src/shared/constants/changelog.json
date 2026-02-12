@@ -1,5 +1,29 @@
 [
   {
+    "version": "0.23.11",
+    "date": "2026-02-11",
+    "changes": [
+      "AI model upgrade: Opus 4.6",
+      "Move multiple tables",
+      "Excel named ranges support",
+      "AI error handling improvements",
+      "Bug fixes"
+    ],
+    "details": "<h2>AI model upgrade: Opus 4.6</h2>\n<p>The Auto AI model setting now uses Opus 4.6, delivering improved reasoning and code generation capabilities for a better AI-assisted spreadsheet experience.</p>\n\n<h2>Move multiple tables</h2>\n<p>You can now select and move multiple tables at once. This makes reorganizing your spreadsheet layout faster and easier, with proper handling of overlapping table positions.</p>\n\n<h2>Excel named ranges support</h2>\n<p>Excel imports now properly decode named ranges to A1 notation, improving compatibility when importing complex Excel files that use named ranges.</p>\n\n<h2>AI error handling improvements</h2>\n<p>Several improvements to AI reliability and error handling:</p>\n<ul>\n<li>Buffered AI responses for smoother streaming and reduced parsing errors</li>\n<li>Clear error message and new chat button when context length is exceeded</li>\n<li>Dedicated error messaging for out-of-memory situations</li>\n<li>Fixed AI suggestion crashes and safeguarded the formatting bar</li>\n<li>Fixed AI response parsing errors</li>\n</ul>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and stability improvements including:</p>\n<ul>\n<li>Fixed floating table headers showing improperly on copy as PNG</li>\n<li>Fixed share dialog triggering a page reload</li>\n<li>Fixed scheduled task error handling</li>\n<li>Improved performance for very large tables by optimizing content cache</li>\n<li>Fixed sheet-not-found errors during navigation</li>\n<li>Fixed N+1 query issue in Connections API calls</li>\n<li>Fixed display buffer inconsistencies with column data</li>\n</ul>"
+  },
+  {
+    "version": "0.23.10",
+    "date": "2026-02-05",
+    "changes": [
+      "Agent mode",
+      "Move files between teams",
+      "Excel font size support",
+      "Connections improvements",
+      "Bug fixes"
+    ],
+    "details": "<h2>Agent mode</h2>\n<p>Introducing Agent mode—a new way to interact with AI in Quadratic. Agent mode provides an enhanced, focused experience for working with your data:</p>\n<ul>\n<li>Expanded chat interface with contextual suggestions</li>\n<li>Smart file import suggestions when dragging files</li>\n<li>Improved connection schema browsing</li>\n<li>Toggle between Agent mode and standard mode from the top bar</li>\n</ul>\n\n<h2>Move files between teams</h2>\n<p>You can now move files between your personal space and team folders directly from within the spreadsheet. Access this feature from the File menu or the file name dropdown in the top bar.</p>\n\n<h2>Excel font size support</h2>\n<p>We've upgraded our Excel import/export capabilities to include font size support. Font sizes from Excel files are now preserved on import, and your font sizes will be exported when saving to Excel format.</p>\n\n<h2>Connections improvements</h2>\n<p>Several improvements to the connections experience:</p>\n<ul>\n<li>Simplified workflow for creating new connections</li>\n<li>Focus automatically shifts to chat when adding a connection</li>\n<li>Added \"Learn more\" documentation links for connection setup</li>\n<li>Improved visibility and UI for connection options</li>\n</ul>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and improvements including:</p>\n<ul>\n<li>Fixed hyperlink editing when the inline editor is open</li>\n<li>Fixed a filter bug in cell type menu</li>\n<li>Fixed alignment and styling issues</li>\n</ul>"
+  },
+  {
     "version": "0.23.9",
     "date": "2026-01-30",
     "changes": ["Feature walkthrough for new users", "Free team file limits", "AI thinking improvements", "Bug fixes"],

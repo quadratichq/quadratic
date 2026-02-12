@@ -1,11 +1,13 @@
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import {
-  aiAnalystActiveSchemaConnectionUuidAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { importFilesToSheet } from '@/app/helpers/files';
 import { AIMessageCounterBar } from '@/app/ui/components/AIMessageCounterBar';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
@@ -15,8 +17,10 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { AIPendingChanges } from '@/app/ui/menus/AIAnalyst/AIPendingChanges';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { cn } from '@/shared/shadcn/utils';
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const AIAnalyst = memo(() => {
@@ -24,10 +28,12 @@ export const AIAnalyst = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
-  const setAIAnalystActiveSchemaConnectionUuid = useSetRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const [dragOver, setDragOver] = useState(false);
+  const agentMode = useRecoilValue(agentModeAtom);
+  const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -60,14 +66,37 @@ export const AIAnalyst = memo(() => {
     [setPanelWidth]
   );
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      events.emit('aiAnalystDroppedFiles', files);
-    }
+    setDragOver(e.type !== 'dragleave');
   }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOver(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      const currentSheet = sheets.sheet;
+
+      const aiFiles = await importFilesToSheet({
+        files,
+        sheetId: currentSheet.id,
+        getBounds: () => currentSheet.bounds,
+        getCursorPosition: () => currentSheet.cursor.position.toString(),
+        setProgressState: setFilesImportProgressState,
+        importFile: quadraticCore.importFile,
+      });
+
+      // Send PDFs/images to AI for processing
+      if (aiFiles.length > 0) {
+        events.emit('aiAnalystDroppedFiles', aiFiles);
+      }
+    },
+    [setFilesImportProgressState]
+  );
 
   if (!showAIAnalyst || presentationMode) {
     return null;
@@ -84,10 +113,29 @@ export const AIAnalyst = memo(() => {
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
-        onDragOver={handleDrop}
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
+        onDragLeave={handleDrag}
         onDrop={handleDrop}
       >
-        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 1}px` }} setState={handleResize} />
+        {/* Drag overlay */}
+        {dragOver && (
+          <div className="absolute inset-2 z-20 flex flex-col items-center justify-center rounded bg-background opacity-90">
+            <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
+              <span className="text-sm font-bold">Drop files here</span>
+              <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
+                Excel, CSV, PDF, PQT, or Image supported
+              </span>
+            </div>
+          </div>
+        )}
+
+        <ResizeControl
+          className={agentMode ? 'resize-control--invisible' : ''}
+          position="VERTICAL"
+          style={{ left: `${panelWidth - 1}px` }}
+          setState={handleResize}
+        />
 
         <div
           className={cn(

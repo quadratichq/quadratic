@@ -5,6 +5,8 @@ export interface CodeCell {
   pos: JsCoordinate;
   language: CodeCellLanguage;
   lastModified: number;
+  /** True if this is a single-cell code cell (not stored as a named table) */
+  isSingleCell?: boolean;
 }
 
 export const isSameCodeCell = (cell1: CodeCell, cell2: CodeCell) => {

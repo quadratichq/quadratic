@@ -132,6 +132,10 @@ impl Sheet {
         self.borders.remove_column(column);
         transaction.sheet_borders.insert(self.id);
 
+        // update merge cells and track affected hashes for re-rendering
+        let affected_rects = self.merge_cells.remove_column(column);
+        transaction.add_merge_cells_dirty_hashes(self.id, &affected_rects);
+
         self.columns.remove_column(column);
 
         let changed_selections =
@@ -445,5 +449,73 @@ mod tests {
             !transaction.sheet_meta_fills.contains(&sheet.id),
             "sheet_meta_fills should NOT be marked for finite fills only"
         );
+    }
+
+    #[test]
+    fn test_delete_column_shrinks_merge_cells() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a merge at C2:E4
+        sheet.merge_cells.merge_cells(Rect::test_a1("C2:E4"));
+
+        let a1_context = sheet.expensive_make_a1_context();
+
+        let mut transaction = PendingTransaction::default();
+
+        // Delete column D (column 4) - inside the merge
+        sheet.delete_column(&mut transaction, 4, CopyFormats::None, &a1_context);
+
+        // Merge should shrink: C2:E4 -> C2:D4
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("C2:D4"));
+
+        // Verify transaction has merge_cells_updates marked
+        assert!(transaction.merge_cells_updates.contains_key(&sheet.id));
+    }
+
+    #[test]
+    fn test_delete_column_shifts_merge_cells() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a merge at C2:E4
+        sheet.merge_cells.merge_cells(Rect::test_a1("C2:E4"));
+
+        let a1_context = sheet.expensive_make_a1_context();
+
+        let mut transaction = PendingTransaction::default();
+
+        // Delete column A (column 1) - before the merge
+        sheet.delete_column(&mut transaction, 1, CopyFormats::None, &a1_context);
+
+        // Merge should shift left: C2:E4 -> B2:D4
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 1);
+        assert_eq!(rects[0], Rect::test_a1("B2:D4"));
+    }
+
+    #[test]
+    fn test_delete_column_removes_single_column_merge() {
+        use crate::Rect;
+
+        let mut sheet = Sheet::test();
+
+        // Create a single column merge at C2:C4
+        sheet.merge_cells.merge_cells(Rect::test_a1("C2:C4"));
+
+        let a1_context = sheet.expensive_make_a1_context();
+
+        let mut transaction = PendingTransaction::default();
+
+        // Delete column C (column 3) - the entire merge
+        sheet.delete_column(&mut transaction, 3, CopyFormats::None, &a1_context);
+
+        // Merge should be deleted
+        let rects: Vec<Rect> = sheet.merge_cells.iter_merge_cells().collect();
+        assert_eq!(rects.len(), 0);
     }
 }

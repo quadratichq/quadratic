@@ -5,7 +5,7 @@ import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureVisible, moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
-import type { Pos } from '@/app/quadratic-core/quadratic_core';
+import type { Pos } from '@/app/quadratic-core-types';
 import { Direction, jumpCursor, moveCursor } from '@/app/quadratic-core/quadratic_core';
 
 function setCursorPosition(x: number, y: number) {
@@ -19,17 +19,14 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
   const sheetId = sheets.current;
 
   const cursorPos = cursor.position;
-  const selEnd = cursor.selectionEnd;
 
   let jumpStartX = cursorPos.x;
   let jumpStartY = cursorPos.y;
 
   if (select) {
-    if (direction === Direction.Up || direction === Direction.Down) {
-      jumpStartY = selEnd.y;
-    } else {
-      jumpStartX = selEnd.x;
-    }
+    const endPos = cursor.selectionEnd;
+    jumpStartX = endPos.x;
+    jumpStartY = endPos.y;
   }
 
   let newPos: Pos;
@@ -47,33 +44,36 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
         direction,
         sheets.sheet.contentCache,
         dataTablesCache,
-        sheets.jsA1Context
+        sheets.jsA1Context,
+        sheets.sheet.mergeCells
       );
     } else {
-      newPos = moveCursor(sheetId, jumpStartX, jumpStartY, direction, dataTablesCache, sheets.jsA1Context);
+      newPos = moveCursor(
+        sheetId,
+        jumpStartX,
+        jumpStartY,
+        direction,
+        dataTablesCache,
+        sheets.jsA1Context,
+        sheets.sheet.mergeCells
+      );
     }
   } catch (e) {
     console.error('Failed to jump cursor', e);
     return;
   }
 
-  const jumpCol = Math.max(1, Number(newPos.x));
-  const jumpRow = Math.max(1, Number(newPos.y));
+  let jumpCol = Math.max(1, Number(newPos.x));
+  let jumpRow = Math.max(1, Number(newPos.y));
+
+  // Skip if position hasn't changed (e.g., at boundary)
+  if (jumpCol === jumpStartX && jumpRow === jumpStartY) {
+    return;
+  }
 
   if (select) {
-    switch (direction) {
-      case Direction.Up:
-      case Direction.Down:
-        cursor.selectTo(selEnd.x, jumpRow, true);
-        ensureVisible({ x: selEnd.x, y: jumpRow });
-        break;
-
-      case Direction.Left:
-      case Direction.Right:
-        cursor.selectTo(jumpCol, selEnd.y, true);
-        ensureVisible({ x: jumpCol, y: selEnd.y });
-        break;
-    }
+    cursor.keyboardJumpSelectTo(jumpCol, jumpRow, direction);
+    ensureVisible({ x: jumpCol, y: jumpRow });
   } else {
     cursor.moveTo(jumpCol, jumpRow, { checkForTableRef: true, ensureVisible: { x: jumpCol, y: jumpRow } });
   }
@@ -81,8 +81,8 @@ async function adjustCursor(direction: Direction, jump: boolean, select: boolean
 
 function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
-  const selectionEnd = cursor.selectionEnd;
-  cursor.selectTo(Math.max(1, selectionEnd.x + deltaX), Math.max(1, selectionEnd.y + deltaY), false);
+  cursor.keyboardSelectTo(deltaX, deltaY);
+  cursor.updatePosition(true);
 }
 
 export function keyboardPosition(event: KeyboardEvent): boolean {

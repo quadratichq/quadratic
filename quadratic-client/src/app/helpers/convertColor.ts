@@ -73,6 +73,95 @@ export function convertRgbaToTint(rgba: Rgba): { tint: number; alpha: number } {
   return { tint: Color(rgb).rgbNumber(), alpha: rgba.alpha };
 }
 
+// Color picker utility functions
+
+/** Convert hex color string to RGB object */
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  try {
+    const color = Color(hex);
+    const rgb = color.rgb().object();
+    return {
+      r: Math.round(rgb.r),
+      g: Math.round(rgb.g),
+      b: Math.round(rgb.b),
+    };
+  } catch {
+    return { r: 0, g: 0, b: 0 };
+  }
+}
+
+/** Convert hex color string to HSL object */
+export function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  try {
+    const color = Color(hex);
+    const hsl = color.hsl().object();
+    return {
+      h: Math.round(hsl.h || 0),
+      s: Math.round(hsl.s || 0),
+      l: Math.round(hsl.l || 0),
+    };
+  } catch {
+    return { h: 0, s: 100, l: 50 };
+  }
+}
+
+/** Convert hex color string to HSV object (saturation and value as 0-1) */
+export function hexToHsv(hex: string): { h: number; s: number; v: number } {
+  try {
+    const color = Color(hex);
+    const hsv = color.hsv().object();
+    return {
+      h: hsv.h || 0,
+      s: (hsv.s || 0) / 100,
+      v: (hsv.v || 0) / 100,
+    };
+  } catch {
+    return { h: 0, s: 1, v: 1 };
+  }
+}
+
+/** Convert RGB values to hex string */
+export function rgbToHex(r: number, g: number, b: number): string {
+  try {
+    return Color.rgb(r, g, b).hex();
+  } catch {
+    return '#000000';
+  }
+}
+
+/** Convert HSL values to hex string */
+export function hslToHex(h: number, s: number, l: number): string {
+  try {
+    return Color.hsl(h, s, l).hex();
+  } catch {
+    return '#000000';
+  }
+}
+
+/** Convert HSV values to hex string (saturation and value as 0-1) */
+export function hsvToHex(h: number, s: number, v: number): string {
+  try {
+    return Color.hsv(h, s * 100, v * 100).hex();
+  } catch {
+    return '#000000';
+  }
+}
+
+/** Validate if a string is a valid hex color */
+export function isValidHex(hex: string): boolean {
+  return /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
+}
+
+/** Normalize a color string to lowercase hex format */
+export function normalizeColor(color: string): string | null {
+  try {
+    const c = Color(color);
+    return c.hex().toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Given the name of a CSS variable that maps to an HSL string, return the tint
  * we can use in pixi.

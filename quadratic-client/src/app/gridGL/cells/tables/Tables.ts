@@ -235,7 +235,6 @@ export class Tables extends Container<Table> {
     }
 
     this.cursorPosition(true);
-    events.emit('setDirty', { singleCellOutlines: true });
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -274,7 +273,7 @@ export class Tables extends Container<Table> {
   private getVisibleTables = (forceBounds?: Rectangle): Table[] => {
     const bounds = forceBounds ?? pixiApp.viewport.getVisibleBounds();
     const cellBounds = this.sheet.getRectangleFromScreen(bounds);
-    const tables = this.sheet.dataTablesCache.getLargeTablesInRect(
+    const tables = this.sheet.dataTablesCache.getTablesInRect(
       cellBounds.left,
       cellBounds.top,
       cellBounds.right - 1,
@@ -289,6 +288,17 @@ export class Tables extends Container<Table> {
         return [];
       }) ?? []
     );
+  };
+
+  /// Resets all floating table headers back to their normal grid positions.
+  /// Used before copy-as-PNG to ensure headers render at their true locations.
+  resetFloatingHeaders = () => {
+    for (const table of this.children) {
+      if (table.inOverHeadings) {
+        table.header.toGrid();
+        table.inOverHeadings = false;
+      }
+    }
   };
 
   /// Forces an update of all tables to the given bounds (used by thumbnail generation)
@@ -648,34 +658,28 @@ export class Tables extends Container<Table> {
   };
 
   // Returns single cell code cells that are in the given cell-based rectangle.
+  // Note: Single-cell code cells are stored as CellValue::Code in the grid, not in the data tables cache.
+  // We iterate the local singleCellTables map and filter by position.
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
-    const tablePositions = this.sheet.dataTablesCache.getSingleCellTablesInRect(
-      cellRectangle.left,
-      cellRectangle.top,
-      cellRectangle.right - 1,
-      cellRectangle.bottom - 1
-    );
-    if (!tablePositions) return [];
-
-    return tablePositions?.flatMap((pos) => {
-      const codeCell = this.singleCellTables[`${pos.x},${pos.y}`];
-      if (codeCell) {
-        return [codeCell];
-      } else {
-        return [];
+    const result: JsRenderCodeCell[] = [];
+    for (const key in this.singleCellTables) {
+      const codeCell = this.singleCellTables[key];
+      if (
+        codeCell.x >= cellRectangle.left &&
+        codeCell.x < cellRectangle.right &&
+        codeCell.y >= cellRectangle.top &&
+        codeCell.y < cellRectangle.bottom
+      ) {
+        result.push(codeCell);
       }
-    });
+    }
+    return result;
   };
 
-  /// Returns all Tables (ie, not single-cell code cells) that are within the
+  /// Returns all Tables (ie, DataTables, not single-cell CellValue::Code) that are within the
   /// cell-based rectangle
-  getLargeTablesInRect = (rect: Rectangle): Table[] => {
-    const tablePositions = this.sheet.dataTablesCache.getLargeTablesInRect(
-      rect.x,
-      rect.y,
-      rect.right - 1,
-      rect.bottom - 1
-    );
+  getTablesInRect = (rect: Rectangle): Table[] => {
+    const tablePositions = this.sheet.dataTablesCache.getTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
     return tablePositions.flatMap((pos) => {
       const table = this.getTable(pos.x, pos.y);
       if (table) {
@@ -697,7 +701,20 @@ export class Tables extends Container<Table> {
   };
 
   hasCodeCellInCurrentSelection = () => {
-    return this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
+    // Check DataTables (multi-cell code outputs)
+    if (this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context)) {
+      return true;
+    }
+
+    // Check single-cell code cells (CellValue::Code)
+    for (const key in this.singleCellTables) {
+      const [x, y] = key.split(',').map(Number);
+      if (sheets.sheet.cursor.contains(x, y)) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   //#endregion

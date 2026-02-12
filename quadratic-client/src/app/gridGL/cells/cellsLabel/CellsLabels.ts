@@ -48,10 +48,12 @@ export class CellsLabels extends Container {
     this.cellsTextHashDebug = this.addChild(new Container());
 
     events.on('clickedToCell', this.clickedToCell);
+    events.on('mergeCells', this.repositionValidationWarnings);
   }
 
   destroy() {
     events.off('clickedToCell', this.clickedToCell);
+    events.off('mergeCells', this.repositionValidationWarnings);
     super.destroy();
   }
 
@@ -87,6 +89,7 @@ export class CellsLabels extends Container {
     }
     cellsTextHash.links = message.links;
     cellsTextHash.newDrawRects = message.drawRects;
+    cellsTextHash.newCodeOutlines = message.codeOutlines;
   }
 
   // received a new LabelMeshEntry to add to a CellsTextHash
@@ -199,6 +202,14 @@ export class CellsLabels extends Container {
       hash.special.clickedToCell(column, row, world);
     }
     content.validations.clickedToCell(column, row, world);
+  };
+
+  // Called when merge cells change to reposition validation warnings
+  private repositionValidationWarnings = (sheetId: string) => {
+    if (sheetId !== this.sheetId) return;
+    this.cellsTextHashes.children.forEach((cellsTextHash) => {
+      cellsTextHash.warnings.reposition();
+    });
   };
 
   renderValidationUpdates(validationWarnings: JsValidationWarning[]) {
