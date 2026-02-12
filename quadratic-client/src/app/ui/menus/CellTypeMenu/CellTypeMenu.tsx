@@ -3,7 +3,7 @@ import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -23,11 +23,7 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import {
-  isSyncedConnectionType,
-  type ConnectionList,
-  type ConnectionType,
-} from 'quadratic-shared/typesAndSchemasConnections';
+import { type ConnectionList, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import React, { memo, useCallback, useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 
@@ -191,17 +187,16 @@ interface ConnectionCommandItemProps {
 const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionCommandItemProps) => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-  const syncState = isSyncedConnectionType(connection.type) ? deriveSyncStateFromConnectionList(connection) : null;
-  const isNotSynced = syncState !== null && syncState !== 'synced';
+  const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
 
   const handleSelect = useCallback(() => {
-    if (isNotSynced) {
+    if (isReadyForUse) {
+      onSelect();
+    } else {
       setShowCellTypeMenu(false);
       setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
-    } else {
-      onSelect();
     }
-  }, [isNotSynced, setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type, onSelect]);
+  }, [isReadyForUse, setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type, onSelect]);
 
   return (
     <CommandItem

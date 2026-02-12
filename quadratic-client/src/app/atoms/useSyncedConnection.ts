@@ -1,4 +1,8 @@
-import type { SyncedConnectionLatestLogStatus } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  isSyncedConnectionType,
+  type ConnectionType,
+  type SyncedConnectionLatestLogStatus,
+} from 'quadratic-shared/typesAndSchemasConnections';
 
 /**
  * Sync state machine:
@@ -64,4 +68,25 @@ export function deriveSyncStateFromConnectionList(connection: {
     percentCompleted: connection.syncedConnectionPercentCompleted ?? undefined,
     latestLogStatus: connection.syncedConnectionLatestLogStatus ?? undefined,
   });
+}
+
+/**
+ * Returns the sync state and whether the connection is not yet synced.
+ *
+ * Combines the `isSyncedConnectionType` guard with `deriveSyncStateFromConnectionList`
+ * so callers don't need to repeat the same two-line pattern everywhere.
+ *
+ * - `syncState` is `null` for non-synced connection types, otherwise the derived `SyncState`.
+ * - `isReadyForUse` is `true` when the connection is either not a synced type or is fully synced.
+ */
+export function getConnectionSyncInfo(connection: {
+  type: ConnectionType;
+  syncedConnectionPercentCompleted?: number | null;
+  syncedConnectionLatestLogStatus?: SyncedConnectionLatestLogStatus | null;
+}): { syncState: SyncState | null; isReadyForUse: boolean } {
+  const syncState = isSyncedConnectionType(connection.type)
+    ? (deriveSyncStateFromConnectionList(connection) ?? null)
+    : null;
+  const isReadyForUse = syncState === null || syncState === 'synced';
+  return { syncState, isReadyForUse };
 }

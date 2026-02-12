@@ -1,5 +1,5 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { AddIcon, BankIcon, BrokerageIcon, CheckIcon, CreditCardIcon, SettingsIcon } from '@/shared/components/Icons';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
 import { memo, useCallback, useMemo } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { connectionsByType } from './connectionsByType';
@@ -136,16 +136,15 @@ interface ConnectionMenuItemProps {
 
 const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMenuItemProps) => {
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-  const syncState = isSyncedConnectionType(connection.type) ? deriveSyncStateFromConnectionList(connection) : null;
-  const isNotSynced = syncState !== null && syncState !== 'synced';
+  const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
 
   const handleClick = useCallback(() => {
-    if (isNotSynced) {
-      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
-    } else {
+    if (isReadyForUse) {
       onClick();
+    } else {
+      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
     }
-  }, [isNotSynced, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
+  }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
   return (
     <DropdownMenuItem onClick={handleClick} className="gap-3">

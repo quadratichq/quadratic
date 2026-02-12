@@ -4,7 +4,7 @@ import type {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -21,7 +21,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -298,23 +298,20 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
             }
           >
             {visibleConnections.map((connection) => {
-              const syncState = isSyncedConnectionType(connection.type)
-                ? deriveSyncStateFromConnectionList(connection)
-                : null;
-              const isNotSynced = syncState !== null && syncState !== 'synced';
+              const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
               return (
                 <SuggestionButton
                   key={connection.uuid}
                   icon={<ConnectionIcon type={connection.type} syncState={syncState} />}
                   text={connection.name}
                   onClick={() => {
-                    if (isNotSynced) {
+                    if (isReadyForUse) {
+                      handleSelectConnection(connection.uuid, connection.type, connection.name);
+                    } else {
                       setShowConnectionsMenu({
                         initialConnectionUuid: connection.uuid,
                         initialConnectionType: connection.type,
                       });
-                    } else {
-                      handleSelectConnection(connection.uuid, connection.type, connection.name);
                     }
                   }}
                 />
