@@ -22,6 +22,7 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::Layer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::data_pipeline::background_workers::init_data_pipeline_workers;
 use crate::file::{get_files_to_process, process};
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
@@ -289,6 +290,11 @@ pub(crate) async fn serve() -> Result<()> {
     // in a separate thread, sync connections
     let sync_handles = init_sync_workers(state.clone(), cancellation_token.clone())?;
     background_handles.extend(sync_handles);
+
+    // in a separate thread, run data pipelines
+    let data_pipeline_handles =
+        init_data_pipeline_workers(state.clone(), cancellation_token.clone());
+    background_handles.extend(data_pipeline_handles);
 
     // Start the HTTP server with graceful shutdown
     axum::serve(

@@ -29,6 +29,9 @@ pub(crate) struct Settings {
     pub(crate) plaid_client_id: String,
     pub(crate) plaid_secret: String,
     pub(crate) plaid_environment: PlaidEnvironment,
+
+    // Intrinio
+    pub(crate) intrinio_api_key: String,
 }
 
 impl Settings {
@@ -55,6 +58,7 @@ impl Settings {
             plaid_client_id: config.plaid_client_id.to_owned(),
             plaid_secret: config.plaid_secret.to_owned(),
             plaid_environment: config.plaid_environment.to_owned(),
+            intrinio_api_key: config.intrinio_api_key.to_owned(),
             checkpoint_bucket_name: Self::checkpoint_bucket_name(config),
         })
     }

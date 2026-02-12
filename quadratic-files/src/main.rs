@@ -5,6 +5,7 @@
 
 mod auth;
 mod config;
+mod data_pipeline;
 mod error;
 mod file;
 mod health;

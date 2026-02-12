@@ -10,6 +10,7 @@ aes = { version = "0.8.4", optional = true }
 rand_core = { version = "0.6", features = ["getrandom"], optional = true }
 arrow = { version = "=54.2.1", features = ["prettyprint"], optional = true }
 arrow-array = { version = "54.2.1", optional = true }
+arrow-csv = { version = "54.2.1", optional = true }
 arrow-json = { version = "54.2.1", optional = true }
 async-trait = "0.1.80"
 aws-config = { version = "1.1.1", features = [
@@ -166,6 +167,7 @@ sql = [
 storage = ["aws", "crypto", "tokio"]
 synced = [
   "arrow",
+  "arrow-csv",
   "arrow-json",
   "base64",
   "dotenv",
