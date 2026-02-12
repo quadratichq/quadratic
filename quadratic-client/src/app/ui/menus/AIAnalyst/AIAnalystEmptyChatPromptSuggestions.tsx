@@ -228,7 +228,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
                 <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
                 <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
               </div>
-              <p className="text-sm">Excel, CSV, PDF, PQT, & images</p>
+              <p className="text-sm">Excel, CSV, PDF, Parquet, & images</p>
               <p className="text-xs text-muted-foreground">
                 Drag and drop, or{' '}
                 <button

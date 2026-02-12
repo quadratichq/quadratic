@@ -124,7 +124,7 @@ export const AIAnalyst = memo(() => {
             <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
               <span className="text-sm font-bold">Drop files here</span>
               <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
-                Excel, CSV, PDF, PQT, or Image supported
+                Excel, CSV, PDF, Parquet, or Image supported
               </span>
             </div>
           </div>
