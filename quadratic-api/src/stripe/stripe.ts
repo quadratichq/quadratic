@@ -170,6 +170,9 @@ export const updateTeamStatus = async (
     case 'unpaid':
       stripeSubscriptionStatus = SubscriptionStatus.UNPAID;
       break;
+    case 'paused':
+      stripeSubscriptionStatus = SubscriptionStatus.PAUSED;
+      break;
     default:
       logger.error('Unhandled subscription status', { status });
       return;
@@ -266,6 +269,73 @@ export const getIsMonthlySubscription = async (stripeSubscriptionId: string): Pr
   return isMonthly;
 };
 
+// Priority order for choosing the best subscription when multiple exist.
+// Lower index = higher priority.
+const SUBSCRIPTION_STATUS_PRIORITY: Stripe.Subscription.Status[] = [
+  'active',
+  'trialing',
+  'past_due',
+  'incomplete',
+  'unpaid',
+  'canceled',
+  'incomplete_expired',
+  'paused',
+];
+
+/**
+ * Selects the best subscription from a list of subscriptions.
+ * Prefers active subscriptions; falls back to the highest-priority status.
+ * Among subscriptions with the same status, prefers the most recently created one.
+ */
+export const selectBestSubscription = (subscriptions: Stripe.Subscription[]): Stripe.Subscription => {
+  if (subscriptions.length === 0) {
+    throw new Error('selectBestSubscription called with empty array');
+  }
+  return [...subscriptions].sort((a, b) => {
+    const priorityA = SUBSCRIPTION_STATUS_PRIORITY.indexOf(a.status);
+    const priorityB = SUBSCRIPTION_STATUS_PRIORITY.indexOf(b.status);
+    if (priorityA !== priorityB) return priorityA - priorityB;
+    // Same status: prefer more recently created
+    return b.created - a.created;
+  })[0];
+};
+
+/**
+ * Cancels any incomplete subscriptions for a Stripe customer.
+ * This prevents duplicate subscriptions when a user retries checkout after
+ * an abandoned or failed payment attempt.
+ *
+ * Returns the number of subscriptions canceled.
+ */
+export const cancelIncompleteSubscriptions = async (stripeCustomerId: string): Promise<number> => {
+  const customer = await stripe.customers.retrieve(stripeCustomerId, {
+    expand: ['subscriptions'],
+  });
+
+  if (customer.deleted) {
+    return 0;
+  }
+
+  const subscriptions = customer.subscriptions?.data ?? [];
+  const incompleteSubscriptions = subscriptions.filter(
+    (s) => s.status === 'incomplete' || s.status === 'incomplete_expired'
+  );
+
+  // incomplete_expired subscriptions are already terminal and don't need cancellation,
+  // but incomplete ones represent abandoned checkout attempts that should be cleaned up.
+  const cancelable = incompleteSubscriptions.filter((s) => s.status === 'incomplete');
+
+  for (const sub of cancelable) {
+    logger.info('Canceling incomplete subscription before new checkout', {
+      customerId: stripeCustomerId,
+      subscriptionId: sub.id,
+    });
+    await stripe.subscriptions.cancel(sub.id);
+  }
+
+  return cancelable.length;
+};
+
 export const updateBilling = async (team: Team | DecryptedTeam) => {
   if (!team.stripeCustomerId) {
     return;
@@ -282,17 +352,10 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
     return;
   }
 
-  if (customer.subscriptions && customer.subscriptions.data.length === 1) {
-    // if we have exactly one subscription, update the team
-    const subscription = customer.subscriptions.data[0];
-    await updateTeamStatus(
-      subscription.id,
-      subscription.status,
-      team.stripeCustomerId,
-      new Date(subscription.current_period_end * 1000)
-    );
-  } else if (customer.subscriptions && customer.subscriptions.data.length === 0) {
-    // if we have zero subscriptions, update the team
+  const subscriptions = customer.subscriptions?.data ?? [];
+
+  if (subscriptions.length === 0) {
+    // No subscriptions — clear subscription data
     await dbClient.team.update({
       where: { id: team.id },
       data: {
@@ -302,11 +365,51 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
         stripeSubscriptionLastUpdated: null,
       },
     });
-  } else {
-    // If we have more than one subscription, log an error
-    // This should not happen.
-    logger.error('Unexpected Error: Unhandled number of subscriptions', {
-      subscriptions: customer.subscriptions?.data,
+    return;
+  }
+
+  if (subscriptions.length > 1) {
+    // Multiple subscriptions is unexpected but can happen when users retry checkout.
+    // Log a warning and pick the best one instead of bailing out.
+    logger.warn('Multiple subscriptions found for customer, selecting best one', {
+      customerId: team.stripeCustomerId,
+      subscriptionCount: subscriptions.length,
+      statuses: subscriptions.map((s) => s.status),
     });
+  }
+
+  const subscription = selectBestSubscription(subscriptions);
+  await updateTeamStatus(
+    subscription.id,
+    subscription.status,
+    team.stripeCustomerId,
+    new Date(subscription.current_period_end * 1000)
+  );
+
+  // Cancel non-selected subscriptions that are still in a cancelable state.
+  // This cleans up stale subscriptions left behind by retried checkouts.
+  // Terminal statuses (canceled, incomplete_expired) don't need cancellation.
+  const TERMINAL_STATUSES: Stripe.Subscription.Status[] = ['canceled', 'incomplete_expired'];
+  const staleSubscriptions = subscriptions.filter(
+    (s) => s.id !== subscription.id && !TERMINAL_STATUSES.includes(s.status)
+  );
+
+  for (const staleSub of staleSubscriptions) {
+    try {
+      logger.info('Canceling non-selected stale subscription during billing sync', {
+        customerId: team.stripeCustomerId,
+        canceledSubscriptionId: staleSub.id,
+        canceledStatus: staleSub.status,
+        selectedSubscriptionId: subscription.id,
+      });
+      await stripe.subscriptions.cancel(staleSub.id);
+    } catch (err) {
+      // Log but don't fail — the primary subscription was already synced successfully
+      logger.error('Failed to cancel stale subscription', {
+        customerId: team.stripeCustomerId,
+        subscriptionId: staleSub.id,
+        error: err,
+      });
+    }
   }
 };

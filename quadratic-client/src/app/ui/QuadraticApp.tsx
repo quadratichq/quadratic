@@ -24,7 +24,8 @@ preloadUserAIRules();
 preloadUserAILanguages();
 
 export const QuadraticApp = memo(() => {
-  // ensure GridSettings are loaded before app starts
+  // Read gridSettings so its effect runs (localStorage) before any child reads aiAnalystAtom.
+  // Otherwise aiAnalystAtom's effect can run first and see the default showAIAnalystOnStartup (true).
   const gridSettings = useRecoilValue(gridSettingsAtom);
 
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
