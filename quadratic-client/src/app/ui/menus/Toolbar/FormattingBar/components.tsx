@@ -39,6 +39,8 @@ export const FormatButtonDropdown = memo(
     className,
     checked,
     hideLabel,
+    open,
+    onOpenChange,
   }: {
     action: string;
     Icon?: React.ComponentType<any> | null;
@@ -49,9 +51,11 @@ export const FormatButtonDropdown = memo(
     className?: string;
     checked?: boolean;
     hideLabel?: boolean;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
   }) => {
     return (
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger
@@ -186,12 +190,14 @@ export const FormatButton = memo(
     checked,
     hideLabel,
     enableHoldToRepeat = false,
+    disabled = false,
   }: {
     action: T;
     actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
     checked?: boolean | null;
     hideLabel?: boolean;
     enableHoldToRepeat?: boolean;
+    disabled?: boolean;
   }) => {
     const actionSpec = defaultActionSpec[action];
     const label = actionSpec.label();
@@ -300,6 +306,7 @@ export const FormatButton = memo(
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
             data-testid={hideLabel ? '' : action}
+            disabled={disabled}
           >
             <Icon />
           </Button>
@@ -322,6 +329,7 @@ export const FormatColorPickerButton = memo(
     activeColor?: string;
     hideLabel?: boolean;
   }) => {
+    const [open, setOpen] = useState(false);
     const actionSpec = defaultActionSpec[action];
     const label = actionSpec.label();
     const Icon = actionSpec.Icon;
@@ -343,8 +351,13 @@ export const FormatColorPickerButton = memo(
         checked={activeColor !== undefined}
         hideLabel={hideLabel}
         action={action}
+        open={open}
+        onOpenChange={setOpen}
       >
-        <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
+        <DropdownMenuItem
+          className="color-picker-dropdown-menu flex flex-col !bg-background p-0"
+          onSelect={(e) => e.preventDefault()}
+        >
           <ColorPicker
             color={activeColor}
             onChangeComplete={(color) => {
@@ -367,6 +380,7 @@ export const FormatColorPickerButton = memo(
                 focusGrid();
               }
             }}
+            onClose={() => setOpen(false)}
           />
         </DropdownMenuItem>
       </FormatButtonDropdown>

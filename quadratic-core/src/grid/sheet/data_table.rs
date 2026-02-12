@@ -26,6 +26,11 @@ impl Sheet {
     }
 
     pub fn code_run_at(&self, pos: &Pos) -> Option<&CodeRun> {
+        // First check if there's a CellValue::Code in the columns
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(*pos) {
+            return Some(&code_cell.code_run);
+        }
+        // Otherwise check the data_tables
         self.data_tables.get_at(pos).and_then(|dt| dt.code_run())
     }
 
@@ -121,10 +126,29 @@ impl Sheet {
             .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 
-    /// Returns true if there is a data table intersecting a rect, excluding a specific position
+    /// Returns true if there is a data table or CellValue::Code intersecting a rect, excluding a specific position.
+    /// TODO: Remove CellValue::Code check once we support code cells inside tables.
     pub fn contains_data_table_within_rect(&self, rect: Rect, skip: Option<&Pos>) -> bool {
-        self.data_tables_pos_intersect_rect(rect, false)
+        // Check for DataTables
+        if self
+            .data_tables_pos_intersect_rect(rect, false)
             .any(|pos| skip != Some(&pos))
+        {
+            return true;
+        }
+        // Check for CellValue::Code in the rect
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if skip == Some(&pos) {
+                    continue;
+                }
+                if matches!(self.cell_value_ref(pos), Some(CellValue::Code(_))) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     /// Returns a DataTable at a Pos as a result
@@ -138,7 +162,17 @@ impl Sheet {
     /// spill due to other data tables is managed internally by SheetDataTables
     fn check_spills_due_to_column_values(&self, pos: Pos, data_table: &DataTable) -> bool {
         let output_rect = data_table.output_rect(pos, true);
-        self.columns.has_content_in_rect(output_rect)
+        // Exclude the code cell's own position to avoid false positives when
+        // a CellValue::Code is being replaced by a DataTable (or vice versa)
+        self.columns.has_content_in_rect_except(output_rect, pos)
+    }
+
+    /// Checks spill due to merged cells on sheet
+    ///
+    /// Returns true if the data table's output would overlap any merged cells
+    fn check_spills_due_to_merged_cells(&self, pos: Pos, data_table: &DataTable) -> bool {
+        let output_rect = data_table.output_rect(pos, true);
+        !self.merge_cells.get_merge_cells(output_rect).is_empty()
     }
 
     /// Returns a mutable DataTable at a Pos
@@ -160,6 +194,7 @@ impl Sheet {
             false => None,
         };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
+        data_table.spill_merged_cell = self.check_spills_due_to_merged_cells(pos, &data_table);
         let (index, old_data_table, dirty_rects) = self.data_tables.insert_full(pos, data_table);
         (old_cell_value, index, old_data_table, dirty_rects)
     }
@@ -175,6 +210,7 @@ impl Sheet {
             false => None,
         };
         data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
+        data_table.spill_merged_cell = self.check_spills_due_to_merged_cells(pos, &data_table);
         let (index, old_data_table, dirty_rects) =
             self.data_tables.insert_before(index, pos, data_table);
         (old_cell_value, index, old_data_table, dirty_rects)
@@ -203,17 +239,21 @@ impl Sheet {
         let mut data_tables_to_modify = Vec::new();
 
         for (_, pos, data_table) in self.data_tables.get_in_rect_sorted(rect, true) {
-            let new_spill = self.check_spills_due_to_column_values(pos, data_table);
-            if new_spill != data_table.spill_value {
-                data_tables_to_modify.push((pos, new_spill));
+            let new_spill_value = self.check_spills_due_to_column_values(pos, data_table);
+            let new_spill_merged_cell = self.check_spills_due_to_merged_cells(pos, data_table);
+            if new_spill_value != data_table.spill_value
+                || new_spill_merged_cell != data_table.spill_merged_cell
+            {
+                data_tables_to_modify.push((pos, new_spill_value, new_spill_merged_cell));
             }
         }
 
         let mut dirty_rects = HashSet::new();
 
-        for (pos, new_spill) in data_tables_to_modify {
+        for (pos, new_spill_value, new_spill_merged_cell) in data_tables_to_modify {
             if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
-                dt.spill_value = new_spill;
+                dt.spill_value = new_spill_value;
+                dt.spill_merged_cell = new_spill_merged_cell;
                 Ok(())
             }) {
                 dirty_rects.extend(dirty_rect);
@@ -291,8 +331,10 @@ impl Sheet {
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
+        // Note: CellValue::Code cells are kept in cells (CellValues) and not
+        // converted to DataTable. They are handled separately during paste.
+
         for (output_rect, data_table) in self.iter_data_tables_in_rect(bounds.to_owned()) {
-            // only change the cells if the CellValue::Code is not in the selection box
             let data_table_pos = Pos {
                 x: output_rect.min.x,
                 y: output_rect.min.y,
@@ -516,6 +558,11 @@ impl Sheet {
 
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
+        // First check for CellValue::Code in columns
+        if let Some(CellValue::Code(code_cell)) = self.cell_value_ref(pos) {
+            return Some(code_cell.code_run.language.clone());
+        }
+        // Otherwise check data_tables
         self.data_table_at(&pos)
             .map(|data_table| data_table.get_language())
     }
@@ -526,8 +573,13 @@ impl Sheet {
             .is_some_and(|lang| lang == CodeCellLanguage::Formula)
     }
 
-    /// Returns true if the cell at pos is a source cell
+    /// Returns true if the cell at pos is a source cell (code cell anchor or data table)
     pub fn is_source_cell(&self, pos: Pos) -> bool {
+        // Check for CellValue::Code in columns
+        if matches!(self.cell_value_ref(pos), Some(CellValue::Code(_))) {
+            return true;
+        }
+        // Check for DataTable
         self.data_table_at(&pos).is_some()
     }
 
@@ -590,6 +642,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Formula,
             code: "=1".to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),

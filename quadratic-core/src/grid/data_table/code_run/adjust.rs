@@ -97,6 +97,8 @@ impl CodeRun {
                     pos,
                     adjust,
                 );
+                // Clear cached AST since the code has changed
+                self.formula_ast = None;
             } else if self.language.has_q_cells() {
                 self.replace_q_cells_a1_selection(pos, a1_context, |cell_ref| {
                     Ok(cell_ref

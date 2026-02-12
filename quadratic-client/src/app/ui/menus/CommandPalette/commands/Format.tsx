@@ -1,4 +1,5 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import {
   clearFormattingAndBorders,
@@ -102,6 +103,8 @@ const commands: CommandGroup = {
         return <CommandPaletteListItem {...props} action={props.openDateFormat} icon={<FormatDateTimeIcon />} />;
       },
     },
+    Action.MergeCells,
+    Action.UnmergeCells,
   ],
 };
 

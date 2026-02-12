@@ -7,6 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import {
   AlignmentFormatting,
   Clear,
@@ -14,6 +15,7 @@ import {
   FillAndBorderFormatting,
   FontSizeFormatting,
   FormatMoreButton,
+  InsertLinkFormatting,
   NumberFormatting,
   TextFormatting,
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
@@ -32,7 +34,8 @@ type FormattingTypes =
   | 'FontSizeFormatting'
   | 'FillAndBorderFormatting'
   | 'AlignmentFormatting'
-  | 'Clear';
+  | 'Clear'
+  | 'InsertLinkFormatting';
 
 export const FormattingBar = memo(() => {
   const [hiddenItems, setHiddenItems] = useState<FormattingTypes[]>([]);
@@ -45,6 +48,7 @@ export const FormattingBar = memo(() => {
   const fillAndBorderFormattingRef = useRef<HTMLDivElement>(null);
   const alignmentFormattingRef = useRef<HTMLDivElement>(null);
   const clearRef = useRef<HTMLDivElement>(null);
+  const insertLinkFormattingRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
@@ -75,6 +79,7 @@ export const FormattingBar = memo(() => {
       FillAndBorderFormatting: fillAndBorderFormattingRef,
       AlignmentFormatting: alignmentFormattingRef,
       Clear: clearRef,
+      InsertLinkFormatting: insertLinkFormattingRef,
     };
 
     // check if any of the formatting groups are too wide to fit on the formatting bar
@@ -205,6 +210,7 @@ export const FormattingBar = memo(() => {
               />
               <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
               <Clear ref={clearRef} hideLabel={true} />
+              <InsertLinkFormatting ref={insertLinkFormattingRef} hideLabel={true} />
               <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
             </div>
           </div>,
@@ -213,7 +219,7 @@ export const FormattingBar = memo(() => {
 
       <div className="flex h-full w-full flex-grow" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
-          <div className="flex flex-shrink select-none">
+          <div className="flex flex-shrink select-none items-center">
             {!hiddenItems.includes('NumberFormatting') && (
               <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
             )}
@@ -224,6 +230,7 @@ export const FormattingBar = memo(() => {
             {!hiddenItems.includes('FontSizeFormatting') && (
               <FontSizeFormatting key="main-font-size-formatting" formatSummary={formatSummary} />
             )}
+            <FormatPainterButton />
             {!hiddenItems.includes('FillAndBorderFormatting') && (
               <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
             )}
@@ -231,6 +238,9 @@ export const FormattingBar = memo(() => {
               <AlignmentFormatting key="main-alignment-formatting" formatSummary={formatSummary} />
             )}
             {!hiddenItems.includes('Clear') && <Clear key="main-clear" />}
+            {!hiddenItems.includes('InsertLinkFormatting') && (
+              <InsertLinkFormatting key="main-insert-link-formatting" />
+            )}
           </div>
 
           {hiddenItems.length > 0 && (
@@ -259,6 +269,9 @@ export const FormattingBar = memo(() => {
                     <AlignmentFormatting key="hidden-alignment-formatting" formatSummary={formatSummary} />
                   )}
                   {hiddenItems.includes('Clear') && <Clear key="hidden-clear" />}
+                  {hiddenItems.includes('InsertLinkFormatting') && (
+                    <InsertLinkFormatting key="hidden-insert-link-formatting" />
+                  )}
                 </div>
               </PopoverContent>
             </Popover>

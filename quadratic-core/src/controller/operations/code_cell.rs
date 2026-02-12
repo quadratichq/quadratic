@@ -1,8 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use super::operation::Operation;
 use crate::{
-    CellValue, RefAdjust, SheetPos, Value,
+    CellValue, Pos, RefAdjust, SheetPos, Value,
     a1::A1Selection,
     controller::GridController,
     formulas::convert_rc_to_a1,
@@ -70,11 +70,48 @@ impl GridController {
                     kind: DataTableKind::CodeRun(CodeRun {
                         language,
                         code,
+                        formula_ast: None,
                         ..existing_code_run.clone()
                     }),
                     ..existing_data_table.clone()
                 }),
                 index: existing_data_table_index,
+                ignore_old_data_table: false,
+            });
+        } else if let Some(CellValue::Code(existing_code_cell)) = sheet.cell_value_ref(pos)
+            && existing_code_cell.code_run.language == language
+        {
+            // Existing CellValue::Code - preserve the output value until new calculation completes
+            let name = CellValue::Text(format!("{}1", language.as_string()));
+            ops.push(Operation::SetDataTable {
+                sheet_pos,
+                data_table: Some(DataTable {
+                    kind: DataTableKind::CodeRun(CodeRun {
+                        language,
+                        code,
+                        formula_ast: None,
+                        ..existing_code_cell.code_run.clone()
+                    }),
+                    name,
+                    header_is_first_row: false,
+                    show_name: None,
+                    show_columns: None,
+                    column_headers: None,
+                    sort: None,
+                    sort_dirty: false,
+                    display_buffer: None,
+                    value: Value::Single((*existing_code_cell.output).clone()), // Preserve old output
+                    spill_value: false,
+                    spill_data_table: false,
+                    spill_merged_cell: false,
+                    last_modified: existing_code_cell.last_modified,
+                    alternating_colors: true,
+                    formats: None,
+                    borders: None,
+                    chart_pixel_output: None,
+                    chart_output: None,
+                }),
+                index: usize::MAX,
                 ignore_old_data_table: false,
             });
         } else {
@@ -101,6 +138,7 @@ impl GridController {
                     value: Value::Single(CellValue::Blank),
                     spill_value: false,
                     spill_data_table: false,
+                    spill_merged_cell: false,
                     last_modified: now(),
                     alternating_colors: true,
                     formats: None,
@@ -280,7 +318,12 @@ impl GridController {
     pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
+            // Check data_tables
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+            }
+            // Check CellValue::Code in columns
+            for pos in sheet.iter_code_cells_positions() {
                 code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
             }
         }
@@ -294,7 +337,12 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
+        // Check data_tables
         for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+        }
+        // Check CellValue::Code in columns
+        for pos in sheet.iter_code_cells_positions() {
             code_cell_positions.push(pos.to_sheet_pos(sheet_id));
         }
 
@@ -312,74 +360,94 @@ impl GridController {
             .collect()
     }
 
-    /// Orders code cells to ensure earlier computes do not depend on later computes.
+    /// Orders code cells so dependencies are computed before dependents.
+    /// Single-pass O(n + e) topological sort; avoids O(n²) from per-node DFS.
     pub(crate) fn order_code_cells(&self, code_cell_positions: Vec<SheetPos>) -> Vec<SheetPos> {
-        let mut ordered_positions = vec![];
+        let nodes: HashSet<SheetPos> = code_cell_positions.into_iter().collect();
+        if nodes.is_empty() {
+            return vec![];
+        }
 
-        let nodes = code_cell_positions.iter().collect::<HashSet<_>>();
-        let mut seen = HashSet::new();
-        for node in code_cell_positions.iter() {
-            for upstream_node in self.get_upstream_dependents(node, &mut seen).into_iter() {
-                if nodes.contains(&upstream_node) {
-                    ordered_positions.push(upstream_node);
-                }
+        let mut deps: HashMap<SheetPos, Vec<SheetPos>> = HashMap::new();
+        for &pos in &nodes {
+            let direct = self.get_direct_dependencies_in_set(&pos, &nodes);
+            if !direct.is_empty() {
+                deps.insert(pos, direct);
             }
         }
 
-        ordered_positions
-    }
+        let mut ordered = Vec::with_capacity(nodes.len());
+        let mut seen = HashSet::new();
+        let mut stack: Vec<(SheetPos, bool)> = vec![];
 
-    /// Gets all upstream dependents of a code cell in topological order
-    /// (dependencies come before dependents).
-    ///
-    /// Uses an iterative approach with an explicit stack to avoid stack
-    /// overflow in dev builds when there are many interdependent formulas.
-    pub(super) fn get_upstream_dependents(
-        &self,
-        sheet_pos: &SheetPos,
-        seen: &mut HashSet<SheetPos>,
-    ) -> Vec<SheetPos> {
-        // State for iterative DFS: (position, have_we_visited_children)
-        let mut stack: Vec<(SheetPos, bool)> = vec![(*sheet_pos, false)];
-        let mut result = Vec::new();
-
-        while let Some((current_pos, children_visited)) = stack.pop() {
-            if children_visited {
-                // Post-order: add to result after all children have been processed
-                result.push(current_pos);
+        for &start in &nodes {
+            if !seen.insert(start) {
                 continue;
             }
+            stack.push((start, false));
 
-            // Check if already seen
-            if !seen.insert(current_pos) {
-                continue;
-            }
+            while let Some((current, children_done)) = stack.pop() {
+                if children_done {
+                    ordered.push(current);
+                    continue;
+                }
+                stack.push((current, true));
 
-            // Push current node back with children_visited=true for post-order processing
-            stack.push((current_pos, true));
-
-            let Some(code_run) = self.code_run_at(&current_pos) else {
-                // No code_run exists yet - it will be added in post-order
-                continue;
-            };
-
-            // Collect parent nodes (cells this formula depends on)
-            for (sheet_id, rect) in code_run
-                .cells_accessed
-                .iter_rects_unbounded(&self.a1_context)
-            {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
-                        let parent_pos = pos.to_sheet_pos(sheet_id);
-                        if !seen.contains(&parent_pos) {
-                            // Push parent nodes to process before current node
-                            stack.push((parent_pos, false));
+                if let Some(children) = deps.get(&current) {
+                    for &dep in children {
+                        if seen.insert(dep) {
+                            stack.push((dep, false));
                         }
                     }
                 }
             }
         }
 
+        ordered
+    }
+
+    /// Returns positions that this code cell directly depends on (reads) that are in `set`.
+    fn get_direct_dependencies_in_set(
+        &self,
+        sheet_pos: &SheetPos,
+        set: &HashSet<SheetPos>,
+    ) -> Vec<SheetPos> {
+        use crate::a1::UNBOUNDED;
+
+        let Some(code_run) = self.code_run_at(sheet_pos) else {
+            return vec![];
+        };
+        let mut result = Vec::new();
+        for (sheet_id, rect) in code_run
+            .cells_accessed
+            .iter_rects_unbounded(&self.a1_context)
+        {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+            for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
+                let parent_pos = pos.to_sheet_pos(sheet_id);
+                if set.contains(&parent_pos) {
+                    result.push(parent_pos);
+                }
+            }
+            // Skip iteration for unbounded rects (would be infinite loop)
+            // CellValue::Code cells are rare; most code is stored as DataTables
+            if rect.max.x == UNBOUNDED || rect.max.y == UNBOUNDED {
+                continue;
+            }
+            for y in rect.y_range() {
+                for x in rect.x_range() {
+                    let pos = Pos { x, y };
+                    if matches!(sheet.cell_value_ref(pos), Some(CellValue::Code(_))) {
+                        let parent_pos = pos.to_sheet_pos(sheet_id);
+                        if set.contains(&parent_pos) {
+                            result.push(parent_pos);
+                        }
+                    }
+                }
+            }
+        }
         result
     }
 }
@@ -627,6 +695,8 @@ mod test {
             let sheet_id_2 = gc.sheet_ids()[1];
             let operations = gc.rerun_all_code_cells_operations();
             assert_eq!(operations.len(), 3);
+
+            // (1,1) on sheet_id must come first since both other formulas depend on it
             assert_eq!(
                 operations[0],
                 Operation::ComputeCode {
@@ -637,25 +707,31 @@ mod test {
                     },
                 }
             );
-            assert_eq!(
+
+            // (2,2) on sheet_id and (1,1) on sheet_id_2 can be in either order
+            // since they don't depend on each other
+            let op_2_2 = Operation::ComputeCode {
+                sheet_pos: SheetPos {
+                    x: 2,
+                    y: 2,
+                    sheet_id,
+                },
+            };
+            let op_1_1_sheet2 = Operation::ComputeCode {
+                sheet_pos: SheetPos {
+                    x: 1,
+                    y: 1,
+                    sheet_id: sheet_id_2,
+                },
+            };
+            assert!(
+                (operations[1] == op_2_2 && operations[2] == op_1_1_sheet2)
+                    || (operations[1] == op_1_1_sheet2 && operations[2] == op_2_2),
+                "Expected operations[1] and operations[2] to be {:?} and {:?} in either order, but got {:?} and {:?}",
+                op_2_2,
+                op_1_1_sheet2,
                 operations[1],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id,
-                    },
-                }
-            );
-            assert_eq!(
-                operations[2],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id: sheet_id_2,
-                    },
-                }
+                operations[2]
             );
         };
 
@@ -944,40 +1020,6 @@ mod test {
     }
 
     #[test]
-    fn test_get_upstream_dependents_without_code_run() {
-        // Tests that get_upstream_dependents returns the position even when
-        // no code_run exists yet (e.g., when SetDataTable hasn't been executed).
-        // This prevents positions from being lost when order_code_cells rebuilds
-        // the operation queue.
-        let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-
-        // No code_run exists at this position
-        assert!(
-            gc.code_run_at(&sheet_pos).is_none(),
-            "Precondition: no code_run should exist at position"
-        );
-
-        let mut seen = HashSet::new();
-        let result = gc.get_upstream_dependents(&sheet_pos, &mut seen);
-
-        assert_eq!(
-            result,
-            vec![sheet_pos],
-            "Should return the position even without a code_run"
-        );
-        assert!(
-            seen.contains(&sheet_pos),
-            "Position should be marked as seen"
-        );
-    }
-
-    #[test]
     fn test_order_code_cells_preserves_positions_without_code_runs() {
         // Tests that order_code_cells preserves positions even when code_runs
         // don't exist yet. This is important for scenarios like when SetDataTable
@@ -1030,25 +1072,55 @@ mod test {
     }
 
     #[test]
-    fn test_get_upstream_dependents_already_seen() {
-        // Tests that get_upstream_dependents returns empty when position
-        // has already been seen (cycle detection).
-        let gc = GridController::test();
+    fn test_changing_formula_clears_cached_ast() {
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
 
-        let mut seen = HashSet::new();
-        seen.insert(sheet_pos); // Pre-mark as seen
+        gc.set_cell_value(pos![sheet_id!A1], "1".into(), None, false);
 
-        let result = gc.get_upstream_dependents(&sheet_pos, &mut seen);
+        // Set A2 = A1+1, should evaluate to 2
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "A1+1".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(2.into())),
+            "A2 should be 2 (A1+1 = 1+1)"
+        );
 
-        assert!(
-            result.is_empty(),
-            "Should return empty when position was already seen"
+        // Change A2 to =A1, should evaluate to 1
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "A1".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(1.into())),
+            "A2 should be 1 after changing formula to =A1"
+        );
+
+        // Change A2 to =A1*10, should evaluate to 10
+        gc.set_code_cell(
+            pos![sheet_id!A2],
+            CodeCellLanguage::Formula,
+            "A1*10".to_string(),
+            None,
+            None,
+            false,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(10.into())),
+            "A2 should be 10 after changing formula to =A1*10"
         );
     }
 }

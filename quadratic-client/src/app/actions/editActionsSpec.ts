@@ -1,6 +1,7 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { activateFormatPainter, deactivateFormatPainter, isFormatPainterActive } from '@/app/atoms/formatPainterAtom';
 import { events } from '@/app/events/events';
 import {
   copySelectionToPNG,
@@ -21,6 +22,7 @@ import {
   CutIcon,
   DownloadIcon,
   FindInFileIcon,
+  FormatPaintIcon,
   PasteIcon,
   RedoIcon,
   UndoIcon,
@@ -52,6 +54,7 @@ type EditActionSpec = Pick<
   | Action.SaveInlineEditorMoveRight
   | Action.SaveInlineEditorMoveLeft
   | Action.TriggerCell
+  | Action.FormatPainter
 >;
 
 export const editActionsSpec: EditActionSpec = {
@@ -235,5 +238,24 @@ export const editActionsSpec: EditActionSpec = {
       const p = sheets.sheet.cursor.position;
       events.emit('triggerCell', p.x, p.y, true);
     },
+  },
+  [Action.FormatPainter]: {
+    label: () => 'Format painter',
+    Icon: FormatPaintIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      if (isFormatPainterActive()) {
+        // Toggle off if already active
+        deactivateFormatPainter();
+        events.emit('formatPainterEnd');
+      } else {
+        // Activate format painter with current selection
+        const selection = sheets.sheet.cursor.save();
+        const sheetId = sheets.current;
+        activateFormatPainter(selection, sheetId);
+        events.emit('formatPainterStart', selection, sheetId);
+      }
+    },
+    keywords: ['format', 'painter', 'paint', 'brush', 'copy formatting'],
   },
 };

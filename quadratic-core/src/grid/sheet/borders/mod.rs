@@ -12,6 +12,7 @@ use crate::{ClearOption, Pos, Rect, grid::Contiguous2D};
 
 mod borders_clipboard;
 mod borders_col_row;
+mod borders_merged_cells;
 pub mod borders_old;
 mod borders_query;
 mod borders_render;

@@ -63,7 +63,20 @@ export const useHtmlValidations = (): HtmlValidationsData => {
       setValidation(validation);
       setValidationType(validationRuleSimple(validation));
       setLocation({ x, y });
-      const offsets = sheets.sheet.getCellOffsets(x, y);
+
+      // Check if the cell is part of a merged cell and use the full merged cell rect
+      const mergeRect = sheets.sheet.getMergeCellRect(x, y);
+      let offsets;
+      if (mergeRect) {
+        offsets = sheets.sheet.getScreenRectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      } else {
+        offsets = sheets.sheet.getCellOffsets(x, y);
+      }
       setOffsets(offsets);
     };
 
@@ -77,6 +90,7 @@ export const useHtmlValidations = (): HtmlValidationsData => {
     events.on('resizeHeadingRow', updateCursor);
     events.on('setCursor', updateCursor);
     events.on('validationWarnings', updateCursor);
+    events.on('mergeCells', updateCursor);
 
     return () => {
       events.off('cursorPosition', updateCursor);
@@ -87,6 +101,7 @@ export const useHtmlValidations = (): HtmlValidationsData => {
       events.off('resizeHeadingRow', updateCursor);
       events.off('setCursor', updateCursor);
       events.off('validationWarnings', updateCursor);
+      events.off('mergeCells', updateCursor);
     };
   }, [hoverCell]);
 

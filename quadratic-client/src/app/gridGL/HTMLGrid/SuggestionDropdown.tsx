@@ -31,6 +31,14 @@ export const SuggestionDropDown = () => {
 
       const pos = sheet.cursor.position;
 
+      // Don't show autocomplete if cursor is in a merged cell
+      const mergeRect = sheet.getMergeCellRect(pos.x, pos.y);
+      if (mergeRect) {
+        setList(undefined);
+        inlineEditorMonaco.setShowingList(false);
+        return;
+      }
+
       // if there are validations, don't autocomplete
       // todo: we can make this better by showing only validated values
       const validations = sheets.sheet.getValidation(pos.x, pos.y);

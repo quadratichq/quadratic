@@ -6,11 +6,15 @@ use crate::{
     Pos, SheetPos,
     grid::{SheetId, js_types::Direction, sheet::data_tables::cache::SheetDataTablesCache},
     input::{jump::jump_cursor, move_cursor::move_cursor},
-    wasm_bindings::{js_a1_context::JsA1Context, sheet_content_cache::SheetContentCache},
+    wasm_bindings::{
+        js_a1_context::JsA1Context, merge_cells::JsMergeCells,
+        sheet_content_cache::SheetContentCache,
+    },
 };
 
 /// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
 #[wasm_bindgen(js_name = "jumpCursor")]
+#[allow(clippy::too_many_arguments)]
 pub fn js_jump_cursor(
     sheet_id: String,
     col: i32,
@@ -19,6 +23,7 @@ pub fn js_jump_cursor(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
     context: &JsA1Context,
+    merge_cells: &JsMergeCells,
 ) -> Result<Pos, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let sheet_pos = SheetPos {
@@ -32,6 +37,7 @@ pub fn js_jump_cursor(
         content_cache,
         table_cache,
         context.get_context(),
+        Some(merge_cells.get_merge_cells()),
     ))
 }
 
@@ -44,6 +50,7 @@ pub fn js_move_cursor(
     direction: Direction,
     table_cache: &SheetDataTablesCache,
     context: &JsA1Context,
+    merge_cells: &JsMergeCells,
 ) -> Result<Pos, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let pos = SheetPos {
@@ -56,5 +63,6 @@ pub fn js_move_cursor(
         direction,
         table_cache,
         context.get_context(),
+        Some(merge_cells.get_merge_cells()),
     ))
 }

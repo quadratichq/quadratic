@@ -36,12 +36,20 @@ impl GridController {
             );
         }
 
-        // Notify client about pending code operations before execution starts
-        if transaction
-            .operations
-            .iter()
-            .any(|op| matches!(op, Operation::ComputeCode { .. }))
-        {
+        // Notify client about pending code operations before execution starts.
+        // Skip when there are many ComputeCode ops (e.g. bulk formula recalc) to avoid
+        // O(n) iteration in notify_code_running_state; formulas don't need code-running UI.
+        const MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY: usize = 100;
+        let mut compute_code_count = 0usize;
+        for op in transaction.operations.iter() {
+            if matches!(op, Operation::ComputeCode { .. }) {
+                compute_code_count += 1;
+                if compute_code_count > MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY {
+                    break;
+                }
+            }
+        }
+        if compute_code_count > 0 && compute_code_count <= MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY {
             self.notify_code_running_state(transaction, None);
         }
 
@@ -121,6 +129,11 @@ impl GridController {
             TransactionSource::Multiplayer => (),
             TransactionSource::Server => (),
             TransactionSource::Unset => panic!("Expected a transaction type"),
+        }
+
+        // Clear color scale threshold caches on all sheets since data may have changed
+        for sheet in self.grid.sheets().values() {
+            sheet.clear_color_scale_cache();
         }
 
         self.send_client_render_updates(&mut transaction);
@@ -261,6 +274,7 @@ impl GridController {
                     let code_run = CodeRun {
                         language: code.language.to_owned(),
                         code: code.code.to_owned(),
+                        formula_ast: None,
                         error,
                         return_type: Some(return_type.to_owned()),
                         line_number: Some(1),

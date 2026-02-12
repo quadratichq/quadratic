@@ -19,6 +19,8 @@ export enum Action {
   InsertCheckbox = 'insert_checkbox',
   InsertDropdown = 'insert_dropdown',
   ToggleDataValidation = 'toggle_data_validation',
+  ToggleConditionalFormat = 'toggle_conditional_format',
+  AddConditionalFormat = 'add_conditional_format',
   InsertScheduledTask = 'insert_scheduled_task',
   InsertHyperlink = 'insert_hyperlink',
   Copy = 'copy',
@@ -75,6 +77,8 @@ export enum Action {
   FormatBorderDotted = 'format_border_dotted',
   FormatBorderDouble = 'format_border_double',
   FormatBorderColor = 'format_border_color',
+  MergeCells = 'merge_cells',
+  UnmergeCells = 'unmerge_cells',
   GridPanMode = 'grid_pan_mode',
   ShowCommandPalette = 'show_command_palette',
   TogglePresentationMode = 'toggle_presentation_mode',
@@ -182,4 +186,5 @@ export enum Action {
   EditTableCode = 'edit_table_code',
   ToggleAIAnalyst = 'toggle_ai_analyst',
   AddReferenceToAIAnalyst = 'add_reference_to_ai_analyst',
+  FormatPainter = 'format_painter',
 }
