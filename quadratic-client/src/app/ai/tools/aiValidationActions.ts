@@ -11,9 +11,16 @@ import type {
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import { userDateToNumber, userTimeToNumber } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
-import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { z } from 'zod';
+
+// Helper functions for converting validations to text
 
 const getMessageError = (validation: Validation) => {
   if (validation.message.show && (validation.message.title || validation.message.message)) {
@@ -184,7 +191,33 @@ const convertValidationToText = (validation: Validation, sheetId: string): strin
   return response + '\n';
 };
 
-export const getValidationsToolCall = (sheetName: string | null | undefined): string => {
+const getSelectionFromString = (selection: string, sheetId: string): A1Selection => {
+  try {
+    const a1SelectionJson = sheets.stringToSelection(selection, sheetId).save();
+    return JSON.parse(a1SelectionJson, bigIntReplacer) as A1Selection;
+  } catch (e) {
+    throw new Error(`Invalid selection: ${selection}`);
+  }
+};
+
+const getSheetFromSheetName = (sheetName: string | null | undefined): Sheet => {
+  return sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
+};
+
+const updateAICursorForSelection = (selection: string, sheetName: string | null | undefined): void => {
+  try {
+    const sheetId = sheetName ? (sheets.getSheetByName(sheetName)?.id ?? sheets.current) : sheets.current;
+    const jsSelection = sheets.stringToSelection(selection, sheetId);
+    const selectionString = jsSelection.save();
+    aiUser.updateSelection(selectionString, sheetId);
+  } catch (e) {
+    console.warn('Failed to update AI user selection:', e);
+  }
+};
+
+// Implementation functions
+
+const getValidationsToolCall = (sheetName: string | null | undefined): string => {
   const sheet = sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
   const validations = sheet.validations;
 
@@ -199,20 +232,7 @@ export const getValidationsToolCall = (sheetName: string | null | undefined): st
   return response;
 };
 
-const getSelectionFromString = (selection: string, sheetId: string): A1Selection => {
-  try {
-    const a1SelectionJson = sheets.stringToSelection(selection, sheetId).save();
-    return JSON.parse(a1SelectionJson, bigIntReplacer) as A1Selection;
-  } catch (e) {
-    throw new Error(`Invalid selection: ${selection}`);
-  }
-};
-
-const getSheetFromSheetName = (sheetName: string | null | undefined): Sheet => {
-  return sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
-};
-
-export const addMessageToolCall = async (args: AIToolsArgs[AITool.AddMessage]): Promise<string> => {
+const addMessageToolCall = async (args: AIToolsArgs[AITool.AddMessage]): Promise<string> => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   const validation: ValidationUpdate = {
     id: null,
@@ -235,7 +255,7 @@ export const addMessageToolCall = async (args: AIToolsArgs[AITool.AddMessage]): 
   return `Message successfully added to ${args.selection}`;
 };
 
-export const addLogicalValidationToolCall = async (args: AIToolsArgs[AITool.AddLogicalValidation]): Promise<string> => {
+const addLogicalValidationToolCall = async (args: AIToolsArgs[AITool.AddLogicalValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   const validation: ValidationUpdate = {
     id: null,
@@ -262,7 +282,7 @@ export const addLogicalValidationToolCall = async (args: AIToolsArgs[AITool.AddL
   return `Logical validation successfully added to ${args.selection}`;
 };
 
-export const addListValidationToolCall = async (args: AIToolsArgs[AITool.AddListValidation]): Promise<string> => {
+const addListValidationToolCall = async (args: AIToolsArgs[AITool.AddListValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   const source: ValidationListSource = args.list_source_selection
     ? {
@@ -298,7 +318,7 @@ export const addListValidationToolCall = async (args: AIToolsArgs[AITool.AddList
   return `List validation successfully added to ${args.selection}`;
 };
 
-export const addTextValidationToolCall = async (args: AIToolsArgs[AITool.AddTextValidation]): Promise<string> => {
+const addTextValidationToolCall = async (args: AIToolsArgs[AITool.AddTextValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   const textMatch: Array<TextMatch> = [];
   if (isNotUndefinedOrNull(args.min_length) || isNotUndefinedOrNull(args.max_length)) {
@@ -379,7 +399,7 @@ export const addTextValidationToolCall = async (args: AIToolsArgs[AITool.AddText
   return `Text validation successfully added to ${args.selection}`;
 };
 
-export const addNumberValidationToolCall = async (args: AIToolsArgs[AITool.AddNumberValidation]): Promise<string> => {
+const addNumberValidationToolCall = async (args: AIToolsArgs[AITool.AddNumberValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   const ranges: Array<NumberRange> = [];
   if (args.range) {
@@ -437,9 +457,7 @@ export const addNumberValidationToolCall = async (args: AIToolsArgs[AITool.AddNu
   return `Number validation successfully added to ${args.selection}`;
 };
 
-export const addDateTimeValidationToolCall = async (
-  args: AIToolsArgs[AITool.AddDateTimeValidation]
-): Promise<string> => {
+const addDateTimeValidationToolCall = async (args: AIToolsArgs[AITool.AddDateTimeValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   const ranges: Array<DateTimeRange> = [];
 
@@ -544,8 +562,98 @@ export const addDateTimeValidationToolCall = async (
   return `Date/time validation successfully added to ${args.selection}`;
 };
 
-export const removeValidationsToolCall = async (args: AIToolsArgs[AITool.RemoveValidations]) => {
+const removeValidationsToolCall = async (args: AIToolsArgs[AITool.RemoveValidations]) => {
   const sheet = getSheetFromSheetName(args.sheet_name);
   await quadraticCore.removeValidationSelection(sheet.id, args.selection, true);
   return `Validation successfully removed from ${args.selection}`;
 };
+
+// Action handlers type
+
+type ValidationToolActions = {
+  [K in
+    | AITool.GetValidations
+    | AITool.AddMessage
+    | AITool.AddLogicalValidation
+    | AITool.AddListValidation
+    | AITool.AddTextValidation
+    | AITool.AddNumberValidation
+    | AITool.AddDateTimeValidation
+    | AITool.RemoveValidations]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<ToolResultContent>;
+};
+
+// Exported action handlers
+
+export const validationToolsActions: ValidationToolActions = {
+  [AITool.GetValidations]: async (args) => {
+    try {
+      const text = getValidationsToolCall(args.sheet_name);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get validations tool: ${e}`)];
+    }
+  },
+  [AITool.AddMessage]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await addMessageToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing add message tool: ${e}`)];
+    }
+  },
+  [AITool.AddLogicalValidation]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await addLogicalValidationToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing add logical validation tool: ${e}`)];
+    }
+  },
+  [AITool.AddListValidation]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await addListValidationToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing add list validation tool: ${e}`)];
+    }
+  },
+  [AITool.AddTextValidation]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await addTextValidationToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing add text validation tool: ${e}`)];
+    }
+  },
+  [AITool.AddNumberValidation]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await addNumberValidationToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing add number validation tool: ${e}`)];
+    }
+  },
+  [AITool.AddDateTimeValidation]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await addDateTimeValidationToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing add date time validation tool: ${e}`)];
+    }
+  },
+  [AITool.RemoveValidations]: async (args) => {
+    try {
+      updateAICursorForSelection(args.selection, args.sheet_name);
+      const text = await removeValidationsToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+} as const;

@@ -50,6 +50,7 @@
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
     "test:wasm:time": "cd quadratic-core && rustup run nightly cargo test -- -Zunstable-options --report-time",
     "test:wasm": "cd quadratic-core && cargo test",
+    "test:rust": "cargo test --workspace",
     "test:ts": "cd quadratic-client && vitest",
     "test:api": "npm run docker:test:dev --workspace=quadratic-api",
     "test:multiplayer": "npm run test --workspace=quadratic-multiplayer",

@@ -1,17 +1,18 @@
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
+import {
+  aiStore,
+  chatsCountAtom,
+  currentChatAtom,
+  currentChatNameAtom,
+  currentChatUserMessagesCountAtom,
+  loadingAtom,
+  showAIAnalystWithEffectsAtom,
+  showChatHistoryAtom,
+  waitingOnMessageIndexAtom,
+} from '@/app/ai/atoms/aiAnalystAtoms';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import {
-  aiAnalystChatsCountAtom,
-  aiAnalystCurrentChatAtom,
-  aiAnalystCurrentChatNameAtom,
-  aiAnalystCurrentChatUserMessagesCountAtom,
-  aiAnalystLoadingAtom,
-  aiAnalystShowChatHistoryAtom,
-  aiAnalystWaitingOnMessageIndexAtom,
-  showAIAnalystAtom,
-} from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
 import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
@@ -20,9 +21,10 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 interface AIAnalystHeaderProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -34,39 +36,35 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
     [debugFlags]
   );
   const agentMode = useRecoilValue(agentModeAtom);
-  const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
-  const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
-  const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
-  const setWaitingOnMessageIndex = useSetRecoilState(aiAnalystWaitingOnMessageIndexAtom);
-  const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
-  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
-  const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [showChatHistory, setShowChatHistory] = useAtom(showChatHistoryAtom);
+  const chatsCount = useAtomValue(chatsCountAtom);
+  const setCurrentChat = useSetAtom(currentChatAtom);
+  const setWaitingOnMessageIndex = useSetAtom(waitingOnMessageIndexAtom);
+  const currentUserMessagesCount = useAtomValue(currentChatUserMessagesCountAtom);
+  const setShowAIAnalyst = useSetAtom(showAIAnalystWithEffectsAtom);
+  const loading = useAtomValue(loadingAtom);
 
-  const handleExecuteAllToolCalls = useRecoilCallback(
-    ({ snapshot }) =>
-      async () => {
-        const currentChat = await snapshot.getPromise(aiAnalystCurrentChatAtom);
-        for (const message of currentChat.messages) {
-          if ('toolCalls' in message) {
-            for (const toolCall of message.toolCalls) {
-              try {
-                const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
-                aiToolsSpec[toolCall.name as AITool].responseSchema.parse(args);
-                const result = await aiToolsActions[toolCall.name as AITool](args, {
-                  source: 'AIAnalyst',
-                  chatId: '',
-                  messageIndex: -1,
-                });
-                console.log(result);
-              } catch (error) {
-                console.error(error);
-              }
-            }
+  const handleExecuteAllToolCalls = useCallback(async () => {
+    const currentChat = aiStore.get(currentChatAtom);
+    for (const message of currentChat.messages) {
+      if ('toolCalls' in message) {
+        for (const toolCall of message.toolCalls) {
+          try {
+            const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
+            aiToolsSpec[toolCall.name as AITool].responseSchema.parse(args);
+            const result = await aiToolsActions[toolCall.name as AITool](args, {
+              source: 'AIAnalyst',
+              chatId: '',
+              messageIndex: -1,
+            });
+            console.log(result);
+          } catch (error) {
+            console.error(error);
           }
         }
-      },
-    []
-  );
+      }
+    }
+  }, []);
 
   return (
     <div className="flex w-full flex-col">
@@ -147,9 +145,9 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
 });
 
 function RenamableHeaderTitle({ showChatHistory }: { showChatHistory: boolean }) {
-  const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
-  const currentChatName = useRecoilValue(aiAnalystCurrentChatNameAtom);
-  const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
+  const currentChat = useAtomValue(currentChatAtom);
+  const currentChatName = useAtomValue(currentChatNameAtom);
+  const setCurrentChatName = useSetAtom(currentChatNameAtom);
   const [isRenaming, setIsRenaming] = useState(false);
   const escapePressedRef = useRef(false);
 

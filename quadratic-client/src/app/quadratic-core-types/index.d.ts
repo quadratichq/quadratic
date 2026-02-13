@@ -257,7 +257,7 @@ export type JsSheetNameToColor = { sheet_name: string, color: string, };
 export type JsSheetPosText = { sheet_id: string, x: bigint, y: bigint, text: string | null, };
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export type JsSummarizeSelectionResult = { count: bigint, sum: number | null, average: number | null, };
-export type JsSummaryContext = { sheet_name: string, data_rects: Array<JsCellValueSummary>, errored_code_cells: Array<JsCodeCell> | null, data_tables: Array<JsDataTableContext> | null, code_tables: Array<JsCodeTableContext> | null, connections: Array<JsCodeTableContext> | null, charts: Array<JsChartContext> | null, };
+export type JsSummaryContext = { sheet_name: string, default_column_width: number, default_row_height: number, data_rects: Array<JsCellValueSummary>, errored_code_cells: Array<JsCodeCell> | null, data_tables: Array<JsDataTableContext> | null, code_tables: Array<JsCodeTableContext> | null, connections: Array<JsCodeTableContext> | null, charts: Array<JsChartContext> | null, };
 export type JsTableInfo = { name: string, sheet_id: string, chart: boolean, language: CodeCellLanguage, };
 export type JsUpdateCodeCell = { sheet_id: SheetId, pos: Pos, render_code_cell: JsRenderCodeCell | null, };
 export type JsValidationWarning = { pos: Pos, validation: string | null, style: ValidationStyle | null, };
@@ -295,7 +295,7 @@ span: Span | null,
  */
 msg: RunErrorMsg, };
 export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity" | "FormulaTooComplex";
-export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, };
+export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, regex: boolean | null, };
 export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetId = { id: string, };
 export type SheetInfo = { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };

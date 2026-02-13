@@ -1,3 +1,4 @@
+import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { TimerNames } from '@/app/gridGL/helpers/startupTimer';
@@ -32,6 +33,7 @@ import type {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
 import type { Point, Rectangle } from 'pixi.js';
+import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
 
 export interface DirtyObject {
   gridLines?: boolean;
@@ -192,6 +194,13 @@ interface EventTypes {
   aiAnalystDroppedFiles: (files: FileList | File[]) => void;
   aiAnalystAddReference: (reference: string) => void;
   aiAnalystReady: () => void;
+  aiAnalystSubmitPrompt: (args: {
+    content: Content;
+    messageSource: string;
+    context: Context;
+    messageIndex: number;
+    importFiles: ImportFile[];
+  }) => void;
   aiAnalystSelectConnection: (connectionUuid: string, connectionType: string, connectionName: string) => void;
   aiAnalystUnselectConnection: () => void;
 

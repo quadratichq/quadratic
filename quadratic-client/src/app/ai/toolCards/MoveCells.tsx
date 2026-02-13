@@ -3,17 +3,19 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type MoveCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.MoveCells]['responseSchema']>;
+type MoveCellsResponse = AIToolsArgs[AITool.MoveCells];
 
 interface MoveItem {
   source_selection_rect: string;
   target_top_left_position: string;
 }
+
+type MoveCellsData = MoveCellsResponse & { moves?: MoveItem[] };
 
 export const MoveCells = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -28,7 +30,7 @@ export const MoveCells = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.MoveCells].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.MoveCells].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[MoveCells] Failed to parse args: ', error);
@@ -40,16 +42,17 @@ export const MoveCells = memo(
       if (!toolArgs?.success) return [];
 
       // New format: moves array
-      if (toolArgs.data.moves && toolArgs.data.moves.length > 0) {
-        return toolArgs.data.moves;
+      const data = toolArgs.data as MoveCellsData;
+      if (data.moves && data.moves.length > 0) {
+        return data.moves;
       }
 
       // Old format: source_selection_rect and target_top_left_position
-      if (toolArgs.data.source_selection_rect && toolArgs.data.target_top_left_position) {
+      if (data.source_selection_rect && data.target_top_left_position) {
         return [
           {
-            source_selection_rect: toolArgs.data.source_selection_rect,
-            target_top_left_position: toolArgs.data.target_top_left_position,
+            source_selection_rect: data.source_selection_rect,
+            target_top_left_position: data.target_top_left_position,
           },
         ];
       }
