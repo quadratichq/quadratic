@@ -1,5 +1,6 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
+  editorInteractionStateShowAddConnectionMenuAtom,
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -57,6 +58,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export const CellTypeMenu = memo(() => {
+  const setShowAddConnectionMenu = useSetRecoilState(editorInteractionStateShowAddConnectionMenuAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
@@ -103,8 +105,8 @@ export const CellTypeMenu = memo(() => {
 
   const addConnection = useCallback(() => {
     setShowCellTypeMenu(false);
-    setShowConnectionsMenu(true);
-  }, [setShowCellTypeMenu, setShowConnectionsMenu]);
+    setShowAddConnectionMenu(true);
+  }, [setShowCellTypeMenu, setShowAddConnectionMenu]);
 
   const manageConnections = useCallback(() => {
     setShowCellTypeMenu(false);

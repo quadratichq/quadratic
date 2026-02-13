@@ -14,7 +14,7 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { connectionsByType } from './connectionsByType';
 
@@ -137,8 +137,13 @@ interface ConnectionMenuItemProps {
 const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMenuItemProps) => {
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
+  const manageClickedRef = useRef(false);
 
   const handleClick = useCallback(() => {
+    if (manageClickedRef.current) {
+      manageClickedRef.current = false;
+      return;
+    }
     if (isReadyForUse) {
       onClick();
     } else {
@@ -146,18 +151,17 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
     }
   }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
-  const handleManageClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
-    },
-    [setShowConnectionsMenu, connection.uuid, connection.type]
-  );
+  const handleManageClick = useCallback(() => {
+    // Don't use e.stopPropagation() here because we want to allow the click to
+    // bubble up to the parent dropdown menu so it closes, and we'll handle the
+    // manage connection in handleClick() instead.
+    manageClickedRef.current = true;
+    setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+  }, [setShowConnectionsMenu, connection.uuid, connection.type]);
 
   return (
     <DropdownMenuItem onClick={handleClick} className="group flex items-center gap-3">
       <ConnectionIcon type={connection.type} syncState={syncState} className="flex-shrink-0" />
-
       <span className="flex items-center truncate">
         <span className="truncate">
           {connection.name}

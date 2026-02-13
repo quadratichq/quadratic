@@ -4,6 +4,7 @@ import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowAddConnectionMenuAtom,
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowRenameFileMenuAtom,
@@ -22,6 +23,7 @@ import { FloatingFPS } from '@/app/ui/components/FloatingFPS';
 import { FloatingTopLeftPosition } from '@/app/ui/components/FloatingTopLeftPosition';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
+import { AddConnectionMenu } from '@/app/ui/menus/AddConnectionMenu/AddConnectionMenu';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
 import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
@@ -91,6 +93,7 @@ export default function QuadraticUI() {
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const agentMode = useRecoilValue(agentModeAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const showAddConnectionMenu = useRecoilValue(editorInteractionStateShowAddConnectionMenuAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
@@ -213,6 +216,7 @@ export default function QuadraticUI() {
       <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
       {presentationMode && <PresentationModeHint />}
+      {showAddConnectionMenu && <AddConnectionMenu />}
       {showCellTypeMenu && <CellTypeMenu />}
       {showCommandPalette && <CommandPalette />}
       {showRenameFileMenu && (

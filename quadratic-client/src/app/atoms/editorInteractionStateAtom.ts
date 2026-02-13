@@ -18,6 +18,7 @@ export interface EditorInteractionState {
   transactionsInfo: TransactionInfo[];
   showCellTypeMenu: boolean | 'connections';
   showCommandPalette: boolean;
+  showAddConnectionMenu: boolean;
   showConnectionsMenu: ConnectionsMenuState;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
@@ -45,6 +46,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   transactionsInfo: [],
   showCellTypeMenu: false,
   showCommandPalette: false,
+  showAddConnectionMenu: false,
   showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
@@ -112,6 +114,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
         const oldModalShow =
           oldValue.showCellTypeMenu ||
           oldValue.showCommandPalette ||
+          oldValue.showAddConnectionMenu ||
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
@@ -122,6 +125,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCommandPalette ||
+          newValue.showAddConnectionMenu ||
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
@@ -141,6 +145,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
         const oldModalShow =
           oldValue.showCellTypeMenu ||
           oldValue.showCommandPalette ||
+          oldValue.showAddConnectionMenu ||
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
@@ -151,6 +156,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCommandPalette ||
+          newValue.showAddConnectionMenu ||
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
@@ -181,6 +187,7 @@ export const editorInteractionStateShowIsRunningAsyncActionAtom = createSelector
 export const editorInteractionStateTransactionsInfoAtom = createSelector('transactionsInfo');
 export const editorInteractionStateShowCellTypeMenuAtom = createSelector('showCellTypeMenu');
 export const editorInteractionStateShowCommandPaletteAtom = createSelector('showCommandPalette');
+export const editorInteractionStateShowAddConnectionMenuAtom = createSelector('showAddConnectionMenu');
 export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');
 export const editorInteractionStateShowGoToMenuAtom = createSelector('showGoToMenu');
 export const editorInteractionStateShowFeedbackMenuAtom = createSelector('showFeedbackMenu');
