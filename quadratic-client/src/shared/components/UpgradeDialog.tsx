@@ -43,7 +43,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
 
   const upgradeTitle = useMemo(() => {
     if (isEnableOverage) {
-      return 'Enable on-demand AI usage';
+      return canManageBilling ? 'Enable on-demand AI usage' : 'Team monthly AI allowance exceeded';
     }
     if (targetPlan === 'BUSINESS') {
       return 'Upgrade to Business';
@@ -54,11 +54,14 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
       default:
         return 'Upgrade to Pro';
     }
-  }, [state.eventSource, isEnableOverage, targetPlan]);
+  }, [state.eventSource, isEnableOverage, targetPlan, canManageBilling]);
 
   const reasonText = useMemo(() => {
     if (isEnableOverage) {
-      return 'Your team has exceeded the monthly AI allowance. Enable on-demand usage to continue using AI features.';
+      if (canManageBilling) {
+        return 'Your team has exceeded the monthly AI allowance. Enable on-demand usage to continue using AI features.';
+      }
+      return 'Your team has exceeded the monthly AI allowance. Only team owners can enable on-demand usage.';
     }
     if (targetPlan === 'BUSINESS') {
       return 'Your Pro plan AI allowance has been exceeded. Upgrade to Business for more AI usage and on-demand billing.';
@@ -71,9 +74,9 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
       default:
         return undefined;
     }
-  }, [state.eventSource, isEnableOverage, targetPlan]);
+  }, [state.eventSource, isEnableOverage, targetPlan, canManageBilling]);
 
-  const handleEnableOverage = () => {
+  const handleGoToTeamSettings = () => {
     setState({ open: false, eventSource: null });
     trackEvent('[UpgradeDialog].enableOverageClicked');
     navigate(ROUTES.TEAM_SETTINGS(teamUuid));
@@ -92,7 +95,9 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
           <DialogTitle>{upgradeTitle}</DialogTitle>
           <DialogDescription>
             {isEnableOverage
-              ? 'On-demand usage allows your team to continue using AI beyond the monthly allowance.'
+              ? canManageBilling
+                ? 'On-demand usage allows your team to continue using AI beyond the monthly allowance.'
+                : 'You can view your team’s AI usage in team settings.'
               : 'Be sure to unlock all the individual and team features of Quadratic.'}
           </DialogDescription>
         </DialogHeader>
@@ -105,13 +110,26 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
           )}
           {isEnableOverage ? (
             <div className="flex flex-col gap-4 pt-2">
-              <p className="text-sm text-muted-foreground">
-                Go to your team settings to enable on-demand AI usage. This allows your team to continue using AI
-                features beyond the included allowance, with usage billed at the end of each month.
-              </p>
-              <Button onClick={handleEnableOverage} className="w-full">
-                Go to team settings
-              </Button>
+              {canManageBilling ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Go to your team settings to enable on-demand AI usage. This allows your team to continue using AI
+                    features beyond the included allowance, with usage billed at the end of each month.
+                  </p>
+                  <Button onClick={handleGoToTeamSettings} className="w-full">
+                    Go to team settings
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Ask your team owner to enable on-demand usage in team settings, or view current usage there.
+                  </p>
+                  <Button onClick={handleGoToTeamSettings} className="w-full" variant="secondary">
+                    View usage
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <BillingPlans

@@ -224,9 +224,10 @@ export const Component = memo(() => {
         user: loggedInUser,
         fileUuid,
         teamUuid,
+        canManageBilling,
       }));
     },
-    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid]
+    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, canManageBilling]
   );
 
   const { setIsOnPaidPlan, setPlanType } = useIsOnPaidPlan();

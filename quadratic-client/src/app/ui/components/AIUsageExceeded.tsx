@@ -1,13 +1,16 @@
+import { editorInteractionStateCanManageBillingAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getNextPlanSuggestion, useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
 import { memo, useMemo } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export const AIUsageExceeded = memo(() => {
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const { planType, allowOveragePayments } = useIsOnPaidPlan();
+  const canManageBilling = useRecoilValue(editorInteractionStateCanManageBillingAtom);
 
   const suggestion = useMemo(
     () => getNextPlanSuggestion(planType, allowOveragePayments),
@@ -24,10 +27,17 @@ export const AIUsageExceeded = memo(() => {
     }
 
     if (suggestion.type === 'enableOverage') {
+      if (canManageBilling) {
+        return {
+          title: 'Team monthly AI allowance exceeded',
+          description: 'Enable on-demand usage in team settings to continue using Quadratic AI.',
+          buttonText: 'Increase overage limit',
+        };
+      }
       return {
-        title: 'Monthly AI allowance exceeded',
-        description: 'Enable on-demand usage in team settings to continue using Quadratic AI.',
-        buttonText: 'Enable on-demand usage',
+        title: 'Team monthly AI allowance exceeded',
+        description: 'Ask your team owner to enable on-demand usage, or view usage in team settings.',
+        buttonText: 'View usage',
       };
     }
 
@@ -45,7 +55,7 @@ export const AIUsageExceeded = memo(() => {
         buttonText: 'Upgrade to Business',
       };
     }
-  }, [suggestion]);
+  }, [suggestion, canManageBilling]);
 
   return (
     <div
