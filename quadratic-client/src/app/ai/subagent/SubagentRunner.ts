@@ -14,11 +14,11 @@ import type {
 import { subagentSessionManager } from '../session/SubagentSessionManager';
 import { executeAIToolFromJson } from '../tools/executeAITool';
 import { subagentContextBuilder } from './SubagentContextBuilder';
+import type { SubagentType } from './subagentTypes';
 import {
   getSubagentConfig,
   isCodingSubagent,
   isToolAllowedForSubagent,
-  SubagentType,
   type SubagentExecuteOptions,
   type SubagentRange,
   type SubagentResult,
