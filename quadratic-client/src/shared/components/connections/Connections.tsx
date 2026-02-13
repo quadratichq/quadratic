@@ -69,14 +69,15 @@ type Props = {
 
 export type NavigateToListView = () => void;
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
-export type NavigateToCreateView = (type: ConnectionType) => void;
+export type PlaidCategory = 'Banks' | 'Brokerages' | 'Credit Cards';
+export type NavigateToCreateView = (type: ConnectionType, plaidCategory?: PlaidCategory) => void;
 export type NavigateToCreatePotentialView = (type: PotentialConnectionType) => void;
 
 type ConnectionState =
   | { view: 'edit'; uuid: string; type: ConnectionType }
   | { view: 'details'; uuid: string; type: ConnectionType }
   | { view: 'new' }
-  | { view: 'create'; type: ConnectionType }
+  | { view: 'create'; type: ConnectionType; plaidCategory?: PlaidCategory }
   | { view: 'create-potential'; type: PotentialConnectionType }
   | { view: 'list' };
 
@@ -202,8 +203,8 @@ export const Connections = ({
   const handleNavigateToListView: NavigateToListView = useCallback(() => {
     setActiveConnectionState({ view: 'list' });
   }, []);
-  const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
-    setActiveConnectionState({ view: 'create', type: connectionType });
+  const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType, plaidCategory) => {
+    setActiveConnectionState({ view: 'create', type: connectionType, plaidCategory });
     trackEvent('[Connections].start-create', { type: connectionType });
   }, []);
   const handleNavigateToCreatePotentialView: NavigateToCreatePotentialView = useCallback((connectionType) => {
@@ -291,6 +292,7 @@ export const Connections = ({
                 <ConnectionFormCreate
                   teamUuid={teamUuid}
                   type={activeConnectionState.type}
+                  plaidCategory={activeConnectionState.plaidCategory}
                   handleNavigateToListView={handleNavigateToListView}
                   handleNavigateToNewView={handleNavigateToNewView}
                   onConnectionCreated={onConnectionCreated}
