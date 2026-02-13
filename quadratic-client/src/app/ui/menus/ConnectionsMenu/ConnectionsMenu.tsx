@@ -3,8 +3,8 @@ import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/edito
 import { events } from '@/app/events/events';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { Connections } from '@/shared/components/connections/Connections';
 import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
+import { Connections } from '@/shared/components/connections/Connections';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useCallback } from 'react';
@@ -20,11 +20,6 @@ export function ConnectionsMenu() {
   } = useFileRouteLoaderData();
   const { connections, staticIps, isLoading } = useConnectionsFetcher();
 
-  // Show 'new' view if explicitly requested, or if user has no real connections (only demo or none)
-  const hasOnlyDemoConnections =
-    !isLoading && (connections.length === 0 || connections.every((c) => c.isDemo === true));
-  const initialView = showConnectionsMenu === 'new' || hasOnlyDemoConnections ? 'new' : 'list';
-
   const onConnectionCreated: OnConnectionCreatedCallback = useCallback(
     (connectionUuid, connectionType, connectionName) => {
       // Close the connections dialog
@@ -38,10 +33,16 @@ export function ConnectionsMenu() {
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
       // Focus the AI analyst input
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     },
     [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
+
+  const isOpen = showConnectionsMenu !== false;
+  const menuState = typeof showConnectionsMenu === 'object' ? showConnectionsMenu : undefined;
+  const initialView = menuState?.initialView ?? (showConnectionsMenu === true ? 'list' : undefined);
+  const initialConnectionType = menuState?.initialConnectionType;
+  const initialConnectionUuid = menuState?.initialConnectionUuid;
 
   return (
     <Dialog open={!!showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
@@ -56,7 +57,7 @@ export function ConnectionsMenu() {
           <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
         </DialogHeader>
         {/* Unmount it so we reset the state */}
-        {showConnectionsMenu && (
+        {isOpen && (
           <Connections
             connections={connections}
             connectionsAreLoading={isLoading}
@@ -65,6 +66,8 @@ export function ConnectionsMenu() {
             staticIps={staticIps}
             initialView={initialView}
             onConnectionCreated={onConnectionCreated}
+            initialConnectionType={initialConnectionType}
+            initialConnectionUuid={initialConnectionUuid}
           />
         )}
       </DialogContent>
