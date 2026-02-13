@@ -72,6 +72,9 @@ async function handler(req: RequestWithUser, res: Response<{ linkToken: string }
       required_if_supported_products: [Products.Investments, Products.Liabilities],
       country_codes: [CountryCode.Us],
       language: 'en',
+      transactions: {
+        days_requested: 730,
+      },
     };
 
     const createLinkTokenResponse = await plaidClient.linkTokenCreate(createLinkTokenRequest);
