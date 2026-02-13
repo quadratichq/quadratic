@@ -344,7 +344,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'others',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
@@ -709,7 +709,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'others',
+    mode: 'disabled',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
