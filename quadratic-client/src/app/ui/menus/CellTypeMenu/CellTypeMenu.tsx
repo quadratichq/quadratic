@@ -226,7 +226,7 @@ const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionC
       </div>
       <div className="flex flex-col truncate">{connection.name}</div>
       <button
-        className="group absolute right-3 top-3 hidden text-muted-foreground opacity-0 hover:text-foreground group-hover:block group-aria-selected:opacity-100"
+        className="group absolute right-3 top-3 text-muted-foreground opacity-0 hover:text-foreground group-aria-selected:opacity-100"
         onClick={handleManageClick}
       >
         <SettingsIcon />
