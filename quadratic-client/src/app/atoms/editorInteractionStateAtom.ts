@@ -4,16 +4,21 @@ import type { SearchOptions } from '@/app/quadratic-core-types';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { User } from '@/auth/auth';
 import type { FilePermission, TeamSettings } from 'quadratic-shared/typesAndSchemas';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { atom, DefaultValue, selector } from 'recoil';
 
 type AnnotationState = 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
+
+export type ConnectionsMenuState =
+  | boolean
+  | { initialView?: 'new' | 'list'; initialConnectionType?: ConnectionType; initialConnectionUuid?: string };
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
   transactionsInfo: TransactionInfo[];
   showCellTypeMenu: boolean | 'connections';
   showCommandPalette: boolean;
-  showConnectionsMenu: boolean | 'new';
+  showConnectionsMenu: ConnectionsMenuState;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showRenameFileMenu: boolean;

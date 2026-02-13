@@ -1,4 +1,8 @@
-import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
+import { SyncedConnectionStatusMinimal } from '@/shared/components/connections/SyncedConnection';
 import {
   ChevronRightIcon,
   CloseIcon,
@@ -7,7 +11,6 @@ import {
   RefreshIcon,
   type IconComponent,
 } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -24,9 +27,10 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
+import { useSetRecoilState } from 'recoil';
 
 type SchemaBrowserTableAction = {
   label: string;
@@ -43,7 +47,6 @@ type ConnectionSchemaBrowserProps = {
   hideRefreshButton?: boolean;
   tableActions?: Array<SchemaBrowserTableAction>;
   uuid?: string;
-  showSyncedConnection?: boolean;
 };
 
 export const ConnectionSchemaBrowser = ({
@@ -54,9 +57,15 @@ export const ConnectionSchemaBrowser = ({
   teamUuid,
   type,
   uuid,
-  showSyncedConnection = true,
 }: ConnectionSchemaBrowserProps) => {
+  const isSynced = isSyncedConnectionType(type);
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
+  const { connections } = useConnectionsFetcher();
+  const connection = useMemo(
+    () => (isSynced && uuid ? connections.find((c) => c.uuid === uuid) : undefined),
+    [isSynced, uuid, connections]
+  );
+  const syncState = connection ? (deriveSyncStateFromConnectionList(connection) ?? null) : null;
 
   const [filterQuery, setFilterQuery] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +80,8 @@ export const ConnectionSchemaBrowser = ({
     );
   }, [data, filterQuery]);
 
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+
   const handleReload = useCallback(() => {
     trackEvent('[ConnectionSchemaBrowser].refresh', { eventSource });
     reloadSchema();
@@ -81,15 +92,30 @@ export const ConnectionSchemaBrowser = ({
   // Designed to live in a box that takes up the full height of its container
   return (
     <div className="h-full overflow-auto text-sm">
-      <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
-        <div className="flex items-center justify-between">
+      <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2">
+        <div className="flex h-10 items-center justify-between">
           <div className="flex items-center gap-1 truncate">
             {data && data.type ? (
               <>
                 <div className="flex h-6 w-6 flex-shrink-0 items-center">
-                  <LanguageIcon language={data.type} />
+                  <ConnectionIcon type={data.type} syncState={syncState} />
                 </div>
-                <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
+                <div className="flex flex-col gap-0">
+                  <h3 className="truncate font-medium leading-4 tracking-tight">{data.name}</h3>
+                  {isSynced && uuid && syncState && (
+                    <button
+                      onClick={() =>
+                        setShowConnectionsMenu({ initialConnectionUuid: uuid, initialConnectionType: type })
+                      }
+                      className="flex items-center text-xs text-muted-foreground hover:underline"
+                    >
+                      <SyncedConnectionStatusMinimal
+                        syncState={syncState}
+                        updatedDate={connection?.syncedConnectionUpdatedDate}
+                      />
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <Skeleton className="h-4 w-24" />
@@ -108,11 +134,6 @@ export const ConnectionSchemaBrowser = ({
           </div>
         </div>
 
-        {showSyncedConnection && uuid && (
-          <div className="mb-1 mt-1 text-xs text-muted-foreground">
-            <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} />
-          </div>
-        )}
         <div className="relative">
           <Input
             ref={inputRef}

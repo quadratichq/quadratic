@@ -75,7 +75,7 @@ export function ConnectionFormActions({
           </Button>
 
           <Button type="submit" disabled={isSubmitting}>
-            {connectionUuid ? 'Test & save changes' : 'Test & create'}
+            {connectionUuid ? 'Save changes' : 'Create'}
           </Button>
         </div>
         {dbConnectionError && (
