@@ -162,7 +162,7 @@ export function FeatureWalkthrough() {
       markAsCompleted();
 
       // Focus the AI chat input after completion
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     }
   }, [currentStepIndex, availableSteps.length]);
 

@@ -24,5 +24,25 @@ export const focusGrid = (pixiAppSettings?: PixiAppSettings) => {
 
 export const focusAIAnalyst = () => {
   const textarea = document.querySelector<HTMLTextAreaElement>('[data-ai-analyst-input]');
-  textarea?.focus();
+  if (textarea) {
+    textarea.focus();
+    return;
+  }
+
+  // Element not yet in DOM — poll using rAF with a timeout
+  const maxWaitMs = 2000;
+  const start = performance.now();
+
+  const poll = () => {
+    const el = document.querySelector<HTMLTextAreaElement>('[data-ai-analyst-input]');
+    if (el) {
+      el.focus();
+      return;
+    }
+    if (performance.now() - start < maxWaitMs) {
+      requestAnimationFrame(poll);
+    }
+  };
+
+  requestAnimationFrame(poll);
 };

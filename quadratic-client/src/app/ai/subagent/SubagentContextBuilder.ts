@@ -1,5 +1,6 @@
 import { MAX_ROWS } from '@/app/ai/constants/context';
-import { isCodingSubagent, SubagentType } from '@/app/ai/subagent/subagentTypes';
+import type { SubagentType } from '@/app/ai/subagent/subagentTypes';
+import { isCodingSubagent } from '@/app/ai/subagent/subagentTypes';
 import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';

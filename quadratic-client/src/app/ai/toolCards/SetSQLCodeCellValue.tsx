@@ -1,8 +1,8 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { parseFullJson, parsePartialJson } from '@/app/shared/utils/SafeJsonParsing';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -80,7 +80,7 @@ export const SetSQLCodeCellValue = memo(
         const { connection_kind, code_cell_position: position } = partialJson;
         return (
           <ToolCard
-            icon={<LanguageIcon language={connection_kind ?? ''} />}
+            icon={<ConnectionIcon type={connection_kind ?? ''} />}
             label={connection_kind}
             description={
               `${estimatedNumberOfLines} line` +
@@ -96,7 +96,7 @@ export const SetSQLCodeCellValue = memo(
     }
 
     if (!!toolArgs && !toolArgs.success) {
-      return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError className={className} compact />;
+      return <ToolCard icon={<ConnectionIcon type="" />} label="Code" hasError className={className} compact />;
     } else if (!toolArgs || !toolArgs.data) {
       return <ToolCard isLoading className={className} compact />;
     }
@@ -104,7 +104,7 @@ export const SetSQLCodeCellValue = memo(
     const { code_cell_name, connection_kind, code_cell_position } = toolArgs.data;
     return (
       <ToolCard
-        icon={<LanguageIcon language={connection_kind} />}
+        icon={<ConnectionIcon type={connection_kind} />}
         label={code_cell_name || connection_kind}
         description={
           `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
