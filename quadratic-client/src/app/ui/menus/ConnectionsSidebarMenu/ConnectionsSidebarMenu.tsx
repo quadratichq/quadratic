@@ -11,14 +11,8 @@ interface ConnectionsSidebarMenuProps {
 }
 
 export const ConnectionsSidebarMenu = memo(({ 'data-walkthrough': dataWalkthrough }: ConnectionsSidebarMenuProps) => {
-  const {
-    connections,
-    activeConnectionId,
-    didSelectConnection,
-    handleSelectConnection,
-    handleAddConnection,
-    handleManageConnections,
-  } = useConnectionsDropdownHandlers('ConnectionsSidebarMenu');
+  const { connections, activeConnectionId, didSelectConnection, handleSelectConnection, handleAddConnection } =
+    useConnectionsDropdownHandlers('ConnectionsSidebarMenu');
 
   return (
     <DropdownMenu>
@@ -46,7 +40,6 @@ export const ConnectionsSidebarMenu = memo(({ 'data-walkthrough': dataWalkthroug
           activeConnectionId={activeConnectionId}
           onSelectConnection={handleSelectConnection}
           onAddConnection={handleAddConnection}
-          onManageConnections={handleManageConnections}
         />
       </DropdownMenuContent>
     </DropdownMenu>

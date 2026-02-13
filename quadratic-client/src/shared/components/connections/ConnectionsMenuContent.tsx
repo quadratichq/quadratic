@@ -146,16 +146,33 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
     }
   }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
+  const handleManageClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+    },
+    [setShowConnectionsMenu, connection.uuid, connection.type]
+  );
+
   return (
-    <DropdownMenuItem onClick={handleClick} className="gap-3">
+    <DropdownMenuItem onClick={handleClick} className="group flex items-center gap-3">
       <ConnectionIcon type={connection.type} syncState={syncState} className="flex-shrink-0" />
+
       <span className="flex items-center truncate">
         <span className="truncate">
           {connection.name}
           {connection.isDemo && ' (read-only)'}
         </span>
       </span>
-      <CheckIcon className={cn('ml-auto flex-shrink-0', isActive ? 'visible' : 'invisible opacity-0')} />
+      <CheckIcon
+        className={cn('ml-auto flex-shrink-0 group-hover:invisible', isActive ? 'visible' : 'invisible opacity-0')}
+      />
+      <button
+        className="group/button absolute right-2 top-1.5 opacity-0 group-hover:opacity-100"
+        onClick={handleManageClick}
+      >
+        <SettingsIcon />
+      </button>
     </DropdownMenuItem>
   );
 });
@@ -169,7 +186,6 @@ export interface ConnectionsMenuContentProps {
   actionsFirst?: boolean;
   onSelectConnection: (uuid: string, type: ConnectionType, name: string) => void;
   onAddConnection: (type: ConnectionType) => void;
-  onManageConnections: () => void;
 }
 
 export const ConnectionsMenuContent = memo(
@@ -179,7 +195,6 @@ export const ConnectionsMenuContent = memo(
     actionsFirst = false,
     onSelectConnection,
     onAddConnection,
-    onManageConnections,
   }: ConnectionsMenuContentProps) => {
     const connectionsList = connections.length > 0 && (
       <>
@@ -208,12 +223,6 @@ export const ConnectionsMenuContent = memo(
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
-
-        {/* Manage connections */}
-        <DropdownMenuItem onClick={onManageConnections} className="gap-3">
-          <SettingsIcon className="flex-shrink-0" />
-          <span>Manage connections</span>
-        </DropdownMenuItem>
       </>
     );
 

@@ -1,8 +1,5 @@
 import { aiAnalystActiveSchemaConnectionUuidAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
-import {
-  editorInteractionStateShowConnectionsMenuAtom,
-  editorInteractionStateTeamUuidAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -30,7 +27,6 @@ export function useConnectionsDropdownHandlers(trackingPrefix: string) {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const [activeConnectionId, setActiveConnectionId] = useRecoilState(aiAnalystActiveSchemaConnectionUuidAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
-  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
 
   // Track whether a connection was just selected, so callers can adjust
   // focus behavior in onCloseAutoFocus (e.g. focus AI analyst vs. grid).
@@ -86,11 +82,6 @@ export function useConnectionsDropdownHandlers(trackingPrefix: string) {
     [trackingPrefix]
   );
 
-  const handleManageConnections = useCallback(() => {
-    trackEvent(`[${trackingPrefix}].manageConnections`);
-    setShowConnectionsMenu(true);
-  }, [setShowConnectionsMenu, trackingPrefix]);
-
   return {
     connections,
     teamUuid,
@@ -98,6 +89,5 @@ export function useConnectionsDropdownHandlers(trackingPrefix: string) {
     didSelectConnection,
     handleSelectConnection,
     handleAddConnection,
-    handleManageConnections,
   };
 }
