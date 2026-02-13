@@ -92,6 +92,9 @@ export function BusinessPlanSettings() {
       }
 
       await apiClient.teams.billing.updateBudget(team.uuid, limitValue);
+      // Update the cached data and input state so hasSpendingLimitChanged reflects the new saved value
+      setAiUsageData((prev) => (prev ? { ...prev, teamMonthlyBudgetLimit: limitValue } : prev));
+      setSpendingLimit(limitValue?.toString() ?? '');
       addGlobalSnackbar(limitValue ? 'Spending limit updated' : 'Spending limit removed', { severity: 'success' });
     } catch (error) {
       console.error('[BusinessPlanSettings] Failed to update spending limit:', error);
@@ -153,7 +156,7 @@ export function BusinessPlanSettings() {
                     Team spending limit
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Limits the total usage the team is allowed to spend on any given month.
+                    Limits how much the team can spend on overage (usage beyond the included allowance) each month.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -171,12 +174,11 @@ export function BusinessPlanSettings() {
                       disabled={!isOwner || isLoadingUsage}
                     />
                   </div>
-                  {isOwner && hasSpendingLimitChanged && (
+                  {isOwner && (
                     <Button
-                      variant="secondary"
                       size="sm"
                       onClick={handleSpendingLimitSave}
-                      disabled={isUpdatingLimit || isLoadingUsage}
+                      disabled={!hasSpendingLimitChanged || isUpdatingLimit || isLoadingUsage}
                     >
                       {isUpdatingLimit ? 'Saving...' : 'Save'}
                     </Button>
@@ -185,7 +187,7 @@ export function BusinessPlanSettings() {
               </div>
               {aiUsageData?.teamCurrentMonthCost !== null && aiUsageData?.teamCurrentMonthCost !== undefined && (
                 <p className="text-xs text-muted-foreground">
-                  Current team spend this month: ${aiUsageData.teamCurrentMonthCost.toFixed(2)}
+                  Current team overage spend this month: ${aiUsageData.teamCurrentMonthCost.toFixed(2)}
                 </p>
               )}
             </div>

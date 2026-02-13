@@ -78,9 +78,9 @@ export const getMonthlyAiAllowancePerUser = async (team: Team | DecryptedTeam): 
     case PlanType.FREE:
       return 0;
     case PlanType.PRO:
-      return 20;
+      return 0.5; // 20
     case PlanType.BUSINESS:
-      return 40;
+      return 0.5; // 40
     default:
       return 0;
   }
@@ -232,9 +232,19 @@ export const hasExceededUserBudget = async (teamId: number, userId: number): Pro
 };
 
 /**
+ * Get the current month's AI overage cost for a team (cost beyond included allowance).
+ * Returns max(0, total cost − team monthly allowance).
+ */
+export const getCurrentMonthOverageCostForTeam = async (team: Team | DecryptedTeam): Promise<number> => {
+  const totalCost = await getCurrentMonthAiCostForTeam(team.id);
+  const allowance = await getTeamMonthlyAiAllowance(team);
+  return Math.max(0, totalCost - allowance);
+};
+
+/**
  * Check if a team has exceeded its monthly budget limit.
+ * The limit applies to overage only (cost beyond included allowance).
  * Returns false if no budget limit is set.
- * Budgets automatically reset on the 1st of each month since costs are filtered by calendar month.
  */
 export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise<boolean> => {
   const teamWithBudget = team as Team & {
@@ -245,9 +255,8 @@ export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise
     return false; // No budget limit set
   }
 
-  // Costs are already filtered by current calendar month, so just compare
-  const currentCost = await getCurrentMonthAiCostForTeam(team.id);
-  return currentCost >= teamWithBudget.teamMonthlyBudgetLimit;
+  const overageCost = await getCurrentMonthOverageCostForTeam(team);
+  return overageCost >= teamWithBudget.teamMonthlyBudgetLimit;
 };
 
 /**

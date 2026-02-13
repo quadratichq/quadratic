@@ -95,7 +95,7 @@ export function TeamAIUsage() {
     }
   };
 
-  // Check if user has hit their included usage limit
+  // Check if user has hit their included usage limit (and has no on-demand available)
   const hasHitLimit = (usage?: UserUsage): boolean => {
     if (!usage) return false;
 
@@ -106,10 +106,12 @@ export function TeamAIUsage() {
       }
       return false;
     } else {
-      // Pro/Business: check cost against allowance
+      // Pro/Business: only show limit when over allowance and on-demand is not available
       const currentCost = usage.currentMonthAiCost ?? 0;
       const allowance = monthlyAiAllowance ?? 0;
-      return currentCost >= allowance && allowance > 0;
+      const overAllowance = currentCost >= allowance && allowance > 0;
+      if (allowOveragePayments) return false;
+      return overAllowance;
     }
   };
 

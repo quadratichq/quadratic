@@ -9,7 +9,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { BusinessPlan } from './BusinessPlan';
 
 type BillingPlansProps = {
@@ -118,7 +118,11 @@ export const BillingPlans = ({
   planType,
 }: BillingPlansProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+
+  // Get current path to return to after checkout
+  const returnTo = location.pathname + location.search;
 
   const currentPlan = planType || (isOnPaidPlan ? 'PRO' : 'FREE');
   const isFree = currentPlan === 'FREE';
@@ -180,7 +184,7 @@ export const BillingPlans = ({
             disabled={!canManageBilling}
             onClick={() => {
               trackEvent('[Billing].upgradeToProClicked', { eventSource });
-              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid));
+              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid, { returnTo }));
             }}
             className="mt-4 w-full"
             data-testid="billing-upgrade-to-pro-button"
@@ -246,7 +250,7 @@ export const BillingPlans = ({
             disabled={!canManageBilling}
             onClick={() => {
               trackEvent('[Billing].upgradeToBusinessClicked', { eventSource });
-              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid) + '?plan=business');
+              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid, { returnTo, plan: 'business' }));
             }}
             className="mt-4 w-full"
             data-testid="billing-upgrade-to-business-button"

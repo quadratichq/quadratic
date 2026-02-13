@@ -1,3 +1,4 @@
+import { debugFlags } from '@/app/debugFlags/debugFlags';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -24,6 +25,8 @@ import {
   type SubagentResult,
 } from './subagentTypes';
 import { SUBAGENT_TO_AGENT_TYPE } from './subagentTypeToAgentType';
+
+const subagentDebug = () => debugFlags.getFlag('debugShowAISubagent');
 
 /**
  * SubagentRunner executes specialized subagents with isolated context.
@@ -64,9 +67,10 @@ export class SubagentRunner {
     const hasExistingSession = subagentSessionManager.hasSession(subagentType);
     const isResumingSession = hasExistingSession && !reset;
 
-    console.log(
-      `[SubagentRunner] ${isResumingSession ? 'Resuming' : 'Starting'} ${subagentType} subagent with model ${modelKey}`
-    );
+    if (subagentDebug())
+      console.log(
+        `[SubagentRunner] ${isResumingSession ? 'Resuming' : 'Starting'} ${subagentType} subagent with model ${modelKey}`
+      );
 
     try {
       let messages: ChatMessage[];
@@ -83,7 +87,7 @@ export class SubagentRunner {
           contextType: 'userPrompt',
         });
 
-        console.log(`[SubagentRunner] Resumed session with ${messages.length} existing messages`);
+        if (subagentDebug()) console.log(`[SubagentRunner] Resumed session with ${messages.length} existing messages`);
       } else {
         // Start fresh session
         if (reset) {
@@ -189,7 +193,7 @@ export class SubagentRunner {
 
     while (iterations < maxIterations) {
       iterations++;
-      console.log(`[SubagentRunner] Iteration ${iterations}/${maxIterations}`);
+      if (subagentDebug()) console.log(`[SubagentRunner] Iteration ${iterations}/${maxIterations}`);
 
       // Check for abort
       if (abortSignal?.aborted) {
@@ -222,15 +226,24 @@ export class SubagentRunner {
 
       // If no tool calls, the subagent is done
       if (response.toolCalls.length === 0) {
-        console.log(`[SubagentRunner] Complete - no more tool calls`);
+        const textContent = response.content
+          .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+          .map((c) => c.text)
+          .join('\n');
+        if (subagentDebug())
+          console.log(
+            `[SubagentRunner] Complete - no more tool calls. Response text (first 500 chars):`,
+            textContent.slice(0, 500)
+          );
         return { result: this.parseResult(response.content), finalMessages: messages };
       }
 
       // Log tool calls
-      console.log(
-        `[SubagentRunner] Tool calls:`,
-        response.toolCalls.map((tc) => `${tc.name}(${tc.arguments?.slice(0, 100)}...)`)
-      );
+      if (subagentDebug())
+        console.log(
+          `[SubagentRunner] Tool calls:`,
+          response.toolCalls.map((tc) => `${tc.name}(${tc.arguments?.slice(0, 100)}...)`)
+        );
 
       // Emit tool call events for UI (with loading: true)
       for (const tc of response.toolCalls) {
@@ -326,15 +339,28 @@ export class SubagentRunner {
         return { content: [], toolCalls: [], error: true };
       }
 
+      // Log the raw response from the API
+      if (subagentDebug())
+        console.log(`[SubagentRunner] API response for ${subagentType}:`, {
+          contentCount: responseMessage.content.length,
+          toolCallCount: responseMessage.toolCalls.length,
+          toolCallNames: responseMessage.toolCalls.map((tc) => tc.name),
+        });
+
       // Filter tool calls to only allowed tools
       const allowedToolCalls = responseMessage.toolCalls.filter((tc) =>
         isToolAllowedForSubagent(subagentType, tc.name as AITool)
       );
 
       // Log filtered tools
-      const filteredCount = responseMessage.toolCalls.length - allowedToolCalls.length;
-      if (filteredCount > 0) {
-        console.warn(`[SubagentRunner] Filtered ${filteredCount} disallowed tool calls for ${subagentType}`);
+      if (subagentDebug()) {
+        const filteredCount = responseMessage.toolCalls.length - allowedToolCalls.length;
+        if (filteredCount > 0) {
+          console.warn(`[SubagentRunner] Filtered ${filteredCount} disallowed tool calls for ${subagentType}:`, {
+            original: responseMessage.toolCalls.map((tc) => tc.name),
+            allowed: allowedToolCalls.map((tc) => tc.name),
+          });
+        }
       }
 
       return {
@@ -442,17 +468,26 @@ export class SubagentRunner {
    */
   private async executeSingleTool(toolCall: AIToolCall, chatId: string): Promise<ToolResultContent> {
     if (!Object.values(AITool).includes(toolCall.name as AITool)) {
+      console.warn(`[SubagentRunner] Unknown tool: ${toolCall.name}`);
       return [createTextContent('Unknown tool')];
     }
 
     try {
       const aiTool = toolCall.name as AITool;
-      return await executeAIToolFromJson(aiTool, toolCall.arguments, {
+      if (subagentDebug()) console.log(`[SubagentRunner] Executing tool: ${aiTool}`);
+      const result = await executeAIToolFromJson(aiTool, toolCall.arguments, {
         source: 'AIAnalyst',
         chatId,
         messageIndex: 0,
       });
+      if (subagentDebug())
+        console.log(
+          `[SubagentRunner] Tool result for ${aiTool}:`,
+          result.map((r) => (r.type === 'text' ? r.text.slice(0, 200) : r.type))
+        );
+      return result;
     } catch (error) {
+      console.error(`[SubagentRunner] Error executing ${toolCall.name}:`, error);
       return [createTextContent(`Error executing ${toolCall.name}: ${error}`)];
     }
   }

@@ -1,4 +1,4 @@
-import type { AnalyticsAIChat, AIChatSource } from '@prisma/client';
+import type { AIChatSource, AnalyticsAIChat } from '@prisma/client';
 import type { Response } from 'express';
 import {
   getLastAIPromptMessageIndex,
@@ -92,7 +92,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const isFree = await isFreePlan(ownerTeam);
 
   // Check billing limits based on plan type
-  if (messageType === 'userPrompt') {
+  // Skip limit check for subagent messages (they are part of an already-approved turn)
+  const isSubagentMessage = messageSource?.startsWith('subagent:');
+  if (messageType === 'userPrompt' && !isSubagentMessage) {
     if (isFree) {
       // Free plan: use existing message limit check
       if (!isOnPaidPlan || !userTeamRole) {
@@ -108,6 +110,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     }
 
     if (exceededBillingLimit) {
+      // Get plan type and overage settings for the response
+      const teamWithBilling = ownerTeam as typeof ownerTeam & {
+        planType?: string | null;
+        allowOveragePayments?: boolean;
+      };
+      const planType = (teamWithBilling.planType as 'FREE' | 'PRO' | 'BUSINESS') ?? (isFree ? 'FREE' : 'PRO');
+      const allowOveragePayments = teamWithBilling.allowOveragePayments ?? false;
+
       const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
         role: 'assistant',
         content: [],
@@ -116,6 +126,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         modelKey: clientModelKey,
         isOnPaidPlan,
         exceededBillingLimit,
+        planType,
+        allowOveragePayments,
       };
 
       const { stream } = getModelOptions(clientModelKey, args);

@@ -5,6 +5,7 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
+import { BusinessPlanSettings } from '@/shared/components/SettingsTabs/BusinessPlanSettings';
 import { TeamAIUsage } from '@/shared/components/SettingsTabs/TeamAIUsage';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -18,7 +19,7 @@ import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useFetcher, useSubmit } from 'react-router';
+import { Link, Navigate, useFetcher, useLocation, useSubmit } from 'react-router';
 
 export const Component = () => {
   const {
@@ -32,6 +33,8 @@ export const Component = () => {
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const location = useLocation();
+  const returnTo = location.pathname + location.search;
   const [value, setValue] = useState<string>(team.name);
   const disabled = useMemo(
     () => value === '' || value === team.name || fetcher.state !== 'idle',
@@ -158,6 +161,9 @@ export const Component = () => {
             {/* AI Usage */}
             <TeamAIUsage />
 
+            {/* On-demand usage and spending limit (Business plan) */}
+            <BusinessPlanSettings />
+
             <p className="pt-2 text-sm text-muted-foreground">
               Learn more on our{' '}
               <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
@@ -211,7 +217,7 @@ export const Component = () => {
                       className="h-6"
                       disabled={!canManageBilling}
                     >
-                      <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid)}>Upgrade now</Link>
+                      <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid, { returnTo })}>Upgrade now</Link>
                     </Button>
                   </div>
                 )}

@@ -32,13 +32,22 @@ export const setCodeCellResult = async (
   y: number,
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
+  console.log(`[setCodeCellResult] Getting code cell at (${x}, ${y}) on sheet ${sheetId}`);
   const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
   const codeCell = tableCodeCell
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
     : undefined;
   if (!tableCodeCell || !codeCell) {
+    console.error(`[setCodeCellResult] Code cell not found at (${x}, ${y})`);
     return [createTextContent('Error executing set code cell value tool')];
   }
+  console.log(`[setCodeCellResult] Code cell found:`, {
+    position: `(${tableCodeCell.x}, ${tableCodeCell.y})`,
+    size: `${tableCodeCell.w}x${tableCodeCell.h}`,
+    is_html: tableCodeCell.is_html,
+    std_err: codeCell.std_err ? 'present' : 'none',
+    spill_error: codeCell.spill_error ? 'present' : 'none',
+  });
 
   if (codeCell.std_err || codeCell.spill_error) {
     // log code run error in analytics, if enabled
@@ -61,6 +70,7 @@ export const setCodeCellResult = async (
   const consoleOutput = codeCell.std_out ? `Console output:\n\`\`\`\n${codeCell.std_out}\n\`\`\`\n\n` : '';
 
   if (codeCell.std_err) {
+    console.warn(`[setCodeCellResult] Runtime error:`, codeCell.std_err);
     return [
       createTextContent(
         `${consoleOutput}The code cell run has resulted in an error:
@@ -74,6 +84,9 @@ Think and reason about the error and try to fix it. Do not attempt the same fix 
   }
 
   if (codeCell.spill_error) {
+    console.warn(
+      `[setCodeCellResult] Spill error: output ${tableCodeCell.w}x${tableCodeCell.h} at (${tableCodeCell.x}, ${tableCodeCell.y})`
+    );
     return [
       createTextContent(
         `${consoleOutput}The code cell has spilled, because the output overlaps with existing data on the sheet.
@@ -87,10 +100,12 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
   }
 
   if (tableCodeCell.is_html) {
+    console.log(`[setCodeCellResult] Successfully created plotly chart`);
     return [
       createTextContent(`${consoleOutput}Executed set code cell value tool successfully to create a plotly chart.`),
     ];
   } else if (tableCodeCell.is_html_image) {
+    console.log(`[setCodeCellResult] Successfully created javascript chart`);
     return [
       createTextContent(`${consoleOutput}Executed set code cell value tool successfully to create a javascript chart.`),
     ];

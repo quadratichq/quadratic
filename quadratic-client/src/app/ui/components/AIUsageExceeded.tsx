@@ -1,11 +1,51 @@
+import { getNextPlanSuggestion, useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useSetAtom } from 'jotai';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 export const AIUsageExceeded = memo(() => {
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const { planType, allowOveragePayments } = useIsOnPaidPlan();
+
+  const suggestion = useMemo(
+    () => getNextPlanSuggestion(planType, allowOveragePayments),
+    [planType, allowOveragePayments]
+  );
+
+  const { title, description, buttonText } = useMemo(() => {
+    if (!suggestion) {
+      return {
+        title: 'Monthly AI limit reached',
+        description: 'You have reached your AI usage limit for this month.',
+        buttonText: 'View usage',
+      };
+    }
+
+    if (suggestion.type === 'enableOverage') {
+      return {
+        title: 'Monthly AI allowance exceeded',
+        description: 'Enable on-demand usage in team settings to continue using Quadratic AI.',
+        buttonText: 'Enable on-demand usage',
+      };
+    }
+
+    const targetPlan = suggestion.targetPlan;
+    if (targetPlan === 'PRO') {
+      return {
+        title: 'Monthly AI free tier exceeded',
+        description: 'Upgrade to a Pro plan to continue using Quadratic AI.',
+        buttonText: 'Upgrade to Pro',
+      };
+    } else {
+      return {
+        title: 'Monthly AI allowance exceeded',
+        description: 'Upgrade to a Business plan for more AI usage and on-demand billing.',
+        buttonText: 'Upgrade to Business',
+      };
+    }
+  }, [suggestion]);
 
   return (
     <div
@@ -13,18 +53,18 @@ export const AIUsageExceeded = memo(() => {
         'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 p-2 text-center text-sm dark:border-yellow-800 dark:bg-yellow-950/50'
       }
     >
-      <h3 className="font-semibold">Monthly AI free tier exceeded</h3>
-      <p className="text-muted-foreground">Upgrade to a Pro plan to continue using Quadratic AI.</p>
+      <h3 className="font-semibold">{title}</h3>
+      <p className="text-muted-foreground">{description}</p>
 
       <Button
         onClick={() => {
-          setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded' });
-          trackEvent('[AI].UsageExceeded.clickUpgrade');
+          setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded', suggestion });
+          trackEvent('[AI].UsageExceeded.clickUpgrade', { planType, suggestion: suggestion?.type ?? 'none' });
         }}
         className="mt-2 w-full"
         size="sm"
       >
-        Upgrade to Pro
+        {buttonText}
       </Button>
     </div>
   );

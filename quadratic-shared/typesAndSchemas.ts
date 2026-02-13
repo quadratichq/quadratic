@@ -204,6 +204,7 @@ export const ApiSchemas = {
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
       isOnPaidPlan: z.boolean(),
+      planType: z.enum(['FREE', 'PRO', 'BUSINESS']).optional(),
       settings: TeamSettingsSchema,
       sshPublicKey: z.string(),
     }),
@@ -604,6 +605,8 @@ export const ApiSchemas = {
     z.object({
       isOnPaidPlan: z.boolean(),
       exceededBillingLimit: z.boolean(),
+      planType: z.enum(['FREE', 'PRO', 'BUSINESS']).optional(),
+      allowOveragePayments: z.boolean().optional(),
       error: z.boolean().optional(),
       usage: AIUsageSchema.optional(),
       errorType: z.enum(['context_length', 'general']).optional(),

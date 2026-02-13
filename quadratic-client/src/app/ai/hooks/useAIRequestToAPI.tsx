@@ -19,7 +19,7 @@ type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
 };
 
 export function useAIRequestToAPI() {
-  const { isOnPaidPlan, setIsOnPaidPlan } = useIsOnPaidPlan();
+  const { isOnPaidPlan, setIsOnPaidPlan, setPlanType, setAllowOveragePayments } = useIsOnPaidPlan();
 
   const handleAIRequestToAPI = useRecoilCallback(
     ({ snapshot }) =>
@@ -217,6 +217,12 @@ export function useAIRequestToAPI() {
           responseMessage = newResponseMessage;
 
           setIsOnPaidPlan(responseMessage.isOnPaidPlan);
+          if (responseMessage.planType) {
+            setPlanType(responseMessage.planType);
+          }
+          if (responseMessage.allowOveragePayments !== undefined) {
+            setAllowOveragePayments(responseMessage.allowOveragePayments);
+          }
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
           return {
@@ -224,8 +230,8 @@ export function useAIRequestToAPI() {
             toolCalls: responseMessage.toolCalls,
             error: responseMessage.error,
           };
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') {
             return { error: false, content: [createTextContent('Aborted by user')], toolCalls: [] };
           } else {
             console.error('Error in AI prompt handling:', err);
@@ -238,7 +244,7 @@ export function useAIRequestToAPI() {
           }
         }
       },
-    [isOnPaidPlan, setIsOnPaidPlan]
+    [isOnPaidPlan, setIsOnPaidPlan, setPlanType, setAllowOveragePayments]
   );
 
   return { handleAIRequestToAPI };

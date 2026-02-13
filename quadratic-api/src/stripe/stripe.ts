@@ -57,6 +57,62 @@ export const updateSeatQuantity = async (teamId: number) => {
   });
 };
 
+/**
+ * Upgrades an existing subscription to a new price/plan.
+ * This handles proration automatically.
+ */
+export const upgradeSubscriptionPlan = async (
+  team: Team | DecryptedTeam,
+  newPriceId: string,
+  planType: 'pro' | 'business'
+) => {
+  if (!team.stripeSubscriptionId) {
+    throw new Error('Team does not have a stripe subscription. Cannot upgrade plan.');
+  }
+
+  // Get the current subscription
+  const subscription = await stripe.subscriptions.retrieve(team.stripeSubscriptionId);
+  const subscriptionItems = subscription.items.data;
+
+  if (subscriptionItems.length !== 1) {
+    throw new Error('Subscription does not have exactly 1 item');
+  }
+
+  const currentItem = subscriptionItems[0];
+
+  // Update the subscription with the new price
+  const updatedSubscription = await stripe.subscriptions.update(team.stripeSubscriptionId, {
+    items: [
+      {
+        id: currentItem.id,
+        price: newPriceId,
+        quantity: currentItem.quantity,
+      },
+    ],
+    proration_behavior: 'create_prorations',
+    metadata: {
+      plan_type: planType === 'business' ? 'BUSINESS' : 'PRO',
+    },
+  });
+
+  // Update team's plan type in database
+  await dbClient.team.update({
+    where: { id: team.id },
+    data: {
+      planType: planType === 'business' ? 'BUSINESS' : 'PRO',
+    },
+  });
+
+  logger.info('Subscription plan upgraded', {
+    teamId: team.id,
+    teamUuid: team.uuid,
+    newPlanType: planType,
+    subscriptionId: team.stripeSubscriptionId,
+  });
+
+  return updatedSubscription;
+};
+
 export const createCustomer = async (name: string, email: string) => {
   return stripe.customers.create({
     name,

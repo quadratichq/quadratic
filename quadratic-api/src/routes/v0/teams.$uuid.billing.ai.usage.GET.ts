@@ -8,10 +8,9 @@ import {
   getCurrentMonthAiMessagesForTeam,
 } from '../../billing/AIUsageHelpers';
 import {
-  getCurrentMonthAiCostForTeam,
   getCurrentMonthAiCostForUser,
+  getCurrentMonthOverageCostForTeam,
   getMonthlyAiAllowancePerUser,
-  getTeamMonthlyAiAllowance,
   getUserBudgetLimit,
   hasExceededTeamBudget,
   isFreePlan,
@@ -114,13 +113,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Get budget limits
   const userBudgetLimit = await getUserBudgetLimit(team.id, userId);
-  const teamWithBudget = team as typeof team & { 
+  const teamWithBudget = team as typeof team & {
     teamMonthlyBudgetLimit?: number | null;
     allowOveragePayments?: boolean;
     planType?: string | null;
   };
   const teamMonthlyBudgetLimit = teamWithBudget.teamMonthlyBudgetLimit;
-  const teamCurrentMonthCost = await getCurrentMonthAiCostForTeam(team.id);
+  const teamCurrentMonthOverageCost =
+    teamMonthlyBudgetLimit != null ? await getCurrentMonthOverageCostForTeam(team) : null;
   const teamExceededBudget = await hasExceededTeamBudget(team);
 
   // Check if exceeded allowance
@@ -156,13 +156,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const data = {
     exceededBillingLimit: finalExceededBillingLimit,
     billingLimit: isFree ? BILLING_AI_USAGE_LIMIT : null,
-    currentPeriodUsage: isFree ? BillingAIUsageForCurrentMonth(await BillingAIUsageMonthlyForUserInTeam(userId, team.id)) : null,
-    planType: isFree ? 'FREE' : (teamWithBudget.planType || 'PRO'),
+    currentPeriodUsage: isFree
+      ? BillingAIUsageForCurrentMonth(await BillingAIUsageMonthlyForUserInTeam(userId, team.id))
+      : null,
+    planType: isFree ? 'FREE' : teamWithBudget.planType || 'PRO',
     currentMonthAiCost,
     monthlyAiAllowance: monthlyAiAllowancePerUser,
     remainingAllowance,
     teamMonthlyBudgetLimit,
-    teamCurrentMonthCost: teamMonthlyBudgetLimit ? teamCurrentMonthCost : null,
+    teamCurrentMonthCost: teamCurrentMonthOverageCost,
     teamCurrentMonthMessages: isFree ? teamCurrentMonthMessages : null,
     teamMessageLimit: isFree ? teamMessageLimit : null,
     userMonthlyBudgetLimit: userBudgetLimit?.limit ?? null,

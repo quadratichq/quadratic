@@ -175,7 +175,7 @@ function getOpenAITools(
       function: {
         name,
         description,
-        parameters: ensureStrictSchema(parameters, strictParams),
+        parameters: ensureStrictSchema(parameters),
         strict: strictParams,
       },
     })

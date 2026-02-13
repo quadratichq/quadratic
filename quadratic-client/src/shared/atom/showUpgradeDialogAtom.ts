@@ -9,10 +9,14 @@ export type UpgradeDialogEventSource =
   | 'SettingsDialog'
   | 'periodicSolicitation';
 
-export const showUpgradeDialogAtom = atom<
-  { open: false; eventSource: null } | { open: true; eventSource: UpgradeDialogEventSource }
->({ open: false, eventSource: null });
+export type UpgradeSuggestion = { type: 'upgrade'; targetPlan: 'PRO' | 'BUSINESS' } | { type: 'enableOverage' } | null;
 
-export const showUpgradeDialog = (eventSource: UpgradeDialogEventSource) => {
-  getDefaultStore().set(showUpgradeDialogAtom, { open: true, eventSource });
+type UpgradeDialogState =
+  | { open: false; eventSource: null; suggestion?: null }
+  | { open: true; eventSource: UpgradeDialogEventSource; suggestion?: UpgradeSuggestion };
+
+export const showUpgradeDialogAtom = atom<UpgradeDialogState>({ open: false, eventSource: null });
+
+export const showUpgradeDialog = (eventSource: UpgradeDialogEventSource, suggestion?: UpgradeSuggestion) => {
+  getDefaultStore().set(showUpgradeDialogAtom, { open: true, eventSource, suggestion });
 };

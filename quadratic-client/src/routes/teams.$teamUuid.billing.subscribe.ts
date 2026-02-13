@@ -22,9 +22,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     // Default to 'pro' if no plan is specified
     const planParam: 'pro' | 'business' = plan === 'business' ? 'business' : 'pro';
 
+    // Get returnTo parameter - this is where users go after checkout
+    // Validate that it starts with '/' to prevent open redirect attacks
+    const returnTo = url.searchParams.get('returnTo');
+    const safeReturnTo = returnTo && returnTo.startsWith('/') ? returnTo : ROUTES.TEAM_SETTINGS(teamUuid);
+
     // Construct proper redirect URLs - use origin + path to ensure proper URL format
-    const redirectUrlSuccess = `${url.origin}${ROUTES.TEAM_SETTINGS(teamUuid)}`;
-    const redirectUrlCancel = `${url.origin}${ROUTES.TEAM_SETTINGS(teamUuid)}`;
+    const redirectUrlSuccess = `${url.origin}${safeReturnTo}`;
+    const redirectUrlCancel = `${url.origin}${safeReturnTo}`;
 
     // Could throw because user doesn't have permission (unlikely but if the user knows the URL)
     const checkoutUrl = await apiClient.teams.billing

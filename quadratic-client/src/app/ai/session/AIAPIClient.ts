@@ -9,6 +9,8 @@ import { aiStore, contextUsageAtom } from '../atoms/aiAnalystAtoms';
 import type { AIAPIResponse, ExceededBillingLimitCallback, StreamingMessageCallback } from './types';
 
 const IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY = 'isOnPaidPlan';
+const PLAN_TYPE_LOCAL_STORAGE_KEY = 'planType';
+const ALLOW_OVERAGE_PAYMENTS_LOCAL_STORAGE_KEY = 'allowOveragePayments';
 
 /**
  * Returns a deep clone of the message so callback consumers cannot mutate internal state.
@@ -31,6 +33,24 @@ export class AIAPIClient {
       return stored ? JSON.parse(stored) === true : false;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Update billing info from AI response (shared with useIsOnPaidPlan hook)
+   */
+  private updateBillingInfoFromResponse(response: ApiTypes['/v0/ai/chat.POST.response']): void {
+    try {
+      // Update planType if provided
+      if (response.planType) {
+        localStorage.setItem(PLAN_TYPE_LOCAL_STORAGE_KEY, JSON.stringify(response.planType));
+      }
+      // Update allowOveragePayments if provided
+      if (response.allowOveragePayments !== undefined) {
+        localStorage.setItem(ALLOW_OVERAGE_PAYMENTS_LOCAL_STORAGE_KEY, JSON.stringify(response.allowOveragePayments));
+      }
+    } catch {
+      // Ignore localStorage errors
     }
   }
 
@@ -110,6 +130,9 @@ export class AIAPIClient {
 
       onMessage?.(cloneMessageForCallback(responseMessage));
       onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
+
+      // Update billing info from response (planType, allowOveragePayments)
+      this.updateBillingInfoFromResponse(responseMessage);
 
       // Update context usage atom with the latest usage data
       if (responseMessage.usage) {

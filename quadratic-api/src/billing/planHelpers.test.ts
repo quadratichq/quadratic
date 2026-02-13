@@ -1,11 +1,10 @@
-import type { Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../tests/testDataGenerator';
-import type { DecryptedTeam } from '../utils/teams';
 import {
   canMakeAiRequest,
   getCurrentMonthAiCostForTeam,
   getCurrentMonthAiCostForUser,
+  getCurrentMonthOverageCostForTeam,
   getMonthlyAiAllowancePerUser,
   getPlanType,
   getTeamMonthlyAiAllowance,
@@ -785,6 +784,57 @@ describe('hasExceededTeamBudget', () => {
 
     const exceeded = await hasExceededTeamBudget(updatedTeam);
     expect(exceeded).toBe(true);
+  });
+
+  it('applies limit to overage only: returns false when total cost exceeds limit but overage is under limit', async () => {
+    const team = await createTeam({
+      team: { uuid: '00000000-0000-0000-0000-000000000093' },
+      users: [{ userId: userId1, role: 'OWNER' }],
+    });
+
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: {
+        planType: 'BUSINESS' as any,
+        monthlyAiAllowancePerUser: 50.0 as any,
+        teamMonthlyBudgetLimit: 60.0 as any,
+      },
+    });
+
+    const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
+    if (!updatedTeam) throw new Error('Team not found');
+
+    const file = await createFile({
+      data: {
+        uuid: '00000000-0000-0000-0000-000000000094',
+        name: 'Test File',
+        ownerTeamId: team.id,
+        creatorUserId: userId1,
+      },
+    });
+
+    // Total cost $100 (included $50 + overage $50). Limit $60 applies to overage only, so overage $50 < $60
+    await (dbClient as any).aICost.create({
+      data: {
+        userId: userId1,
+        teamId: team.id,
+        fileId: file.id,
+        cost: 100.0,
+        model: 'test-model',
+        source: 'AIAnalyst',
+        inputTokens: 100,
+        outputTokens: 100,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        createdDate: new Date(),
+      },
+    });
+
+    const overageCost = await getCurrentMonthOverageCostForTeam(updatedTeam);
+    expect(overageCost).toBe(50);
+
+    const exceeded = await hasExceededTeamBudget(updatedTeam);
+    expect(exceeded).toBe(false);
   });
 });
 

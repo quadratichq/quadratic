@@ -85,11 +85,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   } = useDashboardRouteLoaderData();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
+  const planType = useMemo(() => billing.planType ?? 'FREE', [billing.planType]);
 
-  const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  const { setIsOnPaidPlan, setPlanType } = useIsOnPaidPlan();
   useEffect(() => {
     setIsOnPaidPlan(isOnPaidPlan);
-  }, [isOnPaidPlan, setIsOnPaidPlan]);
+    setPlanType(planType);
+  }, [isOnPaidPlan, setIsOnPaidPlan, planType, setPlanType]);
 
   const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');

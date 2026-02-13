@@ -137,6 +137,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       uuid: ownerTeam.uuid,
       name: ownerTeam.name,
       isOnPaidPlan,
+      planType: ownerTeam.planType ?? undefined,
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },

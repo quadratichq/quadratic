@@ -12,6 +12,7 @@ import {
   createCustomer,
   getBusinessPriceId,
   getProPriceId,
+  upgradeSubscriptionPlan,
 } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
@@ -50,8 +51,57 @@ async function handler(
   }
 
   const isOnPaidPlan = await getIsOnPaidPlan(team);
+
+  // Handle plan upgrades for existing subscriptions
   if (isOnPaidPlan) {
-    return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
+    // Check if they're trying to upgrade from Pro to Business
+    // If planType is null, assume PRO (legacy teams that subscribed before planType was added)
+    const currentPlanType = team.planType ?? 'PRO';
+
+    if (plan === 'business' && currentPlanType === 'PRO') {
+      // Upgrade from Pro to Business
+      try {
+        const businessPriceId = await getBusinessPriceId();
+
+        logger.info('Upgrading subscription from Pro to Business', {
+          teamUuid: uuid,
+          teamId: team.id,
+        });
+
+        await upgradeSubscriptionPlan(team, businessPriceId, 'business');
+
+        // Redirect to success URL after upgrade
+        const data: ApiTypes['/v0/teams/:uuid/billing/checkout/session.GET.response'] = {
+          url: `${redirectSuccess}?subscription=upgraded`,
+        };
+        return res.status(200).json(data);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Error upgrading subscription plan', {
+          error: errorMessage,
+          teamUuid: uuid,
+          plan,
+        });
+        return res.status(500).json({
+          error: {
+            message: errorMessage || 'Failed to upgrade subscription plan',
+          },
+        });
+      }
+    } else if (plan === 'pro' && currentPlanType === 'BUSINESS') {
+      // Downgrading from Business to Pro should go through billing portal
+      return res.status(400).json({
+        error: { message: 'Please use the billing portal to downgrade your plan.' },
+      });
+    } else if (plan === currentPlanType?.toLowerCase()) {
+      // Already on the requested plan
+      return res.status(400).json({
+        error: { message: `Team is already on the ${plan} plan.` },
+      });
+    } else {
+      // Other cases - already has an active subscription
+      return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
+    }
   }
 
   // create a stripe customer if one doesn't exist

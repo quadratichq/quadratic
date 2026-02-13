@@ -3,6 +3,7 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -20,6 +21,7 @@ import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { handleSentryReplays } from '@/shared/utils/sentry';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { useSetAtom } from 'jotai';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
@@ -179,18 +181,27 @@ export const Component = () => {
   const canManageBilling = teamPermissions.includes('TEAM_MANAGE');
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const hasProcessedSubscriptionSuccess = useRef(false);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
-  // Handle subscription success: show toast and clean up URL params
+  // Handle subscription success: show toast, close dialog, and clean up URL params
   useEffect(() => {
-    if (searchParams.get('subscription') === 'created' && !hasProcessedSubscriptionSuccess.current) {
+    const subscriptionStatus = searchParams.get('subscription');
+    if (
+      (subscriptionStatus === 'created' || subscriptionStatus === 'upgraded') &&
+      !hasProcessedSubscriptionSuccess.current
+    ) {
       hasProcessedSubscriptionSuccess.current = true;
-      trackEvent('[Billing].success', { team_uuid: activeTeamUuid });
-      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+      const isUpgrade = subscriptionStatus === 'upgraded';
+      trackEvent(isUpgrade ? '[Billing].upgradeSuccess' : '[Billing].success', { team_uuid: activeTeamUuid });
+      addGlobalSnackbar(isUpgrade ? 'Your plan has been upgraded to Business! 🎉' : 'Thank you for subscribing! 🎉', {
+        severity: 'success',
+      });
+      setShowUpgradeDialog({ open: false, eventSource: null });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, addGlobalSnackbar, activeTeamUuid]);
+  }, [searchParams, setSearchParams, addGlobalSnackbar, activeTeamUuid, setShowUpgradeDialog]);
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {

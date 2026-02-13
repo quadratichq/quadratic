@@ -5,9 +5,9 @@ import type { AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndS
 
 /**
  * Ensures the tool parameters schema has additionalProperties: false.
- * Required by OpenAI for function tools (and strictly enforced when strict=true).
+ * Required by OpenAI for function tools when strict=true, and valid in non-strict mode.
  */
-export const ensureStrictSchema = (parameters: AIToolArgs, _strict: boolean): AIToolArgs => {
+export const ensureStrictSchema = (parameters: AIToolArgs): AIToolArgs => {
   return { ...parameters, additionalProperties: false };
 };
 

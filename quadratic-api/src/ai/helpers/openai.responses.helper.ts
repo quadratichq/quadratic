@@ -233,7 +233,7 @@ function getOpenAITools(
       type: 'function' as const,
       name,
       description,
-      parameters: ensureStrictSchema(parameters, strictParams),
+      parameters: ensureStrictSchema(parameters),
       strict: strictParams,
     })
   );

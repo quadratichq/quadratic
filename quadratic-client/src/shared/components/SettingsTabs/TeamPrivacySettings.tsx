@@ -11,13 +11,15 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { TeamSettings as TeamSettingsType } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useEffect, useMemo } from 'react';
-import { Link, useFetcher, useSubmit } from 'react-router';
+import { Link, useFetcher, useLocation, useSubmit } from 'react-router';
 
 export function TeamPrivacySettings() {
   const { teamData } = useTeamData();
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const location = useLocation();
+  const returnTo = location.pathname + location.search;
 
   const activeTeam = teamData?.activeTeam;
   const team = activeTeam?.team;
@@ -144,7 +146,7 @@ export function TeamPrivacySettings() {
                 className="h-6"
                 disabled={!canManageBilling}
               >
-                <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid)}>Upgrade now</Link>
+                <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid, { returnTo })}>Upgrade now</Link>
               </Button>
             </div>
           )}
