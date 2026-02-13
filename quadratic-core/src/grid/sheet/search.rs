@@ -70,7 +70,7 @@ impl Sheet {
                         || display == *query
                         || (!whole_cell && (raw.contains(query) || display.contains(query)))
                 };
-                matches.then(|| display)
+                matches.then_some(display)
             }
             CellValue::Logical(b) => {
                 let text = if *b { "true" } else { "false" };
