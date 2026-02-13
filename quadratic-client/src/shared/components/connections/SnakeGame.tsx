@@ -194,15 +194,15 @@ export function SnakeGame() {
           className="block outline-none ring-primary focus-visible:ring-2"
         />
         {phase !== 'playing' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-[1px]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/90 backdrop-blur-[3px]">
             {phase === 'over' && (
               <p className="text-center text-sm font-medium">
                 Game over! <br />
                 Score: {score} <span className="mx-2 font-normal text-muted-foreground">|</span> Best: {best}
               </p>
             )}
-            <Button onClick={start} size="sm">
-              {phase === 'idle' ? 'Play Snake' : 'Play again'}
+            <Button onClick={start} size="lg" variant="outline" className="bg-background">
+              {phase === 'idle' ? 'Play Snake while you wait' : 'Play again'}
             </Button>
             <p className="text-[11px] text-muted-foreground">Arrow keys or WASD to move</p>
           </div>

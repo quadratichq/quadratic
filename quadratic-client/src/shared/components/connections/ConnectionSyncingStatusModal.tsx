@@ -4,7 +4,6 @@ import { CheckCircleIcon, CheckIcon, ErrorIcon, SyncIcon } from '@/shared/compon
 import { SnakeGame } from '@/shared/components/connections/SnakeGame';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import { Progress } from '@/shared/shadcn/ui/progress';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useEffect, useState } from 'react';
@@ -114,16 +113,16 @@ export function ConnectionSyncingStatusModal({
                 <>
                   <SyncIcon className="animate-spin" />
                   <p>You can use your connection when syncing is complete. This can take a few minutes.</p>
-                  <div className="mt-1 w-full max-w-xs">
-                    <Progress value={percentCompleted} className="h-2" />
-                  </div>
+                  <Button disabled className="mt-1">
+                    Use connection
+                  </Button>
                 </>
               )}
               {syncingState === 'SYNCED' && (
                 <>
                   <CheckCircleIcon />
                   <p>Your connection is ready for use!</p>
-                  <Button onClick={handleUseConnection} className="mt-2">
+                  <Button onClick={handleUseConnection} className="mt-1">
                     Use connection
                   </Button>
                 </>
@@ -134,7 +133,7 @@ export function ConnectionSyncingStatusModal({
                   <p className="text-destructive">
                     Your connection failed to sync. Check the connection details for more info.
                   </p>
-                  <Button variant="default" onClick={handleViewErrorDetails} className="mt-2">
+                  <Button variant="default" onClick={handleViewErrorDetails} className="mt-1">
                     View connection details
                   </Button>
                 </>
@@ -144,7 +143,7 @@ export function ConnectionSyncingStatusModal({
 
           {/* Educational content */}
           <div className="flex flex-col gap-4">
-            <h4 className="text-sm font-semibold">While you wait, learn how synced connections work in Quadratic</h4>
+            <h4 className="text-sm font-semibold">How to use synced connections in Quadratic:</h4>
 
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
@@ -153,7 +152,7 @@ export function ConnectionSyncingStatusModal({
                 </span>
                 <span>
                   <strong className="font-medium text-foreground">Query with AI:</strong> Ask questions about your data
-                  in natural language
+                  in natural language.
                 </span>
               </li>
               <li className="flex items-start gap-2">
@@ -161,8 +160,8 @@ export function ConnectionSyncingStatusModal({
                   <CheckIcon />
                 </span>
                 <span>
-                  <strong className="font-medium text-foreground">Auto-sync daily:</strong> Your data refreshes
-                  automatically every day
+                  <strong className="font-medium text-foreground">Sync automatically:</strong> Your data refreshes
+                  automatically every day.
                 </span>
               </li>
               <li className="flex items-start gap-2">
@@ -170,8 +169,8 @@ export function ConnectionSyncingStatusModal({
                   <CheckIcon />
                 </span>
                 <span>
-                  <strong className="font-medium text-foreground">Browse schema:</strong> Explore your data structure in
-                  the sidebar
+                  <strong className="font-medium text-foreground">Explore the schema:</strong> View the structure of
+                  your data with our built-in schema tool.
                 </span>
               </li>
             </ul>
