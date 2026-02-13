@@ -1,5 +1,5 @@
-import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AGENT_TOOL_CONFIG, AgentType } from 'quadratic-shared/ai/agents';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { SubagentType } from './SubagentType';
 
 /**

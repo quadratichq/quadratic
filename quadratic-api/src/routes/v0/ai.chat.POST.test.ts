@@ -102,6 +102,12 @@ describe('POST /v0/ai/chat', () => {
             modelKey: payload.modelKey,
             isOnPaidPlan: true,
             exceededBillingLimit: false,
+            usage: {
+              inputTokens: 100,
+              outputTokens: 100,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+            },
           });
         });
 

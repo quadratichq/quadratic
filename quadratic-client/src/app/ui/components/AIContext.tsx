@@ -5,8 +5,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { getFileTypeFromName } from '@/app/helpers/files';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { CloseIcon } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
 import { cn } from '@/shared/shadcn/utils';
@@ -71,7 +71,7 @@ export const AIContext = memo(
             <ContextPill
               key={connection.uuid}
               primary={connection.name}
-              primaryIcon={<LanguageIcon language={connection.type} className="h-3 w-3" />}
+              primaryIcon={<ConnectionIcon type={connection.type} className="h-3 w-3" />}
               secondary={''}
               onRemove={handleOnClickConnection}
               onClick={() => {
