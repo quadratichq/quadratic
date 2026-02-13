@@ -1,5 +1,6 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
+import type { PlaidCategory } from '@/shared/components/connections/Connections';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
@@ -23,17 +24,20 @@ export type ConnectionFormProps = {
   handleCancelForm: () => void;
   handleSubmitForm: (formValues: ConnectionFormValues) => void;
   connection?: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response'];
+  plaidCategory?: PlaidCategory;
 };
 
 export function ConnectionFormCreate({
   teamUuid,
   type,
+  plaidCategory,
   handleNavigateToListView,
   handleNavigateToNewView,
   onConnectionCreated,
 }: {
   teamUuid: string;
   type: ConnectionType;
+  plaidCategory?: PlaidCategory;
   handleNavigateToListView: () => void;
   handleNavigateToNewView: () => void;
   onConnectionCreated?: OnConnectionCreatedCallback;
@@ -70,6 +74,7 @@ export function ConnectionFormCreate({
     handleNavigateToListView,
     handleCancelForm: () => handleNavigateToNewView(),
     handleSubmitForm,
+    plaidCategory,
   };
 
   return <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />;
@@ -184,6 +189,7 @@ function ConnectionFormWrapper({
       teamUuid={teamUuid}
       connection={props.connection}
       percentCompleted={percentCompleted}
+      plaidCategory={props.plaidCategory}
     >
       <ConnectionFormActions
         form={form}
