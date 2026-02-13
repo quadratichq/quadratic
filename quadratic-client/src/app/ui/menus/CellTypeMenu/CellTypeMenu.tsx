@@ -60,7 +60,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 export const CellTypeMenu = memo(() => {
   const setShowAddConnectionMenu = useSetRecoilState(editorInteractionStateShowAddConnectionMenuAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
-  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  // const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { connections } = useConnectionsFetcher();
   const {
@@ -108,10 +108,10 @@ export const CellTypeMenu = memo(() => {
     setShowAddConnectionMenu(true);
   }, [setShowCellTypeMenu, setShowAddConnectionMenu]);
 
-  const manageConnections = useCallback(() => {
-    setShowCellTypeMenu(false);
-    setShowConnectionsMenu({ initialView: 'list' });
-  }, [setShowCellTypeMenu, setShowConnectionsMenu]);
+  // const manageConnections = useCallback(() => {
+  //   setShowCellTypeMenu(false);
+  //   setShowConnectionsMenu({ initialView: 'list' });
+  // }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
   const selectConnection = useCallback(
     (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
@@ -168,11 +168,11 @@ export const CellTypeMenu = memo(() => {
               icon={<AddIcon className="text-muted-foreground opacity-80" />}
               onSelect={addConnection}
             />
-            <CommandItemWrapper
+            {/* TODO: remove if we like the other implementation <CommandItemWrapper
               name="Manage connections"
               icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
-            />
+            /> */}
           </CommandGroup>
         )}
       </CommandList>
@@ -190,8 +190,13 @@ const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionC
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
+  const manageClickedRef = React.useRef(false);
 
   const handleSelect = useCallback(() => {
+    if (manageClickedRef.current) {
+      manageClickedRef.current = false;
+      return;
+    }
     if (isReadyForUse) {
       onSelect();
     } else {
@@ -200,8 +205,15 @@ const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionC
     }
   }, [isReadyForUse, setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type, onSelect]);
 
+  const handleManageClick = useCallback(() => {
+    manageClickedRef.current = true;
+    setShowCellTypeMenu(false);
+    setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+  }, [setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type]);
+
   return (
     <CommandItem
+      className="group"
       onSelect={handleSelect}
       value={`${connection.name}__${index}`}
       onPointerDown={(e) => {
@@ -213,6 +225,12 @@ const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionC
         <ConnectionIcon type={connection.type} syncState={syncState} />
       </div>
       <div className="flex flex-col truncate">{connection.name}</div>
+      <button
+        className="group absolute right-3 top-3 hidden text-muted-foreground opacity-0 hover:text-foreground group-hover:block group-aria-selected:opacity-100"
+        onClick={handleManageClick}
+      >
+        <SettingsIcon />
+      </button>
     </CommandItem>
   );
 });

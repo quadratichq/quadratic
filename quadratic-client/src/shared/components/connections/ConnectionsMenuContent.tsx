@@ -172,7 +172,7 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
         className={cn('ml-auto flex-shrink-0 group-hover:invisible', isActive ? 'visible' : 'invisible opacity-0')}
       />
       <button
-        className="group/button absolute right-2 top-1.5 opacity-0 group-hover:opacity-100"
+        className="group/button absolute right-2 top-1.5 text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100"
         onClick={handleManageClick}
       >
         <SettingsIcon />
