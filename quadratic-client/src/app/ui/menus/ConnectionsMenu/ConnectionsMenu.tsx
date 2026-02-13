@@ -80,6 +80,15 @@ export function ConnectionsMenu() {
     }
   }, [pendingSyncedConnection, completeConnectionCreation]);
 
+  const handleSyncingModalViewErrorDetails = useCallback(() => {
+    if (pendingSyncedConnection) {
+      setPendingSyncedConnection(null);
+      setShowConnectionsMenu({
+        initialConnectionUuid: pendingSyncedConnection.uuid,
+      });
+    }
+  }, [pendingSyncedConnection, setShowConnectionsMenu]);
+
   const handleSyncingModalClose = useCallback(() => {
     if (pendingSyncedConnection) {
       completeConnectionCreation(
@@ -135,6 +144,7 @@ export function ConnectionsMenu() {
           connectionName={pendingSyncedConnection.name}
           teamUuid={teamUuid}
           onUseConnection={handleSyncingModalUseConnection}
+          onViewErrorDetails={handleSyncingModalViewErrorDetails}
           onClose={handleSyncingModalClose}
         />
       )}
