@@ -21,14 +21,13 @@ const OPPOSITE: Record<Direction, Direction> = {
 };
 
 function spawnFood(snake: Point[]): Point {
-  let p: Point;
-  do {
-    p = {
+  for (;;) {
+    const p: Point = {
       x: Math.floor(Math.random() * COLS),
       y: Math.floor(Math.random() * ROWS),
     };
-  } while (snake.some((s) => s.x === p.x && s.y === p.y));
-  return p;
+    if (!snake.some((s) => s.x === p.x && s.y === p.y)) return p;
+  }
 }
 
 export function SnakeGame() {

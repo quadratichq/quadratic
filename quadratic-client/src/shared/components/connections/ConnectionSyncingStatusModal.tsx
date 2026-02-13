@@ -32,7 +32,6 @@ export function ConnectionSyncingStatusModal({
   onClose,
 }: ConnectionSyncingStatusModalProps) {
   const [syncState, setSyncState] = useState<SyncState>('not_synced');
-  const [percentCompleted, setPercentCompleted] = useState(0);
   useEffect(() => {
     if (!open || !connectionUuid) return;
 
@@ -48,7 +47,6 @@ export function ConnectionSyncingStatusModal({
             latestLogStatus: connection.syncedConnectionLatestLogStatus,
           });
           setSyncState(newSyncState);
-          setPercentCompleted(connection.syncedConnectionPercentCompleted ?? 0);
         }
       } catch {
         // Silently fail - keep polling
