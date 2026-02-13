@@ -646,7 +646,7 @@ jobs:
       ]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
       options: --user root
     timeout-minutes: 15
     strategy:

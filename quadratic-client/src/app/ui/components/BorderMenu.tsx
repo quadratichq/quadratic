@@ -34,7 +34,11 @@ const borderStyles = [
   { actionKey: Action.FormatBorderDouble, className: 'lineStyleBorder twoLineBorder' },
 ] as const;
 
-export const BorderMenu = () => {
+interface BorderMenuProps {
+  onClose?: () => void;
+}
+
+export const BorderMenu = ({ onClose }: BorderMenuProps = {}) => {
   const borders = useBorders();
   const borderColorSpec = defaultActionSpec[Action.FormatBorderColor];
   const borderMenuState = useRecoilValue(borderMenuAtom);
@@ -107,6 +111,7 @@ export const BorderMenu = () => {
             onClear={() => {
               borders.clearBorders();
             }}
+            onClose={onClose}
             removeColor
             clearLabel="Clear borders"
             showClearIcon={false}

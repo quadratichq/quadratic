@@ -1,4 +1,4 @@
-import { events } from '@/app/events/events';
+import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
@@ -18,16 +18,32 @@ export class UIMultiPlayerCursor extends Graphics {
   constructor() {
     super();
     this.alpha = ALPHA;
-    events.on('multiplayerCursor', this.setDirty);
+    events.on('multiplayerCursor', this.onMultiplayerCursor);
+    events.on('setDirty', this.onSetDirty);
+    events.on('mergeCells', this.onSheetChanged);
   }
 
   destroy() {
-    events.off('multiplayerCursor', this.setDirty);
+    events.off('multiplayerCursor', this.onMultiplayerCursor);
+    events.off('setDirty', this.onSetDirty);
+    events.off('mergeCells', this.onSheetChanged);
     super.destroy();
   }
 
-  private setDirty = () => {
+  private onMultiplayerCursor = () => {
     this.dirty = true;
+  };
+
+  private onSetDirty = (dirty: DirtyObject) => {
+    if (dirty.multiplayerCursor) {
+      this.dirty = true;
+    }
+  };
+
+  private onSheetChanged = (sheetId: string) => {
+    if (sheetId === sheets.current) {
+      this.dirty = true;
+    }
   };
 
   private drawCursor({
@@ -44,7 +60,22 @@ export class UIMultiPlayerCursor extends Graphics {
     code: boolean;
   }) {
     const sheet = sheets.sheet;
-    let { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
+
+    // Check if cursor is on a merged cell and get the full merged cell rect
+    const mergeRect = sheet.getMergeCellRect(cursor.x, cursor.y);
+    let cellBounds: { x: number; y: number; width: number; height: number };
+    if (mergeRect) {
+      cellBounds = sheet.getScreenRectangle(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+        Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+      );
+    } else {
+      cellBounds = sheet.getCellOffsets(cursor.x, cursor.y);
+    }
+
+    let { x, y, width, height } = cellBounds;
     if (editing) {
       const cellEdit = document.querySelector(`.multiplayer-cell-edit-${sessionId}`) as HTMLDivElement;
       // it's possible that we run this before react creates the DOM element with this class
@@ -99,7 +130,7 @@ export class UIMultiPlayerCursor extends Graphics {
         });
 
         try {
-          const ranges = player.parsedSelection.getFiniteRefRangeBounds(sheets.jsA1Context);
+          const ranges = player.parsedSelection.getFiniteRefRangeBounds(sheets.jsA1Context, sheets.sheet.mergeCells);
           drawFiniteSelection(this, color, FILL_ALPHA, ranges);
         } catch (e) {
           // it's possible for a table to no longer exist, so we don't want to

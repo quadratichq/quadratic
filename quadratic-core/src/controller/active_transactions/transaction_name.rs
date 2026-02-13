@@ -12,9 +12,11 @@ pub enum TransactionName {
     SetBorders,
     SetCells,
     SetFormats,
+    SetMergeCells,
     SetDataTableAt,
     CutClipboard,
     PasteClipboard,
+    FormatPainter,
 
     SetCode,
     RunCode,
@@ -34,5 +36,6 @@ pub enum TransactionName {
     ReplaceSheet,
     MoveCells,
     Validation,
+    ConditionalFormat,
     ManipulateColumnRow,
 }

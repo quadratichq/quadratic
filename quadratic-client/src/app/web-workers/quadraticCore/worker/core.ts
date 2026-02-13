@@ -16,6 +16,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  ConditionalFormatUpdate,
   DataTableSort,
   FormatUpdate,
   JsCellValue,
@@ -47,6 +48,7 @@ import type {
 import type {
   ClientCoreAddDataTable,
   ClientCoreImportFile,
+  JsEditCell,
   ClientCoreLoad,
   ClientCoreMoveCellsBatch,
   ClientCoreMoveCodeCellHorizontally,
@@ -191,13 +193,13 @@ class Core {
     }
   }
 
-  getEditCell(sheetId: string, x: number, y: number): string {
+  getEditCell(sheetId: string, x: number, y: number): JsEditCell | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getEditCell');
       return this.gridController.getEditCell(sheetId, posToPos(x, y));
     } catch (e) {
       this.handleCoreError('getEditCell', e);
-      return '';
+      return undefined;
     }
   }
 
@@ -687,6 +689,16 @@ class Core {
     }
   }
 
+  exportJson(): string {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.exportOpenGridToJson();
+    } catch (e) {
+      this.handleCoreError('exportJson', e);
+      return '';
+    }
+  }
+
   search(search: string, searchOptions: SearchOptions): JsSheetPosText[] {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -764,6 +776,25 @@ class Core {
     }
   }
 
+  applyFormatPainter({
+    sourceSelection,
+    targetSelection,
+    cursor,
+    isAi,
+  }: {
+    sourceSelection: string;
+    targetSelection: string;
+    cursor: string;
+    isAi: boolean;
+  }) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.applyFormatPainter(sourceSelection, targetSelection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('applyFormatPainter', e);
+    }
+  }
+
   //#endregion
 
   setBorders(
@@ -784,6 +815,24 @@ class Core {
       );
     } catch (e) {
       this.handleCoreError('setBorders', e);
+    }
+  }
+
+  mergeCells(selection: string, cursor: string, isAi: boolean): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.mergeCells(selection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('mergeCells', e);
+    }
+  }
+
+  unmergeCells(selection: string, cursor: string, isAi: boolean): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.unmergeCells(selection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('unmergeCells', e);
     }
   }
 
@@ -1115,6 +1164,61 @@ class Core {
     } catch (e) {
       this.handleCoreError('getValidationFromPos', e);
       return undefined;
+    }
+  }
+
+  updateConditionalFormat(conditionalFormat: ConditionalFormatUpdate, cursor: string): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.updateConditionalFormat(JSON.stringify(conditionalFormat), cursor);
+    } catch (e) {
+      this.handleCoreError('updateConditionalFormat', e);
+    }
+  }
+
+  removeConditionalFormat(sheetId: string, conditionalFormatId: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.removeConditionalFormat(sheetId, conditionalFormatId, cursor);
+    } catch (e) {
+      this.handleCoreError('removeConditionalFormat', e);
+    }
+  }
+
+  batchUpdateConditionalFormats(
+    sheetId: string,
+    updates: ConditionalFormatUpdate[],
+    deleteIds: string[],
+    cursor: string
+  ): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.batchUpdateConditionalFormats(
+        sheetId,
+        JSON.stringify(updates),
+        JSON.stringify(deleteIds),
+        cursor
+      );
+    } catch (e) {
+      this.handleCoreError('batchUpdateConditionalFormats', e);
+    }
+  }
+
+  previewConditionalFormat(conditionalFormat: ConditionalFormatUpdate): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.previewConditionalFormat(JSON.stringify(conditionalFormat));
+    } catch (e) {
+      this.handleCoreError('previewConditionalFormat', e);
+    }
+  }
+
+  clearPreviewConditionalFormat(sheetId: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.clearPreviewConditionalFormat(sheetId);
+    } catch (e) {
+      this.handleCoreError('clearPreviewConditionalFormat', e);
     }
   }
 

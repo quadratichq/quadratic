@@ -1,4 +1,5 @@
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { deactivateFormatPainter, getFormatPainterState } from '@/app/atoms/formatPainterAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -9,6 +10,7 @@ import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -120,9 +122,14 @@ export class PointerDown {
       return;
     }
 
-    // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
+    // If the user is holding shift, extend selection from current cursor
+    // If also holding cmd/ctrl, it's append mode (add new range)
     if (event.shiftKey) {
-      cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
+      // Shift-click: extend selection from current cursor to clicked position
+      // If ctrl/cmd is also pressed, it's append mode (MouseCtrlClick)
+      // Otherwise it's MouseShiftClick
+      const isAppend = event.metaKey || event.ctrlKey;
+      cursor.selectTo(column, row, isAppend, true);
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {
@@ -243,6 +250,19 @@ export class PointerDown {
     }
 
     if (this.active) {
+      // Handle format painter: apply formatting on pointer up
+      const formatPainterState = getFormatPainterState();
+      if (formatPainterState.active && formatPainterState.sourceSelection) {
+        const targetSelection = sheets.sheet.cursor.save();
+        quadraticCore.applyFormatPainter(formatPainterState.sourceSelection, targetSelection, false);
+        deactivateFormatPainter();
+        events.emit('formatPainterEnd');
+
+        // Ensure the selection stays on the target cells
+        sheets.sheet.cursor.load(targetSelection);
+        events.emit('cursorPosition');
+      }
+
       if (!this.pointerMoved) {
         this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);
       }

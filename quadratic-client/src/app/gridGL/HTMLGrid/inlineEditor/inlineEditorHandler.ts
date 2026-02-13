@@ -39,7 +39,12 @@ class InlineEditorHandler {
   y = 0;
   width = 0;
   height = 0;
+  // The cell being edited (anchor for merged cells). Use this for all data operations
+  // (reading/writing cell values, formula operations, validation, etc.)
   location?: SheetPosTS;
+  // The original cursor position where the user clicked. Use this for UI positioning
+  // (editor placement, popup positioning, etc.). For merged cells, this may differ from location.
+  cursorLocation?: SheetPosTS;
   formula: boolean | undefined = undefined;
 
   cursorIsMoving = false;
@@ -81,6 +86,7 @@ class InlineEditorHandler {
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
+    this.cursorLocation = undefined;
     this.formula = undefined;
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
@@ -198,7 +204,22 @@ class InlineEditorHandler {
     if (input) {
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
+
+      // For merged cells, we need to edit the anchor cell (where the value lives)
+      // but we'll use the cursor position for positioning the editor
+      const mergeRect = sheet.getMergeCellRect(cursor.x, cursor.y);
+      const editLocation = mergeRect
+        ? { x: Number(mergeRect.min.x), y: Number(mergeRect.min.y) }
+        : { x: cursor.x, y: cursor.y };
+
+      // Store both the edit location (anchor) and cursor location (for positioning)
       this.location = {
+        sheetId: sheet.id,
+        x: editLocation.x,
+        y: editLocation.y,
+      };
+
+      this.cursorLocation = {
         sheetId: sheet.id,
         x: cursor.x,
         y: cursor.y,
@@ -755,10 +776,23 @@ class InlineEditorHandler {
 
     const hyperlinkSpan = inlineEditorSpans.getHyperlinkAtPosition(position);
     if (hyperlinkSpan?.link) {
-      // Get the cell offsets to position the popup
+      // Get the cell offsets to position the popup, accounting for merged cells
       const sheet = sheets.sheet;
-      const offsets = sheet.getCellOffsets(this.location.x, this.location.y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      // Use cursorLocation for positioning (location is for data storage)
+      const cursorLoc = this.cursorLocation ?? this.location;
+      const mergeRect = sheet.getMergeCellRect(cursorLoc.x, cursorLoc.y);
+      let rect: Rectangle;
+      if (mergeRect) {
+        rect = sheet.getScreenRectangle(
+          Number(mergeRect.min.x),
+          Number(mergeRect.min.y),
+          Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+          Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+        );
+      } else {
+        const offsets = sheet.getCellOffsets(cursorLoc.x, cursorLoc.y);
+        rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      }
       // Get the link text from the editor content
       const model = editor.getModel();
       const fullText = model?.getValue() ?? '';
@@ -770,9 +804,24 @@ class InlineEditorHandler {
   };
 
   updateMonacoCellLayout = () => {
-    if (!this.location) return;
+    if (!this.location || !this.cursorLocation) return;
 
-    const { x, y, width, height } = sheets.sheet.getCellOffsets(this.location.x, this.location.y);
+    // Use the cursor location (where user clicked) for positioning the editor
+    // Check if the cursor is part of a merged cell and get the full merged cell rect
+    const mergeRect = sheets.sheet.getMergeCellRect(this.cursorLocation.x, this.cursorLocation.y);
+    let cellBounds: Rectangle;
+    if (mergeRect) {
+      cellBounds = sheets.sheet.getScreenRectangle(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+        Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+      );
+    } else {
+      cellBounds = sheets.sheet.getCellOffsets(this.cursorLocation.x, this.cursorLocation.y);
+    }
+
+    const { x, y, width, height } = cellBounds;
     const cellOutlineOffset = CURSOR_THICKNESS * (this.formula ? 0.5 : 1);
     const cellContentWidth = width - cellOutlineOffset * 2;
     const cellContentHeight = height - cellOutlineOffset * 2;
@@ -1009,6 +1058,7 @@ class InlineEditorHandler {
           pos: { x, y },
           language: 'Formula',
           lastModified: 0,
+          isSingleCell: true,
         },
         showCellTypeMenu: false,
         initialCode: inlineEditorMonaco.get().slice(1),
@@ -1038,9 +1088,13 @@ class InlineEditorHandler {
   }
 
   // This checks whether the inline editor is showing (or showing at a given location)
+  // Returns the cursor location (not the edit location) for positioning purposes
   getShowing(x?: number, y?: number): SheetPosTS | undefined {
-    if (this.open && (x === undefined || y === undefined || (this.location?.x === x && this.location.y === y))) {
-      return this.location;
+    if (
+      this.open &&
+      (x === undefined || y === undefined || (this.cursorLocation?.x === x && this.cursorLocation.y === y))
+    ) {
+      return this.cursorLocation;
     }
   }
 

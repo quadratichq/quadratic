@@ -57,11 +57,13 @@ declare var self: WorkerGlobalScope &
       pixel_height?: number
     ) => void;
     sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendSheetConditionalFormats: (sheetId: string, conditionalFormats: Uint8Array) => void;
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
   };
 
@@ -95,11 +97,13 @@ class CoreClient {
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
+    self.sendSheetConditionalFormats = coreClient.sendSheetConditionalFormats;
     self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
     self.sendContentCache = coreClient.sendContentCache;
+    self.sendMergeCells = coreClient.sendMergeCells;
     self.sendCodeRunningState = coreClient.sendCodeRunningState;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
@@ -355,6 +359,11 @@ class CoreClient {
         this.send({ type: 'coreClientExportExcel', id: e.data.id, excel: exportExcel }, exportExcel.buffer);
         return;
 
+      case 'clientCoreExportJson':
+        const exportJson = core.exportJson();
+        this.send({ type: 'coreClientExportJson', id: e.data.id, json: exportJson });
+        return;
+
       case 'clientCoreSearch':
         this.send({
           type: 'coreClientSearch',
@@ -411,11 +420,31 @@ class CoreClient {
         core.pasteFromClipboard(e.data);
         return;
 
+      case 'clientCoreApplyFormatPainter':
+        core.applyFormatPainter(e.data);
+        return;
+
       case 'clientCoreSetBorders':
         this.send({
           type: 'coreClientSetBorders',
           id: e.data.id,
           response: core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor, e.data.isAi),
+        });
+        return;
+
+      case 'clientCoreMergeCells':
+        this.send({
+          type: 'coreClientMergeCellsResponse',
+          id: e.data.id,
+          response: core.mergeCells(e.data.selection, e.data.cursor, e.data.isAi),
+        });
+        return;
+
+      case 'clientCoreUnmergeCells':
+        this.send({
+          type: 'coreClientUnmergeCellsResponse',
+          id: e.data.id,
+          response: core.unmergeCells(e.data.selection, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -568,6 +597,38 @@ class CoreClient {
           id: e.data.id,
           response: core.removeValidationSelection(e.data.sheetId, e.data.selection, e.data.cursor, e.data.isAi),
         });
+        return;
+
+      case 'clientCoreUpdateConditionalFormat':
+        this.send({
+          type: 'coreClientUpdateConditionalFormat',
+          id: e.data.id,
+          response: core.updateConditionalFormat(e.data.conditionalFormat, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreRemoveConditionalFormat':
+        core.removeConditionalFormat(e.data.sheetId, e.data.conditionalFormatId, e.data.cursor);
+        return;
+
+      case 'clientCoreBatchUpdateConditionalFormats':
+        this.send({
+          type: 'coreClientBatchUpdateConditionalFormats',
+          id: e.data.id,
+          response: core.batchUpdateConditionalFormats(e.data.sheetId, e.data.updates, e.data.deleteIds, e.data.cursor),
+        });
+        return;
+
+      case 'clientCorePreviewConditionalFormat':
+        this.send({
+          type: 'coreClientPreviewConditionalFormat',
+          id: e.data.id,
+          response: core.previewConditionalFormat(e.data.conditionalFormat),
+        });
+        return;
+
+      case 'clientCoreClearPreviewConditionalFormat':
+        core.clearPreviewConditionalFormat(e.data.sheetId);
         return;
 
       case 'clientCoreGetValidations':
@@ -1043,6 +1104,10 @@ class CoreClient {
     this.send({ type: 'coreClientSheetValidations', sheetId, sheetValidations }, sheetValidations.buffer);
   };
 
+  sendSheetConditionalFormats = (sheetId: string, conditionalFormats: Uint8Array) => {
+    this.send({ type: 'coreClientSheetConditionalFormats', sheetId, conditionalFormats }, conditionalFormats.buffer);
+  };
+
   sendValidationWarnings = (warnings: Uint8Array) => {
     this.send({ type: 'coreClientValidationWarnings', warnings }, warnings.buffer);
   };
@@ -1082,6 +1147,10 @@ class CoreClient {
 
   sendStartupTimer = (name: TimerNames, data: { start?: number; end?: number }) => {
     this.send({ type: 'coreClientStartupTimer', name, ...data });
+  };
+
+  sendMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
+    this.send({ type: 'coreClientMergeCells', sheetId, mergeCells }, mergeCells.buffer);
   };
 }
 

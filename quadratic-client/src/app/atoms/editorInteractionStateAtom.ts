@@ -4,16 +4,21 @@ import type { SearchOptions } from '@/app/quadratic-core-types';
 import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { User } from '@/auth/auth';
 import type { FilePermission, TeamSettings } from 'quadratic-shared/typesAndSchemas';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { atom, DefaultValue, selector } from 'recoil';
 
 type AnnotationState = 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
+
+export type ConnectionsMenuState =
+  | boolean
+  | { initialView?: 'new' | 'list'; initialConnectionType?: ConnectionType; initialConnectionUuid?: string };
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
   transactionsInfo: TransactionInfo[];
   showCellTypeMenu: boolean | 'connections';
   showCommandPalette: boolean;
-  showConnectionsMenu: boolean | 'new';
+  showConnectionsMenu: ConnectionsMenuState;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showRenameFileMenu: boolean;
@@ -21,6 +26,7 @@ export interface EditorInteractionState {
   showSearch: boolean | SearchOptions;
   showContextMenu: boolean;
   showValidation: boolean | string;
+  showConditionalFormat: boolean | string;
   showLogs: boolean;
   annotationState?: AnnotationState;
   permissions: FilePermission[];
@@ -47,6 +53,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
+  showConditionalFormat: false,
   showLogs: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
@@ -182,6 +189,7 @@ export const editorInteractionStateShowShareFileMenuAtom = createSelector('showS
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
 export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
 export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
+export const editorInteractionStateShowConditionalFormatAtom = createSelector('showConditionalFormat');
 export const editorInteractionStateShowLogsAtom = createSelector('showLogs');
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');

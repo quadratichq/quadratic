@@ -12,10 +12,12 @@ pub mod cells;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod conditional_format;
 pub mod data_table;
 pub mod export;
 pub mod formatting;
 pub mod import;
+pub mod merge_cells;
 pub mod render;
 pub mod search;
 pub mod sheet_info;
@@ -64,6 +66,7 @@ impl GridController {
                     }
                     drop(sheets_info);
 
+                    let a1_context = grid.a1_context();
                     grid.sheet_ids().iter().for_each(|sheet_id| {
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
                             // sends SheetContentCache to the client
@@ -84,8 +87,14 @@ impl GridController {
                             // sends all validation warnings to the client
                             sheet.send_all_validation_warnings();
 
+                            // sends all conditional formats to the client
+                            sheet.send_all_conditional_formats(a1_context);
+
                             // sends all borders to the client
                             sheet.send_sheet_borders();
+
+                            // sends all merge cells to the client
+                            sheet.send_merge_cells();
                         }
                     });
 
@@ -128,6 +137,17 @@ impl GridController {
     pub fn js_export_open_grid_to_file(&self) -> Result<Vec<u8>, JsValue> {
         match file::export(self.grid().clone()) {
             Ok(file) => Ok(file),
+            Err(e) => Err(JsValue::from_str(&e.to_string())),
+        }
+    }
+
+    /// Exports a [`GridController`] to a JSON string for debugging.
+    #[wasm_bindgen(js_name = "exportOpenGridToJson")]
+    pub fn js_export_open_grid_to_json(&self) -> Result<String, JsValue> {
+        match file::export_json(self.grid().clone()) {
+            Ok(bytes) => {
+                String::from_utf8(bytes).map_err(|e| JsValue::from_str(&e.to_string()))
+            }
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }
