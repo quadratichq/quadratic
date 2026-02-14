@@ -1,6 +1,8 @@
+import { billingConfigAtom, fetchBillingConfig } from '@/shared/atom/billingConfigAtom';
 import { CheckIcon } from '@/shared/components/Icons';
 import { Badge } from '@/shared/shadcn/ui/badge';
-import type { ReactNode } from 'react';
+import { useAtomValue } from 'jotai';
+import { type ReactNode, useEffect } from 'react';
 
 export const BusinessPlan = ({
   children,
@@ -11,6 +13,12 @@ export const BusinessPlan = ({
   children?: ReactNode;
   showCurrentPlanBadge?: boolean;
 }) => {
+  const billingConfig = useAtomValue(billingConfigAtom);
+
+  useEffect(() => {
+    fetchBillingConfig();
+  }, []);
+
   return (
     <div className={`${className} flex h-full flex-col`}>
       <div className="mb-2 flex items-center justify-between">
@@ -24,7 +32,7 @@ export const BusinessPlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>AI usage</span>
-          <span className="text-sm font-medium">$40/user/month allowance</span>
+          <span className="text-sm font-medium">${billingConfig.businessAiAllowance}/user/month allowance</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Connections</span>

@@ -1,5 +1,6 @@
 import type { Team } from '@prisma/client';
 import dbClient from '../dbClient';
+import { AI_ALLOWANCE_BUSINESS, AI_ALLOWANCE_PRO } from '../env-vars';
 import type { DecryptedTeam } from '../utils/teams';
 
 // PlanType enum - will be available after Prisma client regeneration
@@ -78,9 +79,9 @@ export const getMonthlyAiAllowancePerUser = async (team: Team | DecryptedTeam): 
     case PlanType.FREE:
       return 0;
     case PlanType.PRO:
-      return 0.5; // 20
+      return AI_ALLOWANCE_PRO;
     case PlanType.BUSINESS:
-      return 0.5; // 40
+      return AI_ALLOWANCE_BUSINESS;
     default:
       return 0;
   }

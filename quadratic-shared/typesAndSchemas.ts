@@ -726,6 +726,11 @@ export const ApiSchemas = {
     allowOveragePayments: z.boolean(),
   }),
 
+  '/v0/billing/config.GET.response': z.object({
+    proAiAllowance: z.number(),
+    businessAiAllowance: z.number(),
+  }),
+
   /**
    * ===========================================================================
    * Team Files

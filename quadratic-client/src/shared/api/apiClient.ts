@@ -176,6 +176,12 @@ export const apiClient = {
     },
   },
 
+  billing: {
+    config() {
+      return fetchFromApi(`/v0/billing/config`, { method: 'GET' }, ApiSchemas['/v0/billing/config.GET.response']);
+    },
+  },
+
   files: {
     list({ shared }: { shared?: 'with-me' } = {}) {
       const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;

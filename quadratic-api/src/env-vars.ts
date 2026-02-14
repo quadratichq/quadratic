@@ -48,6 +48,10 @@ export const FREE_EDITABLE_FILE_LIMIT = process.env.FREE_EDITABLE_FILE_LIMIT
   ? Number(process.env.FREE_EDITABLE_FILE_LIMIT)
   : 5;
 
+// AI allowance per user in dollars (defaults: Pro=$20, Business=$40)
+export const AI_ALLOWANCE_PRO = process.env.AI_ALLOWANCE_PRO ? Number(process.env.AI_ALLOWANCE_PRO) : 20;
+export const AI_ALLOWANCE_BUSINESS = process.env.AI_ALLOWANCE_BUSINESS ? Number(process.env.AI_ALLOWANCE_BUSINESS) : 40;
+
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
 export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;

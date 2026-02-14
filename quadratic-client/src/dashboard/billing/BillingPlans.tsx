@@ -1,5 +1,6 @@
 import { CancellationDialog } from '@/components/CancellationDialog';
 import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
+import { billingConfigAtom, fetchBillingConfig } from '@/shared/atom/billingConfigAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { CheckIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
@@ -7,8 +8,8 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useSetAtom } from 'jotai';
-import type { ReactNode } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { type ReactNode, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { BusinessPlan } from './BusinessPlan';
 
@@ -68,6 +69,12 @@ export const ProPlan = ({
   children?: ReactNode;
   showCurrentPlanBadge?: boolean;
 }) => {
+  const billingConfig = useAtomValue(billingConfigAtom);
+
+  useEffect(() => {
+    fetchBillingConfig();
+  }, []);
+
   return (
     <div className={`${className} flex h-full flex-col`}>
       <div className="mb-2 flex items-center justify-between">
@@ -81,7 +88,7 @@ export const ProPlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>AI usage</span>
-          <span className="text-sm font-medium">$20/user/month allowance</span>
+          <span className="text-sm font-medium">${billingConfig.proAiAllowance}/user/month allowance</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Connections</span>
