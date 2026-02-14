@@ -71,6 +71,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+
+    /* Sheet Table Colors */
+    --table-column-header-foreground: 210 40% 98%;
+    --table-alternating-background: 217.2 32.6% 10.5%;
   }
 }
 
