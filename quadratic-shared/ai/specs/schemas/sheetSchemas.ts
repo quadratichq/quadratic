@@ -62,12 +62,6 @@ This tool should not be used to list the sheets in the file. The names of all sh
       additionalProperties: false,
     },
     responseSchema: sheetToolsArgsSchemas[AITool.AddSheet],
-    prompt: `
-This tool adds a new sheet in the file.\n
-It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
-This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
-This tool should not be used to list the sheets in the file. The names of all sheets in the file are available in context.\n
-`,
   },
   [AITool.DuplicateSheet]: {
     sources: ['AIAnalyst'],
@@ -75,6 +69,7 @@ This tool should not be used to list the sheets in the file. The names of all sh
     description: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
+This tool should be used primarily when users explicitly ask to create a new sheet from the existing content or ask directly to copy or duplicate a sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -93,11 +88,6 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
       additionalProperties: false,
     },
     responseSchema: sheetToolsArgsSchemas[AITool.DuplicateSheet],
-    prompt: `
-This tool duplicates a sheet in the file.\n
-It requires the name of the sheet to duplicate and the name of the new sheet.\n
-This tool should be used primarily when users explicitly ask to create a new sheet from the existing content or ask directly to copy or duplicate a sheet.\n
-`,
   },
   [AITool.RenameSheet]: {
     sources: ['AIAnalyst'],
@@ -123,10 +113,6 @@ It requires the name of the sheet to rename and the new name. This must be a uni
       additionalProperties: false,
     },
     responseSchema: sheetToolsArgsSchemas[AITool.RenameSheet],
-    prompt: `
-This tool renames a sheet in the file.\n
-It requires the name of the sheet to rename and the new name. This must be a unique name.\n
-`,
   },
   [AITool.DeleteSheet]: {
     sources: ['AIAnalyst'],
@@ -147,10 +133,6 @@ It requires the name of the sheet to delete.\n
       additionalProperties: false,
     },
     responseSchema: sheetToolsArgsSchemas[AITool.DeleteSheet],
-    prompt: `
-This tool deletes a sheet in the file.\n
-It requires the name of the sheet to delete.\n
-`,
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
@@ -176,10 +158,6 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
       additionalProperties: false,
     },
     responseSchema: sheetToolsArgsSchemas[AITool.MoveSheet],
-    prompt: `
-This tool moves a sheet in the sheet list.\n
-It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
-`,
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
@@ -214,9 +192,5 @@ It requires a array of objects with sheet names and new colors.\n
       additionalProperties: false,
     },
     responseSchema: sheetToolsArgsSchemas[AITool.ColorSheets],
-    prompt: `
-This tool colors the sheet tabs in the file.\n
-It requires a array of objects with sheet names and new colors.\n
-`,
   },
 } as const;

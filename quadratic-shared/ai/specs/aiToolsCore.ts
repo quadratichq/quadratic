@@ -234,10 +234,9 @@ export const validationMessageErrorSchema = z.object({
 export type AIToolSpec = {
   sources: AISource[];
   aiModelModes: ModelMode[];
-  description: string; // this is sent with tool definition, has a maximum character limit
+  description: string;
   parameters: AIToolArgs;
   responseSchema: z.ZodTypeAny;
-  prompt: string; // this is sent as internal message to AI, no character limit
 };
 
 export type AIToolSpecRecord = {

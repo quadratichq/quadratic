@@ -130,7 +130,6 @@ Choose the AI model for this user prompt based on the following instructions, al
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.SetAIModel],
-    prompt: '',
   },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
@@ -154,7 +153,6 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.SetChatName],
-    prompt: '',
   },
   [AITool.SetFileName]: {
     sources: ['GetFileName'],
@@ -180,7 +178,6 @@ The file name should focus on the analysis or topic being explored (e.g., "GDP o
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.SetFileName],
-    prompt: '',
   },
   [AITool.UserPromptSuggestions]: {
     sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
@@ -191,7 +188,7 @@ Each prompt suggestion is an object with a label and a prompt.\n
 The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
 The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
-Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
+Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
 IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
     parameters: {
@@ -221,15 +218,6 @@ IMPORTANT: This tool should always be called after you have provided the respons
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.UserPromptSuggestions],
-    prompt: `
-This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
-Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
-The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
-Use the internal context and the chat history to provide the prompt suggestions.\n
-Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
-IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
-`,
   },
   [AITool.EmptyChatPromptSuggestions]: {
     sources: ['GetEmptyChatPromptSuggestions'],
@@ -268,13 +256,6 @@ Always maintain strong correlation between the context, the files, the connectio
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.EmptyChatPromptSuggestions],
-    prompt: `
-This tool provides prompt suggestions for the user when they attach a file or add a connection to an empty chat. It requires an array of three prompt suggestions.\n
-Each prompt suggestion is an object with a label and a prompt.\n
-The label is a descriptive label for the prompt suggestion with maximum 25 characters, this will be displayed to the user in the UI.\n
-The prompt is the actual detailed prompt that will be executed by the AI agent to take actions on the spreadsheet.\n
-Always maintain strong correlation between the context, the files, the connections and the code cells to provide the prompt suggestions.\n
-`,
   },
   [AITool.CategorizedEmptyChatPromptSuggestions]: {
     sources: ['GetEmptyChatPromptSuggestions'],
@@ -283,6 +264,12 @@ Always maintain strong correlation between the context, the files, the connectio
 This tool provides categorized prompt suggestions for the user based on their spreadsheet data.\n
 It requires exactly 3 suggestions per category (enrich, clean, visualize, analyze).\n
 Each suggestion has a short label (max 7 words) and a detailed prompt.\n
+The four categories are:\n
+1. enrich - Add derived columns, combine fields, look up related data\n
+2. clean - Fix formatting, remove duplicates, standardize values\n
+3. visualize - Create charts and graphs\n
+4. analyze - Calculate statistics, find patterns, derive insights\n
+Make all suggestions specific to the actual data columns and values in the spreadsheet.\n
 `,
     parameters: {
       type: 'object',
@@ -349,16 +336,6 @@ Each suggestion has a short label (max 7 words) and a detailed prompt.\n
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.CategorizedEmptyChatPromptSuggestions],
-    prompt: `
-This tool provides categorized prompt suggestions based on the spreadsheet data.\n
-Generate exactly 3 suggestions per category, with each suggestion having a short label and detailed prompt.\n
-The four categories are:\n
-1. enrich - Add derived columns, combine fields, look up related data\n
-2. clean - Fix formatting, remove duplicates, standardize values\n
-3. visualize - Create charts and graphs\n
-4. analyze - Calculate statistics, find patterns, derive insights\n
-Make all suggestions specific to the actual data columns and values in the spreadsheet.\n
-`,
   },
   [AITool.PDFImport]: {
     sources: ['AIAnalyst'],
@@ -390,16 +367,6 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.PDFImport],
-    prompt: `
-This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
-This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
-Forward the actual user prompt as much as possible that is related to the PDF file.\n
-Always capture user intention exactly and give a clear and explicit prompt to extract data from PDF files.\n
-Use this tool only if there is a PDF file that needs to be extracted. If there is no PDF file, do not use this tool.\n
-Never extract data from PDF files that are not relevant to the user's prompt. Never try to extract data from PDF files on your own. Always use the pdf_import tool when dealing with PDF files.\n
-Follow the user's instructions carefully and provide accurate and relevant data. If there are insufficient instructions, always ask the user for more information.\n
-Do not use multiple tools at the same time when dealing with PDF files. pdf_import should be the only tool call in a reply when dealing with PDF files. Any analysis on imported data should only be done after import is successful.\n
-`,
   },
   [AITool.WebSearch]: {
     sources: ['AIAnalyst'],
@@ -423,13 +390,6 @@ It requires the query to search for.\n
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.WebSearch],
-    prompt: `
-This tool searches the web for information based on the query.\n
-Use this tool when the user asks for information that is not already available in the context.\n
-When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
-This tool should also be used when trying to retrieve information for how to construct API requests that are not well-known from memory and when requiring information on code libraries that are not well-known from memory.\n
-It requires the query to search for.\n
-`,
   },
   [AITool.WebSearchInternal]: {
     sources: ['WebSearch'],
@@ -450,10 +410,6 @@ It requires the query to search for.\n
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.WebSearchInternal],
-    prompt: `
-This tool searches the web for information based on the query.\n
-It requires the query to search for.\n
-`,
   },
   [AITool.TextSearch]: {
     sources: ['AIAnalyst'],
@@ -462,7 +418,12 @@ It requires the query to search for.\n
 This tool searches for text in cells within a specific sheet or the entire file.\n
 Use this tool when looking for a specific piece of output in the file.\n
 This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
-Supports regex patterns for advanced matching when the regex option is enabled.\n
+Supports regex patterns for advanced matching when the regex option is enabled. Common patterns include:\n
+- "\\d+" to match one or more digits\n
+- "^hello" to match cells starting with "hello"\n
+- "world$" to match cells ending with "world"\n
+- "[A-Z]+" to match uppercase letters\n
+- "foo|bar" to match either "foo" or "bar"\n
 `,
     parameters: {
       type: 'object',
@@ -499,17 +460,6 @@ Supports regex patterns for advanced matching when the regex option is enabled.\
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.TextSearch],
-    prompt: `
-This tool searches for text in cells within a specific sheet or the entire file.\n
-Use this tool when looking for a specific piece of output in the file.\n
-This tool can only search for outputs that exist in cells within the file. This tool cannot search for code, only the outputs and contents in the sheet.\n
-Supports regex patterns for advanced matching when the regex option is enabled. Common patterns include:\n
-- "\\d+" to match one or more digits\n
-- "^hello" to match cells starting with "hello"\n
-- "world$" to match cells ending with "world"\n
-- "[A-Z]+" to match uppercase letters\n
-- "foo|bar" to match either "foo" or "bar"\n
-`,
   },
   [AITool.Undo]: {
     sources: ['AIAnalyst'],
@@ -531,10 +481,6 @@ If the user's undo request is multiple transactions in the past, use the count p
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.Undo],
-    prompt: `
-This tool undoes the last action. You MUST use the aiUpdates context to understand the last action and what is undoable.\n
-Always pass in the count of actions to undo when using the undo tool, even if the count to undo is 1.\n
-If the user's undo request is multiple transactions in the past, use the count parameter to pass the number of transactions to undo.\n`,
   },
   [AITool.Redo]: {
     sources: ['AIAnalyst'],
@@ -556,10 +502,6 @@ If the user's redo request is multiple transactions, use the count parameter to 
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.Redo],
-    prompt: `
-This tool redoes the last action. You MUST use the aiUpdates context to understand the relevant actions and the count of actions to redo.\n
-Always pass in the count of actions to redo when using the redo tool, even if the count to redo is 1.\n
-If the user's redo request is multiple transactions, use the count parameter to pass the number of transactions to redo.\n`,
   },
   [AITool.ContactUs]: {
     sources: ['AIAnalyst', 'AIAssistant'],
@@ -567,7 +509,9 @@ If the user's redo request is multiple transactions, use the count parameter to 
     description: `
 This tool provides a way for users to get help from the Quadratic team when experiencing frustration or issues.\n
 Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
-The tool displays a contact form with options to reach out to the team or start a new chat.\n`,
+The tool displays "Get help from our team" as the title, "Provide your feedback and we'll get in touch soon." as the description,\n
+and includes a recommendation message: "Contact us or consider starting a new chat to give the AI a fresh start."\n
+It provides both a "Contact us" button and a "New chat" button for the user.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -580,34 +524,11 @@ The tool displays a contact form with options to reach out to the team or start 
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.ContactUs],
-    prompt: `
-This tool provides a way for users to get help from the Quadratic team when they are experiencing frustration or issues.\n
-Use this tool when the user expresses high levels of frustration, uses cursing or degrading language, or explicitly asks to speak with the team.\n
-This should be used to help frustrated users get direct support from the Quadratic team.\n
-The tool displays "Get help from our team" as the title, "Provide your feedback and we'll get in touch soon." as the description,\n
-and includes a recommendation message: "Contact us or consider starting a new chat to give the AI a fresh start."\n
-It provides both a "Contact us" button and a "New chat" button for the user.\n`,
   },
   [AITool.OptimizePrompt]: {
     sources: ['OptimizePrompt'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
-The output MUST be a bulleted list with specific sections covering the task, output creation, and any other relevant details.\n
-Use the spreadsheet context to make instructions specific and actionable.\n`,
-    parameters: {
-      type: 'object',
-      properties: {
-        optimized_prompt: {
-          type: 'string',
-          description: 'The restructured prompt as a bulleted list with clear step-by-step instructions',
-        },
-      },
-      required: ['optimized_prompt'],
-      additionalProperties: false,
-    },
-    responseSchema: miscToolsArgsSchemas[AITool.OptimizePrompt],
-    prompt: `
 This tool restructures a user's prompt into clear, step-by-step bulleted instructions.\n
 You have access to the full spreadsheet context, including all sheets, tables, data locations, and existing content. Use this information to make the instructions specific.\n
 
@@ -651,6 +572,18 @@ Optimized:\n
 - Place the result directly below the Revenue column\n
 
 Be specific, detailed, and actionable in every bullet point.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        optimized_prompt: {
+          type: 'string',
+          description: 'The restructured prompt as a bulleted list with clear step-by-step instructions',
+        },
+      },
+      required: ['optimized_prompt'],
+      additionalProperties: false,
+    },
+    responseSchema: miscToolsArgsSchemas[AITool.OptimizePrompt],
   },
   [AITool.DelegateToSubagent]: {
     sources: ['AIAnalyst'],
@@ -659,10 +592,10 @@ Be specific, detailed, and actionable in every bullet point.\n`,
 
 Available subagent types:
 - data_finder: Finds and summarizes data in the spreadsheet. Returns cell ranges and descriptions.
-- formula_coder: Creates, edits, and debugs formula cells. Iterates until formulas work correctly.
-- python_coder: Creates, edits, and debugs Python code cells. Uses print() for debugging, iterates until code works.
-- javascript_coder: Creates, edits, and debugs JavaScript code cells. Uses console.log() for debugging, iterates until code works.
-- connection_coder: Creates, edits, and debugs SQL connection cells. Iterates until queries work correctly.
+- formula_coder: Creates, edits, and debugs formula cells. Iterates until formulas work correctly. Provide data context (cell references, table names) via context_hints.
+- python_coder: Creates, edits, and debugs Python code cells. Uses print() for debugging, iterates until code works. IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1").
+- javascript_coder: Creates, edits, and debugs JavaScript code cells. Uses console.log() for debugging, iterates until code works. IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1").
+- connection_coder: Fetches database schemas and creates, edits, and debugs SQL connection cells. Iterates until queries work correctly.
 
 IMPORTANT: You do not have direct access to code writing tools. You MUST delegate to the appropriate subagent:
 - Formulas → formula_coder
@@ -699,48 +632,9 @@ Session management:
             'Set to true when starting a NEW/UNRELATED task, working on a DIFFERENT code cell, or the user wants to "start over". Set to false or omit when continuing/debugging the same task.',
         },
       },
-      required: ['subagent_type', 'task'],
+      required: ['subagent_type', 'task', 'context_hints', 'reset'],
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.DelegateToSubagent],
-    prompt: `Use this tool to delegate tasks to specialized subagents.
-
-## data_finder subagent
-Explores and summarizes spreadsheet data:
-- Searches the spreadsheet for requested data
-- Returns specific cell ranges where data was found
-
-## formula_coder subagent
-Creates and debugs formula cells:
-- Writes formulas that accomplish the task
-- Iterates until formulas run without errors
-- Provide data context (cell references, table names) via context_hints
-
-## python_coder subagent
-Creates and debugs Python code cells:
-- Writes Python code that accomplishes the task
-- Uses print() statements for debugging
-- Iterates until code runs successfully
-- IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1")
-- Provide data context, table locations, and any error messages via context_hints
-
-## javascript_coder subagent
-Creates and debugs JavaScript code cells:
-- Writes JavaScript code that accomplishes the task
-- Uses console.log() statements for debugging
-- Iterates until code runs successfully
-- IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1")
-- Provide data context, table locations, and any error messages via context_hints
-
-## connection_coder subagent
-Creates and debugs SQL connection cells:
-- Fetches database schemas and writes SQL queries
-- Iterates until queries run successfully
-- Provide connection info and any error messages via context_hints
-
-## Session management
-- Sessions persist for follow-up work on the SAME task
-- Use reset=true when: starting a NEW task, working on a DIFFERENT code cell, user says "start over" or "try something else"
-- Use reset=false/omit when: continuing to debug, making incremental changes, following up on the same task`,
   },
 } as const;

@@ -1,4 +1,4 @@
-import { AgentType, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
+import { AgentType } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -170,19 +170,6 @@ ${
       ? 'Use only one tool in a single response.\n'
       : ''
 }
-
-${Object.entries(aiToolsSpec)
-  .filter(([toolName, { sources, aiModelModes }]) => {
-    // Filter by source and model mode
-    if (!sources.includes(source) || !aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    // Filter by agent type
-    return isToolAllowedForAgent(effectiveAgentType, toolName as AITool);
-  })
-  .map(([name, { prompt }]) => `#${name}\n${prompt}`)
-  .join('\n\n')}
-
 `),
       ],
       contextType: 'toolUse',
