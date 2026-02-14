@@ -65,7 +65,7 @@ export class Control {
       this.kill("shared"),
       this.kill("cloudController"),
     ]);
-    process.exit(0);
+    process.exit(errorMessage ? 1 : 0);
   }
 
   handleResponse(
@@ -724,13 +724,18 @@ export class Control {
     this.ui.print("db", "checking migration...");
     this.status.db = false;
     await this.kill("db");
-    this.db = spawn("npm", [
-      "run",
-      "prisma:migrate",
-      "--workspace=quadratic-api",
-    ]);
+    this.db = spawn(
+      "npm",
+      ["run", "prisma:migrate:deploy", "--workspace=quadratic-api"],
+      {
+        env: {
+          ...process.env,
+          PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "true",
+        },
+      },
+    );
     this.ui.printOutput("db");
-    this.db.once("exit", (code) => {
+    this.db.once("exit", async (code) => {
       if (code === 0) {
         this.ui.print("db", "migration completed");
         this.status.db = true;
@@ -738,12 +743,9 @@ export class Control {
       } else {
         this.ui.print("db", "failed");
         this.status.db = "error";
-        this.ui.print(
-          "db",
-          "Failed to migrate database. Likely you will need to `npm run prisma:dev:reset --workspace=quadratic-api`",
-          "red",
+        await this.quit(
+          "Database migration failed. Run `npm run prisma:dev:reset --workspace=quadratic-api` to reset, or fix migrations and try again.",
         );
-        this.runApi();
       }
     });
   }
