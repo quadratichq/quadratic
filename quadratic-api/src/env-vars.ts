@@ -88,6 +88,7 @@ export const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY || 'OPEN_ROUT
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
+export const CONNECTION_FINANCIAL_DATA = process.env.CONNECTION_FINANCIAL_DATA || '';
 export const FINE_TUNE = process.env.FINE_TUNE || 'false';
 export const RESTRICTED_MODEL_COUNTRIES = process.env.RESTRICTED_MODEL_COUNTRIES || '';
 

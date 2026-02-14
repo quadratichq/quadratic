@@ -24,6 +24,7 @@ export const ConnectionTypeSchema = z.enum([
   'MIXPANEL',
   'GOOGLE_ANALYTICS',
   'PLAID',
+  'DATAFUSION',
 ]);
 export const ConnectionSemanticDescriptionSchema = z.string().optional().transform(transformEmptyStringToUndefined);
 
@@ -151,6 +152,11 @@ export const ConnectionTypeDetailsPlaidSchema = z.object({
   access_token: z.string().min(1, { message: 'Required' }),
   start_date: z.string().date(),
   institution_name: z.string().optional(), // For display purposes
+});
+
+export const ConnectionTypeDetailsDatafusionSchema = z.object({
+  prefix: z.string().optional(),
+  streams: z.array(z.string()).default([]),
 });
 
 /**

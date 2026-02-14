@@ -173,6 +173,8 @@ pub enum ConnectionKind {
     #[serde(rename = "GOOGLE_ANALYTICS")]
     GoogleAnalytics,
     Plaid,
+    /// Generic DataFusion connection for S3 Parquet data
+    Datafusion,
     /// Financial data connection for STOCKHISTORY formula
     StockHistory,
 }

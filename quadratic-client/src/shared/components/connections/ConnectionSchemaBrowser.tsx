@@ -370,6 +370,7 @@ function getTableQuery({ table: { name, schema }, connectionType }: { table: Tab
     case 'MIXPANEL':
     case 'GOOGLE_ANALYTICS':
     case 'PLAID':
+    case 'DATAFUSION':
       return `SELECT * FROM \`${name}\` LIMIT 100`;
     default:
       return '';

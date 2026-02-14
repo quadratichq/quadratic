@@ -182,6 +182,7 @@ enum ConnectionType {
     MIXPANEL
     GOOGLE_ANALYTICS
     PLAID
+    DATAFUSION
 }
 
 model Connection {
