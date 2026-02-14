@@ -69,8 +69,12 @@ export function SettingsDialog() {
     } else if (!open) {
       // Reset to general tab when dialog closes
       setActiveTab('general');
+      // Clear highlight state when dialog closes
+      if (dialogState.highlightOverage) {
+        setDialogState({ open: false });
+      }
     }
-  }, [open, dialogState.initialTab]);
+  }, [open, dialogState.initialTab, dialogState.highlightOverage, setDialogState]);
 
   const activeTeamUuid = useMemo(() => {
     return teamData?.activeTeam?.team?.uuid;
@@ -304,7 +308,7 @@ export function SettingsDialog() {
               <>
                 <TabsContent value="team" className="m-0 border-0 p-6 pb-16">
                   <TeamSettingsErrorBoundary>
-                    <TeamSettings />
+                    <TeamSettings highlightOverage={dialogState.highlightOverage} />
                   </TeamSettingsErrorBoundary>
                 </TabsContent>
                 <TabsContent value="team-members" className="m-0 border-0 p-6 pb-16">

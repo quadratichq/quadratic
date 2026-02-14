@@ -71,8 +71,11 @@ async function handler(
         await upgradeSubscriptionPlan(team, businessPriceId, 'business');
 
         // Redirect to success URL after upgrade
+        // Use URL/URLSearchParams to properly append the subscription parameter
+        const successUrl = new URL(redirectSuccess);
+        successUrl.searchParams.set('subscription', 'upgraded');
         const data: ApiTypes['/v0/teams/:uuid/billing/checkout/session.GET.response'] = {
-          url: `${redirectSuccess}?subscription=upgraded`,
+          url: successUrl.toString(),
         };
         return res.status(200).json(data);
       } catch (error: unknown) {

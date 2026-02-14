@@ -1,11 +1,11 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -87,11 +87,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
   const planType = useMemo(() => billing.planType ?? 'FREE', [billing.planType]);
 
-  const { setIsOnPaidPlan, setPlanType } = useIsOnPaidPlan();
+  // Update team billing state from dashboard loader data
   useEffect(() => {
-    setIsOnPaidPlan(isOnPaidPlan);
-    setPlanType(planType);
-  }, [isOnPaidPlan, setIsOnPaidPlan, planType, setPlanType]);
+    updateTeamBilling({
+      isOnPaidPlan,
+      planType,
+    });
+  }, [isOnPaidPlan, planType]);
 
   const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');

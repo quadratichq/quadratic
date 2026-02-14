@@ -6,7 +6,6 @@ import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { QuadraticAppDebugSettings } from '@/app/ui/QuadraticAppDebugSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -16,6 +15,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { clearFileLocation, initFileLocation } from '@/shared/atom/fileLocationAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
@@ -106,7 +106,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const isVersionHistoryPreview = sequenceNumParam !== null;
 
   // Check if we're checking for subscription updates (for verification)
-  const updateBilling = searchParams.get('subscription') === 'created';
+  // Handle both new subscriptions ('created') and plan upgrades ('upgraded')
+  const subscriptionStatus = searchParams.get('subscription');
+  const updateBilling = subscriptionStatus === 'created' || subscriptionStatus === 'upgraded';
 
   const [data] = await Promise.all([
     loadFileFromApi(uuid, isVersionHistoryPreview, updateBilling),
@@ -230,18 +232,20 @@ export const Component = memo(() => {
     [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, canManageBilling]
   );
 
-  const { setIsOnPaidPlan, setPlanType } = useIsOnPaidPlan();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const hasProcessedSubscriptionSuccess = useRef(false);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
+  // Initialize team billing state from loader data
   useEffect(() => {
-    setIsOnPaidPlan(isOnPaidPlan);
-    if (planType) {
-      setPlanType(planType);
-    }
-  }, [isOnPaidPlan, setIsOnPaidPlan, planType, setPlanType]);
+    updateTeamBilling({
+      isOnPaidPlan,
+      planType: planType ?? 'FREE',
+      // allowOveragePayments is not in the file response, so it will be preserved
+      // and updated when AI responses include it or when fetched from billing endpoints
+    });
+  }, [isOnPaidPlan, planType]);
 
   // Set timezone if not already set and user has editor rights
   useEffect(() => {

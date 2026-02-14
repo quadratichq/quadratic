@@ -1,15 +1,16 @@
 import { editorInteractionStateCanManageBillingAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getNextPlanSuggestion, useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { getNextPlanSuggestion, teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useSetAtom } from 'jotai';
-import { memo, useMemo } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { memo, useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIUsageExceeded = memo(() => {
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-  const { planType, allowOveragePayments } = useIsOnPaidPlan();
+  const { planType, allowOveragePayments } = useAtomValue(teamBillingAtom);
   const canManageBilling = useRecoilValue(editorInteractionStateCanManageBillingAtom);
 
   const suggestion = useMemo(
@@ -57,6 +58,20 @@ export const AIUsageExceeded = memo(() => {
     }
   }, [suggestion, canManageBilling]);
 
+  const handleClick = useCallback(() => {
+    trackEvent('[AI].UsageExceeded.clickUpgrade', { planType, suggestion: suggestion?.type ?? 'none' });
+
+    // For enableOverage suggestions, open the settings dialog with team billing tab and highlight
+    if (suggestion?.type === 'enableOverage') {
+      trackEvent('[UpgradeDialog].enableOverageClicked');
+      showSettingsDialog('team', { highlightOverage: true });
+      return;
+    }
+
+    // For other suggestions, open the upgrade dialog
+    setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded', suggestion });
+  }, [planType, suggestion, setShowUpgradeDialog]);
+
   return (
     <div
       className={
@@ -66,14 +81,7 @@ export const AIUsageExceeded = memo(() => {
       <h3 className="font-semibold">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
 
-      <Button
-        onClick={() => {
-          setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded', suggestion });
-          trackEvent('[AI].UsageExceeded.clickUpgrade', { planType, suggestion: suggestion?.type ?? 'none' });
-        }}
-        className="mt-2 w-full"
-        size="sm"
-      >
+      <Button onClick={handleClick} className="mt-2 w-full" size="sm">
         {buttonText}
       </Button>
     </div>

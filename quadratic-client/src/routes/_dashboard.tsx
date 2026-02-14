@@ -87,7 +87,9 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
   }
 
   // Check if we're checking for subscription updates (for verification)
-  const updateBilling = url.searchParams.get('subscription') === 'created';
+  // Handle both new subscriptions ('created') and plan upgrades ('upgraded')
+  const subscriptionStatus = url.searchParams.get('subscription');
+  const updateBilling = subscriptionStatus === 'created' || subscriptionStatus === 'upgraded';
 
   /**
    * Get the initial data

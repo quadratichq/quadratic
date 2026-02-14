@@ -1,11 +1,11 @@
 import { useAIMessagesLeft } from '@/app/ui/hooks/useAIMessagesLeft';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
-import { useSetAtom } from 'jotai';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { memo } from 'react';
 
 export const AIMessageCounterBar = memo(() => {
-  const { isOnPaidPlan } = useIsOnPaidPlan();
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
 
   // Don't even bother mounting the component below (and fetching its data)
   // if the user is on a paid plan

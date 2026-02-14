@@ -5,8 +5,8 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
@@ -43,7 +43,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const restrictedModel = userMakingRequest.restrictedModel;
-  const { isOnPaidPlan } = useIsOnPaidPlan();
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);

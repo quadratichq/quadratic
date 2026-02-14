@@ -1,7 +1,7 @@
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { WarningIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Alert, AlertTitle } from '@/shared/shadcn/ui/alert';
@@ -9,7 +9,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { TeamSubscriptionStatus, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useNavigation } from 'react-router';
@@ -23,7 +23,7 @@ interface UpgradeDialogProps {
 
 export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps) {
   const [state, setState] = useAtom(showUpgradeDialogAtom);
-  const { planType, isOnPaidPlan } = useIsOnPaidPlan();
+  const { planType, isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const navigate = useNavigate();
   const navigation = useNavigation();
 

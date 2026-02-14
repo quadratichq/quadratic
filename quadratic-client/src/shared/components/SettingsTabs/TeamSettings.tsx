@@ -15,7 +15,11 @@ import { useFetcher, useSubmit } from 'react-router';
 import { BusinessPlanSettings } from './BusinessPlanSettings';
 import { TeamAIUsage } from './TeamAIUsage';
 
-export function TeamSettings() {
+interface TeamSettingsProps {
+  highlightOverage?: boolean;
+}
+
+export function TeamSettings({ highlightOverage }: TeamSettingsProps) {
   const { teamData } = useTeamData();
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
@@ -145,7 +149,7 @@ export function TeamSettings() {
           </div>
 
           {/* Business Plan Settings (on-demand usage and spending limit) */}
-          <BusinessPlanSettings />
+          <BusinessPlanSettings highlight={highlightOverage} />
 
           {/* AI Usage */}
           <TeamAIUsage />

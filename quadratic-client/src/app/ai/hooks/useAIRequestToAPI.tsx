@@ -1,7 +1,8 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { teamBillingAtom, updateTeamBilling } from '@/shared/atom/teamBillingAtom';
+import { useAtomValue } from 'jotai';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -19,7 +20,7 @@ type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
 };
 
 export function useAIRequestToAPI() {
-  const { isOnPaidPlan, setIsOnPaidPlan, setPlanType, setAllowOveragePayments } = useIsOnPaidPlan();
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
 
   const handleAIRequestToAPI = useRecoilCallback(
     ({ snapshot }) =>
@@ -216,13 +217,14 @@ export function useAIRequestToAPI() {
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
           responseMessage = newResponseMessage;
 
-          setIsOnPaidPlan(responseMessage.isOnPaidPlan);
-          if (responseMessage.planType) {
-            setPlanType(responseMessage.planType);
-          }
-          if (responseMessage.allowOveragePayments !== undefined) {
-            setAllowOveragePayments(responseMessage.allowOveragePayments);
-          }
+          // Update centralized billing state from AI response
+          updateTeamBilling({
+            isOnPaidPlan: responseMessage.isOnPaidPlan,
+            ...(responseMessage.planType && { planType: responseMessage.planType }),
+            ...(responseMessage.allowOveragePayments !== undefined && {
+              allowOveragePayments: responseMessage.allowOveragePayments,
+            }),
+          });
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
           return {
@@ -244,7 +246,7 @@ export function useAIRequestToAPI() {
           }
         }
       },
-    [isOnPaidPlan, setIsOnPaidPlan, setPlanType, setAllowOveragePayments]
+    [isOnPaidPlan]
   );
 
   return { handleAIRequestToAPI };

@@ -1,14 +1,20 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { setAllowOveragePayments } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
+import { cn } from '@/shared/shadcn/utils';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-export function BusinessPlanSettings() {
+interface BusinessPlanSettingsProps {
+  highlight?: boolean;
+}
+
+export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
   const { teamData } = useTeamData();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -46,6 +52,8 @@ export function BusinessPlanSettings() {
           setAiUsageData(data);
           setOnDemandUsage(data.allowOveragePayments ?? false);
           setSpendingLimit(data.teamMonthlyBudgetLimit?.toString() ?? '');
+          // Sync global billing state with fetched allowOveragePayments value
+          setAllowOveragePayments(data.allowOveragePayments ?? false);
         })
         .catch((error) => {
           console.error('[BusinessPlanSettings] Failed to fetch AI usage data:', error);
@@ -65,6 +73,8 @@ export function BusinessPlanSettings() {
       try {
         await apiClient.teams.billing.updateOverage(team.uuid, checked);
         setOnDemandUsage(checked);
+        // Update the global billing state so other components (like AIUsageExceeded) react immediately
+        setAllowOveragePayments(checked);
         addGlobalSnackbar(checked ? 'On-demand usage enabled' : 'On-demand usage disabled', { severity: 'success' });
       } catch (error) {
         console.error('[BusinessPlanSettings] Failed to update on-demand usage:', error);
@@ -109,17 +119,48 @@ export function BusinessPlanSettings() {
     return spendingLimit !== currentLimit;
   }, [spendingLimit, aiUsageData?.teamMonthlyBudgetLimit]);
 
+  // Ref for scrolling into view when highlighted
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isHighlighted, setIsHighlighted] = useState(false);
+
+  // Handle scroll into view and highlight animation
+  useEffect(() => {
+    if (highlight && containerRef.current) {
+      // Small delay to ensure DOM is ready
+      const scrollTimeout = setTimeout(() => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+
+      // Start highlight animation after scroll
+      const highlightTimeout = setTimeout(() => {
+        setIsHighlighted(true);
+        // Remove highlight after animation
+        setTimeout(() => setIsHighlighted(false), 3000);
+      }, 600);
+
+      return () => {
+        clearTimeout(scrollTimeout);
+        clearTimeout(highlightTimeout);
+      };
+    }
+  }, [highlight]);
+
   // Don't render if not on Business plan
   if (!isBusiness || !team) {
     return null;
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       <h4 className="text-sm font-semibold">Business plan settings</h4>
 
       {/* On-demand usage */}
-      <div className="rounded-lg border border-border p-4">
+      <div
+        className={cn(
+          'rounded-lg border border-border p-4 transition-all duration-500',
+          isHighlighted && 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2'
+        )}
+      >
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">

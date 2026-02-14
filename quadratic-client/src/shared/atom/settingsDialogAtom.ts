@@ -2,10 +2,16 @@ import { atom, getDefaultStore } from 'jotai';
 
 export type SettingsTab = 'general' | 'ai' | 'theme' | 'team' | 'team-members' | 'team-ai' | 'team-privacy' | 'debug';
 
-export const settingsDialogAtom = atom<{ open: boolean; initialTab?: SettingsTab }>({ open: false });
+export interface SettingsDialogState {
+  open: boolean;
+  initialTab?: SettingsTab;
+  highlightOverage?: boolean;
+}
 
-export const showSettingsDialog = (initialTab?: SettingsTab) => {
-  getDefaultStore().set(settingsDialogAtom, { open: true, initialTab });
+export const settingsDialogAtom = atom<SettingsDialogState>({ open: false });
+
+export const showSettingsDialog = (initialTab?: SettingsTab, options?: { highlightOverage?: boolean }) => {
+  getDefaultStore().set(settingsDialogAtom, { open: true, initialTab, highlightOverage: options?.highlightOverage });
 };
 
 export const hideSettingsDialog = () => {
