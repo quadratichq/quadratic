@@ -550,12 +550,18 @@ export const apiClient = {
       );
     },
     plaid: {
-      createLinkToken({ teamUuid }: { teamUuid: string }) {
+      createLinkToken({
+        teamUuid,
+        primary_product,
+      }: {
+        teamUuid: string;
+        primary_product?: 'transactions' | 'investments' | 'liabilities';
+      }) {
         return fetchFromApi(
           `/v0/teams/${teamUuid}/plaid/link-token`,
           {
             method: 'POST',
-            body: JSON.stringify({}),
+            body: JSON.stringify({ primary_product }),
           },
           ApiSchemas['/v0/teams/:uuid/plaid/link-token.POST.response']
         );
