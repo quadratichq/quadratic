@@ -345,14 +345,26 @@ impl Worker {
 
     /// Shutdown the worker.
     ///
-    /// This will render and upload a thumbnail, leave the multiplayer room,
-    /// and send a shutdown request to the controller.
+    /// This will render and upload a thumbnail, extract AI memory payload,
+    /// leave the multiplayer room, and send a shutdown request to the controller.
     pub(crate) async fn shutdown(&mut self) -> Result<()> {
         info!("Worker shutting down");
 
         // Render and upload thumbnail before leaving the room
         // This is best-effort - don't fail shutdown if thumbnail fails
         self.render_and_upload_thumbnail().await;
+
+        // Extract AI memory payload from the grid for team knowledge
+        let memory_payload = match self.core.extract_memory_payload().await {
+            Ok(payload) => {
+                info!("Extracted AI memory payload");
+                Some(payload)
+            }
+            Err(e) => {
+                warn!("Failed to extract AI memory payload: {}", e);
+                None
+            }
+        };
 
         // leave the multiplayer room
         match self.core.leave_room().await {
@@ -363,12 +375,13 @@ impl Worker {
             }
         }
 
-        // send worker shutdown request to the controller (with thumbnail_key if available)
+        // send worker shutdown request to the controller (with thumbnail_key and memory_payload)
         match worker_shutdown(
             &self.controller_url,
             self.container_id,
             self.file_id,
             self.uploaded_thumbnail_key.clone(),
+            memory_payload,
             &self.current_jwt,
         )
         .await

@@ -3,6 +3,7 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
+import { generateConnectionMemory } from '../../ai/memory/memoryService';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -57,6 +58,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       },
     });
   }
+
+  // Generate AI memory for this connection (background, best-effort)
+  generateConnectionMemory({
+    teamId,
+    connectionId: result.uuid,
+    connectionName: name,
+    connectionType: type,
+    tables: [],
+  }).catch((err) => {
+    console.error('[ai-memory] Failed to generate connection memory:', err);
+  });
 
   // Return its identifier
   return res.status(201).json({ uuid: result.uuid });

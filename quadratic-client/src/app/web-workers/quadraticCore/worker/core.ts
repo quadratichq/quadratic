@@ -56,6 +56,7 @@ import type {
   ClientCoreMoveColsRows,
   ClientCoreSummarizeSelection,
   CoreClientImportFile,
+  MemoryPayload,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
@@ -1287,6 +1288,16 @@ class Core {
       return this.gridController.getAISelectionContexts(args.selections, args.maxRows);
     } catch (e) {
       this.handleCoreError('getAISelectionContexts', e);
+      return undefined;
+    }
+  }
+
+  getMemoryPayload(): MemoryPayload | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.getMemoryPayload();
+    } catch (e) {
+      this.handleCoreError('getMemoryPayload', e);
       return undefined;
     }
   }

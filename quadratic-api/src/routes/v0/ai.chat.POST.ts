@@ -15,9 +15,11 @@ import { handleAIRequest } from '../../ai/handler/ai.handler';
 import {
   getAILanguagesContext,
   getAIRulesContext,
+  getMemoryContext,
   getQuadraticContext,
   getToolUseContext,
 } from '../../ai/helpers/context.helper';
+import { generateChatInsight } from '../../ai/memory/memoryService';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
@@ -190,6 +192,18 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...aiRulesContext, ...args.messages];
   }
 
+  // Add team memory context (semantic search for relevant memories)
+  const userText = userMessage.content
+    .filter(isContentText)
+    .map((c) => c.text)
+    .join(' ');
+  if (userText) {
+    const memoryContext = await getMemoryContext(ownerTeam.id, userText);
+    if (memoryContext.length > 0) {
+      args.messages = [...memoryContext, ...args.messages];
+    }
+  }
+
   // Add AI language preferences context
   if (userAiLanguagePreferences.length > 0) {
     const aiLanguagesContext = getAILanguagesContext(userAiLanguagePreferences);
@@ -326,6 +340,31 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       } catch (error) {
         logger.error('Error in ai.chat.POST handler', error);
       }
+    }
+  }
+
+  // Extract chat insight after enough exchanges (every 4 user messages)
+  if (messageType === 'userPrompt' && messageIndex >= 3 && messageIndex % 4 === 3) {
+    const chatMessages = args.messages
+      .filter((m) => m.contextType === 'userPrompt' || m.contextType === undefined)
+      .map((m) => ({
+        role: m.role,
+        content: m.content
+          .filter(isContentText)
+          .map((c) => c.text)
+          .join(' '),
+      }))
+      .filter((m) => m.content.trim().length > 0);
+
+    if (chatMessages.length >= 2) {
+      generateChatInsight({
+        teamId: ownerTeam.id,
+        fileId,
+        chatId,
+        messages: chatMessages,
+      }).catch((err) => {
+        console.error('[ai-memory] Failed to generate chat insight:', err);
+      });
     }
   }
 }

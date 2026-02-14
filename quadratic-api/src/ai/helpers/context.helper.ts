@@ -235,6 +235,58 @@ ${rules.join('\n\n')}
   ];
 };
 
+/**
+ * Search team memories by semantic similarity to the user's query
+ * and return them as context messages for the AI.
+ */
+export const getMemoryContext = async (
+  teamId: number,
+  userMessage: string
+): Promise<ChatMessage[]> => {
+  try {
+    const { searchMemories } = await import('../memory/memoryService');
+    const memories = await searchMemories({
+      teamId,
+      query: userMessage,
+      limit: 5,
+    });
+
+    if (memories.length === 0) return [];
+
+    const memoryText = memories
+      .map((m) => `- **${m.title}** (${m.entityType}): ${m.summary}`)
+      .join('\n');
+
+    return [
+      {
+        role: 'user',
+        content: [
+          createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
+The following is relevant knowledge from this team's AI memory. Use it to inform your response when applicable:\n\n
+${memoryText}
+`),
+        ],
+        contextType: 'teamMemory',
+      },
+      {
+        role: 'assistant',
+        content: [createTextContent('I understand the team knowledge context and will reference it when relevant.')],
+        contextType: 'teamMemory',
+      },
+    ];
+  } catch (error: unknown) {
+    const code = error && typeof error === 'object' && 'code' in error ? (error as { code?: string }).code : undefined;
+    if (code === 'no_organization') {
+      console.warn(
+        '[ai-memory] OpenAI requires an organization for this API key. Set OPENAI_ORGANIZATION_ID in .env to enable AI memory context, or see https://platform.openai.com/docs/api-reference.'
+      );
+    } else {
+      console.error('[ai-memory] Failed to retrieve memory context:', error);
+    }
+    return [];
+  }
+};
+
 export const getAILanguagesContext = (enabledLanguagePreferences: AILanguagePreferences): ChatMessage[] => {
   // We guard against this in the UI, but just in case we'll handle it too.
   // If no languages are enabled or all languages are enabled, return empty context to avoid malformed messages

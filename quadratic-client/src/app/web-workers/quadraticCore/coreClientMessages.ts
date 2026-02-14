@@ -1266,6 +1266,71 @@ export interface CoreClientGetAISelectionContexts {
   summaryContexts: JsSummaryContext[] | undefined;
 }
 
+export interface ClientCoreGetMemoryPayload {
+  type: 'clientCoreGetMemoryPayload';
+  id: number;
+}
+
+export interface CoreClientGetMemoryPayload {
+  type: 'coreClientGetMemoryPayload';
+  id: number;
+  payload: MemoryPayload | undefined;
+}
+
+export interface MemoryPayload {
+  sheets: SheetMemoryPayload[];
+  codeCells: CodeCellMemoryPayload[];
+}
+
+export interface SheetMemoryPayload {
+  name: string;
+  bounds: string | null;
+  dataTables: DataTableMemoryPayload[];
+  codeTables: CodeTableMemoryPayload[];
+  connections: ConnectionTableMemoryPayload[];
+  charts: ChartMemoryPayload[];
+}
+
+export interface DataTableMemoryPayload {
+  name: string;
+  columns: string[];
+  bounds: string;
+}
+
+export interface CodeTableMemoryPayload {
+  name: string;
+  language: string;
+  columns: string[];
+  bounds: string;
+  code: string;
+}
+
+export interface ConnectionTableMemoryPayload {
+  name: string;
+  connectionKind: string;
+  columns: string[];
+  bounds: string;
+  code: string;
+}
+
+export interface ChartMemoryPayload {
+  name: string;
+  language: string;
+  bounds: string;
+  code: string;
+}
+
+export interface CodeCellMemoryPayload {
+  sheetName: string;
+  position: string;
+  language: string;
+  code: string;
+  outputShape: string | null;
+  hasError: boolean;
+  stdOut: string | null;
+  stdErr: string | null;
+}
+
 export interface ClientCoreNeighborText {
   type: 'clientCoreNeighborText';
   id: number;
@@ -1811,6 +1876,7 @@ export type ClientCoreMessage =
   | ClientCoreDataTableFirstRowAsHeader
   | ClientCoreGetCellValue
   | ClientCoreGetAISelectionContexts
+  | ClientCoreGetMemoryPayload
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreAddDataTable
@@ -1893,6 +1959,7 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientClientMessage
   | CoreClientGetAISelectionContexts
+  | CoreClientGetMemoryPayload
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
   | CoreClientA1Context

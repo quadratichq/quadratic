@@ -22,6 +22,7 @@ import {
   GCP_REGION_ANTHROPIC,
   OPEN_ROUTER_API_KEY,
   OPENAI_API_KEY,
+  OPENAI_ORGANIZATION_ID,
   XAI_API_KEY,
 } from '../env-vars';
 
@@ -73,6 +74,7 @@ export const anthropic = new Anthropic({
 
 export const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
+  ...(OPENAI_ORGANIZATION_ID && { organization: OPENAI_ORGANIZATION_ID }),
 });
 
 export const azureOpenAI = new OpenAI({

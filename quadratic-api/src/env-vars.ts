@@ -83,6 +83,7 @@ if (process.env.AUTH_TYPE === 'workos') {
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+export const OPENAI_ORGANIZATION_ID = process.env.OPENAI_ORGANIZATION_ID || undefined;
 export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || 'AZURE_OPENAI_ENDPOINT';
 export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || 'AZURE_OPENAI_API_KEY';
 export const XAI_API_KEY = process.env.XAI_API_KEY || 'XAI_API_KEY';

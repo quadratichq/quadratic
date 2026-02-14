@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::controller::Controller;
 use crate::error::{ControllerError, Result};
 use crate::quadratic_api::{insert_completed_logs, insert_failed_logs};
-use quadratic_rust_shared::quadratic_api::update_file_thumbnail;
+use quadratic_rust_shared::quadratic_api::{forward_memory_payload, update_file_thumbnail};
 use crate::state::State;
 
 /// Handle JWKS requests.
@@ -244,6 +244,21 @@ pub(crate) async fn shutdown_worker(
         {
             warn!("Failed to update thumbnail for file {file_id}: {e}");
             // Don't fail shutdown if thumbnail update fails
+        }
+    }
+
+    // If the worker extracted an AI memory payload, forward it to the API
+    if let Some(memory_payload) = shutdown_request.memory_payload {
+        info!("Forwarding AI memory payload for file {file_id}");
+        if let Err(e) = forward_memory_payload(
+            &state.settings.quadratic_api_uri,
+            &state.settings.m2m_auth_token,
+            file_id,
+            memory_payload,
+        )
+        .await
+        {
+            warn!("Failed to forward AI memory payload for file {file_id}: {e}");
         }
     }
 

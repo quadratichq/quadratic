@@ -242,7 +242,8 @@ export type InternalContextType =
   | 'fileSummary'
   | 'aiUpdates'
   | 'aiRules'
-  | 'aiLanguages';
+  | 'aiLanguages'
+  | 'teamMemory';
 
 export type ToolResultContextType = 'toolResult';
 export type UserPromptContextType = 'userPrompt';
@@ -491,6 +492,10 @@ export type AIToolPrimitiveType = 'string' | 'number' | 'boolean' | 'null';
 export interface AIToolArgsPrimitive {
   type: AIToolPrimitiveType | AIToolPrimitiveType[];
   description: string;
+  /** Optional enum constraint for string parameters (JSON Schema style) */
+  enum?: readonly string[] | readonly number[];
+  /** Whether the parameter accepts null (JSON Schema style) */
+  nullable?: boolean;
 }
 
 export interface AIToolArgsArray {
@@ -846,6 +851,7 @@ const InternalContextTypeSchema = z.enum([
   'aiUpdates',
   'aiRules',
   'aiLanguages',
+  'teamMemory',
 ]) satisfies z.ZodType<InternalContextType>;
 
 const ToolResultContextTypeSchema = z.literal('toolResult') satisfies z.ZodType<ToolResultContextType>;

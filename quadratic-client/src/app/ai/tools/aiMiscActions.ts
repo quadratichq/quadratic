@@ -1,3 +1,4 @@
+import { searchTeamMemories } from '@/app/ai/memory/aiMemoryService';
 import { messageManager } from '@/app/ai/session/MessageManager';
 import { subagentRunner, SubagentType } from '@/app/ai/subagent';
 import type { SubagentToolCallEvent } from '@/app/ai/subagent/subagentTypes';
@@ -20,6 +21,7 @@ type MiscToolActions = {
     | AITool.EmptyChatPromptSuggestions
     | AITool.CategorizedEmptyChatPromptSuggestions
     | AITool.PDFImport
+    | AITool.SearchTeamMemory
     | AITool.WebSearch
     | AITool.WebSearchInternal
     | AITool.TextSearch
@@ -80,6 +82,25 @@ export const miscToolsActions: MiscToolActions = {
   },
   [AITool.PDFImport]: async () => {
     return [createTextContent('PDF import tool executed successfully.')];
+  },
+  [AITool.SearchTeamMemory]: async (args, metaData) => {
+    try {
+      const teamUuid = metaData?.teamUuid;
+      if (!teamUuid) {
+        return [createTextContent('Team context not available for memory search.')];
+      }
+      const memories = await searchTeamMemories(teamUuid, args.query, {
+        entityType: args.entity_type ?? undefined,
+        limit: 10,
+      });
+      if (memories.length === 0) {
+        return [createTextContent('No relevant team memories found for this query.')];
+      }
+      const results = memories.map((m) => `- **${m.title}** (${m.entityType}): ${m.summary}`).join('\n');
+      return [createTextContent(`Found ${memories.length} relevant team memories:\n\n${results}`)];
+    } catch (e) {
+      return [createTextContent(`Error searching team memory: ${String(e)}`)];
+    }
   },
   [AITool.WebSearch]: async () => {
     return [createTextContent('Search tool executed successfully.')];

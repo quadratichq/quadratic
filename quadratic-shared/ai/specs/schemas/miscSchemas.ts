@@ -80,6 +80,10 @@ export const miscToolsArgsSchemas = {
   [AITool.WebSearchInternal]: z.object({
     query: stringSchema,
   }),
+  [AITool.SearchTeamMemory]: z.object({
+    query: stringSchema,
+    entity_type: z.enum(['FILE', 'CODE_CELL', 'CONNECTION', 'CHAT_INSIGHT']).nullable().optional(),
+  }),
   [AITool.TextSearch]: z.object({
     query: z.string(),
     case_sensitive: booleanSchema,
@@ -410,6 +414,34 @@ It requires the query to search for.\n
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.WebSearchInternal],
+  },
+  [AITool.SearchTeamMemory]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool searches the team's AI knowledge base for relevant information.\n
+Use this tool when you need to find information about other files, code cells, database connections, or past conversations in the team.\n
+The knowledge base contains AI-generated summaries of files, code cells, connections, and chat insights across the team.\n
+It requires a search query and optionally a filter for entity type (FILE, CODE_CELL, CONNECTION, CHAT_INSIGHT).\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query to find relevant team knowledge',
+        },
+        entity_type: {
+          type: 'string',
+          enum: ['FILE', 'CODE_CELL', 'CONNECTION', 'CHAT_INSIGHT'],
+          description: 'Optional filter for the type of memory to search',
+          nullable: true,
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    responseSchema: miscToolsArgsSchemas[AITool.SearchTeamMemory],
   },
   [AITool.TextSearch]: {
     sources: ['AIAnalyst'],

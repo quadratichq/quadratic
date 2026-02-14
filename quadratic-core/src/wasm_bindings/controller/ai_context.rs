@@ -86,6 +86,24 @@ impl GridController {
         })
     }
 
+    /// Extracts a MemoryPayload from the current grid state for AI memory
+    /// summarization. Returns the full file structure and all code cells.
+    #[wasm_bindgen(js_name = "getMemoryPayload")]
+    pub fn js_get_memory_payload(&self) -> JsValue {
+        capture_core_error(|| {
+            let payload = self.extract_memory_payload();
+            match serde_wasm_bindgen::to_value(&payload) {
+                Ok(value) => Ok(Some(value)),
+                Err(e) => {
+                    dbgjs!(format!(
+                        "[ai_context.rs] error occurred while serializing memory payload: {e:?}"
+                    ));
+                    Ok(Some(JsValue::UNDEFINED))
+                }
+            }
+        })
+    }
+
     #[wasm_bindgen(js_name = "getAITransactions")]
     pub fn js_get_ai_transactions(&self) -> JsValue {
         capture_core_error(|| {

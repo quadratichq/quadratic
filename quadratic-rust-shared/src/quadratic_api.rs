@@ -438,6 +438,27 @@ pub async fn update_file_thumbnail(
     Ok(())
 }
 
+/// Forward an AI memory payload from the cloud worker to the API for summarization.
+pub async fn forward_memory_payload(
+    base_url: &str,
+    jwt: &str,
+    file_id: Uuid,
+    memory_payload: serde_json::Value,
+) -> Result<()> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/ai-memory");
+
+    let response = reqwest::Client::new()
+        .post(&url)
+        .header("Authorization", format!("Bearer {jwt}"))
+        .json(&serde_json::json!({ "payload": memory_payload }))
+        .send()
+        .await?;
+
+    handle_response(response).await?;
+
+    Ok(())
+}
+
 #[derive(Debug, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {

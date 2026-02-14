@@ -90,6 +90,7 @@ model File {
     AnalyticsAIChat  AnalyticsAIChat[]
     AICost           AICost[]
     ScheduledTask    ScheduledTask[]
+    AiMemory         AiMemory[]
 
     @@index([uuid])
     @@index([ownerTeamId])
@@ -143,6 +144,7 @@ model Team {
     File         File[]
     Connection   Connection[]
     AICost       AICost[]
+    AiMemory     AiMemory[]
 
     // Onboarding
     onboardingComplete  Boolean? @default(false) @map("onboarding_complete") // null = legacy, do not gate, false = new, gate, true = completed
@@ -493,4 +495,34 @@ model UserBudgetLimit {
     @@unique([userId, teamId])
     @@index([teamId])
     @@index([userId, teamId])
+}
+
+enum AiMemoryEntityType {
+    FILE
+    CODE_CELL
+    CONNECTION
+    CHAT_INSIGHT
+}
+
+model AiMemory {
+    id         Int                @id @default(autoincrement())
+    teamId     Int                @map("team_id")
+    team       Team               @relation(fields: [teamId], references: [id])
+    fileId     Int?               @map("file_id")
+    file       File?              @relation(fields: [fileId], references: [id])
+    entityType AiMemoryEntityType @map("entity_type")
+    entityId   String?            @map("entity_id")
+    title      String
+    summary    String             @db.Text
+    embedding  Unsupported("vector(768)")?
+    metadata   Json               @default("{}")
+    pinned     Boolean            @default(false)
+    version    Int                @default(1)
+    createdAt  DateTime           @default(now()) @map("created_at")
+    updatedAt  DateTime           @default(now()) @map("updated_at")
+
+    @@unique([teamId, fileId, entityType, entityId])
+    @@index([teamId, entityType])
+    @@index([teamId, fileId])
+    @@map("ai_memory")
 }

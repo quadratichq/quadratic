@@ -190,6 +190,9 @@ pub struct ShutdownRequest {
     /// Optional thumbnail key if the worker successfully uploaded a thumbnail
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail_key: Option<String>,
+    /// Optional AI memory payload extracted from the grid after code execution
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memory_payload: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -202,12 +205,14 @@ pub async fn worker_shutdown(
     container_id: Uuid,
     file_id: Uuid,
     thumbnail_key: Option<String>,
+    memory_payload: Option<serde_json::Value>,
     jwt: &str,
 ) -> Result<ShutdownResponse> {
     let request = ShutdownRequest {
         container_id,
         file_id,
         thumbnail_key,
+        memory_payload,
     };
 
     worker_post_request::<ShutdownRequest, ShutdownResponse>(

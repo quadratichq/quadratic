@@ -33,6 +33,7 @@ pub mod formats;
 pub mod formatting;
 mod ids;
 pub mod js_types;
+pub mod memory_payload;
 mod region_map;
 pub mod resize;
 pub mod search;

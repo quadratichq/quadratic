@@ -58,8 +58,8 @@ app.get('/health', (req, res) => {
 // Internal routes
 app.use('/v0/internal', internal_router);
 
-// Register all our dynamic routes, then register the error middleware last of all
-registerRoutes().then(() => {
+/** Resolves when all v0 routes and error middleware are registered. Server should listen only after this. */
+export const routesReady = registerRoutes().then(() => {
   // Error-logging middleware
   app.use((error: any, req: Request, res: Response, next: NextFunction) => {
     if (NODE_ENV !== 'test') {
@@ -137,20 +137,14 @@ async function registerRoutes() {
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
       } catch (err) {
-        logger.error('Failed to register route', { expressRoute, error: err });
+        logger.error('Failed to register route', { expressRoute, error: err, stack: err instanceof Error ? err.stack : undefined });
       }
     }
   }
 
-  // Keep around for debugging
-  // if (NODE_ENV !== 'production' && NODE_ENV !== 'test') {
-  //   console.log(
-  //     JSON.stringify({
-  //       message: 'Dynamically registered routes',
-  //       routes: registeredRoutes.map((route) => `\n  ${route}`).join(''),
-  //     })
-  //   );
-  // }
+  if (NODE_ENV !== 'production' && NODE_ENV !== 'test') {
+    logger.info('Registered v0 routes', { count: registeredRoutes.length, routes: registeredRoutes });
+  }
 }
 
 // Setup Sentry as the last route in the stack

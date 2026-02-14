@@ -695,6 +695,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetMemoryPayload':
+        this.send({
+          type: 'coreClientGetMemoryPayload',
+          id: e.data.id,
+          payload: core.getMemoryPayload(),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         this.send({
           type: 'coreClientDeleteColumns',

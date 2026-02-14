@@ -1,4 +1,5 @@
 import express from 'express';
+import aiMemoryPost from './file.$fileUuid.ai-memory.POST';
 import checkpointRead from './checkpoint.$fileUuid.GET';
 import checkpointPut from './checkpoint.$fileUuid.PUT';
 import { default as connectionGet, default as connectionListGet } from './connection.GET';
@@ -11,6 +12,7 @@ import syncedConnectionGet from './synced-connection.GET';
 
 const router = express.Router();
 
+router.use('/', aiMemoryPost);
 router.use('/', checkpointRead);
 router.use('/', checkpointPut);
 router.use('/', connectionGet);

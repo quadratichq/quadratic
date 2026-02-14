@@ -85,6 +85,8 @@ import type {
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
   CoreClientGetAITransactions,
+  CoreClientGetMemoryPayload,
+  MemoryPayload,
   CoreClientGetCellFormatSummary,
   CoreClientGetCellValue,
   CoreClientGetCodeCell,
@@ -519,6 +521,16 @@ class QuadraticCore {
         selections: args.selections,
         maxRows: args.maxRows,
       });
+    });
+  }
+
+  getMemoryPayload(): Promise<MemoryPayload | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetMemoryPayload) => {
+        resolve(message.payload);
+      };
+      this.send({ type: 'clientCoreGetMemoryPayload', id });
     });
   }
 

@@ -19,7 +19,7 @@ services:
       - all
 
   postgres:
-    image: postgres:17.4
+    image: pgvector/pgvector:pg17
     container_name: postgres
     restart: always
     ports:

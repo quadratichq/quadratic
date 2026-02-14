@@ -1,5 +1,8 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { useEmptyChatSuggestionsSync } from '@/app/ai/hooks/useEmptyChatSuggestionsSync';
+import { useAiMemoryTrigger } from '@/app/ai/memory/useAiMemoryTrigger';
+import { showAiMemoryMindMapAtom } from '@/app/atoms/aiMemoryAtom';
+import { AiMemoryMindMap } from '@/app/ui/menus/AiMemory/AiMemoryMindMap';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import {
@@ -51,6 +54,7 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
+import { useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -97,9 +101,13 @@ export default function QuadraticUI() {
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
   // See if the aiAnalyst is running
   const aiAnalystLoading = useRecoilValue(aiAnalystLoadingAtom);
+  const [showMindMap, setShowMindMap] = useAtom(showAiMemoryMindMapAtom);
 
   // Sync empty chat suggestions with sheet data changes
   useEmptyChatSuggestionsSync();
+
+  // Trigger AI memory generation when code cells are updated
+  useAiMemoryTrigger();
 
   const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
   useEffect(() => {
@@ -230,6 +238,7 @@ export default function QuadraticUI() {
       <SettingsDialog />
       <ChangelogDialog />
       {!isEmbed && <FeatureWalkthrough />}
+      {showMindMap && <AiMemoryMindMap onClose={() => setShowMindMap(false)} />}
     </div>
   );
 }

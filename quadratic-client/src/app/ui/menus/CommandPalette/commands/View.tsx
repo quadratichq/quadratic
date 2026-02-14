@@ -1,3 +1,4 @@
+import { showAiMemoryMindMapAtom } from '@/app/atoms/aiMemoryAtom';
 import {
   presentationModeAtom,
   showCellTypeOutlinesAtom,
@@ -6,17 +7,35 @@ import {
   showHeadingsAtom,
   showScrollbarsAtom,
 } from '@/app/atoms/gridSettingsAtom';
+import { editorInteractionStateShowCommandPaletteAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { zoomIn, zoomOut, zoomReset, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { ZoomInIcon, ZoomOutIcon } from '@/shared/components/Icons';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { useRecoilState } from 'recoil';
+import { useSetAtom } from 'jotai';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 const commands: CommandGroup = {
   heading: 'View',
   commands: [
+    {
+      label: 'AI memory mind map',
+      Component: (props) => {
+        const setShowMindMap = useSetAtom(showAiMemoryMindMapAtom);
+        const setShowCommandPalette = useSetRecoilState(editorInteractionStateShowCommandPaletteAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => {
+              setShowMindMap(true);
+              setShowCommandPalette(false);
+            }}
+          />
+        );
+      },
+    },
     {
       label: 'Row and column headings',
       Component: (props) => {

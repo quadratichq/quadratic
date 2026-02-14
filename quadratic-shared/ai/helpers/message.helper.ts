@@ -15,6 +15,7 @@ import type {
   SystemMessage,
   TextContent,
   TextFileContent,
+  ToolResult,
   ToolResultContextType,
   ToolResultMessage,
   UserMessagePrompt,
@@ -200,8 +201,10 @@ export const isInternalMessage = (message: ChatMessage): message is InternalMess
   return message.role === 'internal';
 };
 
-export const isContentText = (content: Content[number] | AIResponseContent[number]): content is TextContent => {
-  return content.type === 'text';
+export const isContentText = (
+  content: Content[number] | AIResponseContent[number] | ToolResult
+): content is TextContent => {
+  return 'type' in content && content.type === 'text';
 };
 
 export const isContentThinking = (

@@ -525,6 +525,16 @@ impl Worker {
         Ok(())
     }
 
+    /// Extract AI memory payload from the current grid state.
+    /// Returns a JSON value that can be forwarded to the API for summarization.
+    pub async fn extract_memory_payload(&self) -> Result<serde_json::Value> {
+        let grid = self.file.lock().await;
+        let payload = grid.extract_memory_payload();
+        serde_json::to_value(&payload).map_err(|e| {
+            CoreCloudError::Unknown(format!("Failed to serialize memory payload: {e}"))
+        })
+    }
+
     /// Leave the room for a given file.
     pub async fn leave_room(&mut self) -> Result<()> {
         tracing::trace!("Worker] Leaving room for file {}", self.file_id);
