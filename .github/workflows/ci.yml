@@ -118,6 +118,12 @@ jobs:
           curl -fsSL https://deno.land/install.sh | sh
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
 
+      - name: Verify Deno for core-cloud and cloud-worker
+        if: matrix.package == 'core-cloud' || matrix.package == 'cloud-worker'
+        run: |
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version
+
       - name: Setup Python for core-cloud tests
         if: matrix.package == 'core-cloud'
         uses: useblacksmith/setup-python@v6
@@ -168,6 +174,9 @@ jobs:
           SSL_CERT_DIR: /etc/ssl/certs
           DATABASE_DSN: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
         run: |
+          if [ "${{ matrix.package }}" = "core-cloud" ] || [ "${{ matrix.package }}" = "cloud-worker" ]; then
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
 
@@ -323,9 +332,12 @@ jobs:
 
       - name: Build core
         run: |
-          npm run build:dev --workspace=quadratic-core & \
-          npm run export_types --workspace=quadratic-core & \
-          wait
+          npm run build:dev --workspace=quadratic-core &
+          BUILD_PID=$!
+          npm run export_types --workspace=quadratic-core &
+          TYPES_PID=$!
+          wait $BUILD_PID || exit 1
+          wait $TYPES_PID || exit 1
 
       - name: Build python
         run: |
@@ -601,9 +613,12 @@ jobs:
 
       - name: Build core
         run: |
-          npm run build:dev --workspace=quadratic-core & \
-          npm run export_types --workspace=quadratic-core & \
-          wait
+          npm run build:dev --workspace=quadratic-core &
+          BUILD_PID=$!
+          npm run export_types --workspace=quadratic-core &
+          TYPES_PID=$!
+          wait $BUILD_PID || exit 1
+          wait $TYPES_PID || exit 1
 
       - name: Lint quadratic-client
         run: |
