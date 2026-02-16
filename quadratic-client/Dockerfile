@@ -234,6 +234,11 @@ RUN apk add --no-cache curl brotli pigz
 # Copy build directory
 COPY --from=vite-builder /quadratic/build /usr/share/nginx/html
 
+# Embed test page (for preview / local testing)
+COPY test/embed/test-embed.html /usr/share/nginx/html/embed-test/index.html
+COPY test/embed/test-embed.css /usr/share/nginx/html/embed-test/test-embed.css
+COPY test/embed/test-embed.js /usr/share/nginx/html/embed-test/test-embed.js
+
 EXPOSE 80 443 3000
 
 CMD ["nginx", "-g", "daemon off;"]

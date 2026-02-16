@@ -19,10 +19,25 @@ export const ROUTES = {
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
-  EMBED: ({ fileId, importUrl }: { fileId?: string; importUrl?: string }) => {
+  EMBED: ({
+    fileId,
+    importUrl,
+    readonly,
+    sheet,
+    preload,
+  }: {
+    fileId?: string;
+    importUrl?: string;
+    readonly?: boolean;
+    sheet?: string;
+    preload?: ('python' | 'js')[];
+  }) => {
     const params = new URLSearchParams();
     if (fileId) params.set('fileId', fileId);
     if (importUrl) params.set('import', importUrl);
+    if (readonly) params.set('readonly', '');
+    if (sheet?.trim()) params.set('sheet', sheet.trim());
+    if (preload?.length) params.set('preload', preload.join(','));
     return `/embed?${params.toString()}`;
   },
   EMBED_CLAIM: (token: string) => `/embed/claim/${token}`,

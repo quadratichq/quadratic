@@ -15,7 +15,7 @@
         <input
           type="text"
           id="urlInput"
-          placeholder="Enter embed URL (e.g., http://localhost:3000/embed?fileId=xxx)"
+          placeholder=""
           value=""
           autocomplete="off"
         />
@@ -54,7 +54,7 @@
       <button id="copyUrlBtn" class="copy-btn" style="display: none;" onclick="copyCurrentUrl()">Copy</button>
       <br><br>
       <strong>Instructions:</strong><br>
-      1. Enter an embed URL (e.g., <code>http://localhost:3000/embed?fileId=xxx</code> or <code>https://app.quadratichq.com/embed?import=https://localhost:8080/excel-formulas.xlsx</code>)<br>
+      1. Enter an embed URL (e.g., <code id="exampleUrlFileId"></code> or <code id="exampleUrlImport"></code>)<br>
       2. Click "Load" to test the embed<br>
       3. If using <code>fileId</code>, the Quadratic file needs to be shared with the public (can be view or edit)<br>
       3. Your last URL will be saved and automatically loaded on next visit<br>

@@ -243,6 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const urlInput = document.getElementById('urlInput');
   const urlListDropdown = document.getElementById('urlListDropdown');
 
+  const origin = window.location.origin;
+  urlInput.placeholder = `Enter embed URL (e.g., ${origin}/embed?fileId=xxx)`;
+  const exampleFileId = document.getElementById('exampleUrlFileId');
+  const exampleImport = document.getElementById('exampleUrlImport');
+  if (exampleFileId) exampleFileId.textContent = `${origin}/embed?fileId=xxx`;
+  if (exampleImport) exampleImport.textContent = `${origin}/embed?import=...`;
+
   urlInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
       urlListDropdown.classList.remove('show');

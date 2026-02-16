@@ -21,7 +21,6 @@ export function PermissionOverlay() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
-    team: { uuid: teamUuid },
     userMakingRequest: { requiresUpgradeToEdit },
   } = useFileRouteLoaderDataRequired();
   const location = useLocation();

@@ -5,14 +5,26 @@ import { syncFileLocation } from '@/shared/atom/fileLocationAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { GroupAddIcon, GroupIcon, GroupOffIcon, MailIcon, PublicIcon, PublicOffIcon } from '@/shared/components/Icons';
+import {
+  ChevronRightIcon,
+  CodeIcon,
+  GroupAddIcon,
+  GroupIcon,
+  GroupOffIcon,
+  MailIcon,
+  PublicIcon,
+  PublicOffIcon,
+} from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, DOCUMENTATION_EMBED_URL } from '@/shared/constants/urls';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/shadcn/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
 import {
   Select,
   SelectContent,
@@ -21,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/shadcn/ui/select';
+import { Separator } from '@/shared/shadcn/ui/separator';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -279,11 +292,13 @@ function ShareFileDialogBody({
   data,
   upgradeMember,
   setUpgradeMember,
+  currentSheetName,
 }: {
   uuid: string;
   data: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
   upgradeMember: UpgradeMember;
   setUpgradeMember: SetUpgradeMember;
+  currentSheetName?: string;
 }) {
   const {
     file: { publicLinkAccess },
@@ -430,6 +445,9 @@ function ShareFileDialogBody({
       {pendingInvites.map((invite, i) => (
         <ManageInvite key={i} invite={invite} />
       ))}
+
+      <Separator />
+      <ListItemEmbed uuid={uuid} publicLinkAccess={publicLinkAccess} currentSheetName={currentSheetName} />
     </>
   );
 }
@@ -624,7 +642,17 @@ function CopyLinkButton({
 type UpgradeMember = { email: string; role: UserFileRole; showUpgrade?: boolean } | null;
 type SetUpgradeMember = React.Dispatch<React.SetStateAction<UpgradeMember>>;
 
-export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
+export function ShareFileDialog({
+  uuid,
+  name,
+  onClose,
+  currentSheetName,
+}: {
+  uuid: string;
+  name: string;
+  onClose: () => void;
+  currentSheetName?: string;
+}) {
   const fetcher = useFetcher<FilesSharingLoader>();
   const loadState = useMemo(() => (!fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED'), [fetcher]);
 
@@ -714,6 +742,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
               data={loaderData}
               setUpgradeMember={setUpgradeMember}
               upgradeMember={upgradeMember}
+              currentSheetName={currentSheetName}
             />
           )}
         </DialogBody>
@@ -1272,6 +1301,166 @@ function ListItemPublicLink({
         </Select>
       </div>
     </ListItem>
+  );
+}
+
+function ListItemEmbed({
+  uuid,
+  publicLinkAccess,
+  currentSheetName,
+}: {
+  uuid: string;
+  publicLinkAccess: PublicLinkAccess;
+  currentSheetName?: string;
+}) {
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [embedReadonly, setEmbedReadonly] = useState(false);
+  const [embedSheet, setEmbedSheet] = useState('');
+  const [preloadPython, setPreloadPython] = useState(false);
+  const [preloadJS, setPreloadJS] = useState(false);
+
+  const isPublic = publicLinkAccess !== 'NOT_SHARED';
+
+  const embedUrl = useMemo(() => {
+    if (!isPublic) return '';
+    const preload: ('python' | 'js')[] = [];
+    if (preloadPython) preload.push('python');
+    if (preloadJS) preload.push('js');
+    return (
+      window.location.origin +
+      ROUTES.EMBED({
+        fileId: uuid,
+        readonly: embedReadonly || undefined,
+        sheet: embedSheet.trim() || undefined,
+        preload: preload.length ? preload : undefined,
+      })
+    );
+  }, [uuid, isPublic, embedReadonly, embedSheet, preloadPython, preloadJS]);
+
+  const handleCopyEmbedLink = useCallback(() => {
+    if (!embedUrl) return;
+    trackEvent('[FileSharing].embed.clickCopyLink');
+    navigator.clipboard
+      .writeText(embedUrl)
+      .then(() => {
+        addGlobalSnackbar('Copied embed link to clipboard.');
+      })
+      .catch(() => {
+        addGlobalSnackbar('Failed to copy embed link to clipboard.', { severity: 'error' });
+      });
+  }, [embedUrl, addGlobalSnackbar]);
+
+  const handleCopyEmbedHtml = useCallback(() => {
+    if (!embedUrl) return;
+    trackEvent('[FileSharing].embed.clickCopyHtml');
+    const iframe = `<iframe src="${embedUrl}" width="100%" height="600" style="border: none;"></iframe>`;
+    navigator.clipboard
+      .writeText(iframe)
+      .then(() => {
+        addGlobalSnackbar('Copied embed HTML to clipboard.');
+      })
+      .catch(() => {
+        addGlobalSnackbar('Failed to copy embed HTML to clipboard.', { severity: 'error' });
+      });
+  }, [embedUrl, addGlobalSnackbar]);
+
+  const sheetPlaceholder = currentSheetName ? `e.g. ${currentSheetName}` : 'e.g. Sheet1';
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <CollapsibleTrigger asChild>
+        <button className="flex w-full cursor-pointer items-center gap-3 rounded-sm py-1 hover:bg-accent">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <CodeIcon />
+          </div>
+          <Type variant="body2">Embed</Type>
+          <ChevronRightIcon
+            className={cn('ml-auto text-muted-foreground transition-transform', expanded ? 'rotate-90' : '-rotate-90')}
+          />
+        </button>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent>
+        <div className="flex flex-col gap-3 pb-1 pl-9 pt-2">
+          {isPublic ? (
+            <>
+              <div className="flex gap-6">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="embed-readonly"
+                      checked={embedReadonly}
+                      onCheckedChange={(checked) => setEmbedReadonly(checked === true)}
+                    />
+                    <Label htmlFor="embed-readonly" className="cursor-pointer text-sm font-normal">
+                      Read-only
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="embed-preload-python"
+                      checked={preloadPython}
+                      onCheckedChange={(checked) => setPreloadPython(checked === true)}
+                    />
+                    <Label htmlFor="embed-preload-python" className="cursor-pointer text-sm font-normal">
+                      Preload Python
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="embed-preload-js"
+                      checked={preloadJS}
+                      onCheckedChange={(checked) => setPreloadJS(checked === true)}
+                    />
+                    <Label htmlFor="embed-preload-js" className="cursor-pointer text-sm font-normal">
+                      Preload JavaScript
+                    </Label>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="embed-sheet" className="text-sm font-normal">
+                    Only show sheet
+                  </Label>
+                  <Input
+                    id="embed-sheet"
+                    className="h-7 w-28"
+                    placeholder={sheetPlaceholder}
+                    value={embedSheet}
+                    onChange={(e) => setEmbedSheet(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Anyone with the link can view or edit an embedded file. To save changes, they{'\u2019'}ll need to log in
+                to Quadratic, which creates a copy of the file in their account.{' '}
+                <a
+                  href={DOCUMENTATION_EMBED_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline hover:no-underline"
+                >
+                  Learn more
+                </a>
+              </p>
+              <Input className="h-8 text-xs" readOnly value={embedUrl} onClick={(e) => e.currentTarget.select()} />
+              <div className="flex items-center justify-end gap-2">
+                <Button variant="secondary" onClick={handleCopyEmbedLink}>
+                  Copy link
+                </Button>
+                <Button variant="secondary" onClick={handleCopyEmbedHtml}>
+                  Copy HTML
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Type variant="caption" className="text-muted-foreground">
+              Share publicly above to get an embed link.
+            </Type>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 

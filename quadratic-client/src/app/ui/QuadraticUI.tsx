@@ -11,6 +11,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { QuadraticGrid } from '@/app/gridGL/QuadraticGrid';
 import { isAiDisabled, isEmbed } from '@/app/helpers/isEmbed';
@@ -211,7 +212,14 @@ export default function QuadraticUI() {
       {/* Global overlay menus */}
       {canEditFile && isAuthenticated && !isAiDisabled && <AIGetFileName />}
       <FeedbackMenu />
-      {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
+      {showShareFileMenu && (
+        <ShareFileDialog
+          onClose={() => setShowShareFileMenu(false)}
+          name={name}
+          uuid={uuid}
+          currentSheetName={sheets.sheet.name}
+        />
+      )}
       {presentationMode && <PresentationModeHint />}
       {showCellTypeMenu && <CellTypeMenu />}
       {showCommandPalette && <CommandPalette />}
