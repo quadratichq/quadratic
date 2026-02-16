@@ -138,13 +138,6 @@ vi.mock('./ContextBuilder', () => ({
   ContextBuilder: class MockContextBuilder {},
 }));
 
-vi.mock('./SlimContextBuilder', () => ({
-  slimContextBuilder: {
-    buildContext: mockContextBuilderBuildContext,
-  },
-  SlimContextBuilder: class MockSlimContextBuilder {},
-}));
-
 vi.mock('./ToolExecutor', () => ({
   toolExecutor: {
     executeToolCalls: mockToolExecutorExecuteToolCalls,

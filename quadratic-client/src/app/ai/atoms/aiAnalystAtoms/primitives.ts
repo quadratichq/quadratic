@@ -55,15 +55,6 @@ export const chatsAtom = atom<Chat[]>([]);
 export const currentChatBaseAtom = atom<Chat>(createDefaultChat());
 
 // ============================================================================
-// Subagent Session Atoms
-// ============================================================================
-
-/** Subagent sessions keyed by subagent type (e.g., 'data_finder') */
-export const subagentSessionsAtom = atom<Record<string, import('quadratic-shared/typesAndSchemasAI').SubagentSession>>(
-  {}
-);
-
-// ============================================================================
 // Feature State Atoms
 // ============================================================================
 

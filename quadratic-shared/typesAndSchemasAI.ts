@@ -1,6 +1,7 @@
-import { AgentType } from 'quadratic-shared/ai/agents';
-import { AITool, AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { ConnectionType, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 
 // ============================================================================
@@ -370,10 +371,6 @@ export interface AIToolCall {
   name: string;
   arguments: string;
   loading: boolean;
-  /** Model key that made this tool call (for debug display, especially subagent calls) */
-  modelKey?: string;
-  /** If true, this tool call is internal (e.g., from subagent) and should not be sent to the API */
-  internal?: boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -462,27 +459,6 @@ export interface Chat {
 }
 
 // ----------------------------------------------------------------------------
-// Subagent Session Types
-// ----------------------------------------------------------------------------
-
-/**
- * Represents a persistent subagent session with its own message history.
- * Sessions are isolated from the main agent and only return summaries.
- */
-export interface SubagentSession {
-  /** Unique identifier for this session */
-  id: string;
-  /** The subagent type (e.g., 'data_finder') */
-  type: string;
-  /** The subagent's isolated message history */
-  messages: ChatMessage[];
-  /** Timestamp of last activity */
-  lastUpdated: number;
-  /** The last summary returned to the main agent */
-  lastSummary?: string;
-}
-
-// ----------------------------------------------------------------------------
 // Tool Args Types (Recursive)
 // ----------------------------------------------------------------------------
 
@@ -548,8 +524,6 @@ export interface AIRequestBody {
   useToolsPrompt: boolean;
   language?: CodeCellType;
   useQuadraticContext: boolean;
-  /** Agent type for tool filtering (defaults to MainAgent if not specified) */
-  agentType?: AgentType;
 }
 
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
@@ -1142,14 +1116,6 @@ export const ChatSchema = z.object({
   messages: ChatMessagesSchema,
 }) satisfies z.ZodType<Chat>;
 
-export const SubagentSessionSchema = z.object({
-  id: z.string().uuid(),
-  type: z.string(),
-  messages: ChatMessagesSchema,
-  lastUpdated: z.number(),
-  lastSummary: z.string().optional(),
-}) satisfies z.ZodType<SubagentSession>;
-
 // ----------------------------------------------------------------------------
 // Tool Args Schemas (Recursive)
 // ----------------------------------------------------------------------------
@@ -1223,16 +1189,6 @@ const AISourceSchema = z.enum([
   'OptimizePrompt',
 ]) satisfies z.ZodType<AISource>;
 
-export const AgentTypeSchema = z.enum([
-  AgentType.MainAgent,
-  AgentType.MainAgentSlim,
-  AgentType.DataFinderSubagent,
-  AgentType.FormulaCoderSubagent,
-  AgentType.PythonCoderSubagent,
-  AgentType.JavascriptCoderSubagent,
-  AgentType.ConnectionCoderSubagent,
-]) satisfies z.ZodType<AgentType>;
-
 export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
@@ -1245,7 +1201,6 @@ export const AIRequestBodySchema = z.object({
   useToolsPrompt: z.boolean(),
   language: CodeCellTypeSchema.optional(),
   useQuadraticContext: z.boolean(),
-  agentType: AgentTypeSchema.optional(),
 }) satisfies z.ZodType<AIRequestBody>;
 
 // ----------------------------------------------------------------------------

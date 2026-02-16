@@ -2,17 +2,6 @@ import { z } from 'zod';
 import type { AIToolSpec } from '../aiToolsCore';
 import { AITool, booleanSchema, numberSchema, stringSchema } from '../aiToolsCore';
 
-/** Allowed subagent_type values for DelegateToSubagent. Single source of truth for schema and spec. */
-export const DELEGATE_SUBAGENT_TYPE_VALUES = [
-  'data_finder',
-  'formula_coder',
-  'python_coder',
-  'javascript_coder',
-  'connection_coder',
-] as const;
-
-export type DelegateSubagentType = (typeof DELEGATE_SUBAGENT_TYPE_VALUES)[number];
-
 // Zod schemas for misc tools
 export const miscToolsArgsSchemas = {
   [AITool.SetAIModel]: z.object({
@@ -99,12 +88,6 @@ export const miscToolsArgsSchemas = {
   }),
   [AITool.OptimizePrompt]: z.object({
     optimized_prompt: stringSchema,
-  }),
-  [AITool.DelegateToSubagent]: z.object({
-    subagent_type: z.enum(DELEGATE_SUBAGENT_TYPE_VALUES),
-    task: stringSchema,
-    context_hints: stringSchema.optional(),
-    reset: booleanSchema.optional(),
   }),
 } as const;
 
@@ -584,57 +567,5 @@ Be specific, detailed, and actionable in every bullet point.\n`,
       additionalProperties: false,
     },
     responseSchema: miscToolsArgsSchemas[AITool.OptimizePrompt],
-  },
-  [AITool.DelegateToSubagent]: {
-    sources: ['AIAnalyst'],
-    aiModelModes: ['fast', 'max', 'others'],
-    description: `Delegate a task to a specialized subagent. You MUST use this for ALL coding tasks - you cannot write code directly.
-
-Available subagent types:
-- data_finder: Finds and summarizes data in the spreadsheet. Returns cell ranges and descriptions.
-- formula_coder: Creates, edits, and debugs formula cells. Iterates until formulas work correctly. Provide data context (cell references, table names) via context_hints.
-- python_coder: Creates, edits, and debugs Python code cells. Uses print() for debugging, iterates until code works. IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1").
-- javascript_coder: Creates, edits, and debugs JavaScript code cells. Uses console.log() for debugging, iterates until code works. IMPORTANT: Always provide placement location in context_hints (e.g., "Place at E1").
-- connection_coder: Fetches database schemas and creates, edits, and debugs SQL connection cells. Iterates until queries work correctly.
-
-IMPORTANT: You do not have direct access to code writing tools. You MUST delegate to the appropriate subagent:
-- Formulas → formula_coder
-- Python code → python_coder
-- JavaScript code → javascript_coder
-- SQL queries → connection_coder
-- Data exploration → data_finder
-
-For coding subagents, provide data context via context_hints (cell values, table names, existing code, error messages).
-
-Session management:
-- Subagent sessions persist between calls for follow-up work on the same task
-- Use reset=true when: the user asks for something NEW/UNRELATED, wants to "start over", or you're working on a DIFFERENT code cell/task
-- Use reset=false (or omit) when: continuing to debug the same code, making incremental changes, or following up on the same task`,
-    parameters: {
-      type: 'object',
-      properties: {
-        subagent_type: {
-          type: 'string',
-          description: `Type of subagent: ${DELEGATE_SUBAGENT_TYPE_VALUES.map((v) => `"${v}"`).join(', ')}.`,
-        },
-        task: {
-          type: 'string',
-          description: 'Description of what the subagent should do.',
-        },
-        context_hints: {
-          type: 'string',
-          description:
-            'Context from the conversation: data values, table names, cell references, PLACEMENT LOCATION for code output (e.g., "Place at E1" or "Place right of table at D1"), existing code, error messages, etc. Always specify where the code should be placed to avoid overlapping existing data.',
-        },
-        reset: {
-          type: 'boolean',
-          description:
-            'Set to true when starting a NEW/UNRELATED task, working on a DIFFERENT code cell, or the user wants to "start over". Set to false or omit when continuing/debugging the same task.',
-        },
-      },
-      required: ['subagent_type', 'task', 'context_hints', 'reset'],
-      additionalProperties: false,
-    },
-    responseSchema: miscToolsArgsSchemas[AITool.DelegateToSubagent],
   },
 } as const;

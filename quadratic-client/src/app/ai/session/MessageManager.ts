@@ -1,11 +1,11 @@
 import {
+  compressOldToolResults,
   createTextContent,
   getMessagesForAI,
   getPromptAndInternalMessages,
   isAIPromptMessage,
   isContentFile,
   removeOldFilesInToolResult,
-  replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type {
   AIMessage,
@@ -164,7 +164,7 @@ export class MessageManager {
    */
   replaceOldToolCallResults(): ChatMessage[] {
     const messages = this.getMessages();
-    const updatedMessages = replaceOldGetToolCallResults(messages);
+    const updatedMessages = compressOldToolResults(messages);
     this.setMessages(updatedMessages);
     return updatedMessages;
   }

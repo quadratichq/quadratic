@@ -3,7 +3,6 @@ import './aiToolCardEditable.css';
 import { AIToolCard } from '@/app/ai/toolCards/AIToolCard';
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
-import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DEFAULT_FONT_SIZE } from '@/shared/constants/gridConstants';
 import { cn } from '@/shared/shadcn/utils';
 import { Editor } from '@monaco-editor/react';
@@ -16,23 +15,11 @@ interface AIToolCardEditableProps {
   onToolCallChange?: (toolCall: AIToolCall) => void;
 }
 export const AIToolCardEditable = memo(({ toolCall, onToolCallChange }: AIToolCardEditableProps) => {
-  const { debug } = useDebugFlags();
-
   const content = onToolCallChange ? (
     <AIToolCallEditor toolCall={toolCall} onToolCallChange={onToolCallChange} />
   ) : (
     <AIToolCard toolCall={toolCall} />
   );
-
-  // Show model key in debug mode if the tool call has one (e.g., from subagent)
-  if (debug && toolCall.modelKey) {
-    return (
-      <div>
-        <span className="text-xs text-muted-foreground">{toolCall.modelKey}</span>
-        {content}
-      </div>
-    );
-  }
 
   return content;
 });

@@ -1,4 +1,3 @@
-import { AgentType, isToolAllowedForAgent } from 'quadratic-shared/ai/agents';
 import type { AIToolSpecRecord } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
@@ -26,8 +25,6 @@ export interface FilterToolsOptions {
   aiModelMode: ModelMode;
   /** Optional specific tool to filter for */
   toolName?: AITool;
-  /** Agent type for role-based filtering (defaults to MainAgent) */
-  agentType?: AgentType;
 }
 
 /**
@@ -36,25 +33,14 @@ export interface FilterToolsOptions {
  * Filters tools based on:
  * - Source (e.g., AIAnalyst, AIAssistant)
  * - Model mode (e.g., fast, max)
- * - Agent type (e.g., MainAgent, MainAgentSlim, DataFinderSubagent)
  * - Specific tool name (if provided)
- *
- * This is the single source of truth for tool filtering logic.
  */
 export const getFilteredTools = (options: FilterToolsOptions): [AITool, AIToolSpecRecord[keyof AIToolSpecRecord]][] => {
-  const { source, aiModelMode, toolName, agentType } = options;
-
-  // Default to MainAgent if no agent type specified
-  const effectiveAgentType = agentType ?? AgentType.MainAgent;
+  const { source, aiModelMode, toolName } = options;
 
   return getAIToolsInOrder().filter(([name, toolSpec]) => {
     // Filter by model mode
     if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-
-    // Filter by agent type - prevents MainAgentSlim from seeing data exploration tools
-    if (!isToolAllowedForAgent(effectiveAgentType, name)) {
       return false;
     }
 

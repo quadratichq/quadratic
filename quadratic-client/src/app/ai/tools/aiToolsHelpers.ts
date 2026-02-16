@@ -5,7 +5,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIModelKey, AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 
 export const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
@@ -136,12 +136,6 @@ export type AIToolMessageMetaData = {
   source: AISource;
   chatId: string;
   messageIndex: number;
-  fileUuid?: string;
-  teamUuid?: string;
-  /** Model key used by the main agent (for subagents to inherit) */
-  modelKey?: AIModelKey;
-  /** Abort signal from the main session (for subagents to respect cancel) */
-  abortSignal?: AbortSignal;
 };
 
 export type AIToolActionsRecord = {
