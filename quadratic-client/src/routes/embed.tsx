@@ -131,7 +131,6 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     }
 
     // In embed mode, allow editing since changes are local only (unless readonly is set)
-    const url = new URL(request.url);
     const isReadonlyParam = url.searchParams.get('readonly') !== null;
     if (!isReadonlyParam && !data.userMakingRequest.filePermissions.includes(FilePermissionSchema.enum.FILE_EDIT)) {
       data.userMakingRequest.filePermissions = [
@@ -149,6 +148,8 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     return { mode: 'file', fileData: data };
   }
 
+  // Import URL is not validated (e.g. we allow http/localhost). This supports local dev
+  // and keeps behavior simple; a page that can set the embed URL could fetch any URL directly anyway.
   if (importUrl) {
     startupTimer.end('file.loader');
     return { mode: 'import', importUrl };

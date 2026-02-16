@@ -26,10 +26,13 @@ You can add query parameters to control how the embed behaves.
 
 | Parameter   | Description |
 |------------|-------------|
-| `fileId`   | **Required** for embedding an existing file. The file’s UUID (from the Quadratic URL or Share dialog). |
+| `fileId`   | **Required** for embedding an existing file. The file’s UUID (from the Quadratic URL or Share dialog). Omit when using `import` or blank. |
+| `import`   | URL of a file to import (CSV, Excel, Parquet, or Quadratic grid). The file is fetched and opened in the embed. See [Embedding with imported Excel or CSV files](#embedding-with-imported-excel-or-csv-files). |
 | `readonly` | If present, the embed loads in read-only mode. Viewers cannot edit cells or run code. |
 | `sheet`    | Name of a single sheet to display. When set, only that sheet is shown and the sheet bar is hidden. Omit to show all sheets. |
 | `preload`  | Comma-separated list of runtimes to preload for faster first run: `python`, `js`, or `python,js`. |
+
+The `fileId` and `import` parameters are mutually exclusive: use `fileId` to embed an existing Quadratic file, or `import` with a URL to load CSV/Excel/Parquet/grid from the web. Omit both for a blank spreadsheet.
 
 ### Examples
 
@@ -41,6 +44,29 @@ You can add query parameters to control how the embed behaves.
 
 - Preload Python and JavaScript:
   `https://app.quadratichq.com/embed?fileId=abc-123&preload=python,js`
+
+## Embedding with imported Excel or CSV files
+
+You can embed Quadratic and have it load a spreadsheet from a URL instead of an existing Quadratic file. Use the `import` parameter with the full URL of the file. The file is fetched when the embed loads and opened in the viewer; no Quadratic file is created unless the user signs in and saves a copy.
+
+**Supported formats:**
+
+- **CSV** (`.csv`)
+- **Excel** (`.xlsx`, `.xls`)
+- **Parquet** (`.parquet`)
+- **Quadratic grid** (`.grid`)
+
+The format is inferred from the URL path (the file extension). The URL must be publicly accessible so the embed can fetch it (same-origin or CORS permitting).
+
+**Examples:**
+
+- Import a CSV from your site:
+  `https://app.quadratichq.com/embed?import=https://yoursite.com/data/sales.csv`
+
+- Import an Excel file (read-only):
+  `https://app.quadratichq.com/embed?import=https://yoursite.com/reports/q4.xlsx&readonly`
+
+You can combine `import` with other embed parameters (`readonly`, `sheet`, `preload`) the same way as with `fileId`.
 
 ## Adding the embed to your site
 
@@ -65,4 +91,4 @@ Adjust `width` and `height` to fit your layout. The Share dialog’s **Copy HTML
 
 ## Viewing and editing in the embed
 
-Anyone with the link can open the embed. If the file is shared as **Can edit**, they can change cells and run code in the browser. Those changes are **not** saved back to your file unless the viewer signs in to Quadratic. If they log in and want to keep their changes, they can save a **copy** of the file to their own account. So your original file stays under your control; embedded viewers get a full experience but saving requires a Quadratic account and creates their own copy.
+Anyone with the link can open the embed. They can change cells and run code in the browser regardless of whether the file is shared as **Can view** or **Can edit**. Those changes are **not** saved back to your file unless the viewer signs in to Quadratic. If they log in and want to keep their changes, they can save a **copy** of the file to their own account. So your original file stays under your control; embedded viewers get a full experience but saving requires a Quadratic account and creates their own copy.

@@ -99,10 +99,6 @@ export function getHasSharedArrayBuffer(): boolean {
   return !currentIsEmbed && !_forceNoSAB && typeof SharedArrayBuffer !== 'undefined';
 }
 
-// For backwards compatibility - initial value
-// Note: Workers should use getHasSharedArrayBuffer() after calling configureSABSupport
-export const hasSharedArrayBuffer = getHasSharedArrayBuffer();
-
 /**
  * Whether the page is cross-origin isolated.
  * This is a more specific check that indicates the required headers are set.

@@ -80,11 +80,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/embed/c
 
   const team = userTeamRole.team;
 
-  // Download the file from storage (with retries since upload may still be in progress)
+  // Download the file from storage (with retries since upload may still be in progress).
+  // Uses exponential backoff with jitter to avoid predictable timing.
   logger.info('[Embed Claim] Starting file download with retries...');
   let fileBuffer: Buffer | null = null;
-  const maxRetries = 10;
-  const retryDelayMs = 1000;
+  const maxRetries = 8;
+  const baseDelayMs = 500;
+  const maxDelayMs = 5000;
+
+  // If the record was created recently, the upload is likely still in progress
+  const recordAgeMs = Date.now() - unclaimedFile.createdDate.getTime();
+  const skipRetries = recordAgeMs > 60_000;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -94,19 +100,32 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/embed/c
       });
       fileBuffer = await getUnclaimedFile(unclaimedFile.storageKey);
       logger.info('[Embed Claim] File downloaded successfully', { size: fileBuffer.length });
-      break; // Success, exit loop
+      break;
     } catch (err) {
+      // If the record is old, the file should already be uploaded — don't retry
+      if (skipRetries) {
+        logger.error('[Embed Claim] File not found and record is old, skipping retries', {
+          storageKey: unclaimedFile.storageKey,
+          recordAgeMs,
+          error: String(err),
+        });
+        throw new ApiError(500, 'Failed to retrieve file data.');
+      }
+
       if (attempt < maxRetries - 1) {
-        // File not ready yet, wait and retry
+        const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
+        const jitter = Math.random() * baseDelayMs;
+        const delay = Math.min(exponentialDelay + jitter, maxDelayMs);
+
         logger.info('[Embed Claim] File not ready, retrying...', {
           storageKey: unclaimedFile.storageKey,
           attempt: attempt + 1,
           maxRetries,
+          delayMs: Math.round(delay),
           error: String(err),
         });
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       } else {
-        // Final attempt failed
         logger.error('[Embed Claim] Failed to download unclaimed file from storage after retries', {
           storageKey: unclaimedFile.storageKey,
           error: err,

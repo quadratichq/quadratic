@@ -17,15 +17,11 @@ const schema = z.object({
 
 async function handler(req: Request, res: Response<ApiTypes['/v0/embed/upload-request.POST.response']>) {
   const {
-    body: { version, claimToken },
+    body: { version },
   } = parseRequest(req, schema);
 
+  const claimToken = crypto.randomUUID();
   logger.info('[Embed Upload] Received upload request', { claimToken, version });
-
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(claimToken)) {
-    throw new ApiError(400, 'Invalid claim token format');
-  }
 
   const storageKey = `unclaimed/${claimToken}.grid`;
   logger.info('[Embed Upload] Storage key:', { storageKey });
@@ -33,8 +29,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/embed/upload-re
   // Set expiration to 24 hours from now
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  // Create the unclaimed file record (client provides the claim token)
-  logger.info('[Embed Upload] Creating unclaimed file record in database...');
   await dbClient.unclaimedFile.create({
     data: {
       claimToken,
@@ -45,18 +39,16 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/embed/upload-re
   });
   logger.info('[Embed Upload] Database record created');
 
-  // Generate presigned upload URL (1 hour validity)
-  logger.info('[Embed Upload] Generating presigned upload URL...');
   const uploadUrl = await getUnclaimedFileUploadUrl(storageKey);
   logger.info('[Embed Upload] Upload URL generated');
 
-  // Fire-and-forget cleanup of expired unclaimed files (non-blocking)
   void cleanupExpiredUnclaimedFiles().catch((err) => {
     logger.error('Failed to cleanup expired unclaimed files', err);
   });
 
   return res.status(200).json({
     uploadUrl,
+    claimToken,
   });
 }
 
@@ -80,8 +72,8 @@ async function cleanupExpiredUnclaimedFiles(): Promise<void> {
       logger.warn('Failed to delete storage object for unclaimed file', { storageKey: file.storageKey, error: err });
     }
 
-    // Delete the database record
-    await dbClient.unclaimedFile.delete({ where: { id: file.id } });
+    // Delete the database record (deleteMany is idempotent if another request already deleted it)
+    await dbClient.unclaimedFile.deleteMany({ where: { id: file.id } });
   }
 
   if (expired.length > 0) {

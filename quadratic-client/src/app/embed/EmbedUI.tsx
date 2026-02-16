@@ -17,7 +17,6 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Button to open the file in the full Quadratic app.
@@ -31,25 +30,16 @@ const EditInQuadraticButton = ({ showSheetBar }: { showSheetBar: boolean }) => {
     setIsLoading(true);
     setError(null);
 
-    // 1. Generate claim token client-side
-    const claimToken = uuidv4();
-
-    // 2. Open the Quadratic app immediately (avoids popup blockers)
-    // Redirect to the dedicated claim page after login
-    const baseUrl = window.location.origin;
-    const postAuthUrl = ROUTES.EMBED_CLAIM(claimToken);
-    const redirectUrl = `${baseUrl}${ROUTES.LOGIN}?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(postAuthUrl)}`;
-    window.open(redirectUrl, '_blank');
-
     try {
-      // 3. Export the grid to Uint8Array
       const gridData = await quadraticCore.export();
 
-      // 4. Get presigned upload URL from API (passing our claim token)
-      const { uploadUrl } = await apiClient.embed.uploadRequest({ version: FILE_VERSION, claimToken });
+      const { uploadUrl, claimToken } = await apiClient.embed.uploadRequest({ version: FILE_VERSION });
 
-      // 5. Upload the grid data to storage
-      // Create a copy backed by a regular ArrayBuffer to avoid SharedArrayBuffer compatibility issues
+      const baseUrl = window.location.origin;
+      const postAuthUrl = ROUTES.EMBED_CLAIM(claimToken);
+      const redirectUrl = `${baseUrl}${ROUTES.LOGIN}?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(postAuthUrl)}`;
+      window.open(redirectUrl, '_blank');
+
       const buffer = new Uint8Array(gridData).buffer;
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',

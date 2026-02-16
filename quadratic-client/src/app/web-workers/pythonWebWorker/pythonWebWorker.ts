@@ -18,6 +18,7 @@ class PythonWebWorker {
 
   private worker?: Worker;
   private initPromise?: Promise<void>;
+  private initReject?: (error: Error) => void;
 
   private send(message: ClientPythonMessage, port?: MessagePort) {
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
@@ -233,12 +234,28 @@ class PythonWebWorker {
 
   initWorker() {
     this.worker?.terminate();
-    this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), { type: 'module' });
-    this.worker.onmessage = this.handleMessage;
+    try {
+      this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), { type: 'module' });
+      this.worker.onmessage = this.handleMessage;
+      this.worker.onerror = (error) => {
+        console.error('[pythonWebWorker] Worker error:', error);
+        const errorObj = error.error instanceof Error ? error.error : new Error('Python worker error');
+        if (this.initReject) {
+          this.initReject(errorObj);
+          this.initReject = undefined;
+        }
+      };
 
-    const pythonCoreChannel = new MessageChannel();
-    this.send({ type: 'clientPythonCoreChannel', isEmbedMode: getIsEmbedMode() }, pythonCoreChannel.port1);
-    quadraticCore.sendPythonInit(pythonCoreChannel.port2);
+      const pythonCoreChannel = new MessageChannel();
+      this.send({ type: 'clientPythonCoreChannel', isEmbedMode: getIsEmbedMode() }, pythonCoreChannel.port1);
+      quadraticCore.sendPythonInit(pythonCoreChannel.port2);
+    } catch (error) {
+      if (this.initReject) {
+        this.initReject(error instanceof Error ? error : new Error(String(error)));
+        this.initReject = undefined;
+      }
+      throw error;
+    }
   }
 
   isInitialized(): boolean {
@@ -257,15 +274,35 @@ class PythonWebWorker {
     // Emit loading event when initialization starts
     events.emit('pythonLoading');
 
-    this.initPromise = new Promise<void>((resolve) => {
-      const onInit = () => {
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      this.initReject = reject;
+
+      const timeout = setTimeout(() => {
         events.off('pythonInit', onInit);
         this.initPromise = undefined;
+        this.initReject = undefined;
+        reject(new Error('Python worker initialization timed out'));
+      }, 30000);
+
+      const onInit = () => {
+        clearTimeout(timeout);
+        events.off('pythonInit', onInit);
+        this.initPromise = undefined;
+        this.initReject = undefined;
         resolve();
       };
 
       events.on('pythonInit', onInit);
-      this.initWorker();
+
+      try {
+        this.initWorker();
+      } catch (error) {
+        clearTimeout(timeout);
+        events.off('pythonInit', onInit);
+        this.initPromise = undefined;
+        this.initReject = undefined;
+        reject(error);
+      }
     });
 
     return this.initPromise;

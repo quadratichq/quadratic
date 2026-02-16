@@ -7,17 +7,20 @@ describe('POST /v0/embed/upload-request', () => {
   afterAll(clearDb);
 
   describe('successful requests', () => {
-    it('returns upload URL for client-provided claim token', async () => {
-      const claimToken = '00000000-0000-4000-8000-000000000100';
+    it('returns upload URL and server-generated claim token', async () => {
       const response = await request(app)
         .post('/v0/embed/upload-request')
-        .send({ version: '1.12', claimToken })
+        .send({ version: '1.12' })
         .expect(200);
 
       expect(response.body).toHaveProperty('uploadUrl');
       expect(response.body.uploadUrl).toMatch(/^https?:\/\//);
+      expect(response.body).toHaveProperty('claimToken');
+      expect(response.body.claimToken).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
 
-      // Verify an unclaimed file record was created in the database
+      const claimToken = response.body.claimToken;
       const unclaimedFile = await dbClient.unclaimedFile.findUnique({
         where: { claimToken },
       });
@@ -26,7 +29,6 @@ describe('POST /v0/embed/upload-request', () => {
       expect(unclaimedFile?.storageKey).toContain('unclaimed/');
       expect(unclaimedFile?.storageKey).toContain('.grid');
       expect(unclaimedFile?.expiresAt).toBeInstanceOf(Date);
-      // Expiration should be approximately 24 hours from now
       const now = new Date();
       const twentyThreeHours = 23 * 60 * 60 * 1000;
       const twentyFiveHours = 25 * 60 * 60 * 1000;
@@ -34,41 +36,25 @@ describe('POST /v0/embed/upload-request', () => {
       expect(unclaimedFile!.expiresAt.getTime() - now.getTime()).toBeLessThan(twentyFiveHours);
     });
 
-    it('creates different storage keys for different claim tokens', async () => {
-      const claimToken1 = '00000000-0000-4000-8000-000000000101';
-      const claimToken2 = '00000000-0000-4000-8000-000000000102';
-
+    it('creates different storage keys for different requests', async () => {
       const response1 = await request(app)
         .post('/v0/embed/upload-request')
-        .send({ version: '1.12', claimToken: claimToken1 })
+        .send({ version: '1.12' })
         .expect(200);
 
       const response2 = await request(app)
         .post('/v0/embed/upload-request')
-        .send({ version: '1.12', claimToken: claimToken2 })
+        .send({ version: '1.12' })
         .expect(200);
 
+      expect(response1.body.claimToken).not.toBe(response2.body.claimToken);
       expect(response1.body.uploadUrl).not.toBe(response2.body.uploadUrl);
     });
   });
 
   describe('bad requests', () => {
     it('rejects request without version', async () => {
-      await request(app)
-        .post('/v0/embed/upload-request')
-        .send({ claimToken: '00000000-0000-4000-8000-000000000200' })
-        .expect(400);
-    });
-
-    it('rejects request without claimToken', async () => {
-      await request(app).post('/v0/embed/upload-request').send({ version: '1.12' }).expect(400);
-    });
-
-    it('rejects request with invalid claimToken format', async () => {
-      await request(app)
-        .post('/v0/embed/upload-request')
-        .send({ version: '1.12', claimToken: 'not-a-uuid' })
-        .expect(400);
+      await request(app).post('/v0/embed/upload-request').send({}).expect(400);
     });
   });
 
@@ -91,11 +77,9 @@ describe('POST /v0/embed/upload-request', () => {
       });
       expect(expiredFile).not.toBeNull();
 
-      // Make a new upload request (which triggers cleanup)
-      const newClaimToken = '00000000-0000-4000-8000-000000000300';
       await request(app)
         .post('/v0/embed/upload-request')
-        .send({ version: '1.12', claimToken: newClaimToken })
+        .send({ version: '1.12' })
         .expect(200);
 
       // Give the async cleanup a moment to complete
