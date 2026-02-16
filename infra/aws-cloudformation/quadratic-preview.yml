@@ -152,6 +152,9 @@ Resources:
           BASETEN_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/BASETEN_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           FIREWORKS_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/FIREWORKS_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           OPEN_ROUTER_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPEN_ROUTER_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          AI_ALLOWANCE_PRO=$(aws ssm get-parameter --name "/quadratic-development/AI_ALLOWANCE_PRO" --with-decryption --query "Parameter.Value" --output text)
+          AI_ALLOWANCE_BUSINESS=$(aws ssm get-parameter --name "/quadratic-development/AI_ALLOWANCE_BUSINESS" --with-decryption --query "Parameter.Value" --output text)
+          AI_MARGIN=$(aws ssm get-parameter --name "/quadratic-development/AI_MARGIN" --with-decryption --query "Parameter.Value" --output text)
 
           # stripe
           STRIPE_SECRET_KEY=$(aws ssm get-parameter --name "/quadratic-development/STRIPE_SECRET_KEY" --with-decryption --query "Parameter.Value" --output text)
