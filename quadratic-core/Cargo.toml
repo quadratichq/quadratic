@@ -73,6 +73,7 @@ strum_macros = "0.27.1"
 tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.4.0"
 unicode-case-mapping = "1.0.0"
+# Pinned to 1.17.0 for compatibility with ts-rs and other deps; avoid changing without checking the dependency tree.
 uuid = { version = "=1.17.0", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "=0.4.39", features = ["serde", "wasmbind"] }
 
