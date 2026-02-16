@@ -56,8 +56,11 @@ anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.14.0"
+# getrandom requires wasm feature flags for wasm32-unknown-unknown.
+# These aren't used directly but enable the feature on transitive deps.
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 rand = "0.9"
 regex = "1.7"
 rstar = "0.12.2"
@@ -70,6 +73,7 @@ strum_macros = "0.27.1"
 tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.4.0"
 unicode-case-mapping = "1.0.0"
+# Pinned to 1.17.0 for compatibility with ts-rs and other deps; avoid changing without checking the dependency tree.
 uuid = { version = "=1.17.0", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "=0.4.39", features = ["serde", "wasmbind"] }
 
