@@ -1,8 +1,6 @@
 import { AgentType } from 'quadratic-shared/ai/agents';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AILanguagePreferences, AIModelKey, AISource, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
 
@@ -238,23 +236,31 @@ ${rules.join('\n\n')}
 /**
  * Search team memories by semantic similarity to the user's query
  * and return them as context messages for the AI.
+ * Uses scope-aware graph traversal to find directly relevant memories
+ * plus connected knowledge via the memory link network.
  */
 export const getMemoryContext = async (
   teamId: number,
-  userMessage: string
+  userMessage: string,
+  fileId?: number
 ): Promise<ChatMessage[]> => {
   try {
-    const { searchMemories } = await import('../memory/memoryService');
-    const memories = await searchMemories({
+    const { getMemoryContextWithNetwork } = await import('../memory/memoryRetrieval');
+    const memories = await getMemoryContextWithNetwork({
       teamId,
+      fileId,
       query: userMessage,
-      limit: 5,
+      maxMemories: 8,
     });
 
     if (memories.length === 0) return [];
 
     const memoryText = memories
-      .map((m) => `- **${m.title}** (${m.entityType}): ${m.summary}`)
+      .map((m) => {
+        const scope = m.scope === 'team' ? 'team pattern' : 'file';
+        const topic = m.topic ? ` [${m.topic}]` : '';
+        return `- **${m.title}** (${m.entityType}, ${scope}${topic}): ${m.summary}`;
+      })
       .join('\n');
 
     return [

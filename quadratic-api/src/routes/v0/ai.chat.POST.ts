@@ -19,8 +19,8 @@ import {
   getQuadraticContext,
   getToolUseContext,
 } from '../../ai/helpers/context.helper';
-import { generateChatInsight } from '../../ai/memory/memoryService';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
+import { generateChatInsight } from '../../ai/memory/memoryService';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
@@ -192,13 +192,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages = [...aiRulesContext, ...args.messages];
   }
 
-  // Add team memory context (semantic search for relevant memories)
+  // Add team memory context (scope-aware graph retrieval)
   const userText = userMessage.content
     .filter(isContentText)
     .map((c) => c.text)
     .join(' ');
   if (userText) {
-    const memoryContext = await getMemoryContext(ownerTeam.id, userText);
+    const memoryContext = await getMemoryContext(ownerTeam.id, userText, fileId);
     if (memoryContext.length > 0) {
       args.messages = [...memoryContext, ...args.messages];
     }
@@ -343,8 +343,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     }
   }
 
-  // Extract chat insight after enough exchanges (every 4 user messages)
-  if (messageType === 'userPrompt' && messageIndex >= 3 && messageIndex % 4 === 3) {
+  // Extract chat insight on every user prompt; the quality filter and topic merge handle deduplication
+  if (messageType === 'userPrompt') {
     const chatMessages = args.messages
       .filter((m) => m.contextType === 'userPrompt' || m.contextType === undefined)
       .map((m) => ({
@@ -353,6 +353,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           .filter(isContentText)
           .map((c) => c.text)
           .join(' '),
+        hasToolCalls: 'toolCalls' in m && Array.isArray(m.toolCalls) && m.toolCalls.length > 0,
+        toolNames:
+          'toolCalls' in m && Array.isArray(m.toolCalls) ? m.toolCalls.map((t: { name: string }) => t.name) : [],
       }))
       .filter((m) => m.content.trim().length > 0);
 

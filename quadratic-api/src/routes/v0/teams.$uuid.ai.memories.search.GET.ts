@@ -19,7 +19,8 @@ const schema = z.object({
       .string()
       .optional()
       .transform((v) => (v ? parseInt(v, 10) : 10)),
-    entityType: z.enum(['FILE', 'CODE_CELL', 'CONNECTION', 'CHAT_INSIGHT']).optional(),
+    entityType: z.enum(['FILE', 'CODE_CELL', 'DATA_TABLE', 'SHEET_TABLE', 'CONNECTION', 'CHAT_INSIGHT']).optional(),
+    scope: z.enum(['file', 'team']).optional(),
     fileId: z
       .string()
       .optional()
@@ -30,7 +31,7 @@ const schema = z.object({
 async function handler(req: Request, res: Response) {
   const {
     params: { uuid },
-    query: { q, limit, entityType, fileId },
+    query: { q, limit, entityType, scope, fileId },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -42,7 +43,15 @@ async function handler(req: Request, res: Response) {
     teamId: team.id,
     query: q,
     limit,
-    entityType: entityType as 'FILE' | 'CODE_CELL' | 'CONNECTION' | 'CHAT_INSIGHT' | undefined,
+    entityType: entityType as
+      | 'FILE'
+      | 'CODE_CELL'
+      | 'DATA_TABLE'
+      | 'SHEET_TABLE'
+      | 'CONNECTION'
+      | 'CHAT_INSIGHT'
+      | undefined,
+    scope: scope as 'file' | 'team' | undefined,
     fileId,
   });
 

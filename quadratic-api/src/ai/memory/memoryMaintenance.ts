@@ -1,6 +1,5 @@
 import type { AiMemoryEntityType } from '@prisma/client';
 import dbClient from '../../dbClient';
-import { generateEmbedding } from './memoryService';
 
 /**
  * Staleness detection: find memories whose associated file has been updated
@@ -130,6 +129,8 @@ export async function findDuplicateMemories(
     memoryId2: number;
     title1: string;
     title2: string;
+    version1: number;
+    version2: number;
     similarity: number;
   }>
 > {
@@ -139,6 +140,8 @@ export async function findDuplicateMemories(
       id2: number;
       title1: string;
       title2: string;
+      version1: number;
+      version2: number;
       similarity: number;
     }>
   >`
@@ -147,6 +150,8 @@ export async function findDuplicateMemories(
       m2.id as id2,
       m1.title as title1,
       m2.title as title2,
+      m1.version as version1,
+      m2.version as version2,
       1 - (m1.embedding <=> m2.embedding) as similarity
     FROM ai_memory m1
     JOIN ai_memory m2 ON m1.team_id = m2.team_id
@@ -164,6 +169,50 @@ export async function findDuplicateMemories(
     memoryId2: r.id2,
     title1: r.title1,
     title2: r.title2,
+    version1: r.version1,
+    version2: r.version2,
     similarity: r.similarity,
   }));
+}
+
+/**
+ * Delete the lower-version memory from each duplicate pair.
+ */
+async function deduplicateMemories(teamId: number): Promise<number> {
+  const duplicates = await findDuplicateMemories(teamId);
+  if (duplicates.length === 0) return 0;
+
+  // For each pair, delete the one with the lower version (less curated)
+  const idsToDelete = duplicates.map((d) => (d.version1 <= d.version2 ? d.memoryId1 : d.memoryId2));
+  const uniqueIds = [...new Set(idsToDelete)];
+
+  const result = await dbClient.aiMemory.deleteMany({
+    where: { id: { in: uniqueIds } },
+  });
+
+  return result.count;
+}
+
+/**
+ * Orchestrate all maintenance tasks: prune stale memories, deduplicate,
+ * and reindex the vector index.
+ */
+export async function runMaintenance(teamId: number): Promise<void> {
+  const pruned = await pruneStaleMemories(teamId);
+  if (pruned > 0) {
+    console.log(`[ai-memory] Pruned ${pruned} stale memories for team ${teamId}`);
+  }
+
+  const deduped = await deduplicateMemories(teamId);
+  if (deduped > 0) {
+    console.log(`[ai-memory] Deduplicated ${deduped} memories for team ${teamId}`);
+  }
+
+  // Rebuild the IVFFlat index without blocking reads/writes
+  try {
+    await dbClient.$executeRawUnsafe('REINDEX INDEX CONCURRENTLY ai_memory_embedding_idx');
+    console.log('[ai-memory] Reindexed vector index');
+  } catch (err) {
+    console.error('[ai-memory] Failed to reindex vector index:', err);
+  }
 }

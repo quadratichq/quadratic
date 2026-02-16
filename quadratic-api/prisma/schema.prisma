@@ -500,8 +500,15 @@ model UserBudgetLimit {
 enum AiMemoryEntityType {
     FILE
     CODE_CELL
+    DATA_TABLE
+    SHEET_TABLE
     CONNECTION
     CHAT_INSIGHT
+}
+
+enum AiMemoryScope {
+    file
+    team
 }
 
 model AiMemory {
@@ -511,7 +518,9 @@ model AiMemory {
     fileId     Int?               @map("file_id")
     file       File?              @relation(fields: [fileId], references: [id])
     entityType AiMemoryEntityType @map("entity_type")
-    entityId   String?            @map("entity_id")
+    entityId   String             @default("") @map("entity_id")
+    scope      AiMemoryScope      @default(file)
+    topic      String?
     title      String
     summary    String             @db.Text
     embedding  Unsupported("vector(768)")?
@@ -521,8 +530,30 @@ model AiMemory {
     createdAt  DateTime           @default(now()) @map("created_at")
     updatedAt  DateTime           @default(now()) @map("updated_at")
 
-    @@unique([teamId, fileId, entityType, entityId])
+    sourceLinks AiMemoryLink[] @relation("SourceMemory")
+    targetLinks AiMemoryLink[] @relation("TargetMemory")
+
+    // Unique dedup index is defined in the migration as an expression index
+    // using COALESCE(file_id, -1) to handle NULL file_id values.
     @@index([teamId, entityType])
     @@index([teamId, fileId])
+    @@index([teamId, scope])
+    @@index([teamId, topic])
     @@map("ai_memory")
+}
+
+model AiMemoryLink {
+    id           Int      @id @default(autoincrement())
+    sourceId     Int      @map("source_id")
+    source       AiMemory @relation("SourceMemory", fields: [sourceId], references: [id], onDelete: Cascade)
+    targetId     Int      @map("target_id")
+    target       AiMemory @relation("TargetMemory", fields: [targetId], references: [id], onDelete: Cascade)
+    relationship String
+    strength     Float    @default(0.5)
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    @@unique([sourceId, targetId])
+    @@index([sourceId])
+    @@index([targetId])
+    @@map("ai_memory_link")
 }

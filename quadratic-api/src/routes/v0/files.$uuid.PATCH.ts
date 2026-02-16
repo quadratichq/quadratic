@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { updateFileMemoryTitle } from '../../ai/memory/memoryService';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
@@ -51,14 +52,29 @@ async function handler(
   // Updating the name?
   //
   if (name !== undefined) {
-    const { name: newName } = await dbClient.file.update({
+    const {
+      name: newName,
+      id: fileId,
+      ownerTeamId: teamId,
+    } = await dbClient.file.update({
       where: {
         uuid,
       },
       data: {
         name,
       },
+      select: {
+        name: true,
+        id: true,
+        ownerTeamId: true,
+      },
     });
+
+    // Update AI memory title in the background (don't block the response)
+    updateFileMemoryTitle({ teamId, fileId, newFileName: newName }).catch((error) => {
+      console.error('Failed to update AI memory title:', error);
+    });
+
     return res.status(200).json({ name: newName });
   }
 

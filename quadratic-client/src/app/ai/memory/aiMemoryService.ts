@@ -26,7 +26,7 @@ export async function triggerMemoryGeneration(teamUuid: string, fileUuid: string
     if (!payload) return;
 
     // Skip empty files
-    if (payload.sheets.length === 0 && payload.codeCells.length === 0) return;
+    if (payload.sheets.length === 0 && payload.codeCells.length === 0 && payload.sheetTables.length === 0) return;
 
     await sendMemoryPayload(teamUuid, fileUuid, payload);
   } catch (err) {
@@ -58,6 +58,36 @@ async function sendMemoryPayload(teamUuid: string, fileUuid: string, payload: Me
 }
 
 /**
+ * Delete all file-scoped memories and regenerate from the current grid state.
+ * Bypasses the normal debounce since this is a user-initiated action.
+ */
+export async function regenerateFileMemories(teamUuid: string, fileUuid: string): Promise<boolean> {
+  const isAuthenticated = await authClient.isAuthenticated();
+  if (!isAuthenticated) return false;
+
+  try {
+    const payload = await quadraticCore.getMemoryPayload();
+    if (!payload) return false;
+
+    const token = await authClient.getTokenOrRedirect(true);
+
+    const response = await fetch(`${API_URL}/v0/teams/${teamUuid}/ai/memories/regenerate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fileUuid, payload }),
+    });
+
+    return response.ok;
+  } catch (err) {
+    console.error('[ai-memory] Failed to regenerate file memories:', err);
+    return false;
+  }
+}
+
+/**
  * Returns whether the given file has any AI memories (for this team).
  */
 export async function fileHasMemories(teamUuid: string, fileUuid: string): Promise<boolean> {
@@ -65,13 +95,10 @@ export async function fileHasMemories(teamUuid: string, fileUuid: string): Promi
   if (!isAuthenticated) return false;
 
   const token = await authClient.getTokenOrRedirect(true);
-  const response = await fetch(
-    `${API_URL}/v0/teams/${teamUuid}/ai/memories/has-file/${fileUuid}`,
-    {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  const response = await fetch(`${API_URL}/v0/teams/${teamUuid}/ai/memories/has-file/${fileUuid}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!response.ok) return false;
   const data = await response.json();
   return data.hasMemories === true;
@@ -81,8 +108,10 @@ export interface AiMemory {
   id: number;
   teamId: number;
   fileId: number | null;
-  entityType: 'FILE' | 'CODE_CELL' | 'CONNECTION' | 'CHAT_INSIGHT';
-  entityId: string | null;
+  entityType: 'FILE' | 'CODE_CELL' | 'DATA_TABLE' | 'SHEET_TABLE' | 'CONNECTION' | 'CHAT_INSIGHT';
+  entityId: string;
+  scope: 'file' | 'team';
+  topic: string | null;
   title: string;
   summary: string;
   metadata: Record<string, unknown>;
@@ -133,7 +162,14 @@ export async function searchTeamMemories(
  */
 export async function listTeamMemories(
   teamUuid: string,
-  options?: { entityType?: string; fileId?: number; cursor?: number; limit?: number }
+  options?: {
+    entityType?: string;
+    scope?: 'file' | 'team';
+    fileId?: number;
+    fileUuid?: string;
+    cursor?: number;
+    limit?: number;
+  }
 ): Promise<{ memories: AiMemory[]; nextCursor: number | null }> {
   const isAuthenticated = await authClient.isAuthenticated();
   if (!isAuthenticated) return { memories: [], nextCursor: null };
@@ -142,7 +178,9 @@ export async function listTeamMemories(
 
   const params = new URLSearchParams();
   if (options?.entityType) params.set('entityType', options.entityType);
+  if (options?.scope) params.set('scope', options.scope);
   if (options?.fileId) params.set('fileId', String(options.fileId));
+  if (options?.fileUuid) params.set('fileUuid', options.fileUuid);
   if (options?.cursor) params.set('cursor', String(options.cursor));
   if (options?.limit) params.set('limit', String(options.limit));
 

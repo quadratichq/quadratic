@@ -1280,6 +1280,7 @@ export interface CoreClientGetMemoryPayload {
 export interface MemoryPayload {
   sheets: SheetMemoryPayload[];
   codeCells: CodeCellMemoryPayload[];
+  sheetTables: SheetTableMemoryPayload[];
 }
 
 export interface SheetMemoryPayload {
@@ -1323,12 +1324,21 @@ export interface ChartMemoryPayload {
 export interface CodeCellMemoryPayload {
   sheetName: string;
   position: string;
+  name: string;
   language: string;
   code: string;
   outputShape: string | null;
   hasError: boolean;
   stdOut: string | null;
   stdErr: string | null;
+}
+
+export interface SheetTableMemoryPayload {
+  sheetName: string;
+  bounds: string;
+  columns: string[];
+  rows: number;
+  cols: number;
 }
 
 export interface ClientCoreNeighborText {

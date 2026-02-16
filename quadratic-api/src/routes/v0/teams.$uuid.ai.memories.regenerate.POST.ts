@@ -90,9 +90,12 @@ async function handler(req: Request, res: Response) {
     user: { id: userId },
   } = req as RequestWithUser;
 
-  const { team } = await getTeam({ uuid, userId });
+  const { team, userMakingRequest } = await getTeam({ uuid, userId });
 
-  // Look up the file to get its internal id and name
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    return res.status(403).json({ error: { message: 'You need edit permissions to regenerate memories' } });
+  }
+
   const file = await dbClient.file.findUnique({
     where: { uuid: fileUuid },
     select: { id: true, name: true, ownerTeamId: true },
@@ -101,15 +104,15 @@ async function handler(req: Request, res: Response) {
     return res.status(404).json({ error: { message: 'File not found in this team' } });
   }
 
-  // Run generation in the background so the client doesn't block
+  // Reconcile memories in the background (updates changed, skips unchanged, deletes orphans)
   generateMemories({
     teamId: team.id,
     fileId: file.id,
     fileName: file.name,
     payload,
   }).catch((err) => {
-    console.error('[ai-memory] Failed to generate memories:', err);
+    console.error('[ai-memory] Failed to regenerate memories:', err);
   });
 
-  return res.status(202).json({ message: 'Memory generation started' });
+  return res.status(202).json({ message: 'Memory regeneration started' });
 }

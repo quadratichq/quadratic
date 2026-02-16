@@ -14,11 +14,13 @@ const schema = z.object({
     uuid: z.string().uuid(),
   }),
   query: z.object({
-    entityType: z.enum(['FILE', 'CODE_CELL', 'CONNECTION', 'CHAT_INSIGHT']).optional(),
+    entityType: z.enum(['FILE', 'CODE_CELL', 'DATA_TABLE', 'SHEET_TABLE', 'CONNECTION', 'CHAT_INSIGHT']).optional(),
+    scope: z.enum(['file', 'team']).optional(),
     fileId: z
       .string()
       .optional()
       .transform((v) => (v ? parseInt(v, 10) : undefined)),
+    fileUuid: z.string().uuid().optional(),
     cursor: z
       .string()
       .optional()
@@ -33,7 +35,7 @@ const schema = z.object({
 async function handler(req: Request, res: Response) {
   const {
     params: { uuid },
-    query: { entityType, fileId, cursor, limit },
+    query: { entityType, scope, fileId, fileUuid, cursor, limit },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -41,9 +43,22 @@ async function handler(req: Request, res: Response) {
 
   const { team } = await getTeam({ uuid, userId });
 
+  // Resolve fileUuid to internal fileId if provided
+  let resolvedFileId = fileId;
+  if (!resolvedFileId && fileUuid) {
+    const file = await dbClient.file.findUnique({
+      where: { uuid: fileUuid },
+      select: { id: true, ownerTeamId: true },
+    });
+    if (file && file.ownerTeamId === team.id) {
+      resolvedFileId = file.id;
+    }
+  }
+
   const where: Record<string, unknown> = { teamId: team.id };
   if (entityType) where.entityType = entityType;
-  if (fileId) where.fileId = fileId;
+  if (scope) where.scope = scope;
+  if (resolvedFileId) where.fileId = resolvedFileId;
   if (cursor) where.id = { lt: cursor };
 
   const memories = await dbClient.aiMemory.findMany({
@@ -56,6 +71,8 @@ async function handler(req: Request, res: Response) {
       fileId: true,
       entityType: true,
       entityId: true,
+      scope: true,
+      topic: true,
       title: true,
       summary: true,
       metadata: true,

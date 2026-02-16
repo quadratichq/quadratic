@@ -1,7 +1,15 @@
 import type { AiMemory } from '@/app/ai/memory/aiMemoryService';
-import { deleteTeamMemory, listTeamMemories, updateTeamMemory } from '@/app/ai/memory/aiMemoryService';
-import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  deleteTeamMemory,
+  listTeamMemories,
+  regenerateFileMemories,
+  updateTeamMemory,
+} from '@/app/ai/memory/aiMemoryService';
+import {
+  editorInteractionStateFileUuidAtom,
+  editorInteractionStateTeamUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { AiMemoryNodeDetail } from './AiMemoryNodeDetail';
 
@@ -21,28 +29,40 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   CHAT_INSIGHT: 'Chat Insight',
 };
 
+const SCOPE_LABELS: Record<string, string> = {
+  file: 'File',
+  team: 'Team',
+};
+
 export function AiMemoryMindMap({ onClose }: { onClose: () => void }) {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
+  const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
 
   const [viewMode, setViewMode] = useState<ViewMode>('file');
   const [memories, setMemories] = useState<AiMemory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [selectedMemory, setSelectedMemory] = useState<AiMemory | null>(null);
 
   const fetchMemories = useCallback(async () => {
     if (!teamUuid) return;
     setLoading(true);
     try {
-      const result = await listTeamMemories(teamUuid, {
-        limit: 100,
-      });
-      setMemories(result.memories);
+      // Fetch file-scoped and team-scoped memories separately to ensure
+      // file-scoped memories only come from the current file
+      const [fileResult, teamResult] = await Promise.all([
+        fileUuid
+          ? listTeamMemories(teamUuid, { limit: 100, fileUuid, scope: 'file' })
+          : Promise.resolve({ memories: [], nextCursor: null }),
+        listTeamMemories(teamUuid, { limit: 100, scope: 'team' }),
+      ]);
+      setMemories([...fileResult.memories, ...teamResult.memories]);
     } catch (err) {
       console.error('[ai-memory] Failed to fetch memories:', err);
     } finally {
       setLoading(false);
     }
-  }, [teamUuid]);
+  }, [teamUuid, fileUuid]);
 
   useEffect(() => {
     fetchMemories();
@@ -66,24 +86,83 @@ export function AiMemoryMindMap({ onClose }: { onClose: () => void }) {
     }
   };
 
-  // Filter for file view: only show memories that have a file or are connections
-  const currentFileMemories =
-    viewMode === 'file' ? memories.filter((m) => m.fileId != null || m.entityType === 'CONNECTION') : memories;
+  const handleRegenerate = async () => {
+    if (!teamUuid || !fileUuid || regenerating) return;
+    setRegenerating(true);
+    setSelectedMemory(null);
+    try {
+      const success = await regenerateFileMemories(teamUuid, fileUuid);
+      if (success) {
+        // Wait a bit for background generation, then refresh
+        setTimeout(() => {
+          fetchMemories().finally(() => setRegenerating(false));
+        }, 3000);
+      } else {
+        setRegenerating(false);
+      }
+    } catch {
+      setRegenerating(false);
+    }
+  };
 
-  const groups = [
-    { type: 'FILE', label: 'Files', items: currentFileMemories.filter((m) => m.entityType === 'FILE') },
-    { type: 'CODE_CELL', label: 'Code Cells', items: currentFileMemories.filter((m) => m.entityType === 'CODE_CELL') },
-    {
-      type: 'CONNECTION',
-      label: 'Connections',
-      items: currentFileMemories.filter((m) => m.entityType === 'CONNECTION'),
-    },
-    {
-      type: 'CHAT_INSIGHT',
-      label: 'Chat Insights',
-      items: currentFileMemories.filter((m) => m.entityType === 'CHAT_INSIGHT'),
-    },
-  ].filter((g) => g.items.length > 0);
+  // Filter memories based on view mode
+  const filteredMemories = useMemo(() => {
+    if (viewMode === 'team') {
+      return memories.filter((m) => m.scope === 'team');
+    }
+    // File view: show file-scoped memories + connections (always team-scoped)
+    return memories.filter((m) => m.scope === 'file' || m.entityType === 'CONNECTION');
+  }, [memories, viewMode]);
+
+  const groups = useMemo(() => {
+    // In team view, group by topic; in file view, group by entity type
+    if (viewMode === 'team') {
+      const byTopic = new Map<string, AiMemory[]>();
+      for (const m of filteredMemories) {
+        const key = m.topic ?? 'Uncategorized';
+        const list = byTopic.get(key) ?? [];
+        list.push(m);
+        byTopic.set(key, list);
+      }
+      return [...byTopic.entries()].map(([topic, items]) => ({
+        type: topic,
+        label: topic,
+        items,
+      }));
+    }
+
+    return [
+      { type: 'FILE', label: 'Files', items: filteredMemories.filter((m) => m.entityType === 'FILE') },
+      {
+        type: 'CODE_CELL',
+        label: 'Code Cells',
+        items: filteredMemories.filter((m) => m.entityType === 'CODE_CELL'),
+      },
+      {
+        type: 'DATA_TABLE',
+        label: 'Data Tables',
+        items: filteredMemories.filter((m) => m.entityType === 'DATA_TABLE'),
+      },
+      {
+        type: 'SHEET_TABLE',
+        label: 'Sheet Tables',
+        items: filteredMemories.filter((m) => m.entityType === 'SHEET_TABLE'),
+      },
+      {
+        type: 'CONNECTION',
+        label: 'Connections',
+        items: filteredMemories.filter((m) => m.entityType === 'CONNECTION'),
+      },
+      {
+        type: 'CHAT_INSIGHT',
+        label: 'Insights',
+        items: filteredMemories.filter((m) => m.entityType === 'CHAT_INSIGHT'),
+      },
+    ].filter((g) => g.items.length > 0);
+  }, [filteredMemories, viewMode]);
+
+  const teamCount = memories.filter((m) => m.scope === 'team').length;
+  const fileCount = memories.filter((m) => m.scope === 'file').length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -97,17 +176,24 @@ export function AiMemoryMindMap({ onClose }: { onClose: () => void }) {
                 className={`px-3 py-1 text-sm ${viewMode === 'file' ? 'bg-primary text-primary-foreground' : ''}`}
                 onClick={() => setViewMode('file')}
               >
-                File View
+                File ({fileCount})
               </button>
               <button
                 className={`px-3 py-1 text-sm ${viewMode === 'team' ? 'bg-primary text-primary-foreground' : ''}`}
                 onClick={() => setViewMode('team')}
               >
-                Team View
+                Team ({teamCount})
               </button>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="rounded border px-3 py-1 text-xs hover:bg-accent disabled:opacity-50"
+            >
+              {regenerating ? 'Regenerating...' : 'Regenerate'}
+            </button>
             <span className="text-sm text-muted-foreground">{memories.length} memories</span>
             <button onClick={onClose} className="rounded p-1 hover:bg-accent">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -133,11 +219,25 @@ export function AiMemoryMindMap({ onClose }: { onClose: () => void }) {
             ) : (
               <div className="flex flex-col gap-8">
                 {/* Legend */}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {Object.entries(ENTITY_TYPE_LABELS).map(([type, label]) => (
                     <div key={type} className="flex items-center gap-1.5">
                       <div className={`h-3 w-3 rounded-full ${ENTITY_TYPE_COLORS[type]}`} />
                       <span className="text-xs text-muted-foreground">{label}</span>
+                    </div>
+                  ))}
+                  <div className="mx-2 h-4 w-px bg-border" />
+                  {Object.entries(SCOPE_LABELS).map(([scope, label]) => (
+                    <div key={scope} className="flex items-center gap-1.5">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                          scope === 'team'
+                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+                            : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                      >
+                        {label}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -147,25 +247,50 @@ export function AiMemoryMindMap({ onClose }: { onClose: () => void }) {
                   <div key={group.type}>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">{group.label}</h3>
                     <div className="flex flex-wrap gap-3">
-                      {group.items.map((memory) => (
-                        <button
-                          key={memory.id}
-                          onClick={() => setSelectedMemory(memory)}
-                          className={`group relative flex max-w-[280px] flex-col gap-1 rounded-lg border p-3 text-left transition-all hover:shadow-md ${
-                            selectedMemory?.id === memory.id ? 'border-primary ring-1 ring-primary' : 'border-border'
-                          } ${memory.pinned ? 'border-amber-400' : ''}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 shrink-0 rounded-full ${ENTITY_TYPE_COLORS[memory.entityType]}`} />
-                            <span className="truncate text-sm font-medium">{memory.title}</span>
-                            {memory.pinned && <span className="text-xs text-amber-500">pinned</span>}
-                          </div>
-                          <p className="line-clamp-2 text-xs text-muted-foreground">{memory.summary}</p>
-                          <span className="text-xs text-muted-foreground/60">
-                            v{memory.version} · {new Date(memory.updatedAt).toLocaleDateString()}
-                          </span>
-                        </button>
-                      ))}
+                      {group.items.map((memory) => {
+                        const isSelected = selectedMemory?.id === memory.id;
+
+                        return (
+                          <button
+                            key={memory.id}
+                            onClick={() => setSelectedMemory(memory)}
+                            className={`group relative flex max-w-[280px] flex-col gap-1 rounded-lg border p-3 text-left transition-all hover:shadow-md ${
+                              isSelected ? 'border-primary ring-1 ring-primary' : 'border-border'
+                            } ${memory.pinned ? 'border-amber-400' : ''}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`h-2 w-2 shrink-0 rounded-full ${ENTITY_TYPE_COLORS[memory.entityType]}`}
+                              />
+                              <span className="truncate text-sm font-medium">{memory.title}</span>
+                              {memory.pinned && <span className="text-xs text-amber-500">pinned</span>}
+                            </div>
+
+                            {/* Scope badge and topic */}
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`rounded px-1 py-0.5 text-[10px] font-medium ${
+                                  memory.scope === 'team'
+                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                }`}
+                              >
+                                {memory.scope}
+                              </span>
+                              {memory.topic && (
+                                <span className="truncate text-[10px] text-muted-foreground">{memory.topic}</span>
+                              )}
+                            </div>
+
+                            <p className="line-clamp-2 text-xs text-muted-foreground">{memory.summary}</p>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground/60">
+                                v{memory.version} · {new Date(memory.updatedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

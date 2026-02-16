@@ -70,6 +70,7 @@
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "docker:base": "docker compose --profile base --env-file .env.docker up",
+    "docker:base:rebuild": "docker compose --profile base --env-file .env.docker up -d --force-recreate --pull always",
     "docker:connection": "docker compose --profile base --profile quadratic-connection-db --env-file .env.docker up",
     "docker:build": "CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",
     "docker:build:dev": "CLIENT_DEV=true docker compose --profile all --env-file .env.docker up",

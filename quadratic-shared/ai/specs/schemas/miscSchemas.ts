@@ -82,7 +82,10 @@ export const miscToolsArgsSchemas = {
   }),
   [AITool.SearchTeamMemory]: z.object({
     query: stringSchema,
-    entity_type: z.enum(['FILE', 'CODE_CELL', 'CONNECTION', 'CHAT_INSIGHT']).nullable().optional(),
+    entity_type: z
+      .enum(['FILE', 'CODE_CELL', 'DATA_TABLE', 'SHEET_TABLE', 'CONNECTION', 'CHAT_INSIGHT'])
+      .nullable()
+      .optional(),
   }),
   [AITool.TextSearch]: z.object({
     query: z.string(),
@@ -433,7 +436,7 @@ It requires a search query and optionally a filter for entity type (FILE, CODE_C
         },
         entity_type: {
           type: 'string',
-          enum: ['FILE', 'CODE_CELL', 'CONNECTION', 'CHAT_INSIGHT'],
+          enum: ['FILE', 'CODE_CELL', 'DATA_TABLE', 'SHEET_TABLE', 'CONNECTION', 'CHAT_INSIGHT'],
           description: 'Optional filter for the type of memory to search',
           nullable: true,
         },

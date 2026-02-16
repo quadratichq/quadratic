@@ -33,7 +33,16 @@ export function AiMemoryNodeDetail({ memory, onClose, onDelete, onTogglePin }: A
     }
   }, [teamUuid, memory.id, memory.summary, editSummary]);
 
-  const metadata = memory.metadata as Record<string, unknown>;
+  const [showHistory, setShowHistory] = useState(false);
+  const rawMetadata = memory.metadata as Record<string, unknown>;
+
+  // Separate internal metadata from display metadata
+  const previousSummaries = Array.isArray(rawMetadata.previousSummaries)
+    ? (rawMetadata.previousSummaries as Array<{ summary: string; updatedAt: string }>)
+    : [];
+  const metadata = Object.fromEntries(
+    Object.entries(rawMetadata).filter(([key]) => key !== 'previousSummaries' && key !== 'contentHash')
+  );
 
   return (
     <div className="flex w-80 shrink-0 flex-col border-l bg-background">
@@ -56,11 +65,35 @@ export function AiMemoryNodeDetail({ memory, onClose, onDelete, onTogglePin }: A
             <p className="text-sm">{memory.title}</p>
           </div>
 
-          {/* Type */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Type</label>
-            <p className="text-sm">{memory.entityType.replace('_', ' ')}</p>
+          {/* Type and Scope */}
+          <div className="flex gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Type</label>
+              <p className="text-sm">{memory.entityType.replace('_', ' ')}</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Scope</label>
+              <p className="text-sm">
+                <span
+                  className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                    memory.scope === 'team'
+                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  }`}
+                >
+                  {memory.scope}
+                </span>
+              </p>
+            </div>
           </div>
+
+          {/* Topic */}
+          {memory.topic && (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Topic</label>
+              <p className="text-sm">{memory.topic}</p>
+            </div>
+          )}
 
           {/* Summary */}
           <div>
@@ -97,6 +130,38 @@ export function AiMemoryNodeDetail({ memory, onClose, onDelete, onTogglePin }: A
             )}
           </div>
 
+          {/* History */}
+          {previousSummaries.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  className={`transition-transform ${showHistory ? 'rotate-90' : ''}`}
+                >
+                  <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                </svg>
+                History ({previousSummaries.length})
+              </button>
+              {showHistory && (
+                <div className="mt-2 flex flex-col gap-2">
+                  {[...previousSummaries].reverse().map((entry, i) => (
+                    <div key={i} className="rounded border bg-muted/30 p-2">
+                      <p className="text-xs leading-relaxed text-muted-foreground">{entry.summary}</p>
+                      <span className="mt-1 block text-[10px] text-muted-foreground/60">
+                        {new Date(entry.updatedAt).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Metadata */}
           {Object.keys(metadata).length > 0 && (
             <div>
@@ -105,7 +170,7 @@ export function AiMemoryNodeDetail({ memory, onClose, onDelete, onTogglePin }: A
                 {Object.entries(metadata).map(([key, value]) => (
                   <div key={key} className="flex items-baseline gap-2 text-xs">
                     <span className="font-medium text-muted-foreground">{key}:</span>
-                    <span>{String(value)}</span>
+                    <span>{Array.isArray(value) ? value.join(', ') : String(value)}</span>
                   </div>
                 ))}
               </div>

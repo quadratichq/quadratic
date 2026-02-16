@@ -2,9 +2,9 @@
 
 ## Overview
 
-The AI Memory System is a team-scoped knowledge base that automatically generates, stores, and retrieves summaries of files, code cells, connections, and chat insights. It makes the AI assistant smarter the more you use it, and shares that knowledge across all team members.
+The AI Memory System is a team-scoped knowledge store that automatically generates, stores, and retrieves summaries of files, code cells, data tables, sheet tables, connections, and chat insights. It organizes knowledge by **topic** (not by chat) and uses **scope hierarchy** (file vs team) to distinguish file-specific knowledge from team-wide patterns.
 
-Every time a user runs code, connects to a database, or has a meaningful AI conversation, the system extracts key information, summarizes it with an LLM, and stores it as a searchable memory. When any team member later asks the AI a question, relevant memories are automatically retrieved and included in context.
+Every time a user runs code, connects to a database, or has a meaningful AI conversation, the system extracts key information, summarizes it with an LLM, and stores it as a searchable memory. When any team member later asks the AI a question, relevant memories are automatically retrieved via vector search and included in context.
 
 ## Architecture
 
@@ -20,20 +20,21 @@ flowchart TB
     Client -->|"POST"| API["quadratic-api"]
     CloudWorker -->|"shutdown"| Controller["cloud-controller"]
     Controller -->|"POST internal"| API
-    API --> LLM["GPT-4o-mini: summarize"]
-    API --> Embed["text-embedding-3-small: embed"]
-    LLM --> PG["PostgreSQL + pgvector"]
-    Embed --> PG
+    API --> Reconcile["Reconcile: fingerprint + diff"]
+    Reconcile --> LLM["Gemini: summarize changed entities"]
+    LLM --> Embed["Gemini embedding"]
+    Embed --> PG["PostgreSQL + pgvector"]
     ConnCreate["Connection Create"] --> API
-    ChatEnd["Chat Session End"] --> API
+    ChatInsight["Chat Insight Pipeline"] --> API
   end
 
   subgraph readPath [Read Path]
     ChatReq["AI Chat Request"] --> EmbedQuery["Embed user query"]
-    EmbedQuery --> SemanticSearch["pgvector cosine similarity"]
-    SemanticSearch --> Context["Inject top-N memories into prompt"]
-    ToolCall["AI calls search_team_memory"] --> SemanticSearch
-    MindMap["Mind-Map UI"] -->|"list / search"| API2["quadratic-api"]
+    EmbedQuery --> ScopeSearch["Scope-aware vector search"]
+    ScopeSearch --> Filter["Min similarity filter"]
+    Filter --> Context["Inject ranked memories into prompt"]
+    ToolCall["AI calls search_team_memory"] --> ScopeSearch
+    MindMap["Knowledge Map UI"] -->|"list / search"| API2["quadratic-api"]
   end
 ```
 
@@ -41,46 +42,133 @@ flowchart TB
 
 - **Content extraction lives in Rust (`quadratic-core`)** so the same code works from both the browser (WASM) and cloud workers (native). No duplication of extraction logic.
 - **Summarization and storage live in `quadratic-api`** (TypeScript/Node.js) where the LLM providers and database are already integrated.
-- **No changes to `quadratic-files` or `quadratic-multiplayer`**. Memory generation is triggered by the entities that see the results first: the client (after code execution) and the cloud worker (after scheduled tasks).
-- **The cloud worker communicates through the cloud controller**, not directly to the API. The controller forwards the memory payload to the API via an internal endpoint.
+- **Memories are organized by topic**, not by chat session. Multiple conversations about the same topic merge into richer knowledge.
+- **Scope hierarchy** distinguishes file-specific knowledge from team-wide patterns and decisions.
+- **Reconciliation-based updates**: instead of deleting and recreating memories, the system fingerprints source content and only re-summarizes entities that have changed.
+- **Quality filtering** prevents trivial tool executions from polluting the knowledge base.
+- **Version history**: when a memory is updated, the old summary is preserved in `metadata.previousSummaries`.
+
+## Scope Hierarchy
+
+```mermaid
+flowchart TB
+    subgraph team [Team Scope]
+        TP1[Pattern: Revenue Calculation]
+        TP2[Pattern: Data Cleaning]
+        TP3[Decision: Use ISO Dates]
+    end
+
+    subgraph fileA [File A]
+        FA1[CODE_CELL: Q4 Revenue]
+        FA2[CODE_CELL: Clean Emails]
+        FA3[DATA_TABLE: Sales Data]
+        FA4[SHEET_TABLE: Summary Grid]
+    end
+
+    subgraph fileB [File B]
+        FB1[CODE_CELL: Monthly Trends]
+        FB2[DATA_TABLE: Revenue CSV]
+    end
+```
+
+| Scope | Description | Examples |
+|-------|-------------|---------|
+| `file` | Knowledge specific to one file | CODE_CELL summaries, FILE summaries, DATA_TABLE and SHEET_TABLE descriptions, file-specific insights |
+| `team` | Patterns and decisions applicable across files | Reusable patterns, domain concepts, team decisions, connections |
+
+### Scope Assignment Rules
+
+| Entity Type | Default Scope | Notes |
+|-------------|---------------|-------|
+| FILE | file | Always describes one file |
+| CODE_CELL | file | Always in one file |
+| DATA_TABLE | file | Imported data tables (CSV/Excel) within a file |
+| SHEET_TABLE | file | Inline tabular cell regions detected within a file |
+| CONNECTION | team | Connections are team-wide resources |
+| CHAT_INSIGHT | depends | LLM determines scope based on content |
 
 ## Data Flow
 
 ### Client-Triggered Memories (Primary Path)
 
-1. User runs a Python/JS/Formula code cell in the browser
-2. `updateCodeCells` event fires on the client
-3. After a 5-second debounce (and a 1-minute per-file cooldown), the client calls `quadraticCore.getMemoryPayload()`
-4. The WASM binding calls `GridController::extract_memory_payload()` in Rust, which walks all sheets and data tables to build a `MemoryPayload`
-5. The client POSTs the payload to `POST /v0/teams/:uuid/ai/memories/generate` on `quadratic-api`
-6. The API handler fires and returns `202 Accepted` immediately
-7. In the background, the API:
-   - Calls GPT-4o-mini to generate a file-level summary
-   - Calls GPT-4o-mini for each non-errored code cell summary
-   - Generates embeddings via `text-embedding-3-small` for each summary
-   - Upserts into the `ai_memory` table (deduplication via unique constraint on `team_id + file_id + entity_type + entity_id`)
+The client triggers memory generation in response to three types of events, each with a different debounce:
+
+- **Code cell execution** (`updateCodeCells` event): 5-second debounce
+- **Immediate data transactions** (Import, DataTableAddDataTable, GridToDataTable): 5-second debounce
+- **Deferred data transactions** (SetCells, PasteClipboard, CutClipboard, Autocomplete, FlattenDataTable, DataTableMutations, MoveCells, SwitchDataTableKind, DataTableFirstRowAsHeader): 15-second debounce
+- **Load check**: After 2.5 seconds on file open, if the file has content but no memories (e.g., old files, imported CSV/Excel, duplicated files), generation is triggered automatically
+
+All triggers share a 60-second per-file cooldown at the API call level to prevent excessive requests.
+
+1. Event fires on the client (code cell update or transaction end)
+2. After the event-specific debounce and the per-file cooldown, the client calls `quadraticCore.getMemoryPayload()`
+3. The WASM binding calls `GridController::extract_memory_payload()` in Rust
+4. The client POSTs the payload to `POST /v0/teams/:uuid/ai/memories/generate`
+5. The API returns `202 Accepted` immediately
+6. In the background, the API **reconciles** against existing memories:
+   - Fetches existing file-scoped memories and builds a lookup by `entityType:entityId`
+   - Computes content fingerprints (MD5 hashes) for each entity in the payload
+   - **Skips** entities whose fingerprint matches the existing memory (no LLM call)
+   - **Updates** entities whose fingerprint differs: preserves old summary in version history, re-summarizes with LLM
+   - **Creates** new entities that have no existing memory
+   - **Deletes** orphaned memories (entities that no longer exist in the payload)
+
+### Content Fingerprinting
+
+Each entity type has a deterministic fingerprint based on its source content:
+
+- **CODE_CELL**: `md5(code + language + outputShape)`
+- **DATA_TABLE**: `md5(name + sorted_columns + bounds)`
+- **SHEET_TABLE**: `md5(columns + bounds + rows + cols)`
+- **FILE**: `md5(sheetNames + codeCellCount + dataTableCount + sheetTableCount)`
+
+The fingerprint is stored in `metadata.contentHash` and compared on subsequent generations.
 
 ### Cloud Worker Memories (Scheduled Tasks)
 
 1. Cloud worker finishes executing scheduled task operations
-2. During shutdown, the worker calls `self.core.extract_memory_payload()` to serialize the grid state
-3. The `memory_payload` JSON is included in the `ShutdownRequest` sent to the cloud controller
-4. The controller forwards it to `POST /v0/internal/file/:uuid/ai-memory` on `quadratic-api`
-5. The API processes it identically to the client path
+2. During shutdown, the worker calls `self.core.extract_memory_payload()`
+3. The `memory_payload` JSON is included in the `ShutdownRequest`
+4. The controller forwards it to `POST /v0/internal/file/:uuid/ai-memory`
+5. The API processes it identically to the client path (reconciliation)
 
 ### Connection Memories
 
 1. User creates a database connection via `POST /v0/teams/:uuid/connections`
-2. After the connection is saved, the route handler calls `generateConnectionMemory()` in the background
-3. A summary is generated from the connection name, type, and available tables
-4. Stored as an `AiMemory` with `entityType = CONNECTION`
+2. The route handler calls `generateConnectionMemory()` in the background
+3. Stored as an `AiMemory` with `entityType = CONNECTION`, `scope = team`
 
 ### Chat Insight Memories
 
+Chat insights go through a multi-stage pipeline, triggered on **every user prompt** (not on a fixed interval):
+
 1. Every AI chat message is processed through `ai.chat.POST`
-2. After every 4th user message (when `messageIndex >= 3 && messageIndex % 4 === 3`), the handler triggers chat insight extraction
-3. The conversation messages are sent to GPT-4o-mini to extract key knowledge and decisions
-4. Stored as an `AiMemory` with `entityType = CHAT_INSIGHT`
+2. On every user prompt, the handler triggers the insight pipeline
+3. **Quality filtering** (heuristic, no LLM cost):
+   - Skip if <2 substantive messages (>50 chars, not pure tool calls)
+   - Skip if >80% of messages are pure tool executions
+   - Skip if no assistant message with >100 chars of explanation
+4. **Topic extraction** (LLM):
+   - Extract primary topic, related concepts, knowledge type, summary, and scope
+   - LLM can output "SKIP" if conversation is trivial
+5. **Topic similarity search**:
+   - Search for existing memories with similar topics (threshold: 0.85)
+   - If found, preserve old summary in version history, then merge new knowledge
+   - If not found, create new topic-based memory
+6. Entity ID is `topic:<hash>` (one memory per topic, merges across chats)
+
+### Version History
+
+When a memory is updated (either through reconciliation or chat insight merging), the old summary is preserved in `metadata.previousSummaries`:
+
+```typescript
+metadata.previousSummaries: Array<{
+  summary: string;
+  updatedAt: string; // ISO timestamp
+}>
+```
+
+Capped at 5 entries (FIFO). This provides an audit trail and enables future undo functionality.
 
 ## Data Model
 
@@ -90,74 +178,55 @@ flowchart TB
 |--------|------|-------------|
 | `id` | `SERIAL` | Primary key |
 | `team_id` | `INTEGER` | Foreign key to Team (required) |
-| `file_id` | `INTEGER` | Foreign key to File (nullable, null for connections) |
-| `entity_type` | `AiMemoryEntityType` | `FILE`, `CODE_CELL`, `CONNECTION`, or `CHAT_INSIGHT` |
-| `entity_id` | `TEXT` | Unique identifier within scope (e.g., `Sheet1:A1` for code cells, connection UUID) |
+| `file_id` | `INTEGER` | Foreign key to File (nullable, null for team-scoped) |
+| `entity_type` | `AiMemoryEntityType` | `FILE`, `CODE_CELL`, `DATA_TABLE`, `SHEET_TABLE`, `CONNECTION`, or `CHAT_INSIGHT` |
+| `entity_id` | `TEXT` | Unique identifier (e.g., `Sheet1:A1`, `topic:<hash>`, connection UUID) |
+| `scope` | `AiMemoryScope` | `file` or `team` |
+| `topic` | `TEXT` | Topic label for organization and display |
 | `title` | `TEXT` | Short label for display |
-| `summary` | `TEXT` | Natural language summary (human-readable) |
-| `embedding` | `vector(1536)` | pgvector embedding for semantic search |
-| `metadata` | `JSONB` | Structured data (language, position, output shape, etc.) |
+| `summary` | `TEXT` | Natural language summary |
+| `embedding` | `vector(768)` | Gemini embedding for semantic search |
+| `metadata` | `JSONB` | Structured data (contentHash, concepts, patterns, previousSummaries, etc.) |
 | `pinned` | `BOOLEAN` | Whether the memory is pinned by a user |
 | `version` | `INTEGER` | Incremented on each re-summarization |
 | `created_at` | `TIMESTAMP` | Creation timestamp |
 | `updated_at` | `TIMESTAMP` | Last update timestamp |
 
+### `ai_memory_link` Table (unused, retained for schema compatibility)
+
+The `ai_memory_link` table exists in the schema but is not currently read from or written to. It was originally designed for a knowledge graph but was found to be redundant with vector similarity search.
+
 **Indexes:**
 - `(team_id, entity_type)` -- for filtered listing
 - `(team_id, file_id)` -- for file-scoped queries
+- `(team_id, scope)` -- for scope-filtered queries
+- `(team_id, topic)` -- for topic-based queries
 - `(team_id, file_id, entity_type, entity_id)` -- unique constraint for upsert deduplication
 - `embedding` -- IVFFlat index for cosine similarity search
 
-### Entity Types
-
-- **FILE**: One per file. Summarizes the overall purpose, sheet structure, data tables, and analyses.
-- **CODE_CELL**: One per code cell (Python, JavaScript, Formula). Summarizes what the code does, its inputs and outputs.
-- **CONNECTION**: One per database connection. Summarizes the data source type and available tables.
-- **CHAT_INSIGHT**: One per meaningful conversation. Extracts key knowledge and decisions.
-
-## Content Extraction (`MemoryPayload`)
-
-The `MemoryPayload` struct is defined in `quadratic-core/src/grid/memory_payload.rs` and extracted via `GridController::extract_memory_payload()`. It walks all sheets and data tables to produce:
-
-```
-MemoryPayload
-  sheets[]
-    SheetMemoryPayload
-      name, bounds
-      dataTables[] (imported data: name, columns, bounds)
-      codeTables[] (code outputs: name, language, columns, bounds, code)
-      connections[] (SQL results: name, connectionKind, columns, bounds, code)
-      charts[] (chart outputs: name, language, bounds, code)
-  codeCells[]
-    CodeCellMemoryPayload
-      sheetName, position, language, code
-      outputShape, hasError, stdOut, stdErr
-```
-
-This payload is serialized to JSON and sent to the API. The API uses it to generate both the file-level summary (from the full structure) and individual code cell summaries.
-
 ## Context Retrieval
 
-### Auto-Retrieval (Every Chat Request)
+### Scope-Aware Vector Search
 
 In `ai.chat.POST.ts`, before the LLM call:
 
 1. Extract the text from the user's latest message
-2. Call `getMemoryContext(teamId, userText)` in `context.helper.ts`
-3. This calls `searchMemories()` which embeds the query and performs a pgvector cosine similarity search
-4. The top 5 matching memories are formatted as a context message and prepended to the conversation
+2. Call `getMemoryContext(teamId, userText, fileId)` in `context.helper.ts`
+3. This calls `getMemoryContextWithNetwork()` which:
+   - Searches team-scoped memories via vector similarity (limit 5)
+   - Searches file-scoped memories for current file via vector similarity (limit 5)
+   - Filters out memories below `MIN_SIMILARITY = 0.4`
+   - Combines and ranks with scope boosts
+4. Up to 10 memories are formatted as context and prepended to the conversation
 
-The context message uses `contextType: 'teamMemory'` so it can be identified in the message array.
+### Retrieval Priority
+
+1. **Current file memories** (1.5x boost) -- Direct context
+2. **Team patterns** (1.3x boost) -- Applicable patterns and concepts
 
 ### Tool-Based Retrieval (AI-Initiated)
 
-The `search_team_memory` tool is registered in `aiToolsSpec.ts` with the `AIAnalyst` source. When the AI determines it needs team knowledge, it can call:
-
-```
-search_team_memory({ query: "revenue analysis patterns", entity_type: "CODE_CELL" })
-```
-
-This calls `searchTeamMemories()` on the client, which hits `GET /v0/teams/:uuid/ai/memories/search?q=...`, returning up to 10 matching memories with similarity scores.
+The `search_team_memory` tool supports filtering by `entity_type` and `scope`.
 
 ## API Endpoints
 
@@ -165,11 +234,13 @@ This calls `searchTeamMemories()` on the client, which hits `GET /v0/teams/:uuid
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/v0/teams/:uuid/ai/memories/generate` | Accept MemoryPayload, generate summaries + embeddings |
-| `GET` | `/v0/teams/:uuid/ai/memories` | List memories (paginated, filterable) |
-| `GET` | `/v0/teams/:uuid/ai/memories/search?q=` | Semantic search via pgvector |
+| `POST` | `/v0/teams/:uuid/ai/memories/generate` | Accept MemoryPayload, reconcile and generate summaries + embeddings |
+| `POST` | `/v0/teams/:uuid/ai/memories/regenerate` | Reconcile file memories from current grid state |
+| `GET` | `/v0/teams/:uuid/ai/memories` | List memories (paginated, filterable by scope/type) |
+| `GET` | `/v0/teams/:uuid/ai/memories/search?q=` | Semantic search with scope filter |
+| `GET` | `/v0/teams/:uuid/ai/memories/has-file/:fileUuid` | Check if a file has any memories |
 | `GET` | `/v0/teams/:uuid/ai/memories/:id` | Get single memory |
-| `PATCH` | `/v0/teams/:uuid/ai/memories/:id` | Edit summary, title, or pin/unpin |
+| `PATCH` | `/v0/teams/:uuid/ai/memories/:id` | Edit summary, title, or pin/unpin (regenerates embedding) |
 | `DELETE` | `/v0/teams/:uuid/ai/memories/:id` | Delete a memory |
 
 ### Internal Endpoint (M2M authenticated)
@@ -178,61 +249,68 @@ This calls `searchTeamMemories()` on the client, which hits `GET /v0/teams/:uuid
 |--------|------|-------------|
 | `POST` | `/v0/internal/file/:uuid/ai-memory` | Receive forwarded payload from cloud controller |
 
-## Permission Model
+### Query Parameters
 
-- All memories are scoped to a team via `team_id`
-- Team members with `VIEWER+` role can read memories (list, search, get)
-- Team members with `EDITOR+` role can modify memories (edit, delete, pin)
-- File-specific memories (FILE, CODE_CELL, CHAT_INSIGHT) are associated with a `file_id` but currently accessible to all team members who can see the team
-- The `generate` endpoint validates that the file belongs to the specified team
+**List endpoint** (`GET /v0/teams/:uuid/ai/memories`):
+- `entityType` -- filter by entity type
+- `scope` -- filter by `file` or `team`
+- `fileId` -- filter by file
+- `cursor`, `limit` -- pagination
 
-## Mind-Map UI
+**Search endpoint** (`GET /v0/teams/:uuid/ai/memories/search`):
+- `q` -- search query (required)
+- `entityType`, `scope`, `fileId`, `limit` -- filters
 
-The Knowledge Map is a React component (`AiMemoryMindMap`) that provides two views:
+## Knowledge Map UI
 
-- **File View**: Shows memories related to the current file, grouped by entity type (files, code cells, connections, chat insights)
-- **Team View**: Shows all memories across the team
+The Knowledge Map is a React component (`AiMemoryMindMap`) that provides two scope-aware views:
 
-Each memory node displays its title, summary preview, entity type color, version, and last-updated date. Clicking a node opens a detail panel where users can:
+- **File View**: Shows file-scoped memories grouped by entity type (files, code cells, data tables, sheet tables, connections, insights)
+- **Team View**: Shows team-scoped memories grouped by topic
 
-- Read the full summary
-- Edit the summary (triggers re-embedding)
-- Pin/unpin the memory
-- Delete the memory
-- View metadata (language, position, output shape, etc.)
+### Features
 
-The mind-map is opened via a jotai atom (`showAiMemoryMindMapAtom`) and rendered as a modal overlay in `QuadraticUI.tsx`.
+- **Scope badges**: Visual indicators for file vs team scope on each memory node
+- **Detail panel**: Shows scope, topic, summary, metadata, and version history
+- **Version history**: Collapsible section showing previous summaries with timestamps
+- **Regenerate**: User-initiated reconciliation from current grid state (updates changed, skips unchanged, deletes orphans)
+- **Edit/Pin/Delete**: Standard memory management actions
+
+The knowledge map is opened via a jotai atom (`showAiMemoryMindMapAtom`) and rendered as a modal overlay in `QuadraticUI.tsx`.
 
 ## Maintenance
 
-`memoryMaintenance.ts` provides utilities for keeping the knowledge base healthy:
+Maintenance runs automatically by piggybacking on the write path. A per-team write counter tracks upserts, and when it reaches 50, maintenance fires in the background:
+
+1. **Prune stale memories**: Remove memories that are unpinned, version 1 (never updated), and older than 90 days
+2. **Deduplicate**: Find near-duplicate memories (>0.95 embedding similarity) and delete the lower-version one
+3. **Reindex**: `REINDEX INDEX CONCURRENTLY ai_memory_embedding_idx` to keep the IVFFlat vector index optimal
+
+The counter is in-memory and resets on server restart, which is acceptable since maintenance just runs slightly less often after a deploy.
+
+### Utility Functions
+
+`memoryMaintenance.ts` also provides utilities for manual inspection:
 
 - **`findStaleMemories(teamId)`**: Finds memories whose associated file has been updated more recently than the memory
 - **`findRelatedFiles(teamId, fileId)`**: Uses embedding similarity to discover cross-file relationships
-- **`pruneStaleMemories(teamId, maxAgeDays)`**: Removes old, unpinned, never-re-summarized memories
-- **`findDuplicateMemories(teamId, threshold)`**: Detects near-duplicate memories using embedding cosine similarity
-
-These are not currently wired to a scheduled job but can be called from admin endpoints or periodic tasks.
+- **`findDuplicateMemories(teamId, threshold)`**: Detects near-duplicate memories
 
 ## Infrastructure
 
 ### PostgreSQL + pgvector
 
-The `ai_memory` table lives in the same PostgreSQL database as all other Quadratic data. The pgvector extension is required and installed via the migration. The dev Docker image uses `pgvector/pgvector:pg17` instead of the stock `postgres:17.4` image.
-
-The IVFFlat index with 100 lists provides efficient approximate nearest neighbor search. At the expected scale (thousands of memories per team, not millions), this is more than sufficient.
+The `ai_memory` table lives in the same PostgreSQL database as all other Quadratic data. The pgvector extension is required and installed via the migration. The dev Docker image uses `pgvector/pgvector:pg17`.
 
 ### LLM Usage
 
 | Operation | Model | Cost |
 |-----------|-------|------|
-| File summary | GPT-4o-mini | ~$0.0003 per summary |
-| Code cell summary | GPT-4o-mini | ~$0.0002 per summary |
-| Chat insight | GPT-4o-mini | ~$0.0002 per insight |
-| Embedding (per text) | text-embedding-3-small | ~$0.00002 per embedding |
-| Auto-retrieval (per chat) | text-embedding-3-small | ~$0.00002 per query |
-
-Total cost per file save with 5 code cells: approximately $0.0015.
+| File summary | Gemini 2.0 Flash | ~$0.0003 per summary |
+| Code cell analysis | Gemini 2.0 Flash | ~$0.0003 per analysis |
+| Chat insight (topic + quality + merge) | Gemini 2.0 Flash | ~$0.0004 per insight |
+| Embedding (per text) | Gemini embedding-001 | ~$0.00002 per embedding |
+| Auto-retrieval (per chat) | Gemini embedding-001 | ~$0.00004 per query (2 scope searches) |
 
 ## File Inventory
 
@@ -252,26 +330,35 @@ Total cost per file save with 5 code cells: approximately $0.0015.
 
 | File | Purpose |
 |------|---------|
-| `quadratic-api/prisma/schema.prisma` | `AiMemory` model + `AiMemoryEntityType` enum |
-| `quadratic-api/prisma/migrations/20260214000000_add_ai_memory/` | pgvector + table + indexes |
-| `quadratic-api/src/ai/memory/memoryService.ts` | Core service: summarize, embed, upsert, search |
-| `quadratic-api/src/ai/memory/memoryMaintenance.ts` | Staleness, relationships, pruning |
-| `quadratic-api/src/ai/helpers/context.helper.ts` | `getMemoryContext()` for auto-retrieval |
-| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.*.ts` | Public CRUD + search + generate endpoints |
+| `quadratic-api/prisma/schema.prisma` | `AiMemory`, `AiMemoryLink` models + enums |
+| `quadratic-api/prisma/migrations/20260214000000_add_ai_memory/` | pgvector + tables + indexes |
+| `quadratic-api/src/ai/memory/memoryService.ts` | Core service: reconciliation, summarize, embed, upsert, search, quality filter, topic extraction, knowledge merge, content fingerprinting, maintenance counter |
+| `quadratic-api/src/ai/memory/memoryRetrieval.ts` | Scope-aware vector search with minimum similarity threshold |
+| `quadratic-api/src/ai/memory/memoryMaintenance.ts` | Staleness, deduplication, pruning, reindexing, orchestrated maintenance |
+| `quadratic-api/src/ai/helpers/context.helper.ts` | `getMemoryContext()` for scope-aware auto-retrieval |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.generate.POST.ts` | Accept payload and reconcile memories in background |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.regenerate.POST.ts` | User-initiated reconciliation from current grid state |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.GET.ts` | List memories (paginated, filterable) |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.search.GET.ts` | Semantic search |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.has-file.$fileUuid.GET.ts` | Check if file has memories |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.$id.GET.ts` | Get single memory |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.$id.PATCH.ts` | Update memory (title, summary, pin) |
+| `quadratic-api/src/routes/v0/teams.$uuid.ai.memories.$id.DELETE.ts` | Delete memory |
 | `quadratic-api/src/routes/internal/file.$fileUuid.ai-memory.POST.ts` | Internal endpoint for cloud worker |
-| `quadratic-api/src/routes/v0/ai.chat.POST.ts` | Memory context injection + chat insight trigger |
+| `quadratic-api/src/routes/v0/ai.chat.POST.ts` | Memory context injection + chat insight trigger on every user prompt |
+| `quadratic-api/src/routes/v0/files.$uuid.PATCH.ts` | Updates FILE memory title when file is renamed |
 | `quadratic-api/src/routes/v0/teams.$uuid.connections.POST.ts` | Connection memory on create |
 
 ### TypeScript (Client)
 
 | File | Purpose |
 |------|---------|
-| `quadratic-client/src/app/ai/memory/aiMemoryService.ts` | Client API service (trigger, search, list, CRUD) |
+| `quadratic-client/src/app/ai/memory/aiMemoryService.ts` | Client API service for memory CRUD and generation |
 | `quadratic-client/src/app/ai/memory/useAiMemoryTrigger.ts` | React hook for auto-triggering on code execution |
-| `quadratic-client/src/app/atoms/aiMemoryAtom.ts` | Jotai atom for mind-map visibility |
-| `quadratic-client/src/app/ui/menus/AiMemory/AiMemoryMindMap.tsx` | Mind-map with file/team views |
-| `quadratic-client/src/app/ui/menus/AiMemory/AiMemoryNodeDetail.tsx` | Detail panel with edit/pin/delete |
-| `quadratic-client/src/app/ui/QuadraticUI.tsx` | Mounts trigger hook + mind-map |
+| `quadratic-client/src/app/atoms/aiMemoryAtom.ts` | Jotai atom for knowledge map visibility |
+| `quadratic-client/src/app/ui/menus/AiMemory/AiMemoryMindMap.tsx` | Knowledge map with scope views |
+| `quadratic-client/src/app/ui/menus/AiMemory/AiMemoryNodeDetail.tsx` | Detail panel with scope, topic, version history |
+| `quadratic-client/src/app/ui/QuadraticUI.tsx` | Mounts trigger hook + knowledge map |
 
 ### TypeScript (Shared)
 
