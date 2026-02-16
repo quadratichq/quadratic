@@ -83,7 +83,7 @@ export function getOpenAIChatCompletionsApiArgs(
   tools: ChatCompletionTool[] | undefined;
   tool_choice: ChatCompletionToolChoiceOption | undefined;
 } {
-  const { messages: chatMessages, toolName, source, agentType } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -150,7 +150,7 @@ export function getOpenAIChatCompletionsApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams, agentType);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -160,10 +160,9 @@ function getOpenAITools(
   source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
-  strictParams: boolean,
-  agentType?: AIRequestHelperArgs['agentType']
+  strictParams: boolean
 ): ChatCompletionTool[] | undefined {
-  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
+  const tools = getFilteredTools({ source, aiModelMode, toolName });
 
   if (tools.length === 0) {
     return undefined;

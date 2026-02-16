@@ -80,7 +80,7 @@ export function getGenAIApiArgs(
   tools: Tool[] | undefined;
   tool_choice: ToolConfig | undefined;
 } {
-  const { messages: chatMessages, toolName, source, agentType } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -154,7 +154,7 @@ export function getGenAIApiArgs(
     }
   }, []);
 
-  const tools = getGenAITools(source, aiModelMode, toolName, agentType);
+  const tools = getGenAITools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getGenAIToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
@@ -246,13 +246,12 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
 function getGenAITools(
   source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
-  toolName?: AITool,
-  agentType?: AIRequestHelperArgs['agentType']
+  toolName?: AITool
 ): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
 
   // Get filtered tools using centralized function
-  const allFilteredTools = getFilteredTools({ source, aiModelMode, toolName, agentType });
+  const allFilteredTools = getFilteredTools({ source, aiModelMode, toolName });
 
   // Additional GenAI-specific filtering for WebSearchInternal
   const tools = allFilteredTools.filter(([name]) => {

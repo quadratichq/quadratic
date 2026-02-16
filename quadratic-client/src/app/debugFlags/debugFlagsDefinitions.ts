@@ -43,7 +43,6 @@ export type DebugFlagKeys =
   | 'debugLogReadableAIInternalContext'
   | 'debugAIAnalystChatStringInput'
   | 'debugAIAnalystChatEditing'
-  | 'debugShowAISubagent'
   | 'debugShowTopLeftPosition'
   | 'debugShowCoordinates'
   | 'debugShowAPITimes';
@@ -241,13 +240,6 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     description: 'Change chat to edit mode. This allows you to edit the chat in real time.',
     group: 'AI',
   },
-  debugShowAISubagent: {
-    initial: false,
-    title: 'Show AI Subagent',
-    description: 'Shows which subagent is currently working in the AI chat',
-    group: 'AI',
-  },
-
   debugShowTopLeftPosition: {
     initial: false,
     title: 'Show Top Left position in footer',

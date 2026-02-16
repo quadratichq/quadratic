@@ -1,4 +1,3 @@
-import type { AgentType } from 'quadratic-shared/ai/agents';
 import type {
   AIModelKey,
   AIResponseContent,
@@ -77,16 +76,6 @@ export interface ToolExecutionOptions {
   chatId: string;
   /** Message index */
   messageIndex: number;
-  /** Agent type for tool filtering */
-  agentType?: AgentType;
-  /** File UUID for subagent requests */
-  fileUuid?: string;
-  /** Team UUID for subagent requests */
-  teamUuid?: string;
-  /** Model key used by the main agent (for subagents to inherit) */
-  modelKey?: AIModelKey;
-  /** Abort signal from the main session (for subagents to respect cancel) */
-  abortSignal?: AbortSignal;
 }
 
 /**

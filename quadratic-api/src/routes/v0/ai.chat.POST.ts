@@ -144,7 +144,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(source, modelKey, args.agentType);
+    const toolUseContext = getToolUseContext(source, modelKey);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
@@ -153,7 +153,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const userAiLanguagePreferences = result.success ? result.data : [];
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(source, args.agentType);
+    const quadraticContext = getQuadraticContext(source);
     args.messages = [...quadraticContext, ...args.messages];
   }
 

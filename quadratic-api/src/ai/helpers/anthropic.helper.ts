@@ -127,7 +127,7 @@ export function getAnthropicApiArgs(
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
 } {
-  const { messages: chatMessages, toolName, source, agentType } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -225,7 +225,7 @@ export function getAnthropicApiArgs(
     }
   }, []);
 
-  const tools = getAnthropicTools(source, aiModelMode, toolName, agentType);
+  const tools = getAnthropicTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
@@ -234,10 +234,9 @@ export function getAnthropicApiArgs(
 function getAnthropicTools(
   source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
-  toolName?: AITool,
-  agentType?: AIRequestHelperArgs['agentType']
+  toolName?: AITool
 ): Tool[] | undefined {
-  const tools = getFilteredTools({ source, aiModelMode, toolName, agentType });
+  const tools = getFilteredTools({ source, aiModelMode, toolName });
 
   if (tools.length === 0) {
     return undefined;

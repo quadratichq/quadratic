@@ -71,7 +71,6 @@ export enum AITool {
   Redo = 'redo',
   ContactUs = 'contact_us',
   OptimizePrompt = 'optimize_prompt',
-  DelegateToSubagent = 'delegate_to_subagent',
 }
 
 export const AIToolSchema = z.enum([
@@ -135,7 +134,6 @@ export const AIToolSchema = z.enum([
   AITool.Redo,
   AITool.ContactUs,
   AITool.OptimizePrompt,
-  AITool.DelegateToSubagent,
 ]);
 
 // Helper schemas for preprocessing AI model responses

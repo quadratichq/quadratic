@@ -9,7 +9,6 @@ import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ContactUs } from '@/app/ai/toolCards/ContactUs';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
-import { DelegateToSubagent } from '@/app/ai/toolCards/DelegateToSubagent';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
 import { DeleteColumns } from '@/app/ai/toolCards/DeleteColumns';
 import { DeleteRows } from '@/app/ai/toolCards/DeleteRows';
@@ -50,7 +49,6 @@ import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UpdateConditionalFormats } from '@/app/ai/toolCards/UpdateConditionalFormats';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
-import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { cn } from '@/shared/shadcn/utils';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
@@ -64,9 +62,6 @@ type AIToolCardProps = {
 };
 
 export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIToolCardProps) => {
-  const { debugFlags } = useDebugFlags();
-  const showSubagent = debugFlags.getFlag('debugShowAISubagent');
-
   if (!Object.values(AITool).includes(toolCall.name as AITool)) {
     return null;
   }
@@ -182,12 +177,6 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       return <Redo toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ContactUs:
       return <ContactUs toolCall={toolCall} className={cn('tool-card', className)} />;
-    case AITool.DelegateToSubagent:
-      // Only show subagent tool card when debug flag is enabled
-      if (!showSubagent) {
-        return null;
-      }
-      return <DelegateToSubagent toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;
