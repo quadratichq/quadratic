@@ -40,7 +40,7 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 import { getOrphanFilterIds } from './filterOrphanedToolCalls';
-import { ensureStrictSchema, getFilteredTools } from './tools';
+import { getFilteredTools } from './tools';
 
 function convertInputTextContent(content: TextContent): ResponseInputContent {
   return {
@@ -232,7 +232,7 @@ function getOpenAITools(
       type: 'function' as const,
       name,
       description,
-      parameters: ensureStrictSchema(parameters),
+      parameters,
       strict: strictParams,
     })
   );

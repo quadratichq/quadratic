@@ -1,14 +1,6 @@
 import type { AIToolSpecRecord } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-
-/**
- * Ensures the tool parameters schema has additionalProperties: false.
- * Required by OpenAI for function tools when strict=true, and valid in non-strict mode.
- */
-export const ensureStrictSchema = (parameters: AIToolArgs): AIToolArgs => {
-  return { ...parameters, additionalProperties: false };
-};
+import type { AISource, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 
 /** Returns a list of AI Tools in the order they are defined in the AITool enum. */
 export const getAIToolsInOrder = (): [AITool, AIToolSpecRecord[keyof AIToolSpecRecord]][] => {

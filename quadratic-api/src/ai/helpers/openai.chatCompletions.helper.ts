@@ -37,7 +37,7 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 import { getOrphanFilterIds } from './filterOrphanedToolCalls';
-import { ensureStrictSchema, getFilteredTools } from './tools';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
@@ -174,7 +174,7 @@ function getOpenAITools(
       function: {
         name,
         description,
-        parameters: ensureStrictSchema(parameters),
+        parameters,
         strict: strictParams,
       },
     })

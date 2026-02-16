@@ -17,6 +17,9 @@ export function parseToolArguments(
   }
   try {
     const value = JSON.parse(argumentsJson);
+    if (Array.isArray(value)) {
+      return { ok: false, error: 'Tool arguments must be an object, not an array' };
+    }
     return { ok: true, value: typeof value === 'object' && value !== null ? value : {} };
   } catch (e) {
     const message = e instanceof SyntaxError ? 'Invalid JSON in tool arguments' : String(e);
