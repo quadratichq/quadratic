@@ -58,6 +58,7 @@ futures = "0.3.25"
 itertools = "0.14.0"
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 rand = "0.9"
 regex = "1.7"
 rstar = "0.12.2"
