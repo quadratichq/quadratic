@@ -36,13 +36,29 @@ impl GridController {
             );
         }
 
-        // Notify client about pending code operations before execution starts
-        if transaction
-            .operations
-            .iter()
-            .any(|op| matches!(op, Operation::ComputeCode { .. }))
-        {
+        // Notify client about pending code operations before execution starts.
+        // Skip when there are many ComputeCode ops (e.g. bulk formula recalc) to avoid
+        // O(n) iteration in notify_code_running_state; formulas don't need code-running UI.
+        const MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY: usize = 100;
+        let mut compute_code_count = 0usize;
+        for op in transaction.operations.iter() {
+            if matches!(op, Operation::ComputeCode { .. }) {
+                compute_code_count += 1;
+                if compute_code_count > MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY {
+                    break;
+                }
+            }
+        }
+        if compute_code_count > 0 && compute_code_count <= MAX_COMPUTE_CODE_FOR_INITIAL_NOTIFY {
             self.notify_code_running_state(transaction, None);
+        }
+
+        // Pre-populate pending_compute_positions so add_compute_operations can skip the
+        // expensive full-queue reorder when dependents are already in the queue (e.g. bulk paste).
+        for op in transaction.operations.iter() {
+            if let Operation::ComputeCode { sheet_pos } = op {
+                transaction.pending_compute_positions.insert(*sheet_pos);
+            }
         }
 
         loop {
@@ -460,7 +476,7 @@ mod tests {
                 y: 0,
                 sheet_id,
             },
-            crate::grid::CodeCellLanguage::Python,
+            CodeCellLanguage::Python,
             "1 + 1".into(),
             None,
             None,
@@ -509,5 +525,144 @@ mod tests {
         );
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pending_compute_positions_pre_populated() {
+        // Test that pending_compute_positions is pre-populated before the main loop
+        // so add_compute_operations can skip already-queued positions.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up values
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 1), "10".into(), None, false);
+
+        // Set up formulas: B1 = A1 * 2, C1 = B1 + 5
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 2, 1),
+            CodeCellLanguage::Formula,
+            "A1 * 2".to_string(),
+            None,
+            None,
+            false,
+        );
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 3, 1),
+            CodeCellLanguage::Formula,
+            "B1 + 5".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial values
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(20.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 3, y: 1 }),
+            Some(CellValue::Number(25.into()))
+        );
+
+        // Now create a transaction that updates A1 and has ComputeCode ops for B1 and C1
+        // This simulates bulk paste where values and compute ops are in the same transaction.
+        let ops = vec![
+            Operation::SetCellValues {
+                sheet_pos: SheetPos::new(sheet_id, 1, 1),
+                values: CellValue::Number(50.into()).into(),
+            },
+            Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 2, 1),
+            },
+            Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 3, 1),
+            },
+        ];
+
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify that formulas computed correctly despite being pre-queued
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(100.into()))
+        ); // 50 * 2
+        assert_eq!(
+            sheet.display_value(Pos { x: 3, y: 1 }),
+            Some(CellValue::Number(105.into()))
+        ); // 100 + 5
+    }
+
+    #[test]
+    fn test_pending_compute_positions_skips_duplicates() {
+        // Test that when add_compute_operations finds dependents already in
+        // pending_compute_positions, it skips adding them again.
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up values in A1:A3
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 1), "1".into(), None, false);
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 2), "2".into(), None, false);
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 3), "3".into(), None, false);
+
+        // Set up formulas that all depend on A1:A3
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 2, 1),
+            CodeCellLanguage::Formula,
+            "SUM(A1:A3)".to_string(),
+            None,
+            None,
+            false,
+        );
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 2, 2),
+            CodeCellLanguage::Formula,
+            "AVERAGE(A1:A3)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial values
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(6.into()))
+        ); // 1+2+3
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 2 }),
+            Some(CellValue::Number(2.into()))
+        ); // (1+2+3)/3
+
+        // Create a transaction with SetCellValues that will trigger add_compute_operations,
+        // but also include ComputeCode ops for the dependents.
+        // The optimization should prevent add_compute_operations from re-adding B1 and B2.
+        let ops = vec![
+            Operation::SetCellValues {
+                sheet_pos: SheetPos::new(sheet_id, 1, 1),
+                values: CellValue::Number(10.into()).into(),
+            },
+            Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 2, 1),
+            },
+            Operation::ComputeCode {
+                sheet_pos: SheetPos::new(sheet_id, 2, 2),
+            },
+        ];
+
+        gc.start_user_ai_transaction(ops, None, TransactionName::Unknown, false);
+
+        // Verify formulas computed correctly
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(15.into()))
+        ); // 10+2+3
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 2 }),
+            Some(CellValue::Number(5.into()))
+        ); // (10+2+3)/3
     }
 }

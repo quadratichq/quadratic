@@ -1,18 +1,20 @@
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 use futures_util::stream::{FuturesUnordered, TryStreamExt};
 use httpclient::Client as HttpClient;
 use plaid::model::{CountryCode, LinkTokenCreateRequestUser, Products};
 use plaid::request::link_token_create::LinkTokenCreateRequired;
 use plaid::{PlaidAuth, PlaidClient as Client};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString};
 
 use crate::SharedError;
 use crate::environment::Environment;
 use crate::error::Result;
+use crate::parquet::json::grouped_json_to_parquet;
 use crate::synced::{DATE_FORMAT, SyncedClient};
 use crate::utils::json::flatten_to_json;
 
@@ -123,11 +125,7 @@ impl PlaidClient {
     ///
     /// # Returns
     /// Returns the raw JSON response as a serde_json::Value
-    pub async fn raw_request(
-        &self,
-        endpoint: &str,
-        extra_params: serde_json::Value,
-    ) -> Result<serde_json::Value> {
+    pub async fn raw_request(&self, endpoint: &str, extra_params: Value) -> Result<Value> {
         let access_token = self.access_token()?;
         let url = format!("{}/{}", self.environment.base_url(), endpoint);
 
@@ -189,8 +187,8 @@ impl PlaidClient {
         end_date: chrono::NaiveDate,
         array_key: &str,
         total_key: &str,
-        extra_options: Option<serde_json::Value>,
-    ) -> Result<Vec<serde_json::Value>> {
+        extra_options: Option<Value>,
+    ) -> Result<Vec<Value>> {
         tracing::trace!("Starting Plaid request {endpoint}, from {start_date} to {end_date})",);
 
         let mut all_items = Vec::new();
@@ -265,11 +263,7 @@ impl PlaidClient {
     /// # Arguments
     /// * `endpoint` - The Plaid API endpoint (e.g., "liabilities/get")
     /// * `response_key` - The key in the response containing the data (e.g., "liabilities")
-    pub async fn fetch_object(
-        &self,
-        endpoint: &str,
-        response_key: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn fetch_object(&self, endpoint: &str, response_key: &str) -> Result<Value> {
         tracing::trace!("Starting Plaid request {endpoint}",);
 
         let response = self.raw_request(endpoint, serde_json::json!({})).await?;
@@ -347,7 +341,7 @@ impl PlaidClient {
     ///
     /// # Returns
     /// Returns item information including consent_expiration_time
-    pub async fn get_item(&self) -> Result<serde_json::Value> {
+    pub async fn get_item(&self) -> Result<Value> {
         let access_token = self.access_token()?;
 
         let response = self
@@ -403,6 +397,7 @@ impl PlaidClient {
             "transactions" => Some("transactions"),
             "investments" => Some("investments"),
             "liabilities" => Some("liabilities"),
+            "balance" => Some("balances"),
             _ => None,
         }
     }
@@ -435,7 +430,7 @@ impl SyncedClient for PlaidClient {
     /// Get all possible streams for Plaid.
     /// Note: Use `available_streams()` to get streams for a specific connection.
     fn streams() -> Vec<&'static str> {
-        vec!["transactions", "investments", "liabilities"]
+        vec!["transactions", "investments", "liabilities", "balances"]
     }
 
     /// Test the connection to the Plaid API.
@@ -463,11 +458,38 @@ impl SyncedClient for PlaidClient {
                 Err(e) if is_stream_not_supported(&e) => Ok(None),
                 Err(e) => Err(e),
             },
-            "liabilities" => match self.get_liabilities().await {
-                Ok(data) => process_snapshot(data, stream, end_date).map(Some),
-                Err(e) if is_stream_not_supported(&e) => Ok(None),
-                Err(e) => Err(e),
-            },
+            "liabilities" => {
+                // Liabilities are point-in-time snapshots; only fetch when syncing today.
+                // Plaid only returns current liabilities, so historical backfills are skipped.
+                if !is_today(end_date) {
+                    tracing::trace!(
+                        "Skipping liabilities for historical date {} (not today)",
+                        end_date
+                    );
+                    return Ok(None);
+                }
+                match self.get_liabilities().await {
+                    Ok(data) => process_snapshot(data, stream, end_date).map(Some),
+                    Err(e) if is_stream_not_supported(&e) => Ok(None),
+                    Err(e) => Err(e),
+                }
+            }
+            "balances" => {
+                // Balances are point-in-time snapshots; only fetch when syncing today.
+                // Plaid only returns current balances, so historical backfills are skipped.
+                if !is_today(end_date) {
+                    tracing::trace!(
+                        "Skipping balances for historical date {} (not today)",
+                        end_date
+                    );
+                    return Ok(None);
+                }
+                match self.get_balances().await {
+                    Ok(data) => process_snapshot(data, stream, end_date).map(Some),
+                    Err(e) if is_stream_not_supported(&e) => Ok(None),
+                    Err(e) => Err(e),
+                }
+            }
             _ => Err(SharedError::Synced(format!("Unknown stream: {}", stream))),
         }
     }
@@ -522,18 +544,85 @@ fn is_stream_not_supported(err: &SharedError) -> bool {
         || err_str.contains("PRODUCTS_NOT_SUPPORTED")
         || err_str.contains("NO_INVESTMENT_ACCOUNTS")
         || err_str.contains("NO_LIABILITY_ACCOUNTS")
+        || err_str.contains("NO_ACCOUNTS")
+}
+
+/// Check if a date is today (UTC).
+/// Used for snapshot data (balances, liabilities) which can only be fetched in real-time.
+/// We skip historical dates since Plaid only returns current balances, not historical.
+///
+/// Note: All dates in the sync system are UTC. This ensures consistency across
+/// servers and users in different timezones. The `end_date` passed to `process()`
+/// is also calculated using UTC (via `today()` in mod.rs).
+fn is_today(date: NaiveDate) -> bool {
+    let today = chrono::Utc::now().date_naive();
+    date == today
+}
+
+/// Flatten items into serialized JSON string records.
+///
+/// Handles both:
+/// - Object of arrays (e.g., `{credit: [...], mortgage: [...]}`) — adds a `{stream}_type` column
+/// - Flat arrays — flattens each item directly
+///
+/// Optionally prepends a `date` column to each record.
+fn flatten_to_records(data: &Value, stream: &str, date_str: Option<&str>) -> Result<Vec<String>> {
+    let mut records = Vec::new();
+
+    let items_with_type: Vec<(Option<&str>, &Value)> = match data {
+        // object
+        Value::Object(obj) => obj
+            .iter()
+            .flat_map(|(item_type, items)| {
+                items.as_array().into_iter().flat_map(move |array| {
+                    array
+                        .iter()
+                        .map(move |item| (Some(item_type.as_str()), item))
+                })
+            })
+            .collect(),
+
+        // array
+        Value::Array(items) => items.iter().map(|item| (None, item)).collect(),
+
+        // other values pass through
+        _ => return Ok(records),
+    };
+
+    for (item_type, item) in items_with_type {
+        // only flatten to 2 levels of depth
+        let flattened = flatten_to_json(item, Some(2));
+        let mut ordered = Map::new();
+
+        if let Some(date) = date_str {
+            ordered.insert("date".to_string(), Value::String(date.to_string()));
+        }
+
+        ordered.extend(flattened);
+
+        if let Some(t) = item_type {
+            ordered.insert(
+                format!("{}_type", stream.trim_end_matches('s')),
+                Value::String(t.to_string()),
+            );
+        }
+
+        let json_str = serde_json::to_string(&ordered)
+            .map_err(|e| SharedError::Synced(format!("Failed to serialize {}: {}", stream, e)))?;
+
+        records.push(json_str);
+    }
+
+    Ok(records)
 }
 
 /// Process time-series data (transactions, investments) - group by date
 fn process_time_series(
-    items: Vec<serde_json::Value>,
+    items: Vec<Value>,
     stream: &str,
     start_date: NaiveDate,
     end_date: NaiveDate,
 ) -> Result<HashMap<String, Bytes>> {
-    use crate::parquet::json::grouped_json_to_parquet;
-    use chrono::Duration;
-
     if items.is_empty() {
         tracing::trace!(
             "No {} found for date range {} to {}",
@@ -552,17 +641,23 @@ fn process_time_series(
         current += Duration::days(1);
     }
 
-    // Group items by date
-    for item in &items {
+    // Group items by date, then flatten each group
+    // BTreeMap gives deterministic date ordering in the output parquet files
+    let mut date_groups: std::collections::BTreeMap<String, Vec<serde_json::Value>> =
+        std::collections::BTreeMap::new();
+    for item in items {
         let date_key = item
             .get("date")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown")
             .to_string();
-        let flattened = flatten_to_json(item);
-        let json_str = serde_json::to_string(&flattened)
-            .map_err(|e| SharedError::Synced(format!("Failed to serialize {}: {}", stream, e)))?;
-        grouped.entry(date_key).or_default().push(json_str);
+
+        date_groups.entry(date_key).or_default().push(item);
+    }
+
+    for (date_key, date_items) in date_groups {
+        let records = flatten_to_records(&Value::Array(date_items), stream, None)?;
+        grouped.entry(date_key).or_default().extend(records);
     }
 
     let days_with_data = grouped.values().filter(|v| !v.is_empty()).count();
@@ -579,37 +674,11 @@ fn process_time_series(
     grouped_json_to_parquet(grouped)
 }
 
-/// Process snapshot data (liabilities) - all records under single date
-fn process_snapshot(
-    data: serde_json::Value,
-    stream: &str,
-    date: NaiveDate,
-) -> Result<HashMap<String, Bytes>> {
-    use crate::parquet::json::grouped_json_to_parquet;
-
-    let mut records = Vec::new();
-
-    // Flatten nested object structure (e.g., liabilities.credit, liabilities.mortgage)
-    if let Some(obj) = data.as_object() {
-        for (item_type, items) in obj {
-            if let Some(array) = items.as_array() {
-                for item in array {
-                    let mut flattened = flatten_to_json(item);
-
-                    flattened.insert(
-                        format!("{}_type", stream.trim_end_matches('s')),
-                        serde_json::Value::String(item_type.clone()),
-                    );
-
-                    let json_str = serde_json::to_string(&flattened).map_err(|e| {
-                        SharedError::Synced(format!("Failed to serialize {}: {}", stream, e))
-                    })?;
-
-                    records.push(json_str);
-                }
-            }
-        }
-    }
+/// Process snapshot data (liabilities, balances) - all records under single date.
+/// Adds a `date` column to each record for tracking when the snapshot was captured.
+fn process_snapshot(data: Value, stream: &str, date: NaiveDate) -> Result<HashMap<String, Bytes>> {
+    let date_str = date.format(DATE_FORMAT).to_string();
+    let records = flatten_to_records(&data, stream, Some(&date_str))?;
 
     if records.is_empty() {
         tracing::warn!("No {} found", stream);
@@ -624,7 +693,8 @@ fn process_snapshot(
     );
 
     let mut grouped = HashMap::new();
-    grouped.insert(date.format(DATE_FORMAT).to_string(), records);
+    grouped.insert(date_str, records);
+
     grouped_json_to_parquet(grouped)
 }
 
@@ -649,8 +719,8 @@ mod tests {
             PlaidClient::product_to_stream("liabilities"),
             Some("liabilities")
         );
+        assert_eq!(PlaidClient::product_to_stream("balance"), Some("balances"));
         assert_eq!(PlaidClient::product_to_stream("auth"), None);
-        assert_eq!(PlaidClient::product_to_stream("balance"), None);
         assert_eq!(PlaidClient::product_to_stream("identity"), None);
         assert_eq!(PlaidClient::product_to_stream("unknown"), None);
     }
@@ -659,5 +729,21 @@ mod tests {
     async fn test_plaid_client() {
         let client = new_plaid_client(true, vec![Products::Transactions]).await;
         assert!(client.test_connection().await);
+    }
+
+    #[test]
+    fn test_is_today() {
+        use chrono::Duration;
+
+        let today = chrono::Utc::now().date_naive();
+        let yesterday = today - Duration::days(1);
+        let tomorrow = today + Duration::days(1);
+
+        // Only today should return true
+        assert!(super::is_today(today), "today should be true");
+
+        // All other dates should return false
+        assert!(!super::is_today(yesterday), "yesterday should be false");
+        assert!(!super::is_today(tomorrow), "tomorrow should be false");
     }
 }

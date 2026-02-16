@@ -13,7 +13,7 @@ import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
+import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell, Pos } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -280,7 +280,7 @@ export class Tables extends Container<Table> {
       cellBounds.bottom - 1
     );
     return (
-      tables?.flatMap((pos) => {
+      tables?.flatMap((pos: Pos) => {
         const table = this.getTable(pos.x, pos.y);
         if (table) {
           return [table];
@@ -680,7 +680,7 @@ export class Tables extends Container<Table> {
   /// cell-based rectangle
   getTablesInRect = (rect: Rectangle): Table[] => {
     const tablePositions = this.sheet.dataTablesCache.getTablesInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
-    return tablePositions.flatMap((pos) => {
+    return tablePositions.flatMap((pos: Pos) => {
       const table = this.getTable(pos.x, pos.y);
       if (table) {
         return [table];
@@ -701,7 +701,20 @@ export class Tables extends Container<Table> {
   };
 
   hasCodeCellInCurrentSelection = () => {
-    return this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
+    // Check DataTables (multi-cell code outputs)
+    if (this.sheet.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context)) {
+      return true;
+    }
+
+    // Check single-cell code cells (CellValue::Code)
+    for (const key in this.singleCellTables) {
+      const [x, y] = key.split(',').map(Number);
+      if (sheets.sheet.cursor.contains(x, y)) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   //#endregion

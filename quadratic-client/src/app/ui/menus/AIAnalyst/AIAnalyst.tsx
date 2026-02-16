@@ -1,9 +1,5 @@
+import { currentChatMessagesCountAtom, showAIAnalystAtom, showChatHistoryAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import {
-  aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystShowChatHistoryAtom,
-  showAIAnalystAtom,
-} from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -20,14 +16,15 @@ import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnal
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const AIAnalyst = memo(() => {
-  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const showAIAnalyst = useAtomValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
-  const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const showChatHistory = useAtomValue(showChatHistoryAtom);
+  const messagesCount = useAtomValue(currentChatMessagesCountAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
@@ -124,7 +121,7 @@ export const AIAnalyst = memo(() => {
             <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
               <span className="text-sm font-bold">Drop files here</span>
               <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">
-                Excel, CSV, PDF, PQT, or Image supported
+                Excel, CSV, PDF, Parquet, or Image supported
               </span>
             </div>
           </div>
@@ -139,8 +136,12 @@ export const AIAnalyst = memo(() => {
 
         <div
           className={cn(
-            'h-full w-full',
-            showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
+            'grid h-full w-full',
+            showChatHistory
+              ? 'grid-rows-[auto_1fr]'
+              : messagesCount === 0
+                ? 'grid-rows-[auto_auto_1fr]'
+                : 'grid-rows-[auto_1fr_auto]'
           )}
         >
           <AIAnalystHeader textareaRef={textareaRef} />
@@ -153,12 +154,15 @@ export const AIAnalyst = memo(() => {
 
               <div
                 className={cn(
-                  'grid pt-0.5',
-                  messagesCount === 0 ? 'grid-rows-[auto_1fr_auto_auto]' : 'relative grid-rows-[auto_auto]'
+                  'pt-0.5',
+                  messagesCount === 0 ? 'flex min-h-0 flex-col' : 'relative grid grid-rows-[auto_auto]'
                 )}
               >
                 <AIPendingChanges />
-                <div className="px-2 pb-2" data-walkthrough="ai-chat-input">
+                <div
+                  className={cn('px-2 pb-2', messagesCount === 0 && 'flex min-h-0 flex-1 flex-col')}
+                  data-walkthrough="ai-chat-input"
+                >
                   <AIAnalystUserMessageForm
                     ref={textareaRef}
                     autoFocusRef={autoFocusRef}

@@ -8,6 +8,7 @@ import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import {
   AlignmentFormatting,
   Clear,
@@ -233,7 +234,7 @@ export const FormattingBar = memo(() => {
 
       <div className="flex h-full min-w-0 flex-1 overflow-hidden" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
-          <div className="flex flex-shrink select-none">
+          <div className="flex flex-shrink select-none items-center">
             {!hiddenItems.includes('NumberFormatting') && (
               <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
             )}
@@ -244,6 +245,7 @@ export const FormattingBar = memo(() => {
             {!hiddenItems.includes('FontSizeFormatting') && (
               <FontSizeFormatting key="main-font-size-formatting" formatSummary={formatSummary} />
             )}
+            <FormatPainterButton />
             {!hiddenItems.includes('FillAndBorderFormatting') && (
               <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
             )}

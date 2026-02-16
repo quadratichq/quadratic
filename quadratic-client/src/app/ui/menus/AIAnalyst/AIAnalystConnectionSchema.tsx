@@ -1,5 +1,5 @@
+import { activeSchemaConnectionUuidAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -8,8 +8,9 @@ import { ConnectionSchemaBrowser } from '@/shared/components/connections/Connect
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { useAtom } from 'jotai';
 import { memo, useCallback, useRef } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export const AIAnalystConnectionSchema = memo(() => {
   const {
@@ -18,9 +19,8 @@ export const AIAnalystConnectionSchema = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const panelRef = useRef<HTMLDivElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystConnectionSchemaPanelWidth();
-  const [aiAnalystActiveSchemaConnectionUuid, setAIAnalystActiveSchemaConnectionUuid] = useRecoilState(
-    aiAnalystActiveSchemaConnectionUuidAtom
-  );
+  const [aiAnalystActiveSchemaConnectionUuid, setAIAnalystActiveSchemaConnectionUuid] =
+    useAtom(activeSchemaConnectionUuidAtom);
   const { connections } = useConnectionsFetcher();
   const agentMode = useRecoilValue(agentModeAtom);
 
@@ -81,7 +81,6 @@ export const AIAnalystConnectionSchema = memo(() => {
           teamUuid={teamUuid}
           type={connectionType}
           uuid={aiAnalystActiveSchemaConnectionUuid}
-          showSyncedConnection={true}
           eventSource="app-left-side"
         />
       </div>

@@ -4,15 +4,13 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { FormatPaintIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import type { z } from 'zod';
 
-type UpdateConditionalFormatsResponse = z.infer<
-  (typeof aiToolsSpec)[AITool.UpdateConditionalFormats]['responseSchema']
->;
+type UpdateConditionalFormatsResponse = AIToolsArgs[AITool.UpdateConditionalFormats];
 type RuleEntry = UpdateConditionalFormatsResponse['rules'][number];
 
 // Get action badge color
@@ -103,7 +101,7 @@ export const UpdateConditionalFormats = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.UpdateConditionalFormats].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.UpdateConditionalFormats].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[UpdateConditionalFormats] Failed to parse args: ', error);
@@ -116,7 +114,7 @@ export const UpdateConditionalFormats = memo(
     const { label, description } = useMemo(() => {
       if (!toolArgs?.data?.rules) {
         return {
-          label: loading ? 'Updating conditional formatting' : 'Updated conditional formatting',
+          label: loading ? 'Applying conditional formatting' : 'Applied conditional formatting',
           description: undefined,
         };
       }
@@ -131,7 +129,7 @@ export const UpdateConditionalFormats = memo(
       if (updateCount > 0) parts.push(`${updateCount} updated`);
       if (deleteCount > 0) parts.push(`${deleteCount} deleted`);
 
-      const verb = loading ? 'Updating' : 'Updated';
+      const verb = loading ? 'Applying' : 'Applied';
 
       if (rules.length === 1) {
         const rule = rules[0];

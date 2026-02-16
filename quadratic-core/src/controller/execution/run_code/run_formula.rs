@@ -75,17 +75,17 @@ impl GridController {
         };
 
         // Apply template properties if provided, otherwise use defaults
-        let (show_name, show_columns, header_is_first_row, chart_output) =
-            if let Some(t) = template {
-                (
-                    t.show_name,
-                    t.show_columns,
-                    t.header_is_first_row,
-                    t.chart_output,
-                )
-            } else {
-                (None, None, false, None)
-            };
+        let (show_name, show_columns, header_is_first_row, chart_output) = if let Some(t) = template
+        {
+            (
+                t.show_name,
+                t.show_columns,
+                t.header_is_first_row,
+                t.chart_output,
+            )
+        } else {
+            (None, None, false, None)
+        };
 
         let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
@@ -148,7 +148,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
-        Array, ArraySize, CellValue, Pos, SheetPos, Value, assert_code_language,
+        Array, ArraySize, CellValue, Pos, RunErrorMsg, SheetPos, Value, assert_code_language,
         controller::{
             GridController,
             active_transactions::pending_transaction::PendingTransaction,
@@ -527,5 +527,148 @@ mod test {
         let result = sheet.data_table_at(&pos).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
+    }
+
+    #[test]
+    fn test_formula_unbounded_column_row_trigger() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set initial values in column B
+        gc.set_cell_value(pos![sheet_id!B1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "20".into(), None, false);
+
+        // Create formula that sums entire column B (formula at A1, outside column B)
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(B:B)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial result
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A1]),
+            Some(CellValue::Number(30.into()))
+        );
+
+        // Add a new value to column B - formula should recalculate
+        gc.set_cell_value(pos![sheet_id!B3], "15".into(), None, false);
+
+        // Verify formula was triggered and recalculated
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A1]),
+            Some(CellValue::Number(45.into()))
+        );
+
+        // Test unbounded row reference (formula at A5, outside row 4)
+        gc.set_cell_value(pos![sheet_id!A4], "5".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B4], "10".into(), None, false);
+
+        gc.set_code_cell(
+            pos![sheet_id!A5],
+            CodeCellLanguage::Formula,
+            "SUM(4:4)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial row sum result
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Number(15.into())) // 5 + 10
+        );
+
+        // Add a new value to row 4 - formula should recalculate
+        gc.set_cell_value(pos![sheet_id!C4], "7".into(), None, false);
+
+        // Verify formula was triggered
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Number(22.into())) // 5 + 10 + 7
+        );
+    }
+
+    #[test]
+    fn test_self_referential_formula_does_not_hang() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set =SUM(A1) at A1 - this references itself
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(A1)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should complete (not hang) and produce an error
+        let sheet = gc.sheet(sheet_id);
+        let display = sheet.display_value(pos![A1]);
+
+        // Should have a value (error value, not blank from hanging)
+        assert!(
+            display.is_some(),
+            "Formula should produce a value, not hang"
+        );
+
+        // Verify the error is CircularReference
+        if let Some(CellValue::Error(err)) = display {
+            assert_eq!(err.msg, RunErrorMsg::CircularReference);
+        } else {
+            panic!("Expected CircularReference error, got {:?}", display);
+        }
+
+        // Verify subsequent operations still work
+        gc.set_cell_value(pos![sheet_id!B1], "test".into(), None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![B1]),
+            Some(CellValue::Text("test".into()))
+        );
+    }
+
+    #[test]
+    fn test_self_referential_range_formula_does_not_hang() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set =SUM(A:A) at A1 - this references entire column A including A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(A:A)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should complete (not hang) and produce an error
+        let sheet = gc.sheet(sheet_id);
+        let display = sheet.display_value(pos![A1]);
+
+        // Should have a value (error value, not blank from hanging)
+        assert!(
+            display.is_some(),
+            "Formula should produce a value, not hang"
+        );
+
+        // Verify the error is CircularReference
+        if let Some(CellValue::Error(err)) = display {
+            assert_eq!(err.msg, RunErrorMsg::CircularReference);
+        } else {
+            panic!("Expected CircularReference error, got {:?}", display);
+        }
+
+        // Verify subsequent operations still work
+        gc.set_cell_value(pos![sheet_id!B1], "test".into(), None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![B1]),
+            Some(CellValue::Text("test".into()))
+        );
     }
 }

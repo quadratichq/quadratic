@@ -35,7 +35,7 @@ import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
@@ -61,18 +61,23 @@ type Props = {
   onConnectionCreated?: OnConnectionCreatedCallback;
   /** Called when an existing connection is selected from the list (in-app only) */
   onConnectionSelected?: OnConnectionSelectedCallback;
+  /** Open directly to create a specific connection type */
+  initialConnectionType?: ConnectionType;
+  /** Open directly to edit a specific connection */
+  initialConnectionUuid?: string;
 };
 
 export type NavigateToListView = () => void;
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
-export type NavigateToCreateView = (type: ConnectionType) => void;
+export type PlaidCategory = 'Banks' | 'Brokerages' | 'Credit Cards';
+export type NavigateToCreateView = (type: ConnectionType, plaidCategory?: PlaidCategory) => void;
 export type NavigateToCreatePotentialView = (type: PotentialConnectionType) => void;
 
 type ConnectionState =
   | { view: 'edit'; uuid: string; type: ConnectionType }
   | { view: 'details'; uuid: string; type: ConnectionType }
   | { view: 'new' }
-  | { view: 'create'; type: ConnectionType }
+  | { view: 'create'; type: ConnectionType; plaidCategory?: PlaidCategory }
   | { view: 'create-potential'; type: PotentialConnectionType }
   | { view: 'list' };
 
@@ -86,39 +91,23 @@ export const Connections = ({
   initialView,
   onConnectionCreated,
   onConnectionSelected,
+  initialConnectionType,
+  initialConnectionUuid,
 }: Props) => {
   const submit = useSubmit();
 
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
-
-  // Check if user only has demo connections (or no connections at all)
-  const hasOnlyDemoConnections = connections.length === 0 || connections.every((c) => c.isDemo === true);
-
-  const initialConnectionState =
-    initialView === 'new' || (!connectionsAreLoading && hasOnlyDemoConnections)
-      ? { view: 'new' as const }
-      : getInitialConnectionState(searchParams);
+  const initialConnectionState = getInitialConnectionStateFromProps({
+    initialView,
+    initialConnectionType,
+    initialConnectionUuid,
+    searchParams,
+  });
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
   const [activeConnectionState, setActiveConnectionState] = useState<ConnectionState>(initialConnectionState);
-
-  // Track if we've already handled the "only demo connections" redirect
-  const hasHandledDemoOnlyRedirect = useRef(false);
-
-  // When loading finishes and we only have demo connections, redirect to 'new' view
-  useEffect(() => {
-    if (
-      !connectionsAreLoading &&
-      hasOnlyDemoConnections &&
-      activeConnectionState.view === 'list' &&
-      !hasHandledDemoOnlyRedirect.current
-    ) {
-      hasHandledDemoOnlyRedirect.current = true;
-      setActiveConnectionState({ view: 'new' });
-    }
-  }, [connectionsAreLoading, hasOnlyDemoConnections, activeConnectionState.view]);
 
   /**
    * Optimistic UI
@@ -214,8 +203,8 @@ export const Connections = ({
   const handleNavigateToListView: NavigateToListView = useCallback(() => {
     setActiveConnectionState({ view: 'list' });
   }, []);
-  const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
-    setActiveConnectionState({ view: 'create', type: connectionType });
+  const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType, plaidCategory) => {
+    setActiveConnectionState({ view: 'create', type: connectionType, plaidCategory });
     trackEvent('[Connections].start-create', { type: connectionType });
   }, []);
   const handleNavigateToCreatePotentialView: NavigateToCreatePotentialView = useCallback((connectionType) => {
@@ -303,6 +292,7 @@ export const Connections = ({
                 <ConnectionFormCreate
                   teamUuid={teamUuid}
                   type={activeConnectionState.type}
+                  plaidCategory={activeConnectionState.plaidCategory}
                   handleNavigateToListView={handleNavigateToListView}
                   handleNavigateToNewView={handleNavigateToNewView}
                   onConnectionCreated={onConnectionCreated}
@@ -389,7 +379,30 @@ const ConnectionBreadcrumbs = memo(
   }
 );
 
-function getInitialConnectionState(searchParams: URLSearchParams): ConnectionState {
+function getInitialConnectionStateFromProps({
+  initialView,
+  initialConnectionType,
+  initialConnectionUuid,
+  searchParams,
+}: {
+  initialView?: 'new' | 'list';
+  initialConnectionType?: ConnectionType;
+  initialConnectionUuid?: string;
+  searchParams: URLSearchParams;
+}): ConnectionState {
+  // First check props
+  if (initialView === 'new') {
+    return { view: 'new' };
+  }
+
+  if (initialConnectionType && isDatabaseConnection(initialConnectionType)) {
+    if (initialConnectionUuid) {
+      return { view: 'edit', uuid: initialConnectionUuid, type: initialConnectionType };
+    }
+    return { view: 'create', type: initialConnectionType };
+  }
+
+  // Fall back to search params
   const view = searchParams.get('view');
   if (view === 'new') {
     return { view: 'new' };

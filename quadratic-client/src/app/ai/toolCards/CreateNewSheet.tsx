@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type CreateNewSheetResponse = z.infer<(typeof aiToolsSpec)[AITool.AddSheet]['responseSchema']>;
+type CreateNewSheetResponse = AIToolsArgs[AITool.AddSheet];
 
 export const NewSheet = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -19,7 +19,7 @@ export const NewSheet = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.AddSheet].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.AddSheet].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[CreateNewSheet] Failed to parse args: ', error);

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.23.10"
+version = "0.23.11"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -70,7 +70,7 @@ strum_macros = "0.27.1"
 tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.4.0"
 unicode-case-mapping = "1.0.0"
-uuid = { version = "1.13.1", features = ["serde", "v4", "rng-rand"] }
+uuid = { version = "=1.17.0", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "=0.4.39", features = ["serde", "wasmbind"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

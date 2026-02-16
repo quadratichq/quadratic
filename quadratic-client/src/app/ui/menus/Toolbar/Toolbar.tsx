@@ -1,8 +1,8 @@
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { CursorPosition } from '@/app/ui/menus/Toolbar/CursorPosition';
-import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import { FormattingBar } from '@/app/ui/menus/Toolbar/FormattingBar/FormattingBar';
+import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import { ZoomMenu } from '@/app/ui/menus/Toolbar/ZoomMenu';
 import { cn } from '@/shared/shadcn/utils';
 import { memo } from 'react';

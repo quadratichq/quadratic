@@ -185,7 +185,7 @@ function getBedrockTools(source: AISource, aiModelMode: ModelMode, toolName?: AI
         description,
         inputSchema: {
           json: input_schema,
-        },
+        } as NonNullable<Tool['toolSpec']>['inputSchema'],
       },
     })
   );
