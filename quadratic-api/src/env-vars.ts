@@ -52,6 +52,10 @@ export const FREE_EDITABLE_FILE_LIMIT = process.env.FREE_EDITABLE_FILE_LIMIT
 export const AI_ALLOWANCE_PRO = process.env.AI_ALLOWANCE_PRO ? Number(process.env.AI_ALLOWANCE_PRO) : 20;
 export const AI_ALLOWANCE_BUSINESS = process.env.AI_ALLOWANCE_BUSINESS ? Number(process.env.AI_ALLOWANCE_BUSINESS) : 40;
 
+// Margin applied to AI usage cost calculation (defaults to 0, i.e., no margin).
+// The cost is multiplied by (1 + AI_MARGIN), so 0.05 adds a 5% margin.
+export const AI_MARGIN = process.env.AI_MARGIN ? Number(process.env.AI_MARGIN) : 0;
+
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
 export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
