@@ -323,9 +323,12 @@ jobs:
 
       - name: Build core
         run: |
-          npm run build:dev --workspace=quadratic-core & \
-          npm run export_types --workspace=quadratic-core & \
-          wait
+          npm run build:dev --workspace=quadratic-core &
+          BUILD_PID=$!
+          npm run export_types --workspace=quadratic-core &
+          TYPES_PID=$!
+          wait $BUILD_PID || exit 1
+          wait $TYPES_PID || exit 1
 
       - name: Build python
         run: |
@@ -487,9 +490,12 @@ jobs:
 
       - name: Build core
         run: |
-          npm run build:dev --workspace=quadratic-core & \
-          npm run export_types --workspace=quadratic-core & \
-          wait
+          npm run build:dev --workspace=quadratic-core &
+          BUILD_PID=$!
+          npm run export_types --workspace=quadratic-core &
+          TYPES_PID=$!
+          wait $BUILD_PID || exit 1
+          wait $TYPES_PID || exit 1
 
       - name: Lint quadratic-client
         run: |
