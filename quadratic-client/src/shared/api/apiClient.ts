@@ -561,6 +561,33 @@ export const apiClient = {
     },
   },
 
+  embeds: {
+    get(embedUuid: string) {
+      return fetchFromApi(`/v0/embeds/${embedUuid}`, { method: 'GET' }, ApiSchemas['/v0/embeds/:uuid.GET.response']);
+    },
+    create(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/embeds`,
+        { method: 'POST' },
+        ApiSchemas['/v0/files/:uuid/embeds.POST.response']
+      );
+    },
+    list(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/embeds`,
+        { method: 'GET' },
+        ApiSchemas['/v0/files/:uuid/embeds.GET.response']
+      );
+    },
+    delete(embedUuid: string) {
+      return fetchFromApi(
+        `/v0/embeds/${embedUuid}`,
+        { method: 'DELETE' },
+        ApiSchemas['/v0/embeds/:uuid.DELETE.response']
+      );
+    },
+  },
+
   embed: {
     uploadRequest(body: ApiTypes['/v0/embed/upload-request.POST.request']) {
       return fetchFromApi(

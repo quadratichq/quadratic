@@ -87,10 +87,21 @@ model File {
     FileInvite       FileInvite[]
     AnalyticsAIChat  AnalyticsAIChat[]
     ScheduledTask    ScheduledTask[]
+    Embed            Embed[]
 
     @@index([uuid])
     @@index([ownerTeamId])
     @@index([id, ownerTeamId])
+}
+
+model Embed {
+    id          Int      @id @default(autoincrement())
+    uuid        String   @unique @default(uuid())
+    file        File     @relation(fields: [fileId], references: [id])
+    fileId      Int      @map("file_id")
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@index([fileId])
 }
 
 model FileCheckpoint {

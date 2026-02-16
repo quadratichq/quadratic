@@ -31,10 +31,10 @@ The server will start on `http://localhost:8081` (or the port specified by the `
 
 The test page supports three embed URL formats:
 
-1. **fileId** - Load a Quadratic file by its ID (file must be shared publicly):
+1. **embedId** - Load a Quadratic file by its embed ID (file must be shared publicly):
    ```
-   http://localhost:3000/embed?fileId=xxx
-   https://app.quadratichq.com/embed?fileId=xxx
+   http://localhost:3000/embed?embedId=xxx
+   https://app.quadratichq.com/embed?embedId=xxx
    ```
 
 2. **import** - Import a file from a URL (e.g., Excel, CSV):
@@ -55,7 +55,7 @@ The following URL parameters can be set via the UI or added manually:
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `fileId` | UUID of a Quadratic file to load | `fileId=abc123` |
+| `embedId` | UUID of an embed link to load | `embedId=abc123` |
 | `import` | URL of a file to import | `import=https://example.com/file.xlsx` |
 | `preload` | Comma-separated list of kernels to preload | `preload=python,js` |
 | `readonly` | Make the embed read-only (no value needed) | `readonly` |

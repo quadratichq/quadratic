@@ -2,7 +2,6 @@ import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInterac
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { CursorPosition } from '@/app/ui/menus/Toolbar/CursorPosition';
 import { FormattingBar } from '@/app/ui/menus/Toolbar/FormattingBar/FormattingBar';
-import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import { ZoomMenu } from '@/app/ui/menus/Toolbar/ZoomMenu';
 import { cn } from '@/shared/shadcn/utils';
 import { memo } from 'react';
@@ -23,19 +22,14 @@ export const Toolbar = memo(() => {
     >
       <div
         className={cn(
-          'flex-shrink-0 border-r border-border xl:w-64 2xl:w-80',
-          // In embed mode, hide CursorPosition on very small screens to give more space to FormattingBar
-          isEmbed ? 'hidden w-32 sm:block sm:w-48' : 'w-48'
+          'flex-shrink-0 border-r border-border',
+          // In embed mode, hide CursorPosition on very small screens to give more space to FormattingBar.
+          // In the app, grow at xl/2xl to align with the sidebar.
+          isEmbed ? 'hidden w-32 sm:block sm:w-48' : 'w-48 xl:w-64 2xl:w-80'
         )}
       >
         <CursorPosition />
       </div>
-
-      {canEdit && (
-        <div className="flex items-center border-r border-border px-2">
-          <FormatPainterButton />
-        </div>
-      )}
 
       <div className="no-scrollbar flex min-w-0 flex-1 items-center justify-center overflow-hidden">
         {canEdit && <FormattingBar />}
@@ -43,9 +37,10 @@ export const Toolbar = memo(() => {
 
       <div
         className={cn(
-          'flex items-center justify-end xl:w-64 2xl:w-80',
-          // In embed mode, hide ZoomMenu on very small screens to give more space to FormattingBar
-          isEmbed && 'hidden sm:flex'
+          'flex items-center justify-end',
+          // In embed mode, hide ZoomMenu on very small screens to give more space to FormattingBar.
+          // In the app, grow at xl/2xl to align with the sidebar.
+          isEmbed ? 'hidden sm:flex' : 'xl:w-64 2xl:w-80'
         )}
       >
         <ZoomMenu />

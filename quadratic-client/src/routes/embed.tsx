@@ -27,7 +27,7 @@ import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 
 type EmbedLoaderData =
-  | { mode: 'file'; fileData: ApiTypes['/v0/files/:uuid.GET.response'] }
+  | { mode: 'embed'; embedData: ApiTypes['/v0/embeds/:uuid.GET.response'] }
   | { mode: 'import'; importUrl: string }
   | { mode: 'blank' };
 
@@ -37,13 +37,13 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
   startupTimer.start('file.loader');
 
   const url = new URL(request.url);
-  // Make fileId and import parameters case-insensitive
-  let fileId: string | null = null;
+  // Make embedId and import parameters case-insensitive
+  let embedId: string | null = null;
   let importUrl: string | null = null;
   for (const [key, value] of url.searchParams.entries()) {
     const lowerKey = key.toLowerCase();
-    if (lowerKey === 'fileid') {
-      fileId = value;
+    if (lowerKey === 'embedid') {
+      embedId = value;
     } else if (lowerKey === 'import') {
       importUrl = value;
     }
@@ -78,49 +78,51 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
     initializeCoreClient(),
   ]);
 
-  if (fileId) {
-    // Load existing file from API
-    let data: ApiTypes['/v0/files/:uuid.GET.response'];
+  if (embedId) {
+    // Load file via embed API (does not expose the file UUID)
+    let data: ApiTypes['/v0/embeds/:uuid.GET.response'];
     try {
-      startupTimer.start('file.loader.files.get');
-      data = await apiClient.files.get(fileId);
-      startupTimer.end('file.loader.files.get');
-    } catch (error: any) {
-      // In embed mode, don't redirect to login - just show permission error
-      if (error.status === 403) {
+      startupTimer.start('file.loader.embeds.get');
+      data = await apiClient.embeds.get(embedId);
+      startupTimer.end('file.loader.embeds.get');
+    } catch (error: unknown) {
+      const status = error instanceof Error && 'status' in error ? (error as { status: number }).status : 500;
+      if (status === 403) {
         throw new Response('Permission denied. This file may not be publicly accessible.', { status: 403 });
       }
-      throw new Response('Failed to load file from server.', { status: error.status });
+      throw new Response('Failed to load file from server.', { status });
     }
 
     if (debugFlag('debugShowMultiplayer') || debugFlag('debugShowFileIO')) {
-      console.log(
-        `[Embed API] Received information for file ${fileId} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
-      );
+      console.log(`[Embed API] Received embed ${embedId} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
     }
+
+    // Use random UUIDs since the real file/team UUIDs are not exposed
+    const internalFileId = crypto.randomUUID();
+    const internalTeamUuid = crypto.randomUUID();
 
     // Load the file into core
     startupTimer.start('file.loader.quadraticCore.load');
     const result = await quadraticCore.load({
-      fileId,
-      teamUuid: data.team.uuid,
+      fileId: internalFileId,
+      teamUuid: internalTeamUuid,
       url: data.file.lastCheckpointDataUrl,
       version: data.file.lastCheckpointVersion,
       sequenceNumber: data.file.lastCheckpointSequenceNumber,
-      noMultiplayer: true, // Always true for embed
+      noMultiplayer: true,
     });
     startupTimer.end('file.loader.quadraticCore.load');
 
     if (result.error) {
       captureEvent({
-        message: `[Embed] Failed to deserialize file ${fileId} from server.`,
+        message: `[Embed] Failed to deserialize embed ${embedId} from server.`,
         extra: { error: result.error },
       });
       throw new Response('Failed to deserialize file from server.', { statusText: result.error });
     } else if (result.version) {
       if (compareVersions(result.version, data.file.lastCheckpointVersion) === VersionComparisonResult.LessThan) {
         captureEvent({
-          message: `[Embed] User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
+          message: `[Embed] User opened an embed at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
           level: 'log',
         });
         // @ts-expect-error hard reload via `true` only works in some browsers
@@ -132,20 +134,14 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<EmbedLoad
 
     // In embed mode, allow editing since changes are local only (unless readonly is set)
     const isReadonlyParam = url.searchParams.get('readonly') !== null;
-    if (!isReadonlyParam && !data.userMakingRequest.filePermissions.includes(FilePermissionSchema.enum.FILE_EDIT)) {
-      data.userMakingRequest.filePermissions = [
-        ...data.userMakingRequest.filePermissions,
-        FilePermissionSchema.enum.FILE_EDIT,
-      ];
-    } else if (isReadonlyParam) {
-      // Remove FILE_EDIT permission if readonly is set
+    if (isReadonlyParam) {
       data.userMakingRequest.filePermissions = data.userMakingRequest.filePermissions.filter(
         (p) => p !== FilePermissionSchema.enum.FILE_EDIT
       );
     }
 
     startupTimer.end('file.loader');
-    return { mode: 'file', fileData: data };
+    return { mode: 'embed', embedData: data };
   }
 
   // Import URL is not validated (e.g. we allow http/localhost). This supports local dev
@@ -338,37 +334,36 @@ export const Component = memo(() => {
     }
   }, [loaderData]);
 
-  // For file mode, use the file data
-  const fileData = loaderData.mode === 'file' ? loaderData.fileData : null;
+  // For embed mode, use the embed data
+  const embedData = loaderData.mode === 'embed' ? loaderData.embedData : null;
 
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       // In embed mode, user is always anonymous (undefined)
-      if (fileData) {
+      if (embedData) {
         set(editorInteractionStateAtom, (prevState) => ({
           ...prevState,
-          permissions: fileData.userMakingRequest.filePermissions,
-          settings: fileData.team.settings,
-          user: undefined, // Anonymous in embed mode
-          fileUuid: fileData.file.uuid,
-          teamUuid: fileData.team.uuid,
+          permissions: embedData.userMakingRequest.filePermissions,
+          settings: embedData.team.settings,
+          user: undefined,
+          fileUuid: crypto.randomUUID(),
+          teamUuid: crypto.randomUUID(),
         }));
       } else {
         // For import and blank modes, set minimal permissions (edit allowed since local only, unless readonly)
-        // Generate a random UUID so EmbedApp can initialize
         const permissions = isReadonly
           ? [FilePermissionSchema.enum.FILE_VIEW]
           : [FilePermissionSchema.enum.FILE_VIEW, FilePermissionSchema.enum.FILE_EDIT];
         set(editorInteractionStateAtom, (prevState) => ({
           ...prevState,
           permissions,
-          user: undefined, // Anonymous in embed mode
+          user: undefined,
           fileUuid: crypto.randomUUID(),
           teamUuid: crypto.randomUUID(),
         }));
       }
     },
-    [fileData]
+    [embedData]
   );
 
   // Prevent wheel events from scrolling the parent page (iframe embed)

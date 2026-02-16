@@ -20,20 +20,20 @@ export const ROUTES = {
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   EMBED: ({
-    fileId,
+    embedId,
     importUrl,
     readonly,
     sheet,
     preload,
   }: {
-    fileId?: string;
+    embedId?: string;
     importUrl?: string;
     readonly?: boolean;
     sheet?: string;
     preload?: ('python' | 'js')[];
   }) => {
     const params = new URLSearchParams();
-    if (fileId) params.set('fileId', fileId);
+    if (embedId) params.set('embedId', embedId);
     if (importUrl) params.set('import', importUrl);
     if (readonly) params.set('readonly', '');
     if (sheet?.trim()) params.set('sheet', sheet.trim());

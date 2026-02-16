@@ -16,6 +16,7 @@ import {
   PublicOffIcon,
 } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
+import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_EMBED_URL } from '@/shared/constants/urls';
 import { useTeamData } from '@/shared/hooks/useTeamData';
@@ -1318,24 +1319,52 @@ function ListItemEmbed({
   const [embedSheet, setEmbedSheet] = useState('');
   const [preloadPython, setPreloadPython] = useState(false);
   const [preloadJS, setPreloadJS] = useState(false);
+  const [embedUuid, setEmbedUuid] = useState<string | null>(null);
+  const [isLoadingEmbed, setIsLoadingEmbed] = useState(false);
+  const fetchedRef = useRef(false);
 
   const isPublic = publicLinkAccess !== 'NOT_SHARED';
 
+  // Fetch or create embed record when the file is public
+  useEffect(() => {
+    if (!isPublic || fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    const fetchOrCreateEmbed = async () => {
+      setIsLoadingEmbed(true);
+      try {
+        const embeds = await apiClient.embeds.list(uuid);
+        if (embeds.length > 0) {
+          setEmbedUuid(embeds[0].uuid);
+        } else {
+          const newEmbed = await apiClient.embeds.create(uuid);
+          setEmbedUuid(newEmbed.uuid);
+        }
+      } catch {
+        addGlobalSnackbar('Failed to load embed link.', { severity: 'error' });
+      } finally {
+        setIsLoadingEmbed(false);
+      }
+    };
+
+    fetchOrCreateEmbed();
+  }, [isPublic, uuid, addGlobalSnackbar]);
+
   const embedUrl = useMemo(() => {
-    if (!isPublic) return '';
+    if (!isPublic || !embedUuid) return '';
     const preload: ('python' | 'js')[] = [];
     if (preloadPython) preload.push('python');
     if (preloadJS) preload.push('js');
     return (
       window.location.origin +
       ROUTES.EMBED({
-        fileId: uuid,
+        embedId: embedUuid,
         readonly: embedReadonly || undefined,
         sheet: embedSheet.trim() || undefined,
         preload: preload.length ? preload : undefined,
       })
     );
-  }, [uuid, isPublic, embedReadonly, embedSheet, preloadPython, preloadJS]);
+  }, [embedUuid, isPublic, embedReadonly, embedSheet, preloadPython, preloadJS]);
 
   const handleCopyEmbedLink = useCallback(() => {
     if (!embedUrl) return;
@@ -1384,75 +1413,79 @@ function ListItemEmbed({
       <CollapsibleContent>
         <div className="flex flex-col gap-3 pb-1 pl-9 pt-2">
           {isPublic ? (
-            <>
-              <div className="flex gap-6">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="embed-readonly"
-                      checked={embedReadonly}
-                      onCheckedChange={(checked) => setEmbedReadonly(checked === true)}
-                    />
-                    <Label htmlFor="embed-readonly" className="cursor-pointer text-sm font-normal">
-                      Read-only
-                    </Label>
+            isLoadingEmbed ? (
+              <Skeleton className="h-8 w-full" />
+            ) : (
+              <>
+                <div className="flex gap-6">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="embed-readonly"
+                        checked={embedReadonly}
+                        onCheckedChange={(checked) => setEmbedReadonly(checked === true)}
+                      />
+                      <Label htmlFor="embed-readonly" className="cursor-pointer text-sm font-normal">
+                        Read-only
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="embed-preload-python"
+                        checked={preloadPython}
+                        onCheckedChange={(checked) => setPreloadPython(checked === true)}
+                      />
+                      <Label htmlFor="embed-preload-python" className="cursor-pointer text-sm font-normal">
+                        Preload Python
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="embed-preload-js"
+                        checked={preloadJS}
+                        onCheckedChange={(checked) => setPreloadJS(checked === true)}
+                      />
+                      <Label htmlFor="embed-preload-js" className="cursor-pointer text-sm font-normal">
+                        Preload JavaScript
+                      </Label>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="embed-preload-python"
-                      checked={preloadPython}
-                      onCheckedChange={(checked) => setPreloadPython(checked === true)}
-                    />
-                    <Label htmlFor="embed-preload-python" className="cursor-pointer text-sm font-normal">
-                      Preload Python
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="embed-sheet" className="text-sm font-normal">
+                      Only show sheet
                     </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="embed-preload-js"
-                      checked={preloadJS}
-                      onCheckedChange={(checked) => setPreloadJS(checked === true)}
+                    <Input
+                      id="embed-sheet"
+                      className="h-7 w-28"
+                      placeholder={sheetPlaceholder}
+                      value={embedSheet}
+                      onChange={(e) => setEmbedSheet(e.target.value)}
                     />
-                    <Label htmlFor="embed-preload-js" className="cursor-pointer text-sm font-normal">
-                      Preload JavaScript
-                    </Label>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="embed-sheet" className="text-sm font-normal">
-                    Only show sheet
-                  </Label>
-                  <Input
-                    id="embed-sheet"
-                    className="h-7 w-28"
-                    placeholder={sheetPlaceholder}
-                    value={embedSheet}
-                    onChange={(e) => setEmbedSheet(e.target.value)}
-                  />
+                <p className="text-xs text-muted-foreground">
+                  Anyone with the link can view or edit an embedded file. To save changes, they{'\u2019'}ll need to log
+                  in to Quadratic, which creates a copy of the file in their account.{' '}
+                  <a
+                    href={DOCUMENTATION_EMBED_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline hover:no-underline"
+                  >
+                    Learn more
+                  </a>
+                </p>
+                <Input className="h-8 text-xs" readOnly value={embedUrl} onClick={(e) => e.currentTarget.select()} />
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="secondary" onClick={handleCopyEmbedLink}>
+                    Copy link
+                  </Button>
+                  <Button variant="secondary" onClick={handleCopyEmbedHtml}>
+                    Copy HTML
+                  </Button>
                 </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Anyone with the link can view or edit an embedded file. To save changes, they{'\u2019'}ll need to log in
-                to Quadratic, which creates a copy of the file in their account.{' '}
-                <a
-                  href={DOCUMENTATION_EMBED_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline hover:no-underline"
-                >
-                  Learn more
-                </a>
-              </p>
-              <Input className="h-8 text-xs" readOnly value={embedUrl} onClick={(e) => e.currentTarget.select()} />
-              <div className="flex items-center justify-end gap-2">
-                <Button variant="secondary" onClick={handleCopyEmbedLink}>
-                  Copy link
-                </Button>
-                <Button variant="secondary" onClick={handleCopyEmbedHtml}>
-                  Copy HTML
-                </Button>
-              </div>
-            </>
+              </>
+            )
           ) : (
             <Type variant="caption" className="text-muted-foreground">
               Share publicly above to get an embed link.

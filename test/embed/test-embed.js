@@ -244,10 +244,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const urlListDropdown = document.getElementById('urlListDropdown');
 
   const origin = window.location.origin;
-  urlInput.placeholder = `Enter embed URL (e.g., ${origin}/embed?fileId=xxx)`;
+  urlInput.placeholder = `Enter embed URL (e.g., ${origin}/embed?embedId=xxx)`;
   const exampleFileId = document.getElementById('exampleUrlFileId');
   const exampleImport = document.getElementById('exampleUrlImport');
-  if (exampleFileId) exampleFileId.textContent = `${origin}/embed?fileId=xxx`;
+  if (exampleFileId) exampleFileId.textContent = `${origin}/embed?embedId=xxx`;
   if (exampleImport) exampleImport.textContent = `${origin}/embed?import=...`;
 
   urlInput.addEventListener('keypress', function(e) {

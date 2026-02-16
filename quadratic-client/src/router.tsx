@@ -58,7 +58,7 @@ export const router = createBrowserRouter(
         {/**
          * --- Embed route
          * Public route for embedding files with AI and multiplayer disabled.
-         * Supports ?fileId=xxx to load existing files or ?import=xxx to import from URL.
+         * Supports ?embedId=xxx to load existing files or ?import=xxx to import from URL.
          */}
         <Route path="embed" lazy={() => import('./routes/embed')} id={ROUTE_LOADER_IDS.EMBED} />
 
