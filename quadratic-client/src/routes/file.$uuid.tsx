@@ -191,6 +191,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });
 
+  // Initialize billing atom once in the loader so it's available before the component mounts.
+  // After this, the atom is the sole source of truth and is updated by AI responses and upgrade handlers.
+  updateTeamBilling({
+    isOnPaidPlan: data.team.isOnPaidPlan,
+    planType: data.team.planType ?? 'FREE',
+  });
+
   handleSentryReplays(data.team.settings.analyticsAi);
 
   // Fetch clientDataKv (team data is now loaded via useTeamData hook when needed)
@@ -213,7 +220,7 @@ export const Component = memo(() => {
   const loaderData = useLoaderData() as FileData;
   const {
     file: { uuid: fileUuid, timezone: fileTimezone, ownerUserId },
-    team: { uuid: teamUuid, isOnPaidPlan, planType, settings: teamSettings },
+    team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
   const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
@@ -236,16 +243,6 @@ export const Component = memo(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const hasProcessedSubscriptionSuccess = useRef(false);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-
-  // Initialize team billing state from loader data
-  useEffect(() => {
-    updateTeamBilling({
-      isOnPaidPlan,
-      planType: planType ?? 'FREE',
-      // allowOveragePayments is not in the file response, so it will be preserved
-      // and updated when AI responses include it or when fetched from billing endpoints
-    });
-  }, [isOnPaidPlan, planType]);
 
   // Set timezone if not already set and user has editor rights
   useEffect(() => {
@@ -271,7 +268,7 @@ export const Component = memo(() => {
 
     setTimezoneIfNeeded();
   }, [fileTimezone, filePermissions, fileUuid]);
-  // Handle subscription success: show toast, close dialog, and clean up URL params
+  // Handle subscription success: show toast, close dialog, update billing state, and clean up URL params
   useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription');
     if (
@@ -285,6 +282,10 @@ export const Component = memo(() => {
         severity: 'success',
       });
       setShowUpgradeDialog({ open: false, eventSource: null });
+      updateTeamBilling({
+        isOnPaidPlan: true,
+        planType: isUpgrade ? 'BUSINESS' : 'PRO',
+      });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });

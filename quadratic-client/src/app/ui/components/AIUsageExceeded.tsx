@@ -1,3 +1,4 @@
+import { waitingOnMessageIndexAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { editorInteractionStateCanManageBillingAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
@@ -5,11 +6,12 @@ import { getNextPlanSuggestion, teamBillingAtom } from '@/shared/atom/teamBillin
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIUsageExceeded = memo(() => {
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const setWaitingOnMessageIndex = useSetAtom(waitingOnMessageIndexAtom);
   const { planType, allowOveragePayments } = useAtomValue(teamBillingAtom);
   const canManageBilling = useRecoilValue(editorInteractionStateCanManageBillingAtom);
 
@@ -18,11 +20,24 @@ export const AIUsageExceeded = memo(() => {
     [planType, allowOveragePayments]
   );
 
+  // Track the initial suggestion when this component first mounts (i.e., when the
+  // billing limit was hit). If the billing state later changes such that the
+  // suggestion differs, it means the user upgraded or enabled overage — clear the
+  // waiting state so they can resume using AI.
+  const initialSuggestionRef = useRef(suggestion);
+  useEffect(() => {
+    const initial = initialSuggestionRef.current;
+    if (initial === suggestion) return;
+
+    // Billing state changed since the limit was hit — unblock the user
+    setWaitingOnMessageIndex(undefined);
+  }, [suggestion, setWaitingOnMessageIndex]);
+
   const { title, description, buttonText } = useMemo(() => {
     if (!suggestion) {
       return {
-        title: 'Monthly AI limit reached',
-        description: 'You have reached your AI usage limit for this month.',
+        title: 'Monthly AI budget reached',
+        description: 'Your team has reached its AI spending limit. Adjust your budget in team settings.',
         buttonText: 'View usage',
       };
     }
@@ -61,14 +76,26 @@ export const AIUsageExceeded = memo(() => {
   const handleClick = useCallback(() => {
     trackEvent('[AI].UsageExceeded.clickUpgrade', { planType, suggestion: suggestion?.type ?? 'none' });
 
+    // No suggestion (Business + overage with budget hit) or enableOverage: open settings billing
+    if (!suggestion) {
+      showSettingsDialog('team');
+      return;
+    }
+
     // For enableOverage suggestions, open the settings dialog with team billing tab and highlight
-    if (suggestion?.type === 'enableOverage') {
+    if (suggestion.type === 'enableOverage') {
       trackEvent('[UpgradeDialog].enableOverageClicked');
       showSettingsDialog('team', { highlightOverage: true });
       return;
     }
 
-    // For other suggestions, open the upgrade dialog
+    // For Upgrade to Business, open the settings billing pane for AI usage context
+    if (suggestion.targetPlan === 'BUSINESS') {
+      showSettingsDialog('team');
+      return;
+    }
+
+    // For other suggestions (e.g., Upgrade to Pro), open the upgrade dialog
     setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded', suggestion });
   }, [planType, suggestion, setShowUpgradeDialog]);
 

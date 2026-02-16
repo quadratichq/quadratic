@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { TeamSubscriptionStatus, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
+import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useNavigation } from 'react-router';
 
@@ -23,7 +23,6 @@ interface UpgradeDialogProps {
 
 export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps) {
   const [state, setState] = useAtom(showUpgradeDialogAtom);
-  const { planType, isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const navigate = useNavigate();
   const navigation = useNavigation();
 
@@ -134,10 +133,8 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
           ) : (
             <BillingPlans
               teamUuid={teamUuid}
-              isOnPaidPlan={isOnPaidPlan}
               canManageBilling={canManageBilling}
               eventSource={`UpgradeDialog-${state.eventSource}`}
-              planType={planType}
             />
           )}
         </div>
@@ -156,17 +153,16 @@ export const UpgradeDialogWithPeriodicReminder = ({
   teamUuid,
   userMakingRequestTeamRole,
   lastSolicitationForProUpgrade,
-  billingStatus,
   canManageBilling,
 }: {
   teamUuid: string;
   userMakingRequestTeamRole: UserTeamRole;
   lastSolicitationForProUpgrade: any;
-  billingStatus: TeamSubscriptionStatus | undefined;
   canManageBilling: boolean;
 }) => {
   const ranAlready = useRef<boolean>(false);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
 
   useEffect(() => {
     // Only run this once
@@ -177,7 +173,7 @@ export const UpgradeDialogWithPeriodicReminder = ({
     if (userMakingRequestTeamRole !== 'OWNER') return;
 
     // Paid team? No solicitation.
-    if (billingStatus === 'ACTIVE') return;
+    if (isOnPaidPlan) return;
 
     // Get the value of the last time we solicited them
     const epochNow = Date.now();
@@ -203,7 +199,7 @@ export const UpgradeDialogWithPeriodicReminder = ({
         return;
       }
     }
-  }, [userMakingRequestTeamRole, lastSolicitationForProUpgrade, teamUuid, billingStatus, setShowUpgradeDialog]);
+  }, [userMakingRequestTeamRole, lastSolicitationForProUpgrade, teamUuid, isOnPaidPlan, setShowUpgradeDialog]);
 
   return <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />;
 };

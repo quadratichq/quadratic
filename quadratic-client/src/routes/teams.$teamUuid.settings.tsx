@@ -3,6 +3,7 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
 import { BusinessPlanSettings } from '@/shared/components/SettingsTabs/BusinessPlanSettings';
@@ -16,6 +17,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
+import { useAtomValue } from 'jotai';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,7 +28,6 @@ export const Component = () => {
     activeTeam: {
       team,
       userMakingRequest: { teamPermissions },
-      billing,
       users,
     },
   } = useDashboardRouteLoaderData();
@@ -97,9 +98,8 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const canManageBilling = useMemo(() => teamPermissions.includes('TEAM_MANAGE'), [teamPermissions]);
-  const planType = useMemo(() => billing.planType, [billing.planType]);
 
   // If you don't have permission, you can't see this view
   if (!teamPermissions.includes('TEAM_EDIT')) {
@@ -130,13 +130,7 @@ export const Component = () => {
             </Type>
 
             {/* Plan Comparison */}
-            <BillingPlans
-              isOnPaidPlan={isOnPaidPlan}
-              canManageBilling={canManageBilling}
-              teamUuid={team.uuid}
-              eventSource="TeamSettings"
-              planType={planType}
-            />
+            <BillingPlans canManageBilling={canManageBilling} teamUuid={team.uuid} eventSource="TeamSettings" />
 
             {/* Current Usage */}
             <div>

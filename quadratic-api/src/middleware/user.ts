@@ -88,9 +88,14 @@ const getOrCreateUser = async (auth: Auth) => {
     return { user: null, userCreated: false };
   }
 
-  // If they don't exist yet, create them
-  const newUser = await dbClient.user.create({
-    data: {
+  // If they don't exist yet, create them. Use upsert to avoid unique constraint
+  // errors from concurrent requests both trying to create the same user.
+  const user = await dbClient.user.upsert({
+    where: {
+      auth0Id: auth.sub,
+    },
+    update: {},
+    create: {
       auth0Id: auth.sub,
       email: auth.email,
       clientDataKv: {
@@ -99,11 +104,9 @@ const getOrCreateUser = async (auth: Auth) => {
     },
   });
 
-  // Do extra work since it's their first time logging in
-  await runFirstTimeUserLogic(newUser);
+  await runFirstTimeUserLogic(user);
 
-  // Return the user
-  return { user: newUser, userCreated: true };
+  return { user, userCreated: true };
 };
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {

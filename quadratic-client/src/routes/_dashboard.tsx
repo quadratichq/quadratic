@@ -4,6 +4,7 @@ import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -32,6 +33,7 @@ import {
   Outlet,
   redirect,
   useLocation,
+  useNavigate,
   useNavigation,
   useRevalidator,
   useRouteError,
@@ -176,7 +178,6 @@ export const Component = () => {
     activeTeam: {
       userMakingRequest: { teamRole: userMakingRequestTeamRole, teamPermissions },
       clientDataKv: { lastSolicitationForProUpgrade },
-      billing: { status: billingStatus },
       team: { uuid: activeTeamUuid },
     },
   } = useDashboardRouteLoaderData();
@@ -185,7 +186,7 @@ export const Component = () => {
   const hasProcessedSubscriptionSuccess = useRef(false);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
-  // Handle subscription success: show toast, close dialog, and clean up URL params
+  // Handle subscription success: show toast, close dialog, update billing state, and clean up URL params
   useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription');
     if (
@@ -199,6 +200,10 @@ export const Component = () => {
         severity: 'success',
       });
       setShowUpgradeDialog({ open: false, eventSource: null });
+      updateTeamBilling({
+        isOnPaidPlan: true,
+        planType: isUpgrade ? 'BUSINESS' : 'PRO',
+      });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });
@@ -269,7 +274,6 @@ export const Component = () => {
           teamUuid={activeTeamUuid}
           userMakingRequestTeamRole={userMakingRequestTeamRole}
           lastSolicitationForProUpgrade={lastSolicitationForProUpgrade}
-          billingStatus={billingStatus}
           canManageBilling={canManageBilling}
         />
         <SettingsDialog />
@@ -281,6 +285,7 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
+  const navigate = useNavigate();
 
   const actions = (
     <div className="flex justify-center gap-1">
@@ -291,6 +296,24 @@ export const ErrorBoundary = () => {
       </Button>
       <Button asChild>
         <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
+  const actionsTeamNotFound = (
+    <div className="flex justify-center gap-1">
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Get help
+        </a>
+      </Button>
+      <Button
+        onClick={() => {
+          setActiveTeam('');
+          navigate('/');
+        }}
+      >
+        Go home
       </Button>
     </div>
   );
@@ -335,7 +358,7 @@ export const ErrorBoundary = () => {
           title="Team not found"
           description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
           Icon={ExclamationTriangleIcon}
-          actions={actions}
+          actions={actionsTeamNotFound}
         />
       );
   }

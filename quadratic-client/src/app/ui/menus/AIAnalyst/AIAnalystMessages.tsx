@@ -12,7 +12,6 @@ import {
   webSearchLoadingAtom,
 } from '@/app/ai/atoms/aiAnalystAtoms';
 import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
-import { DelegateToSubagentResult } from '@/app/ai/toolCards/DelegateToSubagentResult';
 import { GroupedCodeToolCards, isCodeTool } from '@/app/ai/toolCards/GroupedCodeToolCards';
 import { GroupedFormattingToolCards, isFormattingTool } from '@/app/ai/toolCards/GroupedFormattingToolCards';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
@@ -42,7 +41,6 @@ import {
   isToolResultMessage,
   isUserPromptMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall, ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -65,7 +63,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
     [debugFlags]
   );
-  const showSubagent = useMemo(() => debugFlags.getFlag('debugShowAISubagent'), [debugFlags]);
 
   const [messages, setMessages] = useAtom(currentChatMessagesAtom);
   const messagesCount = useAtomValue(currentChatMessagesCountAtom);
@@ -424,43 +421,27 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 uiContext="analyst-edit-chat"
               />
             ) : isToolResultMessage(message) ? (
-              message.content.map((result, resultIndex) => {
-                const prevMessage = messages[index - 1];
-                const toolCalls =
-                  prevMessage?.role === 'assistant' && 'toolCalls' in prevMessage ? prevMessage.toolCalls : undefined;
-                const matchingToolCall = toolCalls?.find((tc) => tc.id === result.id);
-                const isSubagentResult = showSubagent && matchingToolCall?.name === AITool.DelegateToSubagent;
-                if (isSubagentResult) {
-                  return (
-                    <DelegateToSubagentResult
-                      key={`${index}-${result.id}`}
-                      content={result.content}
-                      className="tool-card"
-                    />
-                  );
-                }
-                return (
-                  <AIAnalystUserMessageForm
-                    key={`${index}-${result.id}`}
-                    initialContent={result.content}
-                    textareaRef={textareaRef}
-                    messageIndex={index}
-                    onContentChange={
-                      debugAIAnalystChatEditing &&
-                      ((content) => {
-                        const newMessages = [...messages];
-                        newMessages[index] = { ...message, content: [...message.content] };
-                        newMessages[index].content[resultIndex] = {
-                          ...result,
-                          content: content as ToolResultContent,
-                        };
-                        setMessages(newMessages);
-                      })
-                    }
-                    uiContext="analyst-edit-chat"
-                  />
-                );
-              })
+              message.content.map((result, resultIndex) => (
+                <AIAnalystUserMessageForm
+                  key={`${index}-${result.id}`}
+                  initialContent={result.content}
+                  textareaRef={textareaRef}
+                  messageIndex={index}
+                  onContentChange={
+                    debugAIAnalystChatEditing &&
+                    ((content) => {
+                      const newMessages = [...messages];
+                      newMessages[index] = { ...message, content: [...message.content] };
+                      newMessages[index].content[resultIndex] = {
+                        ...result,
+                        content: content as ToolResultContent,
+                      };
+                      setMessages(newMessages);
+                    })
+                  }
+                  uiContext="analyst-edit-chat"
+                />
+              ))
             ) : (
               <>
                 {/* Check for context length error and render special component */}

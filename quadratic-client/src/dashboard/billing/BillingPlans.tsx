@@ -1,140 +1,69 @@
 import { CancellationDialog } from '@/components/CancellationDialog';
-import { VITE_MAX_EDITABLE_FILES } from '@/env-vars';
-import { billingConfigAtom, fetchBillingConfig } from '@/shared/atom/billingConfigAtom';
+import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
-import { CheckIcon } from '@/shared/components/Icons';
+import { teamBillingAtom, updateTeamBilling } from '@/shared/atom/teamBillingAtom';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { type ReactNode, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, useNavigation } from 'react-router';
 import { BusinessPlan } from './BusinessPlan';
+import { FreePlan } from './FreePlan';
+import { ProPlan } from './ProPlan';
 
 type BillingPlansProps = {
-  isOnPaidPlan: boolean;
   canManageBilling: boolean;
   eventSource: string;
   teamUuid: string;
-  planType?: 'FREE' | 'PRO' | 'BUSINESS';
 };
 
-export const FreePlan = ({
-  className,
-  showCurrentPlanBadge,
-  children,
-}: {
-  children?: ReactNode;
-  className?: string;
-  showCurrentPlanBadge?: boolean;
-}) => {
-  return (
-    <div className={`${className} flex h-full flex-col`}>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Free plan</h3>
-        {showCurrentPlanBadge && <Badge>Current plan</Badge>}
-      </div>
-      <div className="flex flex-grow flex-col gap-2 text-sm">
-        <div className="flex items-center justify-between">
-          <span>Team members</span>
-          <span className="font-medium">Limited</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>AI messages</span>
-          <span className="font-medium">5/month</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Connections</span>
-          <span className="font-medium">Limited</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Files</span>
-          <span className="font-medium">{VITE_MAX_EDITABLE_FILES} editable files</span>
-        </div>
-      </div>
-
-      <div className="mt-auto">{children}</div>
-    </div>
-  );
-};
-
-export const ProPlan = ({
-  children,
-  showCurrentPlanBadge,
-  className,
-}: {
-  className?: string;
-  children?: ReactNode;
-  showCurrentPlanBadge?: boolean;
-}) => {
-  const billingConfig = useAtomValue(billingConfigAtom);
-
-  useEffect(() => {
-    fetchBillingConfig();
-  }, []);
-
-  return (
-    <div className={`${className} flex h-full flex-col`}>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Pro plan</h3>
-        {showCurrentPlanBadge && <Badge>Current plan</Badge>}
-      </div>
-      <div className="flex flex-grow flex-col gap-2 text-sm">
-        <div className="flex items-center justify-between">
-          <span>Team members</span>
-          <span className="text-sm font-medium">$20/user/month</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>AI usage</span>
-          <span className="text-sm font-medium">${billingConfig.proAiAllowance}/user/month allowance</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Connections</span>
-          <span className="text-right text-sm font-medium">Unlimited</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Files</span>
-          <span className="text-right text-sm font-medium">Unlimited</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Additional AI models</span>
-          <span className="flex items-center">
-            <CheckIcon />
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Additional privacy controls</span>
-          <span className="flex items-center">
-            <CheckIcon />
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-auto">{children}</div>
-    </div>
-  );
-};
-
-export const BillingPlans = ({
-  isOnPaidPlan,
-  canManageBilling,
-  eventSource,
-  teamUuid,
-  planType,
-}: BillingPlansProps) => {
+export const BillingPlans = ({ canManageBilling, eventSource, teamUuid }: BillingPlansProps) => {
   const navigate = useNavigate();
+  const navigation = useNavigation();
   const location = useLocation();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { planType } = useAtomValue(teamBillingAtom);
+  const isNavigating = navigation.state !== 'idle';
+  const [isUpgradingToBusiness, setIsUpgradingToBusiness] = useState(false);
+  const [isUpgradingToPro, setIsUpgradingToPro] = useState(false);
+  const isBusy = isNavigating || isUpgradingToBusiness;
 
   // Get current path to return to after checkout
   const returnTo = location.pathname + location.search;
 
-  const currentPlan = planType || (isOnPaidPlan ? 'PRO' : 'FREE');
-  const isFree = currentPlan === 'FREE';
-  const isPro = currentPlan === 'PRO';
-  const isBusiness = currentPlan === 'BUSINESS';
+  const isFree = planType === 'FREE';
+  const isPro = planType === 'PRO';
+  const isBusiness = planType === 'BUSINESS';
+
+  const handleUpgradeToBusiness = async () => {
+    trackEvent('[Billing].upgradeToBusinessClicked', { eventSource });
+
+    if (isPro) {
+      // Pro→Business: the API handles this synchronously (no Stripe checkout page),
+      // so we call the API directly and update the UI inline.
+      setIsUpgradingToBusiness(true);
+      try {
+        const redirectUrl = `${window.location.origin}${returnTo}`;
+        await apiClient.teams.billing.getCheckoutSessionUrl(teamUuid, redirectUrl, redirectUrl, 'business');
+        trackEvent('[Billing].upgradeSuccess', { team_uuid: teamUuid });
+        updateTeamBilling({ isOnPaidPlan: true, planType: 'BUSINESS' });
+        setShowUpgradeDialog({ open: false, eventSource: null });
+        addGlobalSnackbar('Your plan has been upgraded to Business! 🎉', { severity: 'success' });
+      } catch (error) {
+        console.error('Failed to upgrade to Business:', error);
+        addGlobalSnackbar('Failed to upgrade to Business. Please try again.', { severity: 'error' });
+      } finally {
+        setIsUpgradingToBusiness(false);
+      }
+    } else {
+      // Free→Business: needs Stripe checkout, use the navigate/redirect flow
+      navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid, { returnTo, plan: 'business' }));
+    }
+  };
 
   return (
     <div className="grid grid-cols-3 items-stretch gap-4">
@@ -188,15 +117,16 @@ export const BillingPlans = ({
       >
         {isFree ? (
           <Button
-            disabled={!canManageBilling}
+            disabled={!canManageBilling || isBusy}
             onClick={() => {
+              setIsUpgradingToPro(true);
               trackEvent('[Billing].upgradeToProClicked', { eventSource });
               navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid, { returnTo }));
             }}
             className="mt-4 w-full"
             data-testid="billing-upgrade-to-pro-button"
           >
-            Upgrade to Pro
+            {isUpgradingToPro && isNavigating ? 'Upgrading…' : 'Upgrade to Pro'}
           </Button>
         ) : isPro ? (
           <div className="mt-4">
@@ -254,15 +184,12 @@ export const BillingPlans = ({
       >
         {isFree || isPro ? (
           <Button
-            disabled={!canManageBilling}
-            onClick={() => {
-              trackEvent('[Billing].upgradeToBusinessClicked', { eventSource });
-              navigate(ROUTES.TEAM_BILLING_SUBSCRIBE(teamUuid, { returnTo, plan: 'business' }));
-            }}
+            disabled={!canManageBilling || isBusy}
+            onClick={handleUpgradeToBusiness}
             className="mt-4 w-full"
             data-testid="billing-upgrade-to-business-button"
           >
-            Upgrade to Business
+            {isUpgradingToBusiness ? 'Upgrading…' : 'Upgrade to Business'}
           </Button>
         ) : (
           <div className="mt-4">

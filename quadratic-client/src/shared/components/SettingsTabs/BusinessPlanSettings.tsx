@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { setAllowOveragePayments } from '@/shared/atom/teamBillingAtom';
+import { setAllowOveragePayments, teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -7,6 +7,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtomValue } from 'jotai';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -21,10 +22,10 @@ export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
   const activeTeam = teamData?.activeTeam;
   const team = activeTeam?.team;
   const teamPermissions = activeTeam?.userMakingRequest?.teamPermissions;
-  const billing = activeTeam?.billing;
 
+  const { planType } = useAtomValue(teamBillingAtom);
   const isOwner = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
-  const isBusiness = useMemo(() => billing?.planType === 'BUSINESS', [billing?.planType]);
+  const isBusiness = planType === 'BUSINESS';
 
   // AI usage data state
   const [aiUsageData, setAiUsageData] = useState<ApiTypes['/v0/teams/:uuid/billing/ai/usage.GET.response'] | null>(

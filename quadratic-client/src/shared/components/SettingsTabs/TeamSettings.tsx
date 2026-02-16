@@ -69,9 +69,7 @@ export function TeamSettings({ highlightOverage }: TeamSettingsProps) {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  const isOnPaidPlan = useMemo(() => billing?.status === 'ACTIVE', [billing?.status]);
   const canManageBilling = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
-  const planType = useMemo(() => billing?.planType, [billing?.planType]);
 
   if (!activeTeam || !team || !teamPermissions || !billing || !users) {
     return (
@@ -129,13 +127,7 @@ export function TeamSettings({ highlightOverage }: TeamSettingsProps) {
 
         <div className="flex flex-col gap-4">
           {/* Plan Comparison */}
-          <BillingPlans
-            isOnPaidPlan={isOnPaidPlan}
-            canManageBilling={canManageBilling}
-            teamUuid={team.uuid}
-            eventSource="SettingsDialog"
-            planType={planType}
-          />
+          <BillingPlans canManageBilling={canManageBilling} teamUuid={team.uuid} eventSource="SettingsDialog" />
 
           {/* Current Usage */}
           <div>

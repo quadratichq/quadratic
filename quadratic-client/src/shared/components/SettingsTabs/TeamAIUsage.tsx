@@ -1,10 +1,12 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { WarningIcon } from '@/shared/components/Icons';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/shadcn/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { useAtomValue } from 'jotai';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -19,40 +21,46 @@ export function TeamAIUsage() {
   const users = activeTeam?.users;
   const billing = activeTeam?.billing;
 
+  const { planType: billingAtomPlanType, allowOveragePayments } = useAtomValue(teamBillingAtom);
   const isOwner = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
+  const isBusiness = billingAtomPlanType === 'BUSINESS';
 
   const [userUsageData, setUserUsageData] = useState<
     ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response'] | null
   >(null);
-  const [allowOveragePayments, setAllowOveragePayments] = useState(false);
   const [monthlyAiAllowance, setMonthlyAiAllowance] = useState<number | null>(null);
   const [isLoadingUsage, setIsLoadingUsage] = useState(false);
   const lastFetchedUuidRef = useRef<string | null>(null);
+  const lastFetchedPlanTypeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Fetch if we have a team uuid and haven't already fetched for this uuid
-    if (team?.uuid && team.uuid !== lastFetchedUuidRef.current) {
+    // Fetch if we have a team uuid and haven't already fetched for this uuid+planType combo
+    if (
+      team?.uuid &&
+      (team.uuid !== lastFetchedUuidRef.current || billingAtomPlanType !== lastFetchedPlanTypeRef.current)
+    ) {
       lastFetchedUuidRef.current = team.uuid;
+      lastFetchedPlanTypeRef.current = billingAtomPlanType;
       setIsLoadingUsage(true);
 
-      // Fetch both user usage data and team AI usage (for allowOveragePayments and monthlyAiAllowance)
+      // Fetch both user usage data and team AI usage (for monthlyAiAllowance)
       // Owners can fetch all users, non-owners can fetch their own data
       Promise.all([apiClient.teams.billing.aiUsageUsers(team.uuid), apiClient.teams.billing.aiUsage(team.uuid)])
         .then(([usageData, aiUsageData]) => {
           setUserUsageData(usageData);
-          setAllowOveragePayments(aiUsageData.allowOveragePayments ?? false);
           setMonthlyAiAllowance(aiUsageData.monthlyAiAllowance ?? null);
         })
         .catch((error) => {
           console.error('[TeamAIUsage] Failed to fetch usage data:', error);
-          // Reset ref on error so we can retry
+          // Reset refs on error so we can retry
           lastFetchedUuidRef.current = null;
+          lastFetchedPlanTypeRef.current = null;
         })
         .finally(() => {
           setIsLoadingUsage(false);
         });
     }
-  }, [team?.uuid]);
+  }, [team?.uuid, billingAtomPlanType]);
 
   // If not owner, show only their own usage
   const loggedInUser = useMemo(
@@ -64,22 +72,12 @@ export function TeamAIUsage() {
     return userUsageData.users.find((u) => u.userId === userMakingRequest.id);
   }, [userMakingRequest?.id, userUsageData]);
 
-  // Check if any user is on the Business plan
-  const isBusinessPlan = useMemo(() => {
-    return userUsageData?.users.some((u) => u.planType === 'BUSINESS') ?? false;
-  }, [userUsageData]);
-
-  // Check if logged-in user is on Business plan
-  const isLoggedInUserBusiness = useMemo(() => {
-    return loggedInUserUsage?.planType === 'BUSINESS';
-  }, [loggedInUserUsage]);
-
   // Format included usage display for a user
   const formatIncludedUsage = (usage?: UserUsage): string => {
     if (isLoadingUsage) return '...';
     if (!usage) return '—';
 
-    if (usage.planType === 'FREE') {
+    if (billingAtomPlanType === 'FREE') {
       // FREE plan: show per-user messages
       if (usage.currentPeriodUsage !== null && usage.billingLimit !== null) {
         return `${usage.currentPeriodUsage} / ${usage.billingLimit} messages`;
@@ -99,7 +97,7 @@ export function TeamAIUsage() {
   const hasHitLimit = (usage?: UserUsage): boolean => {
     if (!usage) return false;
 
-    if (usage.planType === 'FREE') {
+    if (billingAtomPlanType === 'FREE') {
       // FREE plan: check per-user message limit
       if (usage.currentPeriodUsage !== null && usage.billingLimit !== null) {
         return usage.currentPeriodUsage >= usage.billingLimit;
@@ -120,7 +118,7 @@ export function TeamAIUsage() {
     if (isLoadingUsage) return '...';
     if (!usage) return '—';
 
-    if (usage.planType !== 'BUSINESS') return '—';
+    if (!isBusiness) return '—';
 
     const currentCost = usage.currentMonthAiCost ?? 0;
     const allowance = monthlyAiAllowance ?? 0;
@@ -156,7 +154,7 @@ export function TeamAIUsage() {
                 <TableHead className="h-9">Name</TableHead>
                 <TableHead className="h-9 w-20">Role</TableHead>
                 <TableHead className="h-9">Included usage</TableHead>
-                {isBusinessPlan && <TableHead className="h-9">On-demand usage</TableHead>}
+                {isBusiness && <TableHead className="h-9">On-demand usage</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -202,7 +200,7 @@ export function TeamAIUsage() {
                         )}
                       </div>
                     </TableCell>
-                    {isBusinessPlan && <TableCell className="py-2">{formatOnDemandUsage(usage)}</TableCell>}
+                    {isBusiness && <TableCell className="py-2">{formatOnDemandUsage(usage)}</TableCell>}
                   </TableRow>
                 );
               })}
@@ -228,7 +226,7 @@ export function TeamAIUsage() {
               <TableHead className="h-9 w-12"></TableHead>
               <TableHead className="h-9">Name</TableHead>
               <TableHead className="h-9">Included usage</TableHead>
-              {isLoggedInUserBusiness && <TableHead className="h-9">On-demand usage</TableHead>}
+              {isBusiness && <TableHead className="h-9">On-demand usage</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -259,7 +257,7 @@ export function TeamAIUsage() {
                   )}
                 </div>
               </TableCell>
-              {isLoggedInUserBusiness && (
+              {isBusiness && (
                 <TableCell className="py-2">{formatOnDemandUsage(loggedInUserUsage ?? undefined)}</TableCell>
               )}
             </TableRow>
