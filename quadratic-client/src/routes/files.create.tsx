@@ -10,6 +10,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const { request } = loaderArgs;
   const url = new URL(request.url);
 
+  // Do this _before_ auth so the value survives login/signup/onboarding redirects
   storeInitialConnectionType(url);
 
   const { activeTeamUuid } = await requireAuth(request);
