@@ -7,9 +7,17 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Outlet, useLoaderData, useRouteError } from 'react-router';
 
 export const loader = async () => {
-  const loggedInUser = await authClient.user();
-  initializeAnalytics(loggedInUser);
-  return { loggedInUser };
+  try {
+    const loggedInUser = await authClient.user();
+    initializeAnalytics(loggedInUser);
+    return { loggedInUser };
+  } catch (e) {
+    // Allow child routes (e.g., login-result) to handle auth failures gracefully
+    // rather than triggering the error boundary on transient network errors
+    console.error('Failed to load user in auth root:', e);
+    initializeAnalytics(undefined);
+    return { loggedInUser: undefined };
+  }
 };
 
 export const Component = () => {
