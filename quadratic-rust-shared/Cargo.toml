@@ -111,7 +111,7 @@ derivative = "2.2.0"
 
 [features]
 default = []
-arrow = ["dep:arrow", "arrow-array", "object_store", "parquet"]
+arrow = ["dep:arrow", "arrow-array", "object_store", "parquet", "url"]
 auth = ["http", "jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 cache = ["memory", "tokio"]
@@ -144,7 +144,7 @@ protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
 quadratic-api = ["bincode", "reqwest", "urlencoding"]
 quadratic-cloud = ["base64", "bincode", "quadratic-api"]
-quadratic-database = ["sqlx"]
+quadratic-database = ["dotenv", "sqlx"]
 record-request-mock = []
 sql = [
   "arrow",
