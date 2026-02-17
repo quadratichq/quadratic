@@ -8,11 +8,13 @@ import { useFetcher } from 'react-router';
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
 
-// Module-level guard to prevent duplicate initial fetches. Multiple components
-// call this hook simultaneously on mount, and React batches their effects
-// before the shared fetcher state updates from 'idle' to 'loading', so the
-// fetcher.state check alone is insufficient.
-let initialFetchTriggered = false;
+// Tracks the teamUuid of the in-flight initial fetch to prevent duplicate
+// requests. Multiple components call this hook simultaneously on mount, and
+// React batches their effects before the shared fetcher state updates from
+// 'idle' to 'loading', so the fetcher.state check alone is insufficient.
+// Storing the teamUuid (rather than a boolean) ensures that navigating to a
+// different team correctly triggers a new fetch.
+let pendingFetchTeamUuid: string | null = null;
 
 /**
  * The data for this accessed in various places in the app (cell type menu,
@@ -38,16 +40,21 @@ export const useConnectionsFetcher = () => {
   // in the current team.
   const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
   useEffect(() => {
-    if (permissionsHasTeamEdit && fetcher.state === 'idle' && fetcher.data === undefined && !initialFetchTriggered) {
-      initialFetchTriggered = true;
+    if (
+      permissionsHasTeamEdit &&
+      fetcher.state === 'idle' &&
+      fetcher.data === undefined &&
+      pendingFetchTeamUuid !== teamUuid
+    ) {
+      pendingFetchTeamUuid = teamUuid;
       fetcher.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
   }, [teamUuid, permissionsHasTeamEdit, fetcher]);
 
-  // Reset the guard once data arrives so future fetches work (e.g., team change)
+  // Reset the guard once data arrives so future navigations trigger a fresh fetch
   useEffect(() => {
     if (fetcher.data !== undefined) {
-      initialFetchTriggered = false;
+      pendingFetchTeamUuid = null;
     }
   }, [fetcher.data]);
 

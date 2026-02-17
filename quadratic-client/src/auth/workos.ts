@@ -58,8 +58,10 @@ async function createWorkosClient(): Promise<WorkOSClient> {
   return newClient;
 }
 
-// Retries once on transient network errors. The OAuth code is still
-// valid because the failed fetch never reached the server.
+// Best-effort retry on transient network errors. In most cases the OAuth
+// code is still valid because the request never reached the server, but if
+// the connection dropped mid-flight the code may already be consumed and
+// the retry will fail with an auth error — callers should handle that.
 async function initializeClientWithRetry(): Promise<WorkOSClient> {
   try {
     return await createWorkosClient();

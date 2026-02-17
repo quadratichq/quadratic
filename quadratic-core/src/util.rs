@@ -397,6 +397,14 @@ pub fn case_fold_ascii_in_place(s: &mut str) {
 /// Runs a closure, catching any panics and converting them to
 /// `anyhow::Result`. Useful for calling into libraries (e.g. calamine) that
 /// may panic on malformed or very large inputs in WASM.
+///
+/// # Safety note
+///
+/// The closure is wrapped in [`AssertUnwindSafe`], which bypasses Rust's
+/// unwind-safety checks. Callers **must not** pass closures that mutate
+/// shared or externally-observable state in a way that could leave it
+/// inconsistent if a panic occurs partway through. Prefer closures that
+/// operate on owned data or read-only references and produce a fresh result.
 pub fn catch_panic<T>(f: impl FnOnce() -> anyhow::Result<T>) -> anyhow::Result<T> {
     match catch_unwind(AssertUnwindSafe(f)) {
         Ok(result) => result,
