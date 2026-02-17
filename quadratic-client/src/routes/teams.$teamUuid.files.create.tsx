@@ -94,6 +94,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     if (connectionName) {
       searchParamsToPass.set('connection-name', connectionName);
     }
+
     return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
