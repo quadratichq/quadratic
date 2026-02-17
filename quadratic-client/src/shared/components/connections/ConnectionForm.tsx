@@ -1,5 +1,6 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
+import type { PlaidCategory } from '@/shared/components/connections/Connections';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
@@ -23,17 +24,20 @@ export type ConnectionFormProps = {
   handleCancelForm: () => void;
   handleSubmitForm: (formValues: ConnectionFormValues) => void;
   connection?: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response'];
+  plaidCategory?: PlaidCategory;
 };
 
 export function ConnectionFormCreate({
   teamUuid,
   type,
+  plaidCategory,
   handleNavigateToListView,
   handleNavigateToNewView,
   onConnectionCreated,
 }: {
   teamUuid: string;
   type: ConnectionType;
+  plaidCategory?: PlaidCategory;
   handleNavigateToListView: () => void;
   handleNavigateToNewView: () => void;
   onConnectionCreated?: OnConnectionCreatedCallback;
@@ -52,7 +56,6 @@ export function ConnectionFormCreate({
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, semanticDescription, ...typeDetails } = formValues;
-    trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, semanticDescription, typeDetails }, teamUuid);
 
     // Store the connection info to pass to callback after creation
@@ -71,6 +74,7 @@ export function ConnectionFormCreate({
     handleNavigateToListView,
     handleCancelForm: () => handleNavigateToNewView(),
     handleSubmitForm,
+    plaidCategory,
   };
 
   return <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />;
@@ -145,6 +149,7 @@ function ConnectionFormWrapper({
   const { form, percentCompleted } = connectionsByType[type].useConnectionForm(props.connection);
 
   // This is a middleware that tests the connection before saving
+  const isCreate = !props.connection;
   const handleSubmitMiddleware: SubmitHandler<ConnectionFormValues> = async (formValues, event: any) => {
     if (event?.nativeEvent?.submitter?.name === SKIP_TEST_BUTTON_NAME) {
       props.handleSubmitForm(formValues);
@@ -160,14 +165,17 @@ function ConnectionFormWrapper({
         teamUuid,
       });
       if (connected === false) {
+        if (isCreate) trackEvent('[Connections].create', { type, success: false });
         form.setError('root', { message: message ?? 'Unknown error' });
         return;
       }
 
       // If it worked, update the connection
+      if (isCreate) trackEvent('[Connections].create', { type, success: true });
       props.handleSubmitForm(formValues);
     } catch (e) {
       console.error(e);
+      if (isCreate) trackEvent('[Connections].create', { type, success: false });
       form.setError('root', { message: 'Network error: failed to make connection.' });
       return;
     }
@@ -181,6 +189,7 @@ function ConnectionFormWrapper({
       teamUuid={teamUuid}
       connection={props.connection}
       percentCompleted={percentCompleted}
+      plaidCategory={props.plaidCategory}
     >
       <ConnectionFormActions
         form={form}

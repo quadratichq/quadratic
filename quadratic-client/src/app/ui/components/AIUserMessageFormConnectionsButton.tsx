@@ -13,14 +13,8 @@ interface AIUserMessageFormConnectionsButtonProps {
 }
 export const AIUserMessageFormConnectionsButton = memo(
   ({ disabled, textareaRef }: AIUserMessageFormConnectionsButtonProps) => {
-    const {
-      connections,
-      teamUuid,
-      activeConnectionId,
-      handleSelectConnection,
-      handleAddConnection,
-      handleManageConnections,
-    } = useConnectionsDropdownHandlers('AIConnectionsPicker');
+    const { connections, activeConnectionId, handleSelectConnection, handleAddConnection, handleManageConnections } =
+      useConnectionsDropdownHandlers('AIConnectionsPicker');
 
     const handleOnClickButton = useCallback(() => {
       trackEvent('[AIConnectionsPicker].show');
@@ -53,7 +47,6 @@ export const AIUserMessageFormConnectionsButton = memo(
         <DropdownMenuContent side="top" align="start" onCloseAutoFocus={handleAutoClose} className="min-w-48 max-w-xs">
           <ConnectionsMenuContent
             connections={connections}
-            teamUuid={teamUuid}
             activeConnectionId={activeConnectionId}
             actionsFirst
             onSelectConnection={handleSelectConnection}

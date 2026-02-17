@@ -542,8 +542,13 @@ impl A1Selection {
 
     /// Returns all finite RefRangeBounds for the selection, converting table selections to
     /// RefRangeBounds.
-    pub fn finite_ref_range_bounds(&self, a1_context: &A1Context) -> Vec<RefRangeBounds> {
-        self.ranges
+    pub fn finite_ref_range_bounds(
+        &self,
+        a1_context: &A1Context,
+        merge_cells: Option<&crate::grid::sheet::merge_cells::MergeCells>,
+    ) -> Vec<RefRangeBounds> {
+        let mut ranges: Vec<RefRangeBounds> = self
+            .ranges
             .iter()
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => {
@@ -557,7 +562,190 @@ impl A1Selection {
                     range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 }
             })
-            .collect()
+            .collect();
+
+        // Expand ranges to include full merged cells
+        if let Some(merge_cells) = merge_cells {
+            ranges = self.expand_ranges_for_merged_cells(ranges, merge_cells, a1_context);
+        }
+
+        ranges
+    }
+
+    /// Returns true if the selection contains any merged cells
+    pub fn contains_merged_cells(
+        &self,
+        a1_context: &A1Context,
+        merge_cells: Option<&crate::grid::sheet::merge_cells::MergeCells>,
+    ) -> bool {
+        let Some(merge_cells) = merge_cells else {
+            return false;
+        };
+
+        // Check cursor position
+        if merge_cells.get_merge_cell_rect(self.cursor).is_some() {
+            return true;
+        }
+
+        // Check all ranges for merged cells
+        for range in &self.ranges {
+            let rect = match range {
+                CellRefRange::Sheet { range } => {
+                    if range.is_finite() {
+                        range.to_rect()
+                    } else {
+                        continue;
+                    }
+                }
+                CellRefRange::Table { range } => range.to_largest_rect(a1_context),
+            };
+
+            let Some(rect) = rect else {
+                continue;
+            };
+
+            // Check if any merged cells overlap with this range
+            let merged_rects = merge_cells.get_merge_cells(rect);
+            if !merged_rects.is_empty() {
+                return true;
+            }
+
+            // Check corner cells for merged cells that might partially overlap
+            let corner_cells = [
+                Pos {
+                    x: rect.min.x,
+                    y: rect.min.y,
+                },
+                Pos {
+                    x: rect.max.x,
+                    y: rect.min.y,
+                },
+                Pos {
+                    x: rect.min.x,
+                    y: rect.max.y,
+                },
+                Pos {
+                    x: rect.max.x,
+                    y: rect.max.y,
+                },
+            ];
+
+            for cell in corner_cells {
+                if merge_cells.get_merge_cell_rect(cell).is_some() {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Expands selection ranges to include full merged cells when any cell in the range is part of a merged cell
+    fn expand_ranges_for_merged_cells(
+        &self,
+        ranges: Vec<RefRangeBounds>,
+        merge_cells: &crate::grid::sheet::merge_cells::MergeCells,
+        _a1_context: &A1Context,
+    ) -> Vec<RefRangeBounds> {
+        if ranges.is_empty() {
+            return ranges;
+        }
+
+        let mut expanded_ranges = Vec::new();
+
+        for range in ranges {
+            // Skip infinite ranges
+            if !range.is_finite() {
+                expanded_ranges.push(range);
+                continue;
+            }
+
+            let Some(rect) = range.to_rect() else {
+                expanded_ranges.push(range);
+                continue;
+            };
+
+            let mut min_x = rect.min.x;
+            let mut min_y = rect.min.y;
+            let mut max_x = rect.max.x;
+            let mut max_y = rect.max.y;
+
+            let start_x = min_x;
+            let start_y = min_y;
+            let end_x = max_x;
+            let end_y = max_y;
+
+            // Track merged cells we've already processed to avoid duplicate checks
+            let mut processed_merged_cells = std::collections::HashSet::new();
+
+            // Iterate until no more expansion is needed (handles cases where expanding reveals more merged cells)
+            let mut changed = true;
+            while changed {
+                changed = false;
+                let prev_min_x = min_x;
+                let prev_min_y = min_y;
+                let prev_max_x = max_x;
+                let prev_max_y = max_y;
+
+                // Get merged cells within the current range
+                let current_rect = crate::Rect::new(min_x, min_y, max_x, max_y);
+                let mut merged_rects = merge_cells.get_merge_cells(current_rect);
+
+                // Also check corner cells for merged cells that might partially overlap
+                let corner_cells = [
+                    crate::Pos { x: min_x, y: min_y },
+                    crate::Pos { x: max_x, y: min_y },
+                    crate::Pos { x: min_x, y: max_y },
+                    crate::Pos { x: max_x, y: max_y },
+                ];
+
+                for cell in corner_cells {
+                    if let Some(corner_rect) = merge_cells.get_merge_cell_rect(cell) {
+                        merged_rects.push(corner_rect);
+                    }
+                }
+
+                // Expand the range to include all merged cells
+                for merge_rect in merged_rects {
+                    // Create a unique key for this merged cell
+                    let merge_key = (
+                        merge_rect.min.x,
+                        merge_rect.min.y,
+                        merge_rect.max.x,
+                        merge_rect.max.y,
+                    );
+
+                    // Only process if we haven't seen this merged cell before
+                    if !processed_merged_cells.contains(&merge_key) {
+                        processed_merged_cells.insert(merge_key);
+
+                        // Expand the range to include the entire merged cell
+                        min_x = min_x.min(merge_rect.min.x);
+                        min_y = min_y.min(merge_rect.min.y);
+                        max_x = max_x.max(merge_rect.max.x);
+                        max_y = max_y.max(merge_rect.max.y);
+                    }
+                }
+
+                // Check if the range expanded
+                if min_x != prev_min_x
+                    || min_y != prev_min_y
+                    || max_x != prev_max_x
+                    || max_y != prev_max_y
+                {
+                    changed = true;
+                }
+            }
+
+            // Create expanded range if it changed
+            if min_x != start_x || min_y != start_y || max_x != end_x || max_y != end_y {
+                expanded_ranges.push(RefRangeBounds::new_relative(min_x, min_y, max_x, max_y));
+            } else {
+                expanded_ranges.push(range);
+            }
+        }
+
+        expanded_ranges
     }
 
     /// Returns true if the selection is on an image.
@@ -1164,7 +1352,7 @@ mod tests {
         );
         // note we do not return the D5: range as it is infinite
         let selection = A1Selection::test_a1_context("A1,B2,D5:,C3,Table1", &context);
-        let ref_range_bounds = selection.finite_ref_range_bounds(&context);
+        let ref_range_bounds = selection.finite_ref_range_bounds(&context, None);
         assert_eq!(
             ref_range_bounds,
             vec![
@@ -1985,5 +2173,141 @@ mod tests {
         assert!(!A1Selection::test_a1("A,B").is_1d_range(&context)); // Multiple columns
         assert!(!A1Selection::test_a1("1,2").is_1d_range(&context)); // Multiple rows
         assert!(!A1Selection::test_a1("*").is_1d_range(&context)); // All cells
+    }
+
+    #[test]
+    fn test_contains_merged_cells() {
+        use crate::grid::sheet::merge_cells::MergeCells;
+        let context = A1Context::default();
+
+        // Test with no merged cells
+        let selection = A1Selection::test_a1("A1:B2");
+        assert!(!selection.contains_merged_cells(&context, None));
+
+        // Create merge cells
+        let mut merge_cells = MergeCells::default();
+
+        // Test with empty merged cells
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Add a merged cell at A1:B2
+        merge_cells.merge_cells(Rect::test_a1("A1:B2"));
+
+        // Test selection that exactly matches the merged cell
+        let selection = A1Selection::test_a1("A1:B2");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test selection that partially overlaps the merged cell
+        let selection = A1Selection::test_a1("A1");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        let selection = A1Selection::test_a1("B2");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test selection that doesn't overlap the merged cell
+        let selection = A1Selection::test_a1("C3");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        let selection = A1Selection::test_a1("D4:E5");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test cursor on merged cell
+        let mut selection = A1Selection::test_a1("C3");
+        selection.cursor = pos![A1];
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Add another merged cell at D4:E6
+        merge_cells.merge_cells(Rect::test_a1("D4:E6"));
+
+        // Test selection that includes both merged cells
+        let selection = A1Selection::test_a1("A1:E6");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test multiple ranges where one contains merged cells
+        let selection = A1Selection::test_a1("A1,C3");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test multiple ranges where none contain merged cells
+        let selection = A1Selection::test_a1("C3,F7");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test selection that touches corner of merged cell
+        let selection = A1Selection::test_a1("B2:C3");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test with infinite range (should skip)
+        let selection = A1Selection::test_a1("A:");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        let selection = A1Selection::test_a1("1:");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test with column/row selection that includes merged cells
+        let selection = A1Selection::test_a1("A");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        let selection = A1Selection::test_a1("1");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test with column/row selection that doesn't include merged cells
+        let selection = A1Selection::test_a1("Z");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        let selection = A1Selection::test_a1("100");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+    }
+
+    #[test]
+    fn test_contains_merged_cells_edge_cases() {
+        use crate::grid::sheet::merge_cells::MergeCells;
+        let context = A1Context::default();
+        let mut merge_cells = MergeCells::default();
+
+        // Create a large merged cell
+        merge_cells.merge_cells(Rect::test_a1("A1:D4"));
+
+        // Test selection that is entirely inside the merged cell
+        let selection = A1Selection::test_a1("B2:C3");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test selection that extends beyond the merged cell
+        let selection = A1Selection::test_a1("A1:E5");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test selection adjacent to merged cell (should not contain)
+        let selection = A1Selection::test_a1("E1");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        let selection = A1Selection::test_a1("A5");
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test selection with multiple ranges, some overlapping merged cells
+        let selection = A1Selection::test_a1("A1,E5,B2");
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+    }
+
+    #[test]
+    fn test_contains_merged_cells_with_tables() {
+        use crate::grid::sheet::merge_cells::MergeCells;
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B4"))]);
+        let mut merge_cells = MergeCells::default();
+
+        // Add a merged cell that overlaps with the table
+        merge_cells.merge_cells(Rect::test_a1("A2:B3"));
+
+        // Test table selection that contains merged cells
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Test table column selection that contains merged cells
+        let selection = A1Selection::test_a1_context("Table1[A]", &context);
+        assert!(selection.contains_merged_cells(&context, Some(&merge_cells)));
+
+        // Create a table without merged cells
+        let context = A1Context::test(&[], &[("Table2", &["C", "D"], Rect::test_a1("C1:D4"))]);
+
+        // Test table selection that doesn't contain merged cells
+        let selection = A1Selection::test_a1_context("Table2", &context);
+        assert!(!selection.contains_merged_cells(&context, Some(&merge_cells)));
     }
 }

@@ -23,7 +23,7 @@ export function ConnectionIcon({ type, syncState, className }: ConnectionIconPro
   }
 
   if (syncState === 'failed') {
-    return <WarningIcon className="text-destructive" />;
+    return <WarningIcon className={cn(className, 'text-destructive')} />;
   }
 
   return <LanguageIcon language={type} className={className} />;

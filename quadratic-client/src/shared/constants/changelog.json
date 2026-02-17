@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.23.11",
+    "date": "2026-02-11",
+    "changes": [
+      "AI model upgrade: Opus 4.6",
+      "Move multiple tables",
+      "Excel named ranges support",
+      "AI error handling improvements",
+      "Bug fixes"
+    ],
+    "details": "<h2>AI model upgrade: Opus 4.6</h2>\n<p>The Auto AI model setting now uses Opus 4.6, delivering improved reasoning and code generation capabilities for a better AI-assisted spreadsheet experience.</p>\n\n<h2>Move multiple tables</h2>\n<p>You can now select and move multiple tables at once. This makes reorganizing your spreadsheet layout faster and easier, with proper handling of overlapping table positions.</p>\n\n<h2>Excel named ranges support</h2>\n<p>Excel imports now properly decode named ranges to A1 notation, improving compatibility when importing complex Excel files that use named ranges.</p>\n\n<h2>AI error handling improvements</h2>\n<p>Several improvements to AI reliability and error handling:</p>\n<ul>\n<li>Buffered AI responses for smoother streaming and reduced parsing errors</li>\n<li>Clear error message and new chat button when context length is exceeded</li>\n<li>Dedicated error messaging for out-of-memory situations</li>\n<li>Fixed AI suggestion crashes and safeguarded the formatting bar</li>\n<li>Fixed AI response parsing errors</li>\n</ul>\n\n<h2>Bug fixes</h2>\n<p>Various bug fixes and stability improvements including:</p>\n<ul>\n<li>Fixed floating table headers showing improperly on copy as PNG</li>\n<li>Fixed share dialog triggering a page reload</li>\n<li>Fixed scheduled task error handling</li>\n<li>Improved performance for very large tables by optimizing content cache</li>\n<li>Fixed sheet-not-found errors during navigation</li>\n<li>Fixed N+1 query issue in Connections API calls</li>\n<li>Fixed display buffer inconsistencies with column data</li>\n</ul>"
+  },
+  {
     "version": "0.23.10",
     "date": "2026-02-05",
     "changes": [

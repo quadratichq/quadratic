@@ -2,7 +2,7 @@ import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/edito
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
-import { SyncedConnectionLatestStatus } from '@/shared/components/connections/SyncedConnection';
+import { SyncedConnectionStatusMinimal } from '@/shared/components/connections/SyncedConnection';
 import {
   ChevronRightIcon,
   CloseIcon,
@@ -109,7 +109,7 @@ export const ConnectionSchemaBrowser = ({
                       }
                       className="flex items-center text-xs text-muted-foreground hover:underline"
                     >
-                      <SyncedConnectionLatestStatus
+                      <SyncedConnectionStatusMinimal
                         syncState={syncState}
                         updatedDate={connection?.syncedConnectionUpdatedDate}
                       />

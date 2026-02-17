@@ -1,5 +1,5 @@
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { AddIcon, BankIcon, BrokerageIcon, CheckIcon, CreditCardIcon, SettingsIcon } from '@/shared/components/Icons';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
 import { memo, useCallback, useMemo } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { connectionsByType } from './connectionsByType';
@@ -23,7 +23,7 @@ import { connectionsByType } from './connectionsByType';
 // ============================================================================
 
 export interface AddConnectionMenuItemsProps {
-  onAddConnection: (type: ConnectionType) => void;
+  onAddConnection?: (type: ConnectionType) => void;
 }
 
 /**
@@ -48,7 +48,7 @@ export const AddConnectionMenuItems = memo(({ onAddConnection }: AddConnectionMe
   const handleAddConnection = useCallback(
     (type: ConnectionType) => {
       setShowConnectionsMenu({ initialConnectionType: type });
-      onAddConnection(type);
+      onAddConnection?.(type);
     },
     [onAddConnection, setShowConnectionsMenu]
   );
@@ -136,19 +136,18 @@ interface ConnectionMenuItemProps {
 
 const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMenuItemProps) => {
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-  const syncState = isSyncedConnectionType(connection.type) ? deriveSyncStateFromConnectionList(connection) : null;
-  const isNotSynced = syncState !== null && syncState !== 'synced';
+  const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
 
   const handleClick = useCallback(() => {
-    if (isNotSynced) {
-      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
-    } else {
+    if (isReadyForUse) {
       onClick();
+    } else {
+      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
     }
-  }, [isNotSynced, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
+  }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
   return (
-    <DropdownMenuItem key={connection.uuid} onClick={handleClick} className="gap-3">
+    <DropdownMenuItem onClick={handleClick} className="gap-3">
       <ConnectionIcon type={connection.type} syncState={syncState} className="flex-shrink-0" />
       <span className="flex items-center truncate">
         <span className="truncate">
@@ -165,7 +164,6 @@ ConnectionMenuItem.displayName = 'ConnectionMenuItem';
 
 export interface ConnectionsMenuContentProps {
   connections: ConnectionList;
-  teamUuid: string;
   activeConnectionId?: string;
   /** When true, shows Add/Manage actions before connections list. Default: false (connections first) */
   actionsFirst?: boolean;
@@ -177,7 +175,6 @@ export interface ConnectionsMenuContentProps {
 export const ConnectionsMenuContent = memo(
   ({
     connections,
-    teamUuid,
     activeConnectionId,
     actionsFirst = false,
     onSelectConnection,

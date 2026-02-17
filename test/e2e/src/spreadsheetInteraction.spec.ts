@@ -2439,7 +2439,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
-    await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
+    await page.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
     await typeInCell(page, { a1: 'A1', text: `Sheet${i + 1}` });
@@ -2457,7 +2457,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   await expect(page).toHaveTitle(`${fileName} - Quadratic`);
 
   // Store sheet navigation toolbar
-  const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+  const sheetNavigation = page.locator('[data-testid="sheet-bar-add-button"]').locator(`..`);
 
   // Store first and last sheet element
   const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet1"]`);
@@ -3438,7 +3438,7 @@ test.skip('Scroll between sheets', async ({ page }) => {
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
-    await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
+    await page.locator('[data-testid="sheet-bar-add-button"]').click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
     await typeInCell(page, { a1: 'A1', text: `Sheet${i + 1}` });
@@ -3448,7 +3448,7 @@ test.skip('Scroll between sheets', async ({ page }) => {
   await page.locator(`[data-title="Sheet1"]`).click({ timeout: 60 * 1000 });
 
   // Store sheet navigation toolbar
-  const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+  const sheetNavigation = page.locator('[data-testid="sheet-bar-add-button"]').locator(`..`);
 
   // Assert initial screenshot of the sheet navigation toolbar with `Sheet12` as last sheet
   await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`);
@@ -4220,8 +4220,6 @@ test('Theme Customization', async ({ page }) => {
 
   // Homepage elements for accent color changes
   const upgradeButtonEl = page.getByRole(`button`, { name: `Upgrade to Pro` });
-  // The "Start with AI" button contains nested content (span with "AI"), so we match the full accessible name
-  const startWithAIButtonEl = page.getByRole(`button`, { name: `Start with AI` });
   const upgradeTextSVG = page.getByRole(`navigation`).locator(`svg`);
 
   // Member page elements for accent color changes
@@ -4244,8 +4242,12 @@ test('Theme Customization', async ({ page }) => {
     // Click theme toggle button
     await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
+    // Wait for the accent color button to be visible before clicking (popover needs time to open)
+    const accentColorButton = page.getByRole(`button`, { name: theme.name });
+    await expect(accentColorButton).toBeVisible({ timeout: 60 * 1000 });
+
     // Click accent color
-    await page.getByRole(`button`, { name: theme.name }).click({ timeout: 60 * 1000 });
+    await accentColorButton.click({ timeout: 60 * 1000 });
 
     // Assert that the HTML element has accent name applied to 'data-theme' attribute
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
@@ -4254,8 +4256,10 @@ test('Theme Customization', async ({ page }) => {
     await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
 
-    // Assert the 'New File' button has the expected accent color
-    await expect(startWithAIButtonEl).toHaveCSS(`background-color`, theme.color);
+    // Assert the 'New file' button has the expected accent color
+    const newFileButton = page.getByTestId('files-list-new-file-button');
+    await expect(newFileButton).toBeVisible({ timeout: 60 * 1000 });
+    await expect(newFileButton).toHaveCSS(`background-color`, theme.color);
 
     // Reload the page (removed redundant 10s waitForTimeout)
     await page.reload();
@@ -4265,7 +4269,10 @@ test('Theme Customization', async ({ page }) => {
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
     await expect(upgradeButtonEl).toHaveCSS(`background-color`, theme.color);
     await expect(upgradeTextSVG).toHaveCSS(`color`, theme.color);
-    await expect(startWithAIButtonEl).toHaveCSS(`background-color`, theme.color);
+    // Assert the 'New file' button has the expected accent color after reload
+    const newFileButtonAfterReload = page.getByTestId('files-list-new-file-button');
+    await expect(newFileButtonAfterReload).toBeVisible({ timeout: 60 * 1000 });
+    await expect(newFileButtonAfterReload).toHaveCSS(`background-color`, theme.color);
 
     // Navigate to the 'Members' page and assert page
     await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
@@ -4383,8 +4390,12 @@ test.skip('Theme Customization from Sheet', async ({ page }) => {
     // Click theme toggle button (identified by contrast icon)
     await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
+    // Wait for the accent color button to be visible before clicking (popover needs time to open)
+    const accentColorButton = page.getByRole(`button`, { name: theme.name });
+    await expect(accentColorButton).toBeVisible({ timeout: 60 * 1000 });
+
     // Click accent color
-    await page.getByRole(`button`, { name: theme.name }).click({ timeout: 60 * 1000 });
+    await accentColorButton.click({ timeout: 60 * 1000 });
 
     // Assert that the HTML element has accent name applied to 'data-theme' attribute
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);

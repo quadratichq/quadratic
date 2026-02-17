@@ -1,3 +1,4 @@
+import { getConditionalFormatsToolCall, updateConditionalFormatsToolCall } from '@/app/ai/tools/aiConditionalFormats';
 import {
   addDateTimeValidationToolCall,
   addListValidationToolCall,
@@ -9,7 +10,7 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
-import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { PlaidDocs, getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { countWords } from '@/app/ai/utils/wordCount';
@@ -387,6 +388,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Format the response
       const schemaText = connectionsInfo.map(getConnectionSchemaMarkdown).join('\n---\n\n');
 
+      // Add connection-type-specific documentation
+      const hasPlaidConnection = connectionsInfo.some(
+        (info) => info.connectionType.toUpperCase() === 'PLAID' && !info.error
+      );
+      const connectionDocs = hasPlaidConnection ? `\n\n${PlaidDocs}` : '';
+
       // Add connection summary for future reference
       const connectionSummary = connectionsInfo
         .filter((item) => item && !item.error)
@@ -400,7 +407,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [
         createTextContent(
           schemaText
-            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${connectionDocs}${summaryText}`
             : `No database schema information available.${summaryText}`
         ),
       ];
@@ -545,38 +552,76 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.MoveCells]: async (args) => {
     try {
-      const { sheet_name, source_selection_rect, target_top_left_position } = args;
+      const { sheet_name, moves, source_selection_rect, target_top_left_position } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const sourceSelection = sheets.stringToSelection(source_selection_rect, sheetId);
-      const sourceRect = sourceSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
-      if (!sourceRect) {
-        return [createTextContent('Invalid source selection, this should be a single rectangle, not a range')];
-      }
-      const sheetRect: SheetRect = {
-        min: {
-          x: sourceRect.min.x,
-          y: sourceRect.min.y,
-        },
-        max: {
-          x: sourceRect.max.x,
-          y: sourceRect.max.y,
-        },
-        sheet_id: {
-          id: sheetId,
-        },
+
+      // Helper to parse a single move
+      const parseMove = (sourceRect: string, targetPos: string) => {
+        const sourceSelection = sheets.stringToSelection(sourceRect, sheetId);
+        const rect = sourceSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
+        if (!rect) {
+          throw new Error(`Invalid source selection "${sourceRect}", this should be a single rectangle, not a range`);
+        }
+        const sheetRect: SheetRect = {
+          min: { x: rect.min.x, y: rect.min.y },
+          max: { x: rect.max.x, y: rect.max.y },
+          sheet_id: { id: sheetId },
+        };
+        const targetSelection = sheets.stringToSelection(targetPos, sheetId);
+        if (!targetSelection.isSingleSelection(sheets.jsA1Context)) {
+          throw new Error(`Invalid target position "${targetPos}", this should be a single cell, not a range`);
+        }
+        const { x, y } = targetSelection.getCursor();
+        return {
+          sheetRect,
+          x,
+          y,
+          rangeWidth: Number(rect.max.x - rect.min.x),
+          rangeHeight: Number(rect.max.y - rect.min.y),
+        };
       };
 
-      const targetSelection = sheets.stringToSelection(target_top_left_position, sheetId);
-      if (!targetSelection.isSingleSelection(sheets.jsA1Context)) {
-        return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
+      // Support both new format (moves array) and old format (source_selection_rect/target_top_left_position)
+      let movesToProcess: { source_selection_rect: string; target_top_left_position: string }[];
+      if (moves && moves.length > 0) {
+        movesToProcess = moves;
+      } else if (source_selection_rect && target_top_left_position) {
+        // Backward compatibility: convert old format to moves array
+        movesToProcess = [{ source_selection_rect, target_top_left_position }];
+      } else {
+        return [
+          createTextContent(
+            'Invalid arguments: provide either moves array or source_selection_rect and target_top_left_position'
+          ),
+        ];
       }
-      const { x, y } = targetSelection.getCursor();
-      const rangeWidth = Number(sourceRect.max.x - sourceRect.min.x);
-      const rangeHeight = Number(sourceRect.max.y - sourceRect.min.y);
 
-      // Move AI cursor to show the target destination
+      // Parse all moves and collect errors - this way we can report all invalid moves, not just the first one
+      const parseResults = movesToProcess.map((m, index) => {
+        try {
+          return { success: true as const, data: parseMove(m.source_selection_rect, m.target_top_left_position) };
+        } catch (e) {
+          return {
+            success: false as const,
+            error: `Move ${index + 1} (${m.source_selection_rect} → ${m.target_top_left_position}): ${e instanceof Error ? e.message : String(e)}`,
+          };
+        }
+      });
+
+      const errors = parseResults.filter((r) => !r.success);
+      if (errors.length > 0) {
+        const errorMessages = errors.map((e) => (e.success ? '' : e.error)).join('\n');
+        return [createTextContent(`Invalid move(s):\n${errorMessages}`)];
+      }
+
+      const parsedMoves = parseResults
+        .filter((r): r is { success: true; data: ReturnType<typeof parseMove> } => r.success)
+        .map((r) => r.data);
+
+      // Move AI cursor to show the first target destination
+      const first = parsedMoves[0];
       try {
-        const targetRange = `${xyToA1(x, y)}:${xyToA1(x + rangeWidth, y + rangeHeight)}`;
+        const targetRange = `${xyToA1(first.x, first.y)}:${xyToA1(first.x + first.rangeWidth, first.y + first.rangeHeight)}`;
         const jsSelection = sheets.stringToSelection(targetRange, sheetId);
         const selectionString = jsSelection.save();
         aiUser.updateSelection(selectionString, sheetId);
@@ -584,12 +629,24 @@ export const aiToolsActions: AIToolActionsRecord = {
         console.warn('Failed to update AI user selection:', e);
       }
 
-      await quadraticCore.moveCells(sheetRect, x, y, sheetId, false, false, true);
+      await quadraticCore.moveCellsBatch(
+        parsedMoves.map((m) => ({
+          source: m.sheetRect,
+          targetX: m.x,
+          targetY: m.y,
+          targetSheetId: sheetId,
+        })),
+        true
+      );
 
-      // Move viewport to the target destination so the user can see where the content was moved
-      ensureRectVisible(sheetId, { x, y }, { x: x + rangeWidth, y: y + rangeHeight });
+      // Move viewport to the first target destination
+      ensureRectVisible(
+        sheetId,
+        { x: first.x, y: first.y },
+        { x: first.x + first.rangeWidth, y: first.y + first.rangeHeight }
+      );
 
-      return [createTextContent('Executed move cells tool successfully.')];
+      return [createTextContent(`Executed move cells tool successfully for ${movesToProcess.length} move(s).`)];
     } catch (e) {
       return [createTextContent(`Error executing move cells tool: ${e}`)];
     }
@@ -1233,6 +1290,50 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing set borders tool: ${e}`)];
     }
   },
+  [AITool.MergeCells]: async (args) => {
+    try {
+      const { sheet_name, selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in MergeCells tool call: ${e.message}.`)];
+      }
+
+      const response = await quadraticCore.mergeCells(jsSelection.save(), true);
+      if (response?.result) {
+        return [createTextContent('Merge cells tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing merge cells tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing merge cells tool: ${e}`)];
+    }
+  },
+  [AITool.UnmergeCells]: async (args) => {
+    try {
+      const { sheet_name, selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in UnmergeCells tool call: ${e.message}.`)];
+      }
+
+      const response = await quadraticCore.unmergeCells(jsSelection.save(), true);
+      if (response?.result) {
+        return [createTextContent('Unmerge cells tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing unmerge cells tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing unmerge cells tool: ${e}`)];
+    }
+  },
   [AITool.InsertColumns]: async (args) => {
     try {
       const { sheet_name, column, right, count } = args;
@@ -1543,6 +1644,36 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(text)];
     } catch (e) {
       return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+  [AITool.GetConditionalFormats]: async (args) => {
+    try {
+      const text = getConditionalFormatsToolCall(args.sheet_name);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get conditional formats tool: ${e}`)];
+    }
+  },
+  [AITool.UpdateConditionalFormats]: async (args) => {
+    try {
+      // Move AI cursor to the first selection if any create/update rules have selections
+      const firstRuleWithSelection = args.rules.find(
+        (r) => r.selection && (r.action === 'create' || r.action === 'update')
+      );
+      if (firstRuleWithSelection?.selection) {
+        try {
+          const sheetId = sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current;
+          const jsSelection = sheets.stringToSelection(firstRuleWithSelection.selection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
+      }
+      const text = await updateConditionalFormatsToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing update conditional formats tool: ${e}`)];
     }
   },
   [AITool.GetCodeCellValue]: async (args) => {

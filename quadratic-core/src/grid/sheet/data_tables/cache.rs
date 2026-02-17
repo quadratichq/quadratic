@@ -13,103 +13,57 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-pub use super::single_cell_tables_cache::SingleCellTablesCache;
-
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct SheetDataTablesCache {
-    // boolean map indicating presence of single cell data table at a position
-    // this takes spills and errors into account, which are also single cell tables
-    pub(crate) single_cell_tables: SingleCellTablesCache,
-
-    // cache of output rect and empty values for multi-cell data tables
-    pub(crate) multi_cell_tables: MultiCellTablesCache,
+    // cache of output rect and empty values for all data tables (including single-cell)
+    pub(crate) data_tables: DataTablesCache,
 }
 
 impl SheetDataTablesCache {
     /// Returns the bounds of the column or None if the column is empty of content.
     pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
-        let single_cell_min = self.single_cell_tables.col_min(column);
-        let multi_cell_min = self.multi_cell_tables.col_min(column);
-        let min = match (single_cell_min > 0, multi_cell_min > 0) {
-            (true, true) => single_cell_min.min(multi_cell_min),
-            (true, false) => single_cell_min,
-            (false, true) => multi_cell_min,
-            (false, false) => return None,
-        };
-
-        let single_cell_max = self.single_cell_tables.col_max(column);
-        let multi_cell_max = self.multi_cell_tables.col_max(column);
-        let max = match (single_cell_max > 0, multi_cell_max > 0) {
-            (true, true) => single_cell_max.max(multi_cell_max),
-            (true, false) => single_cell_max,
-            (false, true) => multi_cell_max,
-            (false, false) => return None,
-        };
-
-        Some((min, max))
+        let min = self.data_tables.col_min(column);
+        let max = self.data_tables.col_max(column);
+        if min > 0 && max > 0 {
+            Some((min, max))
+        } else {
+            None
+        }
     }
 
     /// Returns the bounds of the row or None if the row is empty of content.
     pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
-        let single_cell_min = self.single_cell_tables.row_min(row);
-        let multi_cell_min = self.multi_cell_tables.row_min(row);
-        let min = match (single_cell_min > 0, multi_cell_min > 0) {
-            (true, true) => single_cell_min.min(multi_cell_min),
-            (true, false) => single_cell_min,
-            (false, true) => multi_cell_min,
-            (false, false) => return None,
-        };
-
-        let single_cell_max = self.single_cell_tables.row_max(row);
-        let multi_cell_max = self.multi_cell_tables.row_max(row);
-        let max = match (single_cell_max > 0, multi_cell_max > 0) {
-            (true, true) => single_cell_max.max(multi_cell_max),
-            (true, false) => single_cell_max,
-            (false, true) => multi_cell_max,
-            (false, false) => return None,
-        };
-
-        Some((min, max))
+        let min = self.data_tables.row_min(row);
+        let max = self.data_tables.row_max(row);
+        if min > 0 && max > 0 {
+            Some((min, max))
+        } else {
+            None
+        }
     }
 
     /// Returns the finite bounds of the sheet data tables.
     pub fn finite_bounds(&mut self) -> Option<Rect> {
-        match (
-            self.single_cell_tables.finite_bounds(),
-            self.multi_cell_tables.finite_bounds(),
-        ) {
-            (Some(has_data_table_bounds), Some(output_rects_bounds)) => {
-                Some(has_data_table_bounds.union(&output_rects_bounds))
-            }
-            (Some(has_data_table_bounds), None) => Some(has_data_table_bounds),
-            (None, Some(output_rects_bounds)) => Some(output_rects_bounds),
-            (None, None) => None,
-        }
+        self.data_tables.finite_bounds()
     }
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
     pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
-        if self.single_cell_tables.get(pos) {
-            Some(pos)
-        } else {
-            self.multi_cell_tables.get(pos)
-        }
+        self.data_tables.get(pos)
     }
 
     /// Returns true if the cell has content, ignoring blank cells within a
-    /// multi-cell data table.
+    /// data table.
     pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
-        self.single_cell_tables.get(pos)
-            || self
-                .multi_cell_tables
-                .get(pos)
-                .is_some_and(|_| !self.has_empty_value(pos))
+        self.data_tables
+            .get(pos)
+            .is_some_and(|_| !self.has_empty_value(pos))
     }
 
     /// Returns true if the cell has an empty value
     pub fn has_empty_value(&self, pos: Pos) -> bool {
-        self.multi_cell_tables.has_empty_value(pos)
+        self.data_tables.has_empty_value(pos)
     }
 
     /// Returns whether there are any code cells within a selection
@@ -117,10 +71,7 @@ impl SheetDataTablesCache {
         let sheet_id = selection.sheet_id;
         for range in selection.ranges.iter() {
             if let Some(rect) = range.to_rect_unbounded(context) {
-                if !self.single_cell_tables.is_all_default_in_rect(rect) {
-                    return true;
-                }
-                let tables = self.multi_cell_tables.unique_values_in_rect(rect);
+                let tables = self.data_tables.unique_values_in_rect(rect);
                 if !tables.is_empty() {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
@@ -138,59 +89,42 @@ impl SheetDataTablesCache {
 
     /// Returns the unique table anchor positions in range
     pub fn tables_in_range(&self, range: RefRangeBounds) -> impl Iterator<Item = Pos> {
-        self.single_cell_tables
-            .nondefault_rects_in_range(range)
-            .flat_map(|(rect, _)| {
-                rect.x_range()
-                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
-            })
-            .chain(
-                self.multi_cell_tables
-                    .unique_values_in_range(range)
-                    .into_iter()
-                    .flatten(),
-            )
+        self.data_tables
+            .unique_values_in_range(range)
+            .into_iter()
+            .flatten()
     }
 
     /// Returns the rectangles that have some value in the given rectangle.
     pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
-        self.single_cell_tables
+        self.data_tables
             .nondefault_rects_in_rect(rect)
             .map(|(rect, _)| rect)
-            .chain(
-                self.multi_cell_tables
-                    .nondefault_rects_in_rect(rect)
-                    .map(|(rect, _)| rect),
-            )
     }
 
     pub fn has_content_in_rect(&self, rect: Rect) -> bool {
-        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content_in_rect(rect)
+        self.data_tables.has_content_in_rect(rect)
     }
 
     /// Checks for any tables in the rect except for the given position
     pub fn has_content_except(&self, rect: Rect, except: Pos) -> bool {
-        self.single_cell_tables
+        self.data_tables
             .nondefault_rects_in_rect(rect)
-            .any(|(rect, _)| rect.iter().any(|p| p != except))
-            || self
-                .multi_cell_tables
-                .nondefault_rects_in_rect(rect)
-                .any(|(_, pos)| pos.is_some_and(|p| p != except))
+            .any(|(_, pos)| pos.is_some_and(|p| p != except))
     }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
-pub struct MultiCellTablesCache {
-    /// position map indicating presence of multi-cell data table at a position
+pub struct DataTablesCache {
+    /// position map indicating presence of data table at a position
     /// each position value is the root cell position of the data table
     /// this accounts for table spills hence values cannot overlap
-    multi_cell_tables: Contiguous2D<Option<Pos>>,
+    data_tables: Contiguous2D<Option<Pos>>,
 
-    /// position map indicating presence of empty cells within a multi-cell data table
+    /// position map indicating presence of empty cells within a data table
     /// this is used to assist with finding the next cell with content
     /// NOTE: the bool cannot be false
-    multi_cell_tables_empty: Contiguous2D<Option<bool>>,
+    data_tables_empty: Contiguous2D<Option<bool>>,
 
     /// Cached bounds for O(1) access - expanded on additions
     #[serde(skip)]
@@ -202,18 +136,17 @@ pub struct MultiCellTablesCache {
 }
 
 // Manual PartialEq implementation that excludes cached fields
-impl PartialEq for MultiCellTablesCache {
+impl PartialEq for DataTablesCache {
     fn eq(&self, other: &Self) -> bool {
-        self.multi_cell_tables == other.multi_cell_tables
-            && self.multi_cell_tables_empty == other.multi_cell_tables_empty
+        self.data_tables == other.data_tables && self.data_tables_empty == other.data_tables_empty
     }
 }
 
-impl MultiCellTablesCache {
+impl DataTablesCache {
     pub fn new() -> Self {
         Self {
-            multi_cell_tables: Contiguous2D::new(),
-            multi_cell_tables_empty: Contiguous2D::new(),
+            data_tables: Contiguous2D::new(),
+            data_tables_empty: Contiguous2D::new(),
             cached_bounds: None,
             bounds_dirty: false,
         }
@@ -221,7 +154,7 @@ impl MultiCellTablesCache {
 
     /// Returns anchor position of the data table whose output rect contains the given position
     pub fn get(&self, pos: Pos) -> Option<Pos> {
-        self.multi_cell_tables.get(pos)
+        self.data_tables.get(pos)
     }
 
     pub fn set_rect(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, data_table: Option<&DataTable>) {
@@ -235,8 +168,15 @@ impl MultiCellTablesCache {
             });
 
             // Update output rect
-            self.multi_cell_tables
+            self.data_tables
                 .set_rect(x1, y1, Some(x2), Some(y2), Some((x1, y1).into()));
+
+            // For single-cell tables, no need to track empty values
+            if new_rect.len() == 1 {
+                self.data_tables_empty
+                    .set_rect(x1, y1, Some(x2), Some(y2), None);
+                return;
+            }
 
             // Multi Value, update empty values cache
             if let Value::Array(array) = &data_table.value {
@@ -313,11 +253,11 @@ impl MultiCellTablesCache {
                             empty_values_cache
                         };
 
-                    self.multi_cell_tables_empty.set_from(&empty_values_cache);
+                    self.data_tables_empty.set_from(&empty_values_cache);
 
                     // mark table name and column headers as non-empty
                     if y_adjustment > 0 {
-                        self.multi_cell_tables_empty.set_rect(
+                        self.data_tables_empty.set_rect(
                             x1,
                             y1,
                             Some(x2),
@@ -327,17 +267,16 @@ impl MultiCellTablesCache {
                     }
                 } else {
                     // empty_values_cache is None, all cells are non-empty
-                    self.multi_cell_tables_empty
+                    self.data_tables_empty
                         .set_rect(x1, y1, Some(x2), Some(y2), None);
                 }
             }
         }
         // table is removed, set all to None
         else {
-            self.multi_cell_tables
-                .set_rect(x1, y1, Some(x2), Some(y2), None);
+            self.data_tables.set_rect(x1, y1, Some(x2), Some(y2), None);
 
-            self.multi_cell_tables_empty
+            self.data_tables_empty
                 .set_rect(x1, y1, Some(x2), Some(y2), None);
 
             // Mark bounds as dirty if removal touches the edge of current bounds
@@ -354,7 +293,7 @@ impl MultiCellTablesCache {
 
     /// Returns true if all cells in the rect do not have a table output
     pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
-        self.multi_cell_tables.is_all_default_in_rect(rect)
+        self.data_tables.is_all_default_in_rect(rect)
     }
 
     /// Return rects which have table output
@@ -362,45 +301,45 @@ impl MultiCellTablesCache {
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Option<Pos>)> {
-        self.multi_cell_tables.nondefault_rects_in_rect(rect)
+        self.data_tables.nondefault_rects_in_rect(rect)
     }
 
     /// Returns the unique table anchor positions in rect
     pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<Option<Pos>> {
-        self.multi_cell_tables.unique_values_in_rect(rect)
+        self.data_tables.unique_values_in_rect(rect)
     }
 
     /// Returns the unique table anchor positions in range
     pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<Option<Pos>> {
-        self.multi_cell_tables.unique_values_in_range(range)
+        self.data_tables.unique_values_in_range(range)
     }
 
-    /// Returns the minimum column index of the multi-cell data tables
+    /// Returns the minimum column index of the data tables
     pub fn col_min(&self, column: i64) -> i64 {
-        self.multi_cell_tables.col_min(column)
+        self.data_tables.col_min(column)
     }
 
-    /// Returns the maximum column index of the multi-cell data tables
+    /// Returns the maximum column index of the data tables
     pub fn col_max(&self, column: i64) -> i64 {
-        self.multi_cell_tables.col_max(column)
+        self.data_tables.col_max(column)
     }
 
-    /// Returns the minimum row index of the multi-cell data tables
+    /// Returns the minimum row index of the data tables
     pub fn row_min(&self, row: i64) -> i64 {
-        self.multi_cell_tables.row_min(row)
+        self.data_tables.row_min(row)
     }
 
-    /// Returns the maximum row index of the multi-cell data tables
+    /// Returns the maximum row index of the data tables
     pub fn row_max(&self, row: i64) -> i64 {
-        self.multi_cell_tables.row_max(row)
+        self.data_tables.row_max(row)
     }
 
-    /// Returns the finite bounds of the multi-cell data tables.
+    /// Returns the finite bounds of the data tables.
     /// Uses cached bounds for O(1) performance when not dirty.
     pub fn finite_bounds(&mut self) -> Option<Rect> {
         if self.bounds_dirty {
             // Full recalculation needed after edge removal
-            self.cached_bounds = self.multi_cell_tables.finite_bounds();
+            self.cached_bounds = self.data_tables.finite_bounds();
             self.bounds_dirty = false;
         }
         self.cached_bounds
@@ -408,11 +347,11 @@ impl MultiCellTablesCache {
 
     /// Returns true if the cell has an empty value
     pub fn has_empty_value(&self, pos: Pos) -> bool {
-        self.multi_cell_tables_empty.get(pos).is_some()
+        self.data_tables_empty.get(pos).is_some()
     }
 
     pub fn has_content_in_rect(&self, rect: Rect) -> bool {
-        self.multi_cell_tables.intersects(rect)
+        self.data_tables.intersects(rect)
     }
 }
 
@@ -470,21 +409,21 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        // Create a single-cell code table
-        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 1, 1);
+        // Create a multi-cell code table (1x1 formulas become CellValue::Code, not DataTable)
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 2, 1);
 
-        // Create a multi-cell code table
+        // Create another multi-cell code table
         test_create_code_table(&mut gc, sheet_id, pos![4, 2], 3, 1);
 
         let sheet = gc.sheet(sheet_id);
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context();
 
-        // Test selection containing single-cell code table
-        let selection = A1Selection::test_a1("B2");
+        // Test selection containing first code table
+        let selection = A1Selection::test_a1("B2:C2");
         assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
 
-        // Test selection containing multi-cell code table
+        // Test selection containing second code table
         let selection = A1Selection::test_a1("D2:F2");
         assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
 
@@ -506,8 +445,8 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None, false);
-
+        // Create multi-cell tables (1x1 formulas become CellValue::Code)
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
         test_create_data_table(&mut gc, sheet_id, pos![E5], 3, 3);
         test_create_data_table(&mut gc, sheet_id, pos![J10], 3, 3);
 
@@ -517,7 +456,9 @@ mod tests {
             .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
             .collect::<Vec<_>>();
 
-        assert_eq!(tables, vec![pos![B2], pos![E5]]);
+        assert_eq!(tables.len(), 2);
+        assert!(tables.contains(&pos![B2]));
+        assert!(tables.contains(&pos![E5]));
     }
 
     #[test]
@@ -525,10 +466,9 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None, false);
-
+        // Create multi-cell tables (1x1 formulas become CellValue::Code)
+        test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
         test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
-
         test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
 
         let sheet = gc.sheet(sheet_id);
@@ -537,6 +477,9 @@ mod tests {
             .get_nondefault_rects_in_rect(Rect::new(1, 1, 12, 12))
             .collect::<Vec<_>>();
 
-        assert_eq!(rects, vec![rect![B2:B2], rect![E5:G9], rect![J10:L12]]);
+        assert_eq!(rects.len(), 3);
+        assert!(rects.contains(&rect![B2:C5]));
+        assert!(rects.contains(&rect![E5:G9]));
+        assert!(rects.contains(&rect![J10:L12]));
     }
 }

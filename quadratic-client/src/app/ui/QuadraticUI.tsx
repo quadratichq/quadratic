@@ -28,6 +28,7 @@ import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CommandPalette } from '@/app/ui/menus/CommandPalette/CommandPalette';
+import { ConditionalFormatPanel } from '@/app/ui/menus/ConditionalFormatting/ConditionalFormatPanel';
 import { ConnectionsMenu } from '@/app/ui/menus/ConnectionsMenu/ConnectionsMenu';
 import { FeedbackMenu } from '@/app/ui/menus/FeedbackMenu/FeedbackMenu';
 import { ScheduledTasks } from '@/app/ui/menus/ScheduledTasks/ScheduledTasks';
@@ -53,6 +54,33 @@ import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
+
+// Check if error is likely an out-of-memory error from WASM
+// We check the stack trace for allocation-related patterns since "unreachable" is generic
+const isOutOfMemoryError = (error: Error | unknown): boolean => {
+  const errorString = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+  // Check for allocation-related patterns in the stack trace
+  const allocationPatterns = [
+    'alloc::raw_vec::handle_error',
+    'alloc::raw_vec::RawVec',
+    'alloc::alloc::handle_alloc_error',
+    'out of memory',
+    'memory allocation',
+  ];
+  if (allocationPatterns.some((pattern) => errorString.includes(pattern))) {
+    return true;
+  }
+  // Check for cascaded OOM: __wbindgen_malloc fails as the first WASM frame
+  // This happens after initial OOM when WASM can't allocate memory for any operation
+  if (errorString.includes('unreachable')) {
+    const lines = errorString.split('\n');
+    const firstWasmFrame = lines.find((line) => line.includes('quadratic_core.wasm.'));
+    if (firstWasmFrame?.includes('__wbindgen_malloc')) {
+      return true;
+    }
+  }
+  return false;
+};
 
 export default function QuadraticUI() {
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -104,10 +132,15 @@ export default function QuadraticUI() {
   useRemoveInitialLoadingUI();
 
   if (error) {
+    const isOOM = isOutOfMemoryError(error.error);
     return (
       <EmptyPage
-        title="Quadratic crashed"
-        description="Something went wrong. Our team has been notified of this issue. Please reload the application to continue."
+        title={isOOM ? 'Out of memory' : 'Quadratic crashed'}
+        description={
+          isOOM
+            ? 'Your browser ran out of memory. This can happen with large files or complex operations. Try reloading and working with smaller datasets, or contact support if you need help.'
+            : 'Something went wrong. Our team has been notified of this issue. Please reload the application to continue.'
+        }
         Icon={CrossCircledIcon}
         actions={<Button onClick={() => window.location.reload()}>Reload</Button>}
         error={error.error}
@@ -168,6 +201,7 @@ export default function QuadraticUI() {
                 </FileDragDropWrapper>
                 <CodeEditor />
                 <ValidationPanel />
+                <ConditionalFormatPanel />
                 <ScheduledTasks />
               </div>
             </div>

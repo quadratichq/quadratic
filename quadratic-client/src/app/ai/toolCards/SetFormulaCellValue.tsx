@@ -94,6 +94,7 @@ export const SetFormulaCellValue = memo(
                 pos,
                 language: 'Formula' as const,
                 lastModified: 0,
+                isSingleCell: true,
               },
               showCellTypeMenu: false,
               inlineEditor: false,

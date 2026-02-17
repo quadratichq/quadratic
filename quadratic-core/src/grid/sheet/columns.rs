@@ -58,6 +58,11 @@ impl SheetColumns {
         self.columns.get(&column)
     }
 
+    /// Returns a mutable iterator over all columns. Used for file migration.
+    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = (&i64, &mut Column)> {
+        self.columns.iter_mut()
+    }
+
     /// Returns the bounds of the row at the given index.
     pub(crate) fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         if self.has_cell_value.is_row_default(row) {
@@ -271,6 +276,22 @@ impl SheetColumns {
             })
     }
 
+    /// Returns true if the given rectangle has any content, excluding a specific position.
+    pub(crate) fn has_content_in_rect_except(&self, rect: Rect, except: Pos) -> bool {
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if pos == except {
+                    continue;
+                }
+                if self.has_cell_value.get(pos) == Some(true) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     /// Returns an iterator over the content in the sheet.
     pub fn iter_content(&self) -> impl Iterator<Item = Pos> {
         self.has_cell_value
@@ -465,5 +486,37 @@ mod test {
         assert_eq!(bounds.min.y, 1);
         assert_eq!(bounds.max.x, 3);
         assert_eq!(bounds.max.y, 4);
+    }
+
+    #[test]
+    fn test_has_content_in_rect_except() {
+        let mut columns = SheetColumns::new();
+
+        // Set up some test data
+        columns.set_value(pos![A1], "A1");
+        columns.set_value(pos![A2], "A2");
+        columns.set_value(pos![B1], "B1");
+        columns.set_value(pos![B2], "B2");
+
+        // Test that has_content_in_rect_except excludes the specified position
+        let rect = Rect::new_span((1, 1).into(), (2, 2).into());
+
+        // Should find content when excluding A1 (B1, A2, B2 still present)
+        assert!(columns.has_content_in_rect_except(rect, pos![A1]));
+
+        // Should find content when excluding B2 (A1, A2, B1 still present)
+        assert!(columns.has_content_in_rect_except(rect, pos![B2]));
+
+        // Should not find content when excluding all positions (if we exclude all 4)
+        // Actually, this test is tricky because we can only exclude one at a time
+        // But we can test that excluding a position that has content still finds other content
+
+        // Test with a rect that only contains one cell
+        let single_cell_rect = Rect::single_pos(pos![A1]);
+        // Excluding A1 should return false (no other content)
+        assert!(!columns.has_content_in_rect_except(single_cell_rect, pos![A1]));
+        // But if we check a different position, it should find A1
+        let single_cell_rect2 = Rect::single_pos(pos![A1]);
+        assert!(columns.has_content_in_rect_except(single_cell_rect2, pos![B1]));
     }
 }

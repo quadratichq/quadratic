@@ -48,6 +48,8 @@ export enum AITool {
   ResizeColumns = 'resize_columns',
   ResizeRows = 'resize_rows',
   SetBorders = 'set_borders',
+  MergeCells = 'merge_cells',
+  UnmergeCells = 'unmerge_cells',
   InsertColumns = 'insert_columns',
   InsertRows = 'insert_rows',
   DeleteColumns = 'delete_columns',
@@ -62,6 +64,8 @@ export enum AITool {
   AddNumberValidation = 'add_number_validation',
   AddDateTimeValidation = 'add_date_time_validation',
   RemoveValidations = 'remove_validation',
+  GetConditionalFormats = 'get_conditional_formats',
+  UpdateConditionalFormats = 'update_conditional_formats',
   Undo = 'undo',
   Redo = 'redo',
   ContactUs = 'contact_us',
@@ -105,6 +109,8 @@ export const AIToolSchema = z.enum([
   AITool.ResizeColumns,
   AITool.ResizeRows,
   AITool.SetBorders,
+  AITool.MergeCells,
+  AITool.UnmergeCells,
   AITool.InsertColumns,
   AITool.InsertRows,
   AITool.DeleteColumns,
@@ -119,6 +125,8 @@ export const AIToolSchema = z.enum([
   AITool.AddNumberValidation,
   AITool.AddDateTimeValidation,
   AITool.RemoveValidations,
+  AITool.GetConditionalFormats,
+  AITool.UpdateConditionalFormats,
   AITool.Undo,
   AITool.Redo,
   AITool.ContactUs,
@@ -288,11 +296,26 @@ export const AIToolsArgsSchema = {
     top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
-  [AITool.MoveCells]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    source_selection_rect: stringSchema,
-    target_top_left_position: stringSchema,
-  }),
+  [AITool.MoveCells]: z
+    .object({
+      sheet_name: stringNullableOptionalSchema,
+      // New format: array of moves
+      moves: z
+        .array(
+          z.object({
+            source_selection_rect: stringSchema,
+            target_top_left_position: stringSchema,
+          })
+        )
+        .optional(),
+      // Old format (backward compatibility for loading old chats)
+      source_selection_rect: stringSchema.optional(),
+      target_top_left_position: stringSchema.optional(),
+    })
+    .refine(
+      (data) => (data.moves && data.moves.length > 0) || (data.source_selection_rect && data.target_top_left_position),
+      { message: 'Either moves array or source_selection_rect/target_top_left_position must be provided' }
+    ),
   [AITool.DeleteCells]: z.object({
     sheet_name: stringNullableOptionalSchema,
     selection: stringSchema,
@@ -460,6 +483,14 @@ export const AIToolsArgsSchema = {
       .transform((val) => val.toLowerCase())
       .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
   }),
+  [AITool.MergeCells]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    selection: z.string(),
+  }),
+  [AITool.UnmergeCells]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    selection: z.string(),
+  }),
   [AITool.InsertColumns]: z.object({
     sheet_name: z.string().nullable().optional(),
     column: z.string(),
@@ -572,6 +603,41 @@ export const AIToolsArgsSchema = {
   [AITool.RemoveValidations]: z.object({
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
+  }),
+  [AITool.GetConditionalFormats]: z.object({
+    sheet_name: z.string(),
+  }),
+  [AITool.UpdateConditionalFormats]: z.object({
+    sheet_name: z.string(),
+    rules: z.array(
+      z.object({
+        id: z.string().uuid().nullable().optional(),
+        action: z.enum(['create', 'update', 'delete']),
+        selection: z.string().nullable().optional(),
+        // Formula-based conditional format fields
+        type: z.enum(['formula', 'color_scale']).nullable().optional(),
+        rule: z.string().nullable().optional(),
+        bold: booleanNullableOptionalSchema,
+        italic: booleanNullableOptionalSchema,
+        underline: booleanNullableOptionalSchema,
+        strike_through: booleanNullableOptionalSchema,
+        text_color: z.string().nullable().optional(),
+        fill_color: z.string().nullable().optional(),
+        apply_to_empty: booleanNullableOptionalSchema,
+        // Color scale conditional format fields (flattened for schema compatibility)
+        color_scale_thresholds: z
+          .array(
+            z.object({
+              value_type: z.enum(['min', 'max', 'number', 'percent', 'percentile']),
+              value: z.number().nullable().optional(),
+              color: z.string(),
+            })
+          )
+          .nullable()
+          .optional(),
+        auto_contrast_text: booleanNullableOptionalSchema,
+      })
+    ),
   }),
   [AITool.Undo]: z.object({
     count: numberSchema.nullable().optional(),
@@ -1220,11 +1286,10 @@ Examples:
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
+Moves one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
+Source location is the top left and bottom right corners of the selection rectangle to be moved (in a1 notation).\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
@@ -1235,26 +1300,34 @@ Target location is the top left corner of the target location on the current ope
           type: 'string',
           description: 'The sheet name of the current sheet in the context',
         },
-        source_selection_rect: {
-          type: 'string',
-          description:
-            'The selection of cells, in a1 notation, to be moved in the current open sheet. This is string representation of the rectangular selection of cells to be moved',
-        },
-        target_top_left_position: {
-          type: 'string',
-          description:
-            'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. This will be the top left corner of the source selection rectangle after moving.',
+        moves: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              source_selection_rect: {
+                type: 'string',
+                description: 'The selection of cells to move, in a1 notation (e.g., "A1:B5")',
+              },
+              target_top_left_position: {
+                type: 'string',
+                description: 'The target position, in a1 notation (single cell, e.g., "D1")',
+              },
+            },
+            required: ['source_selection_rect', 'target_top_left_position'],
+            additionalProperties: false,
+          },
         },
       },
-      required: ['sheet_name', 'source_selection_rect', 'target_top_left_position'],
+      required: ['sheet_name', 'moves'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
     prompt: `
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+You should use the move_cells function to move one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
+Provide the moves array with objects containing source_selection_rect and target_top_left_position for each move.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
   },
@@ -1346,7 +1419,8 @@ If there are multiple pages of formatting information, use the page parameter to
         },
         selection: {
           type: 'string',
-          description: 'The selection of cells to get the formats of, in a1 notation',
+          description:
+            'The selection of cells to get the formats of. When targeting table columns, use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges, column references like "A", or infinite ranges like "A3:A". For non-table data, use A1 notation.',
         },
         page: {
           type: 'number',
@@ -1360,6 +1434,7 @@ If there are multiple pages of formatting information, use the page parameter to
     responseSchema: AIToolsArgsSchema[AITool.GetTextFormats],
     prompt: `
 The get_text_formats tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
+When checking formats on table columns, use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges, column references like "A", or infinite ranges like "A3:A".\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
@@ -1373,6 +1448,7 @@ If too large, the results will include page information:\n
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
 This tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
+IMPORTANT: When formatting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A".\n
 Each format entry must have at least one non-null format to set.\n
 You can set bold, italic, underline, strike through, text/fill colors, alignment, wrapping, numeric formats, date formats, and font size.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
@@ -1391,7 +1467,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
               },
               selection: {
                 type: 'string',
-                description: `The selection of cells to set the formats of, in A1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data. When formatting multiple non-contiguous cells, use comma-separated ranges (e.g., "A1,B2:D5,E20").`,
+                description: `The selection of cells to set the formats of. IMPORTANT: When formatting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". Use "Table1" for entire tables, "Table1[Column]" for single columns, or "Table1[[Col1]:[Col3]]" for column ranges. Only use A1 notation for non-table data. When formatting multiple non-contiguous cells, use comma-separated ranges (e.g., "A1,B2:D5,E20").`,
               },
               bold: {
                 type: ['boolean', 'null'],
@@ -1461,7 +1537,24 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
                   'The font size in points. Default is 10. Set to a number to change the font size (e.g., 16). Set to null to remove font size formatting.',
               },
             },
-            required: ['sheet_name', 'selection', 'bold', 'italic', 'underline', 'strike_through', 'text_color', 'fill_color', 'align', 'vertical_align', 'wrap', 'numeric_commas', 'number_type', 'currency_symbol', 'date_time', 'font_size'],
+            required: [
+              'sheet_name',
+              'selection',
+              'bold',
+              'italic',
+              'underline',
+              'strike_through',
+              'text_color',
+              'fill_color',
+              'align',
+              'vertical_align',
+              'wrap',
+              'numeric_commas',
+              'number_type',
+              'currency_symbol',
+              'date_time',
+              'font_size',
+            ],
             additionalProperties: false,
           },
         },
@@ -1472,6 +1565,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
     prompt: `The set_text_formats tool sets the text formats of one or more selections of cells. Use the formats array to apply different formatting to multiple selections in a single call.\n
 Each format entry requires a selection and at least one format property to set.\n
+IMPORTANT: When formatting table columns, ALWAYS use table column references like "Table_Name[Column Name]" instead of A1 ranges like "A2:A2000", column references like "A", or infinite ranges like "A3:A". This ensures formatting applies correctly as the table grows or shrinks.\n
 Here are the formats you can set in each entry:\n
 - bold, italics, underline, or strike through\n
 - text color and fill color using hex format, for example, #FF0000 for red. To remove colors, set to an empty string.\n
@@ -1486,6 +1580,7 @@ Here are the formats you can set in each entry:\n
 To clear/remove a format, set the value to null (or empty string for colors). Omit fields you don't want to change.\n
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
+Example: To format an entire table column as currency, use: { "formats": [{ "selection": "Sales_Data[Revenue]", "number_type": "currency", "currency_symbol": "$" }] }\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
   },
   [AITool.CodeEditorCompletions]: {
@@ -2254,6 +2349,68 @@ The line type must be one of: line1, line2, line3, dotted, dashed, double, clear
 The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
 `,
   },
+  [AITool.MergeCells]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool merges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) of cells to merge. The selection must be a range of cells (not a single cell).\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to merge cells in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of cells to merge. This must be a range of cells, for example: A1:D1. Cannot be a single cell.',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.MergeCells],
+    prompt: `
+This tool merges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) of cells to merge.\n
+The selection must be a range of cells (not a single cell), for example: A1:D1.\n
+When cells are merged, all cell values except the top-left cell will be cleared, and the merged cell will display the value from the top-left cell.\n
+`,
+  },
+  [AITool.UnmergeCells]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool unmerges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge. The selection can be a single cell or a range of cells.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to unmerge cells in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) that contains merged cells to unmerge. This can be a single cell or a range of cells, for example: A1 or A1:D1. All merged cells that overlap with this selection will be unmerged.',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UnmergeCells],
+    prompt: `
+This tool unmerges cells in a sheet.\n
+It requires the sheet name and a selection (in A1 notation) that contains merged cells to unmerge.\n
+The selection can be a single cell or a range of cells, for example: A1 or A1:D1.\n
+All merged cells that overlap with the selection will be unmerged, splitting them back into individual cells.\n
+`,
+  },
   [AITool.InsertColumns]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
@@ -2898,6 +3055,226 @@ This tool removes all validations in a sheet from a range.\n`,
     responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
     prompt: `
 This tool removes all validations in a sheet from a range.\n`,
+  },
+  [AITool.GetConditionalFormats]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool gets all conditional formatting rules in a sheet.
+Conditional formatting rules are per-sheet, so the sheet name is required.
+Returns a list of all conditional format rules with their IDs, selections, rules, and styles.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name to get conditional formats from. Required because conditional formats are per-sheet.',
+        },
+      },
+      required: ['sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetConditionalFormats],
+    prompt: `
+This tool gets all conditional formatting rules in a sheet.
+Conditional formatting rules are per-sheet, so the sheet name is required.
+Use this tool to understand what conditional formats already exist before creating, updating, or deleting them.`,
+  },
+  [AITool.UpdateConditionalFormats]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+This tool creates, updates, or deletes conditional formatting rules in a sheet.
+Supports two types of conditional formats:
+1. Formula-based: Apply styles (colors, bold, etc.) when a formula is true
+2. Color scale: Apply gradient colors based on numeric cell values
+
+Conditional formatting rules are per-sheet, so the sheet name is required.
+IMPORTANT: When applying conditional formatting to table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges.
+You can perform multiple operations (create/update/delete) in a single call.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name to update conditional formats in. Required because conditional formats are per-sheet.',
+        },
+        rules: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: ['string', 'null'],
+                description:
+                  'The UUID of an existing conditional format. Required for update and delete actions. For create, leave null or omit.',
+              },
+              action: {
+                type: 'string',
+                description:
+                  'The action to perform. Must be one of: "create" (new rule), "update" (modify existing rule), or "delete" (remove rule).',
+              },
+              type: {
+                type: ['string', 'null'],
+                description:
+                  'The type of conditional format. "formula" (default) for formula-based rules with styles, or "color_scale" for gradient colors based on numeric values. If omitted, defaults to "formula".',
+              },
+              selection: {
+                type: ['string', 'null'],
+                description:
+                  'The selection for the conditional format. IMPORTANT: When targeting table columns, ALWAYS use table column references (e.g., "Table_Name[Column Name]") instead of A1 ranges. For non-table data, use A1 notation (e.g., "A1:D10" or "A:A"). Required for create and update actions.',
+              },
+              rule: {
+                type: ['string', 'null'],
+                description:
+                  'For formula-based formats only. A formula that evaluates to true/false for each cell. Examples: "A1>100", "ISBLANK(A1)", "AND(A1>=5, A1<=10)". Required for formula-based create/update actions.',
+              },
+              bold: {
+                type: ['boolean', 'null'],
+                description: 'For formula-based formats. Whether to apply bold formatting when the rule is true.',
+              },
+              italic: {
+                type: ['boolean', 'null'],
+                description: 'For formula-based formats. Whether to apply italic formatting when the rule is true.',
+              },
+              underline: {
+                type: ['boolean', 'null'],
+                description: 'For formula-based formats. Whether to apply underline formatting when the rule is true.',
+              },
+              strike_through: {
+                type: ['boolean', 'null'],
+                description:
+                  'For formula-based formats. Whether to apply strikethrough formatting when the rule is true.',
+              },
+              text_color: {
+                type: ['string', 'null'],
+                description:
+                  'For formula-based formats. The text color to apply when the rule is true (e.g., "#FF0000" for red).',
+              },
+              fill_color: {
+                type: ['string', 'null'],
+                description:
+                  'For formula-based formats. The background/fill color to apply when the rule is true (e.g., "#00FF00" for green).',
+              },
+              apply_to_empty: {
+                type: ['boolean', 'null'],
+                description:
+                  'Whether to apply the format to empty/blank cells. By default, this is false for numeric comparisons because empty cells coerce to 0.',
+              },
+              color_scale_thresholds: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    value_type: {
+                      type: 'string',
+                      description:
+                        'How to determine the threshold value. "min" = minimum value in selection, "max" = maximum value, "number" = fixed numeric value, "percent" = percent of range (0-100), "percentile" = percentile of values (0-100).',
+                    },
+                    value: {
+                      type: 'number',
+                      description:
+                        'The numeric value for "number", "percent", or "percentile" value_types. Not needed for "min" or "max".',
+                    },
+                    color: {
+                      type: 'string',
+                      description: 'The hex color at this threshold (e.g., "#FF0000" for red, "#00FF00" for green).',
+                    },
+                  },
+                  required: ['value_type', 'color'],
+                  additionalProperties: false,
+                },
+              },
+              auto_contrast_text: {
+                type: ['boolean', 'null'],
+                description:
+                  'For color scale formats only. When true, automatically switches text color between black and white based on the background color luminance to ensure readability. Useful when using dark colors in the scale.',
+              },
+            },
+            required: ['action'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['sheet_name', 'rules'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UpdateConditionalFormats],
+    prompt: `
+This tool creates, updates, or deletes conditional formatting rules in a sheet.
+Supports two types of conditional formats:
+
+## 1. FORMULA-BASED (type: "formula" or omitted)
+Apply styles when a formula evaluates to true. Requires: selection, rule, and at least one style property.
+
+Formula patterns:
+- Greater than: "A1>100"
+- Less than: "A1<50"
+- Between: "AND(A1>=5, A1<=10)"
+- Is empty: "ISBLANK(A1)"
+- Is not empty: "NOT(ISBLANK(A1))"
+- Text contains: "ISNUMBER(SEARCH(\\"text\\", A1))"
+- Equals: "A1=42" or "A1=\\"exact text\\""
+
+Example:
+{
+  "action": "create",
+  "type": "formula",
+  "selection": "A1:A100",
+  "rule": "A1>100",
+  "fill_color": "#FF0000",
+  "bold": true
+}
+
+## 2. COLOR SCALE (type: "color_scale")
+Apply gradient colors based on numeric cell values. Cells are colored on a gradient between threshold colors.
+
+Threshold value_types:
+- "min": Automatically uses the minimum value in the selection
+- "max": Automatically uses the maximum value in the selection
+- "number": Use a fixed numeric value (requires value field)
+- "percent": Percent of the range, 0-100 (requires value field)
+- "percentile": Percentile of values, 0-100 (requires value field)
+
+Optional: "auto_contrast_text": true - Automatically switches text between black/white based on background darkness for readability.
+
+Common color scale examples:
+- Red to Green (2-color): min=#FF0000 (red), max=#00FF00 (green)
+- Traffic Light (3-color): min=#FF0000 (red), 50th percentile=#FFFF00 (yellow), max=#00FF00 (green)
+- Heat Map: min=#FFFFCC (light yellow), 50th percentile=#FD8D3C (orange), max=#800026 (dark red)
+- Blue intensity: min=#DEEBF7 (light blue), max=#08519C (dark blue)
+
+Example - 2-color scale (low=red, high=green):
+{
+  "action": "create",
+  "type": "color_scale",
+  "selection": "B1:B100",
+  "color_scale_thresholds": [
+    { "value_type": "min", "color": "#FF0000" },
+    { "value_type": "max", "color": "#00FF00" }
+  ]
+},
+"auto_contrast_text": false
+
+Example - 3-color scale with auto-contrast text:
+{
+  "action": "create",
+  "type": "color_scale",
+  "selection": "C1:C100",
+  "color_scale_thresholds": [
+    { "value_type": "min", "color": "#FF0000" },
+    { "value_type": "percentile", "value": 50, "color": "#FFFF00" },
+    { "value_type": "max", "color": "#00FF00" }
+  ],
+  "auto_contrast_text": true
+}
+
+IMPORTANT FOR TABLE COLUMNS: Always use table column references like "Table_Name[Column Name]" instead of A1 ranges.
+
+For delete action, only the id is required.
+For update action, id is required plus any fields you want to change.`,
   },
   [AITool.Undo]: {
     sources: ['AIAnalyst'],

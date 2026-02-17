@@ -7,6 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import {
   AlignmentFormatting,
   Clear,
@@ -14,14 +15,17 @@ import {
   FillAndBorderFormatting,
   FontSizeFormatting,
   FormatMoreButton,
+  InsertLinkFormatting,
   NumberFormatting,
   TextFormatting,
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useRecoilValue } from 'recoil';
+
+const FORMATTING_BAR_MEASUREMENT_CONTAINER_ID = 'formatting-bar-measurement-container';
 
 type FormattingTypes =
   | 'NumberFormatting'
@@ -30,7 +34,8 @@ type FormattingTypes =
   | 'FontSizeFormatting'
   | 'FillAndBorderFormatting'
   | 'AlignmentFormatting'
-  | 'Clear';
+  | 'Clear'
+  | 'InsertLinkFormatting';
 
 export const FormattingBar = memo(() => {
   const [hiddenItems, setHiddenItems] = useState<FormattingTypes[]>([]);
@@ -43,8 +48,27 @@ export const FormattingBar = memo(() => {
   const fillAndBorderFormattingRef = useRef<HTMLDivElement>(null);
   const alignmentFormattingRef = useRef<HTMLDivElement>(null);
   const clearRef = useRef<HTMLDivElement>(null);
+  const insertLinkFormattingRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
+
+  // Use a single permanent offscreen container for the measurement portal so React
+  // never has to remove a direct child of document.body, avoiding removeChild
+  // conflicts with Radix and other code that also use body (e.g. after sheet load).
+  useLayoutEffect(() => {
+    let container = document.getElementById(FORMATTING_BAR_MEASUREMENT_CONTAINER_ID) as HTMLDivElement | null;
+    if (!container) {
+      container = document.createElement('div');
+      container.id = FORMATTING_BAR_MEASUREMENT_CONTAINER_ID;
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;';
+      document.body.appendChild(container);
+    }
+    setPortalContainer(container);
+    // Container is intentionally left in the DOM on unmount to avoid removeChild
+    // races and so it can be reused on next mount (single shared ID = at most one node).
+    return () => setPortalContainer(null);
+  }, []);
 
   useEffect(() => {
     const refs: Record<FormattingTypes, RefObject<HTMLDivElement | null>> = {
@@ -55,6 +79,7 @@ export const FormattingBar = memo(() => {
       FillAndBorderFormatting: fillAndBorderFormattingRef,
       AlignmentFormatting: alignmentFormattingRef,
       Clear: clearRef,
+      InsertLinkFormatting: insertLinkFormattingRef,
     };
 
     // check if any of the formatting groups are too wide to fit on the formatting bar
@@ -109,7 +134,7 @@ export const FormattingBar = memo(() => {
     return () => {
       window.removeEventListener('resize', checkFit);
     };
-  }, []);
+  }, [portalContainer]);
 
   // get the format summary for the current selection
   const [formatSummary, setFormatSummary] = useState<CellFormatSummary | undefined>(undefined);
@@ -170,25 +195,31 @@ export const FormattingBar = memo(() => {
 
   return (
     <>
-      {createPortal(
-        <div className="absolute -left-[10000px] -top-[10000px] z-[10000]">
-          <div id="measurement-container" className="flex w-fit flex-row">
-            <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-            <DateFormatting ref={dateFormattingRef} hideLabel={true} />
-            <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-            <FontSizeFormatting ref={fontSizeFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-            <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-            <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-            <Clear ref={clearRef} hideLabel={true} />
-            <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
-          </div>
-        </div>,
-        document.body
-      )}
+      {portalContainer &&
+        createPortal(
+          <div className="absolute -left-[10000px] -top-[10000px] z-[10000]">
+            <div id="measurement-container" className="flex w-fit flex-row">
+              <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+              <DateFormatting ref={dateFormattingRef} hideLabel={true} />
+              <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+              <FontSizeFormatting ref={fontSizeFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+              <FillAndBorderFormatting
+                ref={fillAndBorderFormattingRef}
+                formatSummary={formatSummary}
+                hideLabel={true}
+              />
+              <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+              <Clear ref={clearRef} hideLabel={true} />
+              <InsertLinkFormatting ref={insertLinkFormattingRef} hideLabel={true} />
+              <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
+            </div>
+          </div>,
+          portalContainer
+        )}
 
       <div className="flex h-full w-full flex-grow" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
-          <div className="flex flex-shrink select-none">
+          <div className="flex flex-shrink select-none items-center">
             {!hiddenItems.includes('NumberFormatting') && (
               <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
             )}
@@ -199,6 +230,7 @@ export const FormattingBar = memo(() => {
             {!hiddenItems.includes('FontSizeFormatting') && (
               <FontSizeFormatting key="main-font-size-formatting" formatSummary={formatSummary} />
             )}
+            <FormatPainterButton />
             {!hiddenItems.includes('FillAndBorderFormatting') && (
               <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
             )}
@@ -206,6 +238,9 @@ export const FormattingBar = memo(() => {
               <AlignmentFormatting key="main-alignment-formatting" formatSummary={formatSummary} />
             )}
             {!hiddenItems.includes('Clear') && <Clear key="main-clear" />}
+            {!hiddenItems.includes('InsertLinkFormatting') && (
+              <InsertLinkFormatting key="main-insert-link-formatting" />
+            )}
           </div>
 
           {hiddenItems.length > 0 && (
@@ -234,6 +269,9 @@ export const FormattingBar = memo(() => {
                     <AlignmentFormatting key="hidden-alignment-formatting" formatSummary={formatSummary} />
                   )}
                   {hiddenItems.includes('Clear') && <Clear key="hidden-clear" />}
+                  {hiddenItems.includes('InsertLinkFormatting') && (
+                    <InsertLinkFormatting key="hidden-insert-link-formatting" />
+                  )}
                 </div>
               </PopoverContent>
             </Popover>

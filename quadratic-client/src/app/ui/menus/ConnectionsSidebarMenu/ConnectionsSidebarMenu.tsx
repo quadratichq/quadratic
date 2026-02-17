@@ -13,7 +13,6 @@ interface ConnectionsSidebarMenuProps {
 export const ConnectionsSidebarMenu = memo(({ 'data-walkthrough': dataWalkthrough }: ConnectionsSidebarMenuProps) => {
   const {
     connections,
-    teamUuid,
     activeConnectionId,
     didSelectConnection,
     handleSelectConnection,
@@ -44,7 +43,6 @@ export const ConnectionsSidebarMenu = memo(({ 'data-walkthrough': dataWalkthroug
       >
         <ConnectionsMenuContent
           connections={connections}
-          teamUuid={teamUuid}
           activeConnectionId={activeConnectionId}
           onSelectConnection={handleSelectConnection}
           onAddConnection={handleAddConnection}

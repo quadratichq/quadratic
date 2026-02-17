@@ -15,6 +15,8 @@ export function GridContextMenuCell() {
   const [rowAvailable, setRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
   const [canRunSelection, setCanRunSelection] = useState(false);
+  const [canMergeCells, setCanMergeCells] = useState(false);
+  const [canUnmergeCells, setCanUnmergeCells] = useState(false);
   const { cursorStringWithSheetName } = useCursorPosition();
 
   useEffect(() => {
@@ -28,6 +30,22 @@ export function GridContextMenuCell() {
       }
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
       setCanRunSelection(content.cellsSheet.tables.hasCodeCellInCurrentSelection());
+
+      const isMultiRange = sheets.sheet.cursor.isMultiRange();
+      const isColumnRow = sheets.sheet.cursor.isColumnRow();
+
+      // Merge cells: selection is more than one cell AND does not contain any table or code cells
+      // AND is not a sheet-level selection (entire row, column, or all) AND is a single range
+      setCanMergeCells(
+        !sheets.sheet.cursor.isSingleSelection() &&
+          !content.cellsSheet.tables.hasCodeCellInCurrentSelection() &&
+          !isColumnRow &&
+          !isMultiRange
+      );
+
+      // Unmerge cells: selection contains at least one merged cell AND is a single range
+      // AND is not a sheet-level selection
+      setCanUnmergeCells(sheets.sheet.cursor.containsMergedCells() && !isMultiRange && !isColumnRow);
     };
 
     updateCursor();
@@ -67,9 +85,17 @@ export function GridContextMenuCell() {
       {rowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} actionArgs={undefined} />}
       <ContextMenuItemAction action={Action.DeleteRow} actionArgs={undefined} />
 
-      <DropdownMenuSeparator />
+      {(canMergeCells || canUnmergeCells) && <DropdownMenuSeparator />}
 
-      {canConvertToDataTable && <ContextMenuItemAction action={Action.GridToDataTable} actionArgs={undefined} />}
+      {canMergeCells && <ContextMenuItemAction action={Action.MergeCells} actionArgs={undefined} />}
+      {canUnmergeCells && <ContextMenuItemAction action={Action.UnmergeCells} actionArgs={undefined} />}
+
+      {canConvertToDataTable && (
+        <>
+          <DropdownMenuSeparator />
+          <ContextMenuItemAction action={Action.GridToDataTable} actionArgs={undefined} />
+        </>
+      )}
     </ContextMenuBase>
   );
 }

@@ -113,7 +113,6 @@ export class PixiAppSettings {
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
       pixiApp.setViewportDirty();
-      events.emit('setDirty', { singleCellOutlines: true });
     }
     this.lastSettings = this.settings;
   };

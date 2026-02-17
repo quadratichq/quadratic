@@ -4,7 +4,7 @@ import type {
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
@@ -21,8 +21,8 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { isSyncedConnectionType, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
@@ -161,7 +161,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
 
       // Focus the AI analyst input
-      setTimeout(focusAIAnalyst, 100);
+      focusAIAnalyst();
     },
     [setAIAnalystActiveSchemaConnectionUuid]
   );
@@ -215,7 +215,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
     };
   }, []);
 
-  const hasConnections = connections.length > 1;
+  const hasConnections = connections.length > 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-1">
@@ -228,7 +228,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
                 <img src="/images/icon-excel.svg" alt="Excel" className="h-14 w-14" />
                 <img src="/images/icon-pdf.svg" alt="PDF" className="h-12 w-12" />
               </div>
-              <p className="text-sm">Excel, CSV, PDF, PQT, & images</p>
+              <p className="text-sm">Excel, CSV, PDF, Parquet, & images</p>
               <p className="text-xs text-muted-foreground">
                 Drag and drop, or{' '}
                 <button
@@ -241,25 +241,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
             </div>
           </div>
 
-          {!hasConnections && (
-            <div className="flex w-full flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm">
-              <div className="flex items-center gap-3 pt-3">
-                <ConnectionIcon type="POSTGRES" className="h-7 w-7" />
-                <ConnectionIcon type="MIXPANEL" className="h-7 w-7" />
-                <ConnectionIcon type="SNOWFLAKE" className="h-7 w-7" />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="font-normal">
-                    Connect your data…
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right">
-                  <AddConnectionMenuItems onAddConnection={() => {}} />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          {!hasConnections && <EmptyConnections />}
         </div>
 
         {/* Suggestions Section */}
@@ -316,23 +298,20 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
             }
           >
             {visibleConnections.map((connection) => {
-              const syncState = isSyncedConnectionType(connection.type)
-                ? deriveSyncStateFromConnectionList(connection)
-                : null;
-              const isNotSynced = syncState !== null && syncState !== 'synced';
+              const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
               return (
                 <SuggestionButton
                   key={connection.uuid}
                   icon={<ConnectionIcon type={connection.type} syncState={syncState} />}
                   text={connection.name}
                   onClick={() => {
-                    if (isNotSynced) {
+                    if (isReadyForUse) {
+                      handleSelectConnection(connection.uuid, connection.type, connection.name);
+                    } else {
                       setShowConnectionsMenu({
                         initialConnectionUuid: connection.uuid,
                         initialConnectionType: connection.type,
                       });
-                    } else {
-                      handleSelectConnection(connection.uuid, connection.type, connection.name);
                     }
                   }}
                 />
@@ -344,3 +323,42 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
     </div>
   );
 });
+
+function EmptyConnections() {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [clickPos, setClickPos] = useState({ x: 0, y: 0 });
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <div
+        ref={containerRef}
+        className="relative flex w-full cursor-pointer flex-col items-center gap-1 rounded border-2 border-border/40 p-3 text-sm"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setClickPos({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          });
+          setOpen(true);
+        }}
+      >
+        <div className="flex items-center gap-3 pt-3">
+          <ConnectionIcon type="POSTGRES" className="h-7 w-7" />
+          <ConnectionIcon type="MIXPANEL" className="h-7 w-7" />
+          <ConnectionIcon type="SNOWFLAKE" className="h-7 w-7" />
+        </div>
+        <span className="py-2 text-sm font-normal">Connect your data…</span>
+
+        {/* Invisible anchor positioned at click location */}
+        <DropdownMenuTrigger asChild>
+          <div className="pointer-events-none absolute h-px w-px" style={{ left: clickPos.x, top: clickPos.y }} />
+        </DropdownMenuTrigger>
+      </div>
+
+      <DropdownMenuContent side="right">
+        <AddConnectionMenuItems />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

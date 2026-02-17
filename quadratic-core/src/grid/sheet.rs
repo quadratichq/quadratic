@@ -1,12 +1,17 @@
-use std::collections::HashSet;
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+};
 
 use anyhow::{Result, anyhow};
 use borders::Borders;
 use columns::SheetColumns;
+use conditional_format::{ConditionalFormat, ConditionalFormats};
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validations::Validations;
 
 use super::bounds::GridBounds;
@@ -17,6 +22,7 @@ use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
 use crate::constants::{FONT_SIZE_DISPLAY_ADJUSTMENT, SHEET_NAME};
 use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
+use crate::grid::sheet::merge_cells::MergeCells;
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -33,11 +39,13 @@ pub mod clipboard;
 pub mod code;
 pub mod col_row;
 pub mod columns;
+pub mod conditional_format;
 mod content;
 pub mod data_table;
 pub mod data_tables;
 mod format_summary;
 pub mod formats;
+pub mod merge_cells;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
@@ -73,6 +81,8 @@ pub struct Sheet {
 
     pub(crate) validations: Validations,
 
+    pub(crate) conditional_formats: ConditionalFormats,
+
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
 
@@ -82,6 +92,19 @@ pub struct Sheet {
     pub(super) rows_resize: ResizeMap,
 
     pub(crate) borders: Borders,
+
+    pub(crate) merge_cells: MergeCells,
+
+    /// Transient preview of a conditional format being edited.
+    /// Not persisted, not in undo history. Used for live preview in the UI.
+    #[serde(skip)]
+    pub(crate) preview_conditional_format: Option<ConditionalFormat>,
+
+    /// Cache for color scale threshold values to avoid O(N²) recomputation.
+    /// Keyed by conditional format ID. Cleared when any transaction completes.
+    /// Uses RefCell for interior mutability since caching happens during read-only operations.
+    #[serde(skip)]
+    pub(crate) color_scale_threshold_cache: RefCell<HashMap<Uuid, Vec<f64>>>,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -98,8 +121,12 @@ impl Sheet {
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
             validations: Validations::default(),
+            conditional_formats: ConditionalFormats::default(),
             rows_resize: ResizeMap::default(),
             borders: Borders::default(),
+            merge_cells: MergeCells::default(),
+            preview_conditional_format: None,
+            color_scale_threshold_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -110,6 +137,12 @@ impl Sheet {
             format!("{}{}", SHEET_NAME.to_owned(), 1),
             String::from("a0"),
         )
+    }
+
+    /// Clears the color scale threshold cache.
+    /// Called when a transaction completes to ensure stale values are not used.
+    pub fn clear_color_scale_cache(&self) {
+        self.color_scale_threshold_cache.borrow_mut().clear();
     }
 
     /// Returns an error if a sheet name would be invalid to add.
@@ -186,10 +219,14 @@ impl Sheet {
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
-        // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
+        // Check for cell value in columns
         if let Some(cell_value) = self.cell_value_ref(pos)
             && !matches!(cell_value, CellValue::Blank)
         {
+            // For CellValue::Code, return the output, not the code cell itself
+            if let CellValue::Code(code_cell) = cell_value {
+                return Some((*code_cell.output).clone());
+            }
             return Some(cell_value.clone());
         }
 
@@ -304,6 +341,15 @@ impl Sheet {
                     ),
                     None => CellValue::Blank,
                 },
+                // For code cells, return the output value
+                CellValue::Code(code_cell) => {
+                    let output = (*code_cell.output).clone();
+                    if matches!(output, CellValue::Html(_) | CellValue::Image(_)) {
+                        CellValue::Blank
+                    } else {
+                        output
+                    }
+                }
                 other => other.clone(),
             }
         } else if let Some(value) = self.get_code_cell_value(pos) {

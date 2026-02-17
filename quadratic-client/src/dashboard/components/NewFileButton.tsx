@@ -1,4 +1,4 @@
-import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
 import { useRef } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
@@ -142,20 +142,19 @@ export function NewFileButton() {
             {connections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map((connection) => {
               const { uuid, name, type } = connection;
               const { label } = codeCellsById[type];
-              const syncState = isSyncedConnectionType(type) ? deriveSyncStateFromConnectionList(connection) : null;
-              const isNotSynced = syncState !== null && syncState !== 'synced';
-              const to = isNotSynced
-                ? ROUTES.TEAM_CONNECTION(teamUuid, uuid, type)
-                : newNewFileFromStateConnection({
+              const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
+              const to = isReadyForUse
+                ? newNewFileFromStateConnection({
                     isPrivate,
                     teamUuid,
                     query: '',
                     connectionType: type,
                     connectionUuid: uuid,
-                  });
+                  })
+                : ROUTES.TEAM_CONNECTION(teamUuid, uuid, type);
               return (
                 <DropdownMenuItem key={uuid} asChild className="max-w-xs">
-                  <Link to={to} reloadDocument={!isNotSynced}>
+                  <Link to={to} reloadDocument={isReadyForUse}>
                     <div className="mr-3">
                       <ConnectionIcon type={type} syncState={syncState} />
                     </div>

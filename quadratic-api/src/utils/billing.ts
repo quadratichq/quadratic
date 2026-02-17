@@ -13,6 +13,8 @@ export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
   const needsBillingSync =
     // If status is INCOMPLETE (checkout in progress, webhook may be delayed), sync with Stripe
     team.stripeSubscriptionStatus === SubscriptionStatus.INCOMPLETE ||
+    // If status is INCOMPLETE_EXPIRED (previous attempt failed, user may have retried), sync with Stripe
+    team.stripeSubscriptionStatus === SubscriptionStatus.INCOMPLETE_EXPIRED ||
     // If the team is on a paid plan, but the current period has ended, update the billing info
     (team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE &&
       !!team.stripeCurrentPeriodEnd &&

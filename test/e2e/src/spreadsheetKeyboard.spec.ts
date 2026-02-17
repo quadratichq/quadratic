@@ -228,18 +228,13 @@ test('Keyboard Editing', async ({ page }) => {
 
   await createFile(page, { fileName, skipNavigateBack: true });
 
-  await page.keyboard.type('Hello', { delay: 250 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A1', 'Hello');
   await assertCellValue(page, { a1: 'A1', value: 'Hello' });
 
-  await gotoCells(page, { a1: 'A2' });
-  await page.keyboard.type('14%', { delay: 250 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A2', '14%');
   await assertCellValue(page, { a1: 'A2', value: '14%' });
 
-  await gotoCells(page, { a1: 'A3' });
-  await page.keyboard.type('5s', { delay: 250 });
-  await page.keyboard.press('Enter', { delay: 100 });
+  await setValueInCell(page, 'A3', '5s');
   await assertCellValue(page, { a1: 'A3', value: '5s' });
 
   await sheetRefreshPage(page);

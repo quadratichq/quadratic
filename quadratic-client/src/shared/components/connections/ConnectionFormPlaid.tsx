@@ -2,7 +2,7 @@ import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnecti
 import { apiClient } from '@/shared/api/apiClient';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
-import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
+import { SyncedConnectionStatus } from '@/shared/components/connections/SyncedConnection';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -14,7 +14,7 @@ import {
   ConnectionSemanticDescriptionSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -57,16 +57,21 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   handleCancelForm,
   connection,
   teamUuid,
+  plaidCategory,
 }) => {
   const [accessToken, setAccessToken] = useState<string | null>(connection?.typeDetails?.access_token || null);
   const [, setLinkedInstitution] = useState<string | null>(connection?.typeDetails?.institution_name || null);
+  const hasOpenedPlaidRef = useRef(false);
 
   // Auto-open Plaid when the component mounts and we don't have an access token
   useEffect(() => {
     const fetchLinkTokenAndOpen = async () => {
       try {
+        // Map plaidCategory to primary_product: Brokerages -> investments, everything else -> transactions
+        const primaryProduct = plaidCategory === 'Brokerages' ? 'investments' : 'transactions';
         const data = await apiClient.connections.plaid.createLinkToken({
           teamUuid,
+          primary_product: primaryProduct,
         });
 
         // Automatically open popup with the link token
@@ -85,11 +90,13 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         // TODO: Show error to user
       }
     };
-    if (!accessToken) {
+    // Only open Plaid Link once, even if dependencies change
+    if (!accessToken && !hasOpenedPlaidRef.current) {
+      hasOpenedPlaidRef.current = true;
       console.log('No access token, opening Plaid Link');
       fetchLinkTokenAndOpen();
     }
-  }, [accessToken, teamUuid]);
+  }, [accessToken, teamUuid, plaidCategory]);
 
   // Handle messages from Plaid popup via BroadcastChannel
   useEffect(() => {
@@ -145,7 +152,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
         <SpinnerIcon className="text-muted-foreground" size="lg" />
         <h4 className="mt-3 text-lg font-medium">Connecting to Plaid…</h4>
         <p className="text-center text-sm text-muted-foreground">
-          Follow the instructions in the pop-up window. If you’re having trouble connecting,{' '}
+          Follow the instructions in the pop-up window. If you're having trouble connecting,{' '}
           <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
             contact us
           </a>
@@ -207,7 +214,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
 
         {connection && (
           <div className="flex items-start gap-2 pt-2 text-sm">
-            <SyncedConnection
+            <SyncedConnectionStatus
               syncState={deriveSyncStateFromConnectionList(connection)}
               updatedDate={connection.syncedConnectionUpdatedDate}
               latestLogError={connection.syncedConnectionLatestLogError}

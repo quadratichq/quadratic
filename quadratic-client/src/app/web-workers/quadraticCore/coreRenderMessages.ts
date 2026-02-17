@@ -97,6 +97,13 @@ export interface CoreRenderTransactionEnd {
   transactionName: TransactionName;
 }
 
+export interface CoreRenderMergeCells {
+  type: 'coreRenderMergeCells';
+  sheetId: string;
+  mergeCells: Uint8Array;
+  dirtyHashes: Uint8Array;
+}
+
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetsInfo
@@ -110,6 +117,7 @@ export type CoreRenderMessage =
   | CoreRenderRequestRowHeights
   | CoreRenderViewportBuffer
   | CoreRenderTransactionStart
-  | CoreRenderTransactionEnd;
+  | CoreRenderTransactionEnd
+  | CoreRenderMergeCells;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;
