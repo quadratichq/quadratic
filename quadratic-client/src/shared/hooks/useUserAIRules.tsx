@@ -1,3 +1,4 @@
+import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -37,18 +38,27 @@ export function useUserAIRules() {
     // Load AI rules if not already loaded or loading
     if (!globalAIRulesLoaded && !globalAIRulesLoading) {
       globalAIRulesLoading = true;
-      apiClient.user.aiRules
-        .get()
-        .then((response) => {
-          globalAIRulesCache = response.aiRules ?? null;
-          globalAIRulesLoaded = true;
-          globalAIRulesLoading = false;
-          notifyListeners();
+      authClient
+        .isAuthenticated()
+        .then((isAuthenticated) => {
+          if (!isAuthenticated) {
+            globalAIRulesLoading = false;
+            return;
+          }
+
+          return apiClient.user.aiRules
+            .get()
+            .then((response) => {
+              globalAIRulesCache = response.aiRules ?? null;
+              globalAIRulesLoaded = true;
+              globalAIRulesLoading = false;
+              notifyListeners();
+            });
         })
         .catch((error) => {
           console.error('Failed to preload AI rules:', error);
           globalAIRulesLoading = false;
-          globalAIRulesLoaded = true; // Mark as loaded even on error to prevent infinite retries
+          globalAIRulesLoaded = true;
           notifyListeners();
         });
     }
@@ -84,13 +94,22 @@ export function useUserAIRules() {
 export function preloadUserAIRules() {
   if (!globalAIRulesLoaded && !globalAIRulesLoading) {
     globalAIRulesLoading = true;
-    apiClient.user.aiRules
-      .get()
-      .then((response) => {
-        globalAIRulesCache = response.aiRules ?? null;
-        globalAIRulesLoaded = true;
-        globalAIRulesLoading = false;
-        notifyListeners();
+    authClient
+      .isAuthenticated()
+      .then((isAuthenticated) => {
+        if (!isAuthenticated) {
+          globalAIRulesLoading = false;
+          return;
+        }
+
+        return apiClient.user.aiRules
+          .get()
+          .then((response) => {
+            globalAIRulesCache = response.aiRules ?? null;
+            globalAIRulesLoaded = true;
+            globalAIRulesLoading = false;
+            notifyListeners();
+          });
       })
       .catch((error) => {
         console.error('Failed to preload AI rules:', error);
