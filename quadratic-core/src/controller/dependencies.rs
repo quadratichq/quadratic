@@ -2,12 +2,12 @@ use std::{self};
 
 use std::collections::HashSet;
 
-use crate::{SheetPos, SheetRect};
+use crate::{CellValue, SheetPos, SheetRect};
 
 use super::GridController;
 
 impl GridController {
-    /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
+    /// Searches all data_tables and CellValue::Code in sheets for cells that are dependent on the given sheet_rect.
     pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
         let all_dependent_cells = self
             .cells_accessed()
@@ -20,7 +20,23 @@ impl GridController {
                 continue;
             };
 
-            let Some(data_table) = sheet.data_table_at(&dependent_cell.into()) else {
+            let pos = dependent_cell.into();
+
+            // First check for CellValue::Code in columns
+            if let Some(CellValue::Code(code_cell)) = sheet.cell_value_ref(pos) {
+                // ignore code cells that have self reference
+                if !code_cell
+                    .code_run
+                    .cells_accessed
+                    .contains(dependent_cell, self.a1_context())
+                {
+                    dependent_cells.insert(dependent_cell);
+                }
+                continue;
+            }
+
+            // Otherwise check data_tables
+            let Some(data_table) = sheet.data_table_at(&pos) else {
                 continue;
             };
 
@@ -74,6 +90,7 @@ mod test {
         let code_run = CodeRun {
             language: CodeCellLanguage::Python,
             code: r#"test"#.to_string(),
+            formula_ast: None,
             std_err: None,
             std_out: None,
             error: None,

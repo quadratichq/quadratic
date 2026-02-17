@@ -9,7 +9,9 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
+import type { Direction } from '@/app/quadratic-core/quadratic_core';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -247,13 +249,24 @@ export class SheetCursor {
     const checkForTableRef = options?.checkForTableRef ?? false;
     const append = options?.append ?? false;
     const ensureVisible = options?.ensureVisible ?? true;
-    this.jsSelection.moveTo(x, y, append);
+    this.jsSelection.moveTo(x, y, append, this.sheets.sheet.mergeCells);
     if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };
 
+  /// Keyboard selection by deltaX and deltaY
+  keyboardSelectTo = (deltaX: number, deltaY: number) => {
+    this.jsSelection.keyboardSelectTo(deltaX, deltaY, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
+    this.updatePosition(true);
+  };
+
+  keyboardJumpSelectTo = (col: number, row: number, direction: Direction) => {
+    this.jsSelection.keyboardJumpSelectTo(col, row, direction, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
+    this.updatePosition(true);
+  };
+
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
-    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context);
+    this.jsSelection.selectTo(x, y, append, this.sheets.jsA1Context, this.sheets.sheet.mergeCells);
     this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
@@ -283,8 +296,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(false, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context);
-    this.updatePosition(false);
+    this.selectTo(column, row, false, false);
     animateViewport({ x: -x, y: -y });
   };
 
@@ -292,8 +304,7 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(true, true);
     const column = this.selectionEnd.x;
-    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context);
-    this.updatePosition(false);
+    this.selectTo(column, row, false, false);
     animateViewport({ x: -x, y: -y });
   };
 
@@ -310,6 +321,17 @@ export class SheetCursor {
   };
 
   toA1String = (sheetId = this.sheet.sheets.current): string => {
+    // If it's a single cell selection and that cell is part of a merged cell,
+    // show the anchor cell location instead
+    if (this.isSingleSelection()) {
+      const mergeRect = this.sheet.getMergeCellRect(this.position.x, this.position.y);
+      if (mergeRect) {
+        // Use the anchor position (top-left of merged cell)
+        const anchorX = Number(mergeRect.min.x);
+        const anchorY = Number(mergeRect.min.y);
+        return getA1Notation(anchorX, anchorY);
+      }
+    }
     return this.jsSelection.toA1String(sheetId, this.sheets.jsA1Context);
   };
 
@@ -342,11 +364,20 @@ export class SheetCursor {
   getFiniteRefRangeBounds = (): RefRangeBounds[] => {
     let ranges: RefRangeBounds[] = [];
     try {
-      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheets.jsA1Context);
+      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheets.jsA1Context, this.sheet.mergeCells);
     } catch (e) {
       console.warn('Error getting ref range bounds', e);
     }
     return ranges;
+  };
+
+  containsMergedCells = (): boolean => {
+    try {
+      return this.jsSelection.containsMergedCells(this.sheets.jsA1Context, this.sheet.mergeCells);
+    } catch (e) {
+      console.warn('Error checking merged cells', e);
+      return false;
+    }
   };
 
   getInfiniteRefRangeBounds = (): RefRangeBounds[] => {
@@ -426,7 +457,7 @@ export class SheetCursor {
       this.selectedTableNamesFromTableSelection().forEach((name) => names.add(name));
       const rects = this.getSheetRefRangeBounds();
       rects.forEach((rect) => {
-        const tables = content.cellsSheet.tables.getLargeTablesInRect(rect);
+        const tables = content.cellsSheet.tables.getTablesInRect(rect);
         tables.forEach((table) => {
           if (table.codeCell.show_name && table.codeCell.y >= rect.y && table.codeCell.y <= rect.bottom - 1) {
             names.add(table.codeCell.name);

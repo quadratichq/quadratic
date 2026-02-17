@@ -29,7 +29,7 @@ use super::{
     formats::{export_formats, import_formats},
 };
 
-fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
+pub(crate) fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
     CellRefCoord {
         coord: coord.coord,
         is_absolute: coord.is_absolute,
@@ -91,7 +91,9 @@ fn import_cells_accessed(
     Ok(imported_cells)
 }
 
-fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Result<RunErrorMsg> {
+pub(crate) fn import_run_error_msg(
+    run_error_msg: current::RunErrorMsgSchema,
+) -> Result<RunErrorMsg> {
     let run_error_msg = match run_error_msg {
         current::RunErrorMsgSchema::CodeRunError(msg) => RunErrorMsg::CodeRunError(msg),
         current::RunErrorMsgSchema::Unexpected(msg) => RunErrorMsg::Unexpected(msg),
@@ -180,7 +182,7 @@ fn import_run_error_msg_builder(run_error_msg: current::RunErrorMsgSchema) -> Re
     Ok(run_error_msg)
 }
 
-fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
+pub(crate) fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
     current::CellRefCoordSchema {
         coord: coord.coord,
         is_absolute: coord.is_absolute,
@@ -237,22 +239,28 @@ fn export_cells_accessed(
         .collect()
 }
 
-fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
     let error = if let Some(error) = code_run.error {
         Some(RunError {
             span: error.span.map(|span| crate::Span {
                 start: span.start,
                 end: span.end,
             }),
-            msg: import_run_error_msg_builder(error.msg)?,
+            msg: import_run_error_msg(error.msg)?,
         })
     } else {
         None
     };
 
+    let formula_ast = code_run
+        .formula_ast
+        .map(super::formula::import_formula)
+        .transpose()?;
+
     let code_run = CodeRun {
         language: import_code_cell_language(code_run.language),
         code: code_run.code,
+        formula_ast,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -273,6 +281,14 @@ pub(crate) fn import_data_table_builder(
 
     for (pos, data_table) in data_tables {
         let pos = Pos { x: pos.x, y: pos.y };
+
+        // Skip this DataTable if there's already a CellValue::Code at this position.
+        // This can happen if a bug caused both to be exported, or from older file versions.
+        // CellValue::Code takes precedence since it's the correct representation for 1x1 code outputs.
+        if matches!(columns.get_value(&pos), Some(CellValue::Code(_))) {
+            continue;
+        }
+
         let value = match data_table.value {
             current::OutputValueSchema::Single(value) => Value::Single(import_cell_value(value)),
             current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
@@ -286,10 +302,11 @@ pub(crate) fn import_data_table_builder(
                 ))
             }
         };
+
         let mut data_table = DataTable {
             kind: match data_table.kind {
                 current::DataTableKindSchema::CodeRun(code_run) => {
-                    DataTableKind::CodeRun(import_code_run_builder(code_run)?)
+                    DataTableKind::CodeRun(import_code_run_builder(*code_run)?)
                 }
                 current::DataTableKindSchema::Import(import) => {
                     DataTableKind::Import(crate::cellvalue::Import {
@@ -333,6 +350,7 @@ pub(crate) fn import_data_table_builder(
             display_buffer: data_table.display_buffer,
             spill_value: false,
             spill_data_table: false,
+            spill_merged_cell: false,
             alternating_colors: data_table.alternating_colors,
             formats: data_table.formats.map(import_formats),
             borders: data_table.borders.map(import_borders),
@@ -341,7 +359,9 @@ pub(crate) fn import_data_table_builder(
         };
 
         let output_rect = data_table.output_rect(pos, true);
-        data_table.spill_value = columns.has_content_in_rect(output_rect);
+        // Exclude the DataTable's own position to avoid false positives when
+        // there's content at the anchor position (shouldn't happen, but be safe)
+        data_table.spill_value = columns.has_content_in_rect_except(output_rect, pos);
 
         sheet_data_tables.insert_full(pos, data_table);
     }
@@ -349,7 +369,7 @@ pub(crate) fn import_data_table_builder(
     Ok(sheet_data_tables)
 }
 
-fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
+pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
     match run_error_msg {
         RunErrorMsg::CodeRunError(msg) => current::RunErrorMsgSchema::CodeRunError(msg),
         RunErrorMsg::Unexpected(msg) => current::RunErrorMsgSchema::Unexpected(msg),
@@ -442,7 +462,7 @@ fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchem
     }
 }
 
-fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
+pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
@@ -458,6 +478,7 @@ fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     current::CodeRunSchema {
         language: export_code_cell_language(code_run.language),
         code: code_run.code,
+        formula_ast: code_run.formula_ast.map(super::formula::export_formula),
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -526,7 +547,7 @@ pub(crate) fn export_data_tables(
             let kind = match data_table.kind {
                 DataTableKind::CodeRun(code_run) => {
                     let code_run = export_code_run(code_run);
-                    current::DataTableKindSchema::CodeRun(code_run)
+                    current::DataTableKindSchema::CodeRun(Box::new(code_run))
                 }
                 DataTableKind::Import(import) => {
                     current::DataTableKindSchema::Import(current::ImportSchema {

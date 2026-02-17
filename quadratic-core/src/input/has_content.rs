@@ -2,6 +2,7 @@
 
 use crate::a1::{A1Context, TableMapEntry};
 use crate::grid::sheet::data_tables::cache::SheetDataTablesCache;
+use crate::grid::sheet::merge_cells::MergeCells;
 use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
 use crate::{Pos, Rect, SheetPos};
 
@@ -11,11 +12,9 @@ pub fn table_at<'a>(
     table_cache: &SheetDataTablesCache,
     context: &'a A1Context,
 ) -> Option<&'a TableMapEntry> {
-    let table_pos = match table_cache.multi_cell_tables.get(sheet_pos.into()) {
-        Some(pos) => pos.to_sheet_pos(sheet_pos.sheet_id),
-        None if table_cache.single_cell_tables.get(sheet_pos.into()) => sheet_pos,
-        _ => return None,
-    };
+    let table_pos = table_cache
+        .get_pos_contains(sheet_pos.into())?
+        .to_sheet_pos(sheet_pos.sheet_id);
 
     context.table_map.table_at(table_pos)
 }
@@ -102,21 +101,55 @@ pub(crate) fn row_bounds(
     row: i64,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
+    merge_cells: Option<&MergeCells>,
 ) -> Option<(i64, i64)> {
     let content_row_bounds = content_cache.row_bounds(row);
     let table_row_bounds = table_cache.row_bounds(row);
 
+    let mut min_col = None;
+    let mut max_col = None;
+
     if let (Some(content_row_bounds), Some(table_row_bounds)) =
         (content_row_bounds, table_row_bounds)
     {
-        Some((
-            content_row_bounds.0.min(table_row_bounds.0),
-            content_row_bounds.1.max(table_row_bounds.1),
-        ))
+        min_col = Some(content_row_bounds.0.min(table_row_bounds.0));
+        max_col = Some(content_row_bounds.1.max(table_row_bounds.1));
     } else if let Some(content_row_bounds) = content_row_bounds {
-        Some(content_row_bounds)
-    } else {
-        table_row_bounds
+        min_col = Some(content_row_bounds.0);
+        max_col = Some(content_row_bounds.1);
+    } else if let Some(table_row_bounds) = table_row_bounds {
+        min_col = Some(table_row_bounds.0);
+        max_col = Some(table_row_bounds.1);
+    }
+
+    // Expand bounds to include merged cells that have content
+    if let Some(merge_cells) = merge_cells {
+        // Iterate over all merge cells and filter to those that intersect this row
+        for merge_rect in merge_cells.iter_merge_cells() {
+            // Skip if this merge cell doesn't intersect the row
+            if merge_rect.min.y > row || merge_rect.max.y < row {
+                continue;
+            }
+            // Check if the anchor cell has content
+            if content_cache.has_content_at_pos(merge_rect.min) {
+                // Expand bounds to include the merged cell's column range
+                if let Some(ref mut min) = min_col {
+                    *min = (*min).min(merge_rect.min.x);
+                } else {
+                    min_col = Some(merge_rect.min.x);
+                }
+                if let Some(ref mut max) = max_col {
+                    *max = (*max).max(merge_rect.max.x);
+                } else {
+                    max_col = Some(merge_rect.max.x);
+                }
+            }
+        }
+    }
+
+    match (min_col, max_col) {
+        (Some(min), Some(max)) => Some((min, max)),
+        _ => None,
     }
 }
 
@@ -126,21 +159,55 @@ pub(crate) fn column_bounds(
     column: i64,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
+    merge_cells: Option<&MergeCells>,
 ) -> Option<(i64, i64)> {
     let content_column_bounds = content_cache.column_bounds(column);
     let table_column_bounds = table_cache.column_bounds(column);
 
+    let mut min_row = None;
+    let mut max_row = None;
+
     if let (Some(content_column_bounds), Some(table_column_bounds)) =
         (content_column_bounds, table_column_bounds)
     {
-        Some((
-            content_column_bounds.0.min(table_column_bounds.0),
-            content_column_bounds.1.max(table_column_bounds.1),
-        ))
+        min_row = Some(content_column_bounds.0.min(table_column_bounds.0));
+        max_row = Some(content_column_bounds.1.max(table_column_bounds.1));
     } else if let Some(content_column_bounds) = content_column_bounds {
-        Some(content_column_bounds)
-    } else {
-        table_column_bounds
+        min_row = Some(content_column_bounds.0);
+        max_row = Some(content_column_bounds.1);
+    } else if let Some(table_column_bounds) = table_column_bounds {
+        min_row = Some(table_column_bounds.0);
+        max_row = Some(table_column_bounds.1);
+    }
+
+    // Expand bounds to include merged cells that have content
+    if let Some(merge_cells) = merge_cells {
+        // Iterate over all merge cells and filter to those that intersect this column
+        for merge_rect in merge_cells.iter_merge_cells() {
+            // Skip if this merge cell doesn't intersect the column
+            if merge_rect.min.x > column || merge_rect.max.x < column {
+                continue;
+            }
+            // Check if the anchor cell has content
+            if content_cache.has_content_at_pos(merge_rect.min) {
+                // Expand bounds to include the merged cell's row range
+                if let Some(ref mut min) = min_row {
+                    *min = (*min).min(merge_rect.min.y);
+                } else {
+                    min_row = Some(merge_rect.min.y);
+                }
+                if let Some(ref mut max) = max_row {
+                    *max = (*max).max(merge_rect.max.y);
+                } else {
+                    max_row = Some(merge_rect.max.y);
+                }
+            }
+        }
+    }
+
+    match (min_row, max_row) {
+        (Some(min), Some(max)) => Some((min, max)),
+        _ => None,
     }
 }
 
@@ -155,6 +222,24 @@ pub(crate) fn has_content_ignore_blank_table(
     }
 
     table_cache.has_content_ignore_blank_table(pos)
+}
+
+/// Returns true if the cell has content, accounting for merged cells.
+/// If the position is in a merged cell, checks the anchor cell (top-left) for content.
+pub(crate) fn has_content_ignore_blank_table_with_merge(
+    pos: Pos,
+    content_cache: &SheetContentCache,
+    table_cache: &SheetDataTablesCache,
+    merge_cells: Option<&MergeCells>,
+) -> bool {
+    // If we're in a merged cell, check the anchor cell for content
+    if let Some(merge_cells) = merge_cells
+        && let Some(merge_cell) = merge_cells.get_merge_cell_rect(pos)
+    {
+        return content_cache.has_content_at_pos(merge_cell.min);
+    }
+
+    has_content_ignore_blank_table(pos, content_cache, table_cache)
 }
 
 #[cfg(test)]
@@ -216,24 +301,24 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
 
         assert_eq!(
-            column_bounds(1, &sheet.content_cache(), sheet_data_tables_cache),
+            column_bounds(1, &sheet.content_cache(), sheet_data_tables_cache, None),
             Some((1, 4))
         );
         assert_eq!(
-            column_bounds(4, &sheet.content_cache(), sheet_data_tables_cache),
+            column_bounds(4, &sheet.content_cache(), sheet_data_tables_cache, None),
             Some((1, 1))
         );
         assert_eq!(
-            column_bounds(6, &sheet.content_cache(), sheet_data_tables_cache),
+            column_bounds(6, &sheet.content_cache(), sheet_data_tables_cache, None),
             Some((1, 1))
         );
 
         assert_eq!(
-            row_bounds(1, &sheet.content_cache(), sheet_data_tables_cache),
+            row_bounds(1, &sheet.content_cache(), sheet_data_tables_cache, None),
             Some((1, 6))
         );
         assert_eq!(
-            row_bounds(2, &sheet.content_cache(), sheet_data_tables_cache),
+            row_bounds(2, &sheet.content_cache(), sheet_data_tables_cache, None),
             Some((1, 2))
         );
     }

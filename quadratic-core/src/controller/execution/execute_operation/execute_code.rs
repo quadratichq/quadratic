@@ -22,25 +22,23 @@ impl GridController {
             return;
         }
 
-        // Collect new code cell positions to add
+        // Collect new code cell positions to add (only dependents outside the modified rect;
+        // positions inside were just overwritten e.g. by SetCellValues clear and have no code run)
         let mut new_code_cell_positions = Vec::new();
         self.get_dependent_code_cells(output)
             .iter()
             .for_each(|sheet_positions| {
                 sheet_positions.iter().for_each(|code_cell_sheet_pos| {
+                    if output.contains(*code_cell_sheet_pos) {
+                        return;
+                    }
                     if !skip_compute
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
+                        && !transaction
+                            .pending_compute_positions
+                            .contains(code_cell_sheet_pos)
                     {
-                        // only add if there isn't already one pending
-                        if !transaction.operations.iter().any(|op| match op {
-                            Operation::ComputeCode { sheet_pos }
-                            | Operation::SetComputeCode { sheet_pos, .. } => {
-                                code_cell_sheet_pos == sheet_pos
-                            }
-                            _ => false,
-                        }) {
-                            new_code_cell_positions.push(*code_cell_sheet_pos);
-                        }
+                        new_code_cell_positions.push(*code_cell_sheet_pos);
                     }
                 });
             });
@@ -93,6 +91,12 @@ impl GridController {
         }
 
         // Add pending ComputeCode operations (their SetDataTable is in non_code_operations)
+        // Track positions before moving the ops
+        for op in &pending_compute_code_ops {
+            if let Operation::ComputeCode { sheet_pos } = op {
+                transaction.pending_compute_positions.insert(*sheet_pos);
+            }
+        }
         for op in pending_compute_code_ops {
             new_operations.push_back(op);
         }
@@ -100,6 +104,8 @@ impl GridController {
         // Add code operations with code_runs in dependency order
         for pos in ordered_positions {
             new_operations.push_back(Operation::ComputeCode { sheet_pos: pos });
+            // Track in HashSet for O(1) duplicate checking in future calls
+            transaction.pending_compute_positions.insert(pos);
         }
 
         transaction.operations = new_operations;
@@ -213,6 +219,9 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
+            // Remove from pending positions so it can be re-added if dependencies change
+            transaction.pending_compute_positions.remove(&sheet_pos);
+
             if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
                 dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
@@ -223,8 +232,12 @@ impl GridController {
                 return;
             };
 
-            let (language, code) = match sheet.code_run_at(&sheet_pos.into()) {
-                Some(code_run) => (code_run.language.to_owned(), code_run.code.to_owned()),
+            let (language, code, cached_ast) = match sheet.code_run_at(&sheet_pos.into()) {
+                Some(code_run) => (
+                    code_run.language.to_owned(),
+                    code_run.code.to_owned(),
+                    code_run.formula_ast.to_owned(),
+                ),
                 None => {
                     dbgjs!(format!("No code run found at {sheet_pos:?}"));
                     return;
@@ -248,7 +261,7 @@ impl GridController {
                 CodeCellLanguage::Formula => {
                     // Formulas execute synchronously, so notification happens before execution
                     // via notify_next_operation_if_code in the control loop
-                    self.run_formula(transaction, sheet_pos, code);
+                    self.run_formula_with_cached_ast(transaction, sheet_pos, code, cached_ast);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     // Notify client about all code operations (current + pending) BEFORE starting execution
@@ -398,6 +411,7 @@ impl GridController {
             value: Value::Single(CellValue::Blank),
             spill_value: false,
             spill_data_table: false,
+            spill_merged_cell: false,
             last_modified: now(),
             alternating_colors,
             formats: None,
@@ -424,6 +438,7 @@ impl GridController {
 
                 // Use the cache to efficiently find all code runs in the selection
                 for rect in selection.rects_unbounded(self.a1_context()) {
+                    // Check DataTables
                     sheet
                         .data_tables
                         .get_code_runs_in_rect(rect, false)
@@ -432,11 +447,21 @@ impl GridController {
                                 sheet_pos: pos.to_sheet_pos(sheet_id),
                             });
                         });
+
+                    // Check CellValue::Code cells
+                    for pos in sheet.iter_code_cells_positions() {
+                        if rect.contains(pos) {
+                            new_ops.push(Operation::ComputeCode {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                            });
+                        }
+                    }
                 }
             } else {
                 // Recompute all code cells in all sheets. Note, the iter_mut is
                 // necessary because finite_bounds may mutate its cache.
                 for (sheet_id, sheet) in self.grid.sheets.iter_mut() {
+                    // Check DataTables
                     if let Some(bounds) = sheet.data_tables.finite_bounds() {
                         sheet
                             .data_tables
@@ -446,6 +471,13 @@ impl GridController {
                                     sheet_pos: pos.to_sheet_pos(*sheet_id),
                                 });
                             });
+                    }
+
+                    // Check CellValue::Code cells
+                    for pos in sheet.iter_code_cells_positions() {
+                        new_ops.push(Operation::ComputeCode {
+                            sheet_pos: pos.to_sheet_pos(*sheet_id),
+                        });
                     }
                 }
             }
