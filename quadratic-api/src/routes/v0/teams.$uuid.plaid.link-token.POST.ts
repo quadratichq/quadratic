@@ -11,8 +11,13 @@ import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
 
+const PrimaryProductEnum = z.enum(['transactions', 'investments', 'liabilities']);
+type PrimaryProduct = z.infer<typeof PrimaryProductEnum>;
+
 const schema = z.object({
-  body: z.object({}),
+  body: z.object({
+    primary_product: PrimaryProductEnum.default('transactions'),
+  }),
   params: z.object({ uuid: z.string().uuid() }),
 });
 
@@ -30,6 +35,7 @@ async function handler(req: RequestWithUser, res: Response<{ linkToken: string }
   } = req;
   const {
     params: { uuid },
+    body: { primary_product },
   } = parseRequest(req, schema);
 
   const {
@@ -61,17 +67,29 @@ async function handler(req: RequestWithUser, res: Response<{ linkToken: string }
     const userCreateResponse = await plaidClient.userCreate(userCreateRequest, true);
     const plaidUserId = userCreateResponse.data.user_id;
 
-    // Create link token with all products we want to support, and require if supported products
+    // Map primary product to Products enum and determine remaining products
+    const productMap: Record<PrimaryProduct, Products> = {
+      transactions: Products.Transactions,
+      investments: Products.Investments,
+      liabilities: Products.Liabilities,
+    };
+    const primaryProductEnum = productMap[primary_product];
+    const remainingProducts = Object.values(productMap).filter((p) => p !== primaryProductEnum);
+
+    // Create link token with primary product and remaining as required if supported
     const createLinkTokenRequest = {
       user: {
         client_user_id: userId.toString(),
       },
       user_id: plaidUserId,
       client_name: 'Quadratic',
-      products: [Products.Transactions],
-      required_if_supported_products: [Products.Investments, Products.Liabilities],
+      products: [primaryProductEnum],
+      required_if_supported_products: remainingProducts,
       country_codes: [CountryCode.Us],
       language: 'en',
+      transactions: {
+        days_requested: 730,
+      },
     };
 
     const createLinkTokenResponse = await plaidClient.linkTokenCreate(createLinkTokenRequest);
