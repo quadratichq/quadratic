@@ -43,6 +43,8 @@ export function useUserAIRules() {
         .then((isAuthenticated) => {
           if (!isAuthenticated) {
             globalAIRulesLoading = false;
+            globalAIRulesLoaded = true;
+            notifyListeners();
             return;
           }
 
@@ -99,6 +101,8 @@ export function preloadUserAIRules() {
       .then((isAuthenticated) => {
         if (!isAuthenticated) {
           globalAIRulesLoading = false;
+          globalAIRulesLoaded = true;
+          notifyListeners();
           return;
         }
 

@@ -51,12 +51,16 @@ export const useConnectionsFetcher = () => {
     }
   }, [teamUuid, permissionsHasTeamEdit, fetcher]);
 
-  // Reset the guard once data arrives so future navigations trigger a fresh fetch
+  // Reset the guard when data arrives or the fetch settles without data
+  // (e.g., network error, abort). This prevents a failed fetch from
+  // permanently blocking retries for that team.
   useEffect(() => {
     if (fetcher.data !== undefined) {
       pendingFetchTeamUuid = null;
+    } else if (fetcher.state === 'idle' && pendingFetchTeamUuid !== null) {
+      pendingFetchTeamUuid = null;
     }
-  }, [fetcher.data]);
+  }, [fetcher.data, fetcher.state]);
 
   const connections = useMemo(() => (fetcher.data ? fetcher.data.connections : []), [fetcher.data]);
   const staticIps = useMemo(

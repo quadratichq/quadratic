@@ -48,6 +48,12 @@ impl GridController {
     /// library (e.g., OOM/capacity overflow when parsing very large files in
     /// WASM), converting them into user-friendly errors instead of WASM traps.
     ///
+    /// Note: the closure captures `&mut self` via `AssertUnwindSafe`. This is
+    /// acceptable because `import_excel_operations` builds a fresh `Vec<Operation>`
+    /// from the file bytes without mutating persistent controller state. If a
+    /// panic occurs, `self` remains in its pre-call state and the error
+    /// propagates to the caller.
+    ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
     #[function_timer::function_timer]
     pub fn import_excel(

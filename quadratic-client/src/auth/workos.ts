@@ -65,10 +65,16 @@ async function createWorkosClient(): Promise<WorkOSClient> {
 async function initializeClientWithRetry(): Promise<WorkOSClient> {
   try {
     return await createWorkosClient();
-  } catch (e) {
-    if (!isNetworkError(e)) throw e;
+  } catch (firstError) {
+    if (!isNetworkError(firstError)) throw firstError;
+    console.warn('WorkOS client initialization failed with network error, retrying…', firstError);
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    return await createWorkosClient();
+    try {
+      return await createWorkosClient();
+    } catch (retryError) {
+      console.error('WorkOS client retry also failed (original error logged above):', retryError);
+      throw retryError;
+    }
   }
 }
 
