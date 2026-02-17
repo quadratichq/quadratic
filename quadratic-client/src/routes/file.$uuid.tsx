@@ -20,6 +20,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { clearInitialConnectionType, getInitialConnectionType } from '@/shared/features/initialConnectionType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
@@ -28,7 +29,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+
 import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
@@ -219,12 +220,14 @@ export const Component = memo(() => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Check for initial-connection-type param to auto-open the connections dialog
-  const initialConnectionTypeParam = searchParams.get('initial-connection-type');
-  const parsedInitialConnectionType = initialConnectionTypeParam
-    ? ConnectionTypeSchema.safeParse(initialConnectionTypeParam)
-    : null;
-  const initialConnectionType = parsedInitialConnectionType?.success ? parsedInitialConnectionType.data : undefined;
+  // Read is a pure function (no side effects) so it's safe to call during
+  // render, even with React StrictMode's double-render in development.
+  // Clearing happens in a useEffect to avoid removing the value before the
+  // second render call has a chance to read it.
+  const initialConnectionType = getInitialConnectionType();
+  useEffect(() => {
+    clearInitialConnectionType();
+  }, []);
 
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {

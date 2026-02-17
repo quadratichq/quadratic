@@ -94,11 +94,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     if (connectionName) {
       searchParamsToPass.set('connection-name', connectionName);
     }
-    const initialConnectionType = searchParams.get('initial-connection-type');
-    if (initialConnectionType) {
-      searchParamsToPass.set('initial-connection-type', initialConnectionType);
-    }
-
     return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));

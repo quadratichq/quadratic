@@ -1,4 +1,5 @@
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { AIIcon, DatabaseIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
@@ -9,7 +10,7 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ZoomInIcon } from '@radix-ui/react-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface WalkthroughStep {
   target: string; // data-walkthrough attribute value
@@ -70,12 +71,14 @@ export function FeatureWalkthrough() {
   const [isVisible, setIsVisible] = useState(false);
   const [availableSteps, setAvailableSteps] = useState<WalkthroughStep[]>([]);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const showConnectionsMenu = useRecoilValue(editorInteractionStateShowConnectionsMenuAtom);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Only show walkthrough for authenticated users who haven't completed it
   // Disabled on mobile devices
+  // Deferred when the connections menu is opening (user has a specific intent)
   // For testing: reset via resetFeatureWalkthrough() or API
-  const shouldShow = isAuthenticated && !completed && !isMobile;
+  const shouldShow = isAuthenticated && !completed && !isMobile && !showConnectionsMenu;
 
   // Determine which steps are available based on visible elements
   useEffect(() => {

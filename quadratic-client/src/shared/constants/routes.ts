@@ -38,7 +38,6 @@ export const ROUTES = {
       connectionUuid?: string | null;
       connectionType?: ConnectionType | null;
       connectionName?: string | null;
-      initialConnectionType?: string | null;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -63,9 +62,6 @@ export const ROUTES = {
     }
     if (searchParams.connectionName) {
       url.searchParams.set('connection-name', searchParams.connectionName);
-    }
-    if (searchParams.initialConnectionType) {
-      url.searchParams.set('initial-connection-type', searchParams.initialConnectionType);
     }
 
     return url.pathname + url.search;

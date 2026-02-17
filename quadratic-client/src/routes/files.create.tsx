@@ -1,15 +1,18 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { storeInitialConnectionType } from '@/shared/features/initialConnectionType';
 import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
-
   const { request } = loaderArgs;
   const url = new URL(request.url);
+
+  storeInitialConnectionType(url);
+
+  const { activeTeamUuid } = await requireAuth(request);
 
   // Get the active team
   const { teams } = await apiClient.teams.list();
@@ -53,8 +56,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     connectionUuid: url.searchParams.get('connection-uuid'),
     connectionType: parsedConnectionType?.success ? parsedConnectionType.data : null,
     connectionName: url.searchParams.get('connection-name'),
-    // Auto-open connections dialog to create a specific connection type (validated in file.$uuid)
-    initialConnectionType: url.searchParams.get('initial-connection-type'),
   });
   return redirect(redirectUrl);
 };
