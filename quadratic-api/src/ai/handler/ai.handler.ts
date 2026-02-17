@@ -25,6 +25,7 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
 import logger from '../../utils/logger';
+import { EmptyMessagesError } from '../helpers/errors';
 import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { calculateUsage } from '../helpers/usage.helper';
 import {
@@ -261,6 +262,36 @@ export const handleAIRequest = async ({
   } catch (error) {
     if (signal?.aborted) {
       logger.info(`[handleAIRequest] AI request aborted by client`);
+      return;
+    }
+
+    // Empty messages after filtering - not retryable with a different model
+    if (error instanceof EmptyMessagesError) {
+      logger.warn(`[handleAIRequest] ${error.message} (model: ${modelKey}, source: ${args.source})`);
+
+      const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
+        role: 'assistant',
+        content: [createTextContent('Something went wrong with the conversation. Please try sending your message again.')],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        modelKey,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        error: true,
+        errorType: 'general',
+      };
+      const options = getModelOptions(modelKey, args);
+      if (options.stream) {
+        if (!response?.headersSent) {
+          response?.setHeader('Content-Type', 'text/event-stream');
+          response?.setHeader('Cache-Control', 'no-cache');
+          response?.setHeader('Connection', 'keep-alive');
+        }
+        response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+        response?.end();
+      } else {
+        response?.json(responseMessage);
+      }
       return;
     }
 
