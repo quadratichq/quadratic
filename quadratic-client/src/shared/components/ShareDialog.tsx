@@ -1,6 +1,7 @@
 import { getActionFileMove, type Action as FileAction } from '@/routes/api.files.$uuid';
 import type { Action as FileShareAction, FilesSharingLoader } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { apiClient } from '@/shared/api/apiClient';
 import { syncFileLocation } from '@/shared/atom/fileLocationAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
@@ -16,7 +17,6 @@ import {
   PublicOffIcon,
 } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
-import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_EMBED_URL } from '@/shared/constants/urls';
 import { useTeamData } from '@/shared/hooks/useTeamData';
@@ -50,7 +50,7 @@ import type {
 } from 'quadratic-shared/typesAndSchemas';
 import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent, ReactNode } from 'react';
-import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Children, forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FetcherSubmitFunction } from 'react-router';
 import { useFetcher, useFetchers, useNavigate, useSubmit } from 'react-router';
 
@@ -356,6 +356,9 @@ function ShareFileDialogBody({
     [data.userMakingRequest.teamRole]
   );
 
+  const publicLinkRowRef = useRef<HTMLDivElement>(null);
+  const [highlightPublicLinkRow, setHighlightPublicLinkRow] = useState(false);
+
   return (
     <>
       {filePermissions.includes('FILE_EDIT') && (
@@ -368,7 +371,15 @@ function ShareFileDialogBody({
         />
       )}
 
-      <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
+      <div className={cn(filePermissions.includes('FILE_EDIT') && 'mt-3')}>
+        <ListItemPublicLink
+          ref={publicLinkRowRef}
+          uuid={uuid}
+          publicLinkAccess={publicLinkAccess}
+          disabled={!canEditFile}
+          highlight={highlightPublicLinkRow}
+        />
+      </div>
 
       {teamRole && (
         <ListItemTeamFile
@@ -448,7 +459,13 @@ function ShareFileDialogBody({
       ))}
 
       <Separator />
-      <ListItemEmbed uuid={uuid} publicLinkAccess={publicLinkAccess} currentSheetName={currentSheetName} />
+      <ListItemEmbed
+        publicLinkRowRef={publicLinkRowRef}
+        setHighlightPublicLinkRow={setHighlightPublicLinkRow}
+        uuid={uuid}
+        publicLinkAccess={publicLinkAccess}
+        currentSheetName={currentSheetName}
+      />
     </>
   );
 }
@@ -1210,7 +1227,7 @@ function ListItemTeamFile({
         value={value}
         onValueChange={(value: 'team-file' | 'personal-file') => onCheckedChange(value === 'team-file')}
       >
-        <SelectTrigger className={`w-auto`}>
+        <SelectTrigger className="w-28">
           <SelectValue>{value === 'team-file' ? 'Can access' : 'No access'}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -1222,15 +1239,10 @@ function ListItemTeamFile({
   );
 }
 
-function ListItemPublicLink({
-  uuid,
-  publicLinkAccess,
-  disabled,
-}: {
-  uuid: string;
-  publicLinkAccess: PublicLinkAccess;
-  disabled: boolean;
-}) {
+const ListItemPublicLink = forwardRef<
+  HTMLDivElement,
+  { uuid: string; publicLinkAccess: PublicLinkAccess; disabled: boolean; highlight?: boolean }
+>(function ListItemPublicLink({ uuid, publicLinkAccess, disabled, highlight }, ref) {
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.API.FILE_SHARING(uuid);
 
@@ -1267,7 +1279,13 @@ function ListItemPublicLink({
   const activeOptionLabel = useMemo(() => optionsByValue[publicLinkAccess], [publicLinkAccess, optionsByValue]);
 
   return (
-    <ListItem>
+    <ListItem
+      ref={ref}
+      className="rounded-sm transition-shadow duration-300"
+      style={{
+        boxShadow: highlight ? '0 0 0 2px hsl(var(--primary))' : '0 0 0 0px hsl(var(--primary) / 0)',
+      }}
+    >
       <div className="flex h-6 w-6 items-center justify-center">
         {publicLinkAccess === 'NOT_SHARED' ? <PublicOffIcon /> : <PublicIcon />}
       </div>
@@ -1289,7 +1307,7 @@ function ListItemPublicLink({
             setPublicLinkAccess(value);
           }}
         >
-          <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
+          <SelectTrigger className="w-28" data-testid="public-link-access-select">
             <SelectValue>{activeOptionLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -1303,13 +1321,17 @@ function ListItemPublicLink({
       </div>
     </ListItem>
   );
-}
+});
 
 function ListItemEmbed({
+  publicLinkRowRef,
+  setHighlightPublicLinkRow,
   uuid,
   publicLinkAccess,
   currentSheetName,
 }: {
+  publicLinkRowRef: React.RefObject<HTMLDivElement | null>;
+  setHighlightPublicLinkRow: React.Dispatch<React.SetStateAction<boolean>>;
   uuid: string;
   publicLinkAccess: PublicLinkAccess;
   currentSheetName?: string;
@@ -1324,6 +1346,37 @@ function ListItemEmbed({
   const fetchedRef = useRef(false);
 
   const isPublic = publicLinkAccess !== 'NOT_SHARED';
+  const sheetPlaceholder = currentSheetName ? `e.g. ${currentSheetName}` : 'e.g. Sheet1';
+  const [expanded, setExpanded] = useState(false);
+
+  // When user opens Embed and file is not public, flash the "Anyone with the link" row
+  const hasFlashedRef = useRef(false);
+  useEffect(() => {
+    if (!expanded) {
+      hasFlashedRef.current = false;
+      return;
+    }
+    if (expanded && !isPublic && !hasFlashedRef.current) {
+      hasFlashedRef.current = true;
+      publicLinkRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      let count = 0;
+      const interval = window.setInterval(() => {
+        count++;
+        setHighlightPublicLinkRow((prev) => !prev);
+        if (count >= 4) {
+          window.clearInterval(interval);
+          setHighlightPublicLinkRow(false);
+        }
+      }, 400);
+
+      setHighlightPublicLinkRow(true);
+      return () => {
+        window.clearInterval(interval);
+        setHighlightPublicLinkRow(false);
+      };
+    }
+  }, [expanded, isPublic, publicLinkRowRef, setHighlightPublicLinkRow]);
 
   // Fetch or create embed record when the file is public
   useEffect(() => {
@@ -1392,9 +1445,6 @@ function ListItemEmbed({
         addGlobalSnackbar('Failed to copy embed HTML to clipboard.', { severity: 'error' });
       });
   }, [embedUrl, addGlobalSnackbar]);
-
-  const sheetPlaceholder = currentSheetName ? `e.g. ${currentSheetName}` : 'e.g. Sheet1';
-  const [expanded, setExpanded] = useState(false);
 
   return (
     <Collapsible open={expanded} onOpenChange={setExpanded}>
@@ -1497,20 +1547,24 @@ function ListItemEmbed({
   );
 }
 
-function ListItem({ className, children }: { className?: string; children: React.ReactNode }) {
-  if (Children.count(children) !== 3) {
-    console.warn('<ListItem> expects exactly 3 children');
-  }
+const ListItem = forwardRef<HTMLDivElement, { className?: string; style?: React.CSSProperties; children: ReactNode }>(
+  function ListItem({ className, style, children }, ref) {
+    if (Children.count(children) !== 3) {
+      console.warn('<ListItem> expects exactly 3 children');
+    }
 
-  return (
-    <div
-      data-testid="share-dialog-list-item"
-      className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}
-    >
-      {children}
-    </div>
-  );
-}
+    return (
+      <div
+        ref={ref}
+        data-testid="share-dialog-list-item"
+        className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}
+        style={style}
+      >
+        {children}
+      </div>
+    );
+  }
+);
 
 // TODO: write tests for these
 function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserTeamRole; numberOfOwners: number }) {
