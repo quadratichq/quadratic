@@ -60,13 +60,23 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 0,
             exceededBillingLimit: false,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 0,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
   });
 
   describe('team uuid', () => {
-    it('responds with a 404 for a team that isn’t in the system', async () => {
+    it('responds with a 404 for a team that isn\u2019t in the system', async () => {
       await request(app)
         .get('/v0/teams/11111111-1111-1111-1111-111111111111/billing/ai/usage')
         .set('Authorization', `Bearer ValidToken userOwner1`)
@@ -89,6 +99,16 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 0,
             exceededBillingLimit: false,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 0,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -102,6 +122,16 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 0,
             exceededBillingLimit: false,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 0,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -125,6 +155,16 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 5,
             exceededBillingLimit: false,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 5,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -146,6 +186,16 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 7,
             exceededBillingLimit: false,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 7,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -169,6 +219,16 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 21,
             exceededBillingLimit: true,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 21,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -188,6 +248,19 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
         .expect(({ body }) => {
           expect(body).toEqual({
             exceededBillingLimit: false,
+            billingLimit: null,
+            currentPeriodUsage: null,
+            planType: 'PRO',
+            currentMonthAiCost: 0,
+            monthlyAiAllowance: 20,
+            remainingAllowance: 20,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: null,
+            teamMessageLimit: null,
+            userMonthlyBudgetLimit: null,
+            userCurrentMonthCost: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -208,6 +281,16 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             billingLimit: 20,
             currentPeriodUsage: 21,
             exceededBillingLimit: true,
+            planType: 'FREE',
+            currentMonthAiCost: null,
+            monthlyAiAllowance: null,
+            remainingAllowance: null,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: 21,
+            teamMessageLimit: 20,
+            userMonthlyBudgetLimit: null,
+            allowOveragePayments: false,
           });
         });
     });
@@ -225,10 +308,23 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
         .set('Authorization', `Bearer ValidToken userOwner1`)
         .expect(200)
         .expect(({ body }) => {
+          // User is not a member of team2, so they see the paid team response
+          // with cost-based limits. No AICost records exist, so cost is 0.
           expect(body).toEqual({
-            billingLimit: 20,
-            currentPeriodUsage: 23,
-            exceededBillingLimit: true,
+            exceededBillingLimit: false,
+            billingLimit: null,
+            currentPeriodUsage: null,
+            planType: 'PRO',
+            currentMonthAiCost: 0,
+            monthlyAiAllowance: 20,
+            remainingAllowance: 20,
+            teamMonthlyBudgetLimit: null,
+            teamCurrentMonthCost: null,
+            teamCurrentMonthMessages: null,
+            teamMessageLimit: null,
+            userMonthlyBudgetLimit: null,
+            userCurrentMonthCost: null,
+            allowOveragePayments: false,
           });
         });
     });

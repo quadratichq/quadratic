@@ -1,14 +1,9 @@
-import type { Team } from '@prisma/client';
+import { PlanType, type Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { AI_ALLOWANCE_BUSINESS, AI_ALLOWANCE_PRO } from '../env-vars';
 import type { DecryptedTeam } from '../utils/teams';
 
-// PlanType enum - will be available after Prisma client regeneration
-export enum PlanType {
-  FREE = 'FREE',
-  PRO = 'PRO',
-  BUSINESS = 'BUSINESS',
-}
+export { PlanType };
 
 /**
  * Get the plan type for a team.
@@ -18,9 +13,8 @@ export enum PlanType {
  * - No subscription = FREE
  */
 export const getPlanType = async (team: Team | DecryptedTeam): Promise<PlanType> => {
-  const teamWithPlan = team as Team & { planType?: PlanType | null };
-  if (teamWithPlan.planType) {
-    return teamWithPlan.planType;
+  if (team.planType) {
+    return team.planType;
   }
 
   // Infer from subscription status
@@ -64,13 +58,8 @@ export const isFreePlan = async (team: Team | DecryptedTeam): Promise<boolean> =
  * - BUSINESS: $40/user/month
  */
 export const getMonthlyAiAllowancePerUser = async (team: Team | DecryptedTeam): Promise<number> => {
-  const teamWithAllowance = team as Team & { monthlyAiAllowancePerUser?: number | null };
-  // If explicitly set on team, use that
-  if (
-    teamWithAllowance.monthlyAiAllowancePerUser !== null &&
-    teamWithAllowance.monthlyAiAllowancePerUser !== undefined
-  ) {
-    return teamWithAllowance.monthlyAiAllowancePerUser;
+  if (team.monthlyAiAllowancePerUser !== null && team.monthlyAiAllowancePerUser !== undefined) {
+    return team.monthlyAiAllowancePerUser;
   }
 
   // Otherwise calculate based on plan type
@@ -114,7 +103,7 @@ export const getCurrentMonthAiCostForTeam = async (teamId: number): Promise<numb
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-  const result = await (dbClient as any).aICost.aggregate({
+  const result = await dbClient.aICost.aggregate({
     where: {
       teamId,
       createdDate: {
@@ -139,7 +128,7 @@ export const getCurrentMonthAiCostForUser = async (teamId: number, userId: numbe
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-  const result = await (dbClient as any).aICost.aggregate({
+  const result = await dbClient.aICost.aggregate({
     where: {
       teamId,
       userId,
@@ -198,7 +187,7 @@ export const hasTeamExceededAllowance = async (team: Team | DecryptedTeam): Prom
  * Returns null if no limit is set.
  */
 export const getUserBudgetLimit = async (teamId: number, userId: number): Promise<{ limit: number } | null> => {
-  const budgetLimit = await (dbClient as any).userBudgetLimit.findUnique({
+  const budgetLimit = await dbClient.userBudgetLimit.findUnique({
     where: {
       userId_teamId: {
         userId,
@@ -248,16 +237,12 @@ export const getCurrentMonthOverageCostForTeam = async (team: Team | DecryptedTe
  * Returns false if no budget limit is set.
  */
 export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise<boolean> => {
-  const teamWithBudget = team as Team & {
-    teamMonthlyBudgetLimit?: number | null;
-  };
-
-  if (!teamWithBudget.teamMonthlyBudgetLimit) {
+  if (!team.teamMonthlyBudgetLimit) {
     return false; // No budget limit set
   }
 
   const overageCost = await getCurrentMonthOverageCostForTeam(team);
-  return overageCost >= teamWithBudget.teamMonthlyBudgetLimit;
+  return overageCost >= team.teamMonthlyBudgetLimit;
 };
 
 /**
@@ -278,9 +263,8 @@ export const canMakeAiRequest = async (
   // Check user allowance
   const exceededUserAllowance = await hasExceededAllowance(team, userId);
   if (exceededUserAllowance) {
-    const teamWithOverage = team as Team & { allowOveragePayments?: boolean };
     // Check if overage is allowed
-    if (planType === PlanType.BUSINESS && teamWithOverage.allowOveragePayments) {
+    if (planType === PlanType.BUSINESS && team.allowOveragePayments) {
       // Check budget limits instead
       const exceededUserBudget = await hasExceededUserBudget(team.id, userId);
       const exceededTeamBudget = await hasExceededTeamBudget(team);

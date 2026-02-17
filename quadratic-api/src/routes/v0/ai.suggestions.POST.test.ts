@@ -5,47 +5,39 @@ import { clearDb, createTeam, createUser, upgradeTeamToPro } from '../../tests/t
 
 const auth0Id = 'user';
 
-jest.mock('@google/generative-ai', () => ({
-  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-    getGenerativeModel: jest.fn().mockReturnValue({
-      generateContent: jest.fn().mockResolvedValue({
-        response: {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    text: JSON.stringify([
-                      {
-                        title: 'Sales Dashboard',
-                        description: 'Track monthly sales performance',
-                        prompt: 'Create a dashboard showing monthly sales trends',
-                      },
-                      {
-                        title: 'Inventory Tracker',
-                        description: 'Monitor product inventory levels',
-                        prompt: 'Build an inventory tracking system',
-                      },
-                      {
-                        title: 'Budget Planner',
-                        description: 'Plan and track expenses',
-                        prompt: 'Create a monthly budget planning spreadsheet',
-                      },
-                    ]),
-                  },
-                ],
-              },
-            },
-          ],
-          usageMetadata: {
-            promptTokenCount: 200,
-            candidatesTokenCount: 120,
-            cachedContentTokenCount: 0,
-          },
-        },
-      }),
-    }),
-  })),
+const mockSuggestions = JSON.stringify([
+  {
+    title: 'Sales Dashboard',
+    description: 'Track monthly sales performance',
+    prompt: 'Create a dashboard showing monthly sales trends',
+  },
+  {
+    title: 'Inventory Tracker',
+    description: 'Monitor product inventory levels',
+    prompt: 'Build an inventory tracking system',
+  },
+  {
+    title: 'Budget Planner',
+    description: 'Plan and track expenses',
+    prompt: 'Create a monthly budget planning spreadsheet',
+  },
+]);
+
+jest.mock('../../ai/handler/ai.handler', () => ({
+  handleAIRequest: jest.fn().mockResolvedValue({
+    responseMessage: {
+      role: 'assistant',
+      content: [{ type: 'text', text: mockSuggestions }],
+      contextType: 'userPrompt',
+      toolCalls: [],
+    },
+    usage: {
+      inputTokens: 200,
+      outputTokens: 120,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    },
+  }),
 }));
 
 let teamId: number;

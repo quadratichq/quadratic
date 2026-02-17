@@ -1,9 +1,8 @@
-import type { Team } from '@prisma/client';
-import { SubscriptionStatus } from '@prisma/client';
+import { PlanType, SubscriptionStatus, type Team } from '@prisma/client';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
 import { trackEvent } from '../analytics/mixpanel';
-import { PlanType, getMonthlyAiAllowancePerUser } from '../billing/planHelpers';
+import { getMonthlyAiAllowancePerUser } from '../billing/planHelpers';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';
@@ -99,7 +98,7 @@ export const upgradeSubscriptionPlan = async (
   await dbClient.team.update({
     where: { id: team.id },
     data: {
-      planType: planType === 'business' ? 'BUSINESS' : 'PRO',
+      planType: planType === 'business' ? PlanType.BUSINESS : PlanType.PRO,
     },
   });
 
@@ -336,25 +335,16 @@ export const updateTeamStatus = async (
     }
 
     // Update the team
-    // Note: planType and monthlyAiAllowancePerUser will be available after Prisma client regeneration
-    const updateData: any = {
-      // activated: true, // activate the team
-      stripeSubscriptionId,
-      stripeSubscriptionStatus,
-      stripeCurrentPeriodEnd: endDate,
-      stripeSubscriptionLastUpdated: new Date(),
-    };
-
-    if (planType !== null) {
-      updateData.planType = planType;
-    }
-    if (monthlyAiAllowancePerUser !== null) {
-      updateData.monthlyAiAllowancePerUser = monthlyAiAllowancePerUser;
-    }
-
     const updatedTeam = await tx.team.update({
       where: { stripeCustomerId: customerId },
-      data: updateData,
+      data: {
+        stripeSubscriptionId,
+        stripeSubscriptionStatus,
+        stripeCurrentPeriodEnd: endDate,
+        stripeSubscriptionLastUpdated: new Date(),
+        ...(planType !== null && { planType }),
+        ...(monthlyAiAllowancePerUser !== null && { monthlyAiAllowancePerUser }),
+      },
     });
 
     return { oldTeam, updatedTeam, teamOwner };

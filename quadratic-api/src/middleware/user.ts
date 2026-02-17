@@ -90,6 +90,10 @@ const getOrCreateUser = async (auth: Auth) => {
 
   // If they don't exist yet, create them. Use upsert to avoid unique constraint
   // errors from concurrent requests both trying to create the same user.
+  //
+  // In the rare case of a race, runFirstTimeUserLogic may run twice. This is
+  // acceptable — its side effects (analytics, email, invite processing) are
+  // effectively idempotent and the race window is extremely narrow.
   const user = await dbClient.user.upsert({
     where: {
       auth0Id: auth.sub,

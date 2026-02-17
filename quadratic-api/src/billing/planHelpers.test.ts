@@ -63,7 +63,7 @@ describe('getPlanType', () => {
 
     await dbClient.team.update({
       where: { id: team.id },
-      data: { planType: 'BUSINESS' as any },
+      data: { planType: 'BUSINESS' },
     });
 
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
@@ -109,7 +109,7 @@ describe('isFreePlan, isProPlan, isBusinessPlan', () => {
 
     await dbClient.team.update({
       where: { id: team.id },
-      data: { planType: 'BUSINESS' as any },
+      data: { planType: 'BUSINESS' },
     });
 
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
@@ -154,7 +154,7 @@ describe('getMonthlyAiAllowancePerUser', () => {
 
     await dbClient.team.update({
       where: { id: team.id },
-      data: { planType: 'BUSINESS' as any },
+      data: { planType: 'BUSINESS' },
     });
 
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
@@ -172,7 +172,7 @@ describe('getMonthlyAiAllowancePerUser', () => {
 
     await dbClient.team.update({
       where: { id: team.id },
-      data: { monthlyAiAllowancePerUser: 50 as any },
+      data: { monthlyAiAllowancePerUser: 50 },
     });
 
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
@@ -222,7 +222,7 @@ describe('getTeamMonthlyAiAllowance', () => {
 
     await dbClient.team.update({
       where: { id: team.id },
-      data: { planType: 'BUSINESS' as any },
+      data: { planType: 'BUSINESS' },
     });
 
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
@@ -264,7 +264,7 @@ describe('getCurrentMonthAiCostForTeam and getCurrentMonthAiCostForUser', () => 
 
     // Create costs for current month
     const now = new Date();
-    await (dbClient as any).aICost.createMany({
+    await dbClient.aICost.createMany({
       data: [
         {
           userId: userId1,
@@ -321,7 +321,7 @@ describe('getCurrentMonthAiCostForTeam and getCurrentMonthAiCostForUser', () => 
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
 
     // Create cost from last month
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -338,7 +338,7 @@ describe('getCurrentMonthAiCostForTeam and getCurrentMonthAiCostForUser', () => 
     });
 
     // Create cost for current month
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -393,7 +393,7 @@ describe('hasExceededAllowance', () => {
     });
 
     // Create cost below allowance ($15 < $20)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -433,7 +433,7 @@ describe('hasExceededAllowance', () => {
     });
 
     // Create cost equal to allowance ($20 = $20)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -473,7 +473,7 @@ describe('hasExceededAllowance', () => {
     });
 
     // Create cost above allowance ($25 > $20)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -529,7 +529,7 @@ describe('hasTeamExceededAllowance', () => {
 
     // Total allowance: 2 users * $20 = $40
     // Create cost above allowance ($45 > $40)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -567,7 +567,7 @@ describe('getUserBudgetLimit', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    await (dbClient as any).userBudgetLimit.create({
+    await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -598,7 +598,7 @@ describe('hasExceededUserBudget', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    await (dbClient as any).userBudgetLimit.create({
+    await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -616,7 +616,7 @@ describe('hasExceededUserBudget', () => {
     });
 
     // Create cost below budget ($50 < $100)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -642,7 +642,7 @@ describe('hasExceededUserBudget', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    await (dbClient as any).userBudgetLimit.create({
+    await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -660,7 +660,7 @@ describe('hasExceededUserBudget', () => {
     });
 
     // Create cost above budget ($150 > $100)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -686,7 +686,7 @@ describe('hasExceededUserBudget', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    await (dbClient as any).userBudgetLimit.create({
+    await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -708,7 +708,7 @@ describe('hasExceededUserBudget', () => {
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     lastMonth.setDate(15); // Middle of last month
 
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -749,7 +749,7 @@ describe('hasExceededTeamBudget', () => {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        teamMonthlyBudgetLimit: 200.0 as any,
+        teamMonthlyBudgetLimit: 200.0,
       },
     });
 
@@ -766,7 +766,7 @@ describe('hasExceededTeamBudget', () => {
     });
 
     // Create cost above budget ($250 > $200)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -795,9 +795,9 @@ describe('hasExceededTeamBudget', () => {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        planType: 'BUSINESS' as any,
-        monthlyAiAllowancePerUser: 50.0 as any,
-        teamMonthlyBudgetLimit: 60.0 as any,
+        planType: 'BUSINESS',
+        monthlyAiAllowancePerUser: 50.0,
+        teamMonthlyBudgetLimit: 60.0,
       },
     });
 
@@ -814,7 +814,7 @@ describe('hasExceededTeamBudget', () => {
     });
 
     // Total cost $100 (included $50 + overage $50). Limit $60 applies to overage only, so overage $50 < $60
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -870,7 +870,7 @@ describe('canMakeAiRequest', () => {
     });
 
     // Create cost below allowance ($15 < $20)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -910,7 +910,7 @@ describe('canMakeAiRequest', () => {
     });
 
     // Create cost above allowance ($25 > $20)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -940,8 +940,8 @@ describe('canMakeAiRequest', () => {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        planType: 'BUSINESS' as any,
-        allowOveragePayments: true as any,
+        planType: 'BUSINESS',
+        allowOveragePayments: true,
       },
     });
 
@@ -958,7 +958,7 @@ describe('canMakeAiRequest', () => {
     });
 
     // Create cost above allowance ($50 > $40) but within budget
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -991,12 +991,12 @@ describe('canMakeAiRequest', () => {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        planType: 'BUSINESS' as any,
-        allowOveragePayments: true as any,
+        planType: 'BUSINESS',
+        allowOveragePayments: true,
       },
     });
 
-    await (dbClient as any).userBudgetLimit.create({
+    await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -1017,7 +1017,7 @@ describe('canMakeAiRequest', () => {
     });
 
     // Create cost above allowance ($50 > $40) and above user budget ($50 < $60, but let's make it $65)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -1047,9 +1047,9 @@ describe('canMakeAiRequest', () => {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        planType: 'BUSINESS' as any,
-        allowOveragePayments: true as any,
-        teamMonthlyBudgetLimit: 100.0 as any,
+        planType: 'BUSINESS',
+        allowOveragePayments: true,
+        teamMonthlyBudgetLimit: 100.0,
       },
     });
 
@@ -1065,13 +1065,14 @@ describe('canMakeAiRequest', () => {
       },
     });
 
-    // Create cost above allowance ($50 > $40) and above team budget ($110 > $100)
-    await (dbClient as any).aICost.create({
+    // Create cost above allowance and above team budget
+    // Overage = cost - allowance = $150 - $40 = $110 > budget limit of $100
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
         fileId: file.id,
-        cost: 110.0, // Above team budget of $100
+        cost: 150.0,
         model: 'test-model',
         source: 'AIAnalyst',
         inputTokens: 100,
@@ -1096,11 +1097,11 @@ describe('canMakeAiRequest', () => {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        planType: 'BUSINESS' as any,
+        planType: 'BUSINESS',
       },
     });
 
-    await (dbClient as any).userBudgetLimit.create({
+    await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
         teamId: team.id,
@@ -1121,7 +1122,7 @@ describe('canMakeAiRequest', () => {
     });
 
     // Create cost within allowance ($35 < $40) but above user budget ($35 > $30)
-    await (dbClient as any).aICost.create({
+    await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,

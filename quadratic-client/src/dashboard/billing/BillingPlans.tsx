@@ -1,5 +1,6 @@
 import { CancellationDialog } from '@/components/CancellationDialog';
 import { apiClient } from '@/shared/api/apiClient';
+import { billingConfigAtom, fetchBillingConfig } from '@/shared/atom/billingConfigAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { teamBillingAtom, updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -8,7 +9,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useNavigation } from 'react-router';
 import { BusinessPlan } from './BusinessPlan';
 import { FreePlan } from './FreePlan';
@@ -27,10 +28,15 @@ export const BillingPlans = ({ canManageBilling, eventSource, teamUuid }: Billin
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { planType } = useAtomValue(teamBillingAtom);
+  const billingConfig = useAtomValue(billingConfigAtom);
   const isNavigating = navigation.state !== 'idle';
   const [isUpgradingToBusiness, setIsUpgradingToBusiness] = useState(false);
   const [isUpgradingToPro, setIsUpgradingToPro] = useState(false);
   const isBusy = isNavigating || isUpgradingToBusiness;
+
+  useEffect(() => {
+    fetchBillingConfig();
+  }, []);
 
   // Get current path to return to after checkout
   const returnTo = location.pathname + location.search;
@@ -114,6 +120,7 @@ export const BillingPlans = ({ canManageBilling, eventSource, teamUuid }: Billin
           isPro ? 'border-2 border-primary bg-primary/5' : 'border border-border'
         )}
         showCurrentPlanBadge={isPro}
+        proAiAllowance={billingConfig.proAiAllowance}
       >
         {isFree ? (
           <Button
@@ -181,6 +188,7 @@ export const BillingPlans = ({ canManageBilling, eventSource, teamUuid }: Billin
           isBusiness ? 'border-2 border-primary bg-primary/5' : 'border border-border'
         )}
         showCurrentPlanBadge={isBusiness}
+        businessAiAllowance={billingConfig.businessAiAllowance}
       >
         {isFree || isPro ? (
           <Button

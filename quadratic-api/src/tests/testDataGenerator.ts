@@ -280,6 +280,8 @@ export async function clearDb() {
   await dbClient.$transaction([
     dbClient.analyticsAIChatMessage.deleteMany(),
     dbClient.analyticsAIChat.deleteMany(),
+    dbClient.aICost.deleteMany(),
+    dbClient.userBudgetLimit.deleteMany(),
     dbClient.scheduledTaskLog.deleteMany(),
     dbClient.scheduledTask.deleteMany(),
     dbClient.fileCheckpoint.deleteMany(),

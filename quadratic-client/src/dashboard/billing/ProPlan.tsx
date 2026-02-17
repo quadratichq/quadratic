@@ -8,12 +8,16 @@ export const ProPlan = ({
   children,
   showCurrentPlanBadge,
   className,
+  proAiAllowance,
 }: {
   className?: string;
   children?: ReactNode;
   showCurrentPlanBadge?: boolean;
+  /** AI allowance from API (e.g. from billing config). When omitted, falls back to billingConfigAtom. */
+  proAiAllowance?: number;
 }) => {
   const billingConfig = useAtomValue(billingConfigAtom);
+  const displayAllowance = proAiAllowance ?? billingConfig.proAiAllowance;
 
   useEffect(() => {
     fetchBillingConfig();
@@ -32,7 +36,7 @@ export const ProPlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>AI usage</span>
-          <span className="text-sm font-medium">${billingConfig.proAiAllowance}/user/month allowance</span>
+          <span className="text-sm font-medium">${displayAllowance}/user/month allowance</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Connections</span>

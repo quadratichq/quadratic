@@ -5,26 +5,44 @@ import { clearDb, createTeam, createUser, upgradeTeamToPro } from '../../tests/t
 
 const auth0Id = 'user';
 
-jest.mock('@anthropic-ai/bedrock-sdk', () => ({
-  AnthropicBedrock: jest.fn().mockImplementation(() => ({
-    messages: {
-      create: jest.fn().mockResolvedValue({
-        id: 'msg_mock123',
-        content: [
-          {
-            type: 'text',
-            text: 'Goal: Create a sales tracking spreadsheet\n\nData:\n- Sales data from CRM\n- Product catalog\n\nAnalysis:\n- Monthly sales trends chart\n- Top products by revenue\n\nSteps:\n1. Import sales data\n2. Create pivot table\n3. Generate charts',
-          },
-        ],
-        usage: {
-          input_tokens: 150,
-          output_tokens: 80,
-          cache_read_input_tokens: 0,
-          cache_creation_input_tokens: 0,
+const mockPlanText =
+  'Goal: Create a sales tracking spreadsheet\n\nData:\n- Sales data from CRM\n- Product catalog\n\nAnalysis:\n- Monthly sales trends chart\n- Top products by revenue\n\nSteps:\n1. Import sales data\n2. Create pivot table\n3. Generate charts';
+
+jest.mock('../../ai/handler/ai.handler', () => ({
+  handleAIRequest: jest
+    .fn()
+    .mockImplementation(async ({ isOnPaidPlan, exceededBillingLimit, response }: Record<string, unknown>) => {
+      const parsedResponse = {
+        responseMessage: {
+          role: 'assistant',
+          content: [{ type: 'text', text: mockPlanText }],
+          contextType: 'userPrompt',
+          toolCalls: [],
         },
-      }),
-    },
-  })),
+        usage: {
+          inputTokens: 150,
+          outputTokens: 80,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      };
+
+      // The plan handler enters the streaming path (SSE) by default.
+      // Write a JSON response so the test can validate the plan content.
+      const res = response as { headersSent?: boolean; writeHead?: Function; end?: Function } | undefined;
+      if (res && !res.headersSent) {
+        res.writeHead?.(200, { 'Content-Type': 'application/json' });
+        res.end?.(
+          JSON.stringify({
+            plan: mockPlanText,
+            isOnPaidPlan,
+            exceededBillingLimit,
+          })
+        );
+      }
+
+      return parsedResponse;
+    }),
 }));
 
 let teamId: number;
