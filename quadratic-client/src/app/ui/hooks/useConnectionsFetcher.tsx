@@ -8,14 +8,20 @@ import { useFetcher } from 'react-router';
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
 
+// Module-level guard to prevent duplicate initial fetches. Multiple components
+// call this hook simultaneously on mount, and React batches their effects
+// before the shared fetcher state updates from 'idle' to 'loading', so the
+// fetcher.state check alone is insufficient.
+let initialFetchTriggered = false;
+
 /**
  * The data for this accessed in various places in the app (cell type menu,
  * new file dialog, connections menu) and so we centralize storing it, as it can
  * change and therefore requires revalidation as well.
  *
- * Uses a shared fetcher key so all instances share the same state, which
- * naturally prevents duplicate fetches (fetcher.state won't be 'idle' while
- * a fetch is in progress).
+ * Uses a shared fetcher key so all instances share the same state, with
+ * a module-level guard to prevent duplicate fetches when multiple
+ * components mount simultaneously.
  */
 export const useConnectionsFetcher = () => {
   const {
@@ -29,14 +35,21 @@ export const useConnectionsFetcher = () => {
   fetcherRef.current = fetcher;
 
   // Fetch on the initial use of the hook, but only if the user has permission
-  // in the current team. The shared fetcher key ensures all instances share
-  // state, so the idle check prevents duplicate fetches.
+  // in the current team.
   const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
   useEffect(() => {
-    if (permissionsHasTeamEdit && fetcher.state === 'idle' && fetcher.data === undefined) {
+    if (permissionsHasTeamEdit && fetcher.state === 'idle' && fetcher.data === undefined && !initialFetchTriggered) {
+      initialFetchTriggered = true;
       fetcher.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
   }, [teamUuid, permissionsHasTeamEdit, fetcher]);
+
+  // Reset the guard once data arrives so future fetches work (e.g., team change)
+  useEffect(() => {
+    if (fetcher.data !== undefined) {
+      initialFetchTriggered = false;
+    }
+  }, [fetcher.data]);
 
   const connections = useMemo(() => (fetcher.data ? fetcher.data.connections : []), [fetcher.data]);
   const staticIps = useMemo(
