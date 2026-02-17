@@ -51,6 +51,7 @@ export const FormattingBar = memo(() => {
   const alignmentFormattingRef = useRef<HTMLDivElement>(null);
   const clearRef = useRef<HTMLDivElement>(null);
   const insertLinkFormattingRef = useRef<HTMLDivElement>(null);
+  const formatPainterRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
@@ -94,9 +95,11 @@ export const FormattingBar = memo(() => {
 
       const menuWidth = menuRef.current?.clientWidth;
       const moreButtonWidth = moreButtonRef.current?.clientWidth ?? 0;
+      const formatPainterWidth = formatPainterRef.current?.clientWidth ?? 0;
 
-      // First, calculate total width without more button
-      let totalWidth = 0;
+      // First, calculate total width without more button (include FormatPainterButton
+      // since it's always visible and never moves to the overflow menu)
+      let totalWidth = formatPainterWidth;
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
         if (itemWidth) {
@@ -110,8 +113,8 @@ export const FormattingBar = memo(() => {
         return;
       }
 
-      // Otherwise, find which items to hide accounting for more button width
-      let currentWidth = moreButtonWidth;
+      // Otherwise, find which items to hide accounting for more button and FormatPainterButton widths
+      let currentWidth = moreButtonWidth + formatPainterWidth;
       const hiddenItems: FormattingTypes[] = [];
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
@@ -226,6 +229,9 @@ export const FormattingBar = memo(() => {
               <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
               <Clear ref={clearRef} hideLabel={true} />
               <InsertLinkFormatting ref={insertLinkFormattingRef} hideLabel={true} />
+              <div ref={formatPainterRef}>
+                <FormatPainterButton />
+              </div>
               <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
             </div>
           </div>,
