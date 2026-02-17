@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.23.11"
+version = "0.24.0"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
