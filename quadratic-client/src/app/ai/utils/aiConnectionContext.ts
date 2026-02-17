@@ -32,11 +32,15 @@ export const getConnectionTableInfo = async (
   };
 
   try {
+    // Demo connection schema is static, so skip the forced cache refresh
+    // to avoid slow re-queries that exceed the AI timeout
+    const forceCacheRefresh = !connection.isDemo;
+
     const schema = await connectionClient.schemas.get(
       connection.type,
       connection.uuid,
       teamUuid,
-      true,
+      forceCacheRefresh,
       GET_SCHEMA_TIMEOUT
     );
 
