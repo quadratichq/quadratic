@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { inlineEditorSpans } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
@@ -10,10 +11,24 @@ import { ensureHttpProtocol, hasHttpProtocol, openLink } from '@/app/helpers/lin
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CopyIcon } from '@/shared/components/Icons';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLinkMetadata } from './useLinkMetadata';
 import { FADE_OUT_DELAY, type PopupMode, usePopupVisibility } from './usePopupVisibility';
+
+// Helper to get cell bounds, accounting for merged cells
+function getCellBounds(sheet: Sheet, x: number, y: number): Rectangle {
+  const mergeRect = sheet.getMergeCellRect(x, y);
+  if (mergeRect) {
+    return sheet.getScreenRectangle(
+      Number(mergeRect.min.x),
+      Number(mergeRect.min.y),
+      Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+      Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+    );
+  }
+  return sheet.getCellOffsets(x, y);
+}
 
 const HOVER_DELAY = 500;
 
@@ -130,8 +145,17 @@ export function useHyperlinkPopup() {
         return;
       }
 
-      const { x, y } = cursor.position;
+      let { x, y } = cursor.position;
 
+      // If the cursor is on a merged cell, use the top-left cell of the merge
+      // since that's where the data is stored
+      const mergeRect = sheet.getMergeCellRect(x, y);
+      if (mergeRect) {
+        x = Number(mergeRect.min.x);
+        y = Number(mergeRect.min.y);
+      }
+
+      // Close cursor-sourced popup if cursor moved to a different cell
       // Close cursor-sourced popup if cursor moved to a different cell
       const current = linkDataRef.current;
       if (current?.source === 'cursor' && (current.x !== x || current.y !== y)) {
@@ -147,11 +171,21 @@ export function useHyperlinkPopup() {
         if (v.isJustClosed()) return;
         if (inlineEditorHandler.isOpen()) return;
 
-        // Verify cursor is still at the same position
+        // Verify cursor is still at the same position (check original position)
         const currentCursor = sheets.sheet.cursor;
         if (currentCursor.isMultiCursor()) return;
         const currentPos = currentCursor.position;
-        if (currentPos.x !== x || currentPos.y !== y) return;
+
+        // For merged cells, check if cursor is still within the same merge
+        const currentMergeRect = sheet.getMergeCellRect(currentPos.x, currentPos.y);
+        if (mergeRect && currentMergeRect) {
+          // Both positions are in merged cells - check if it's the same merge
+          if (Number(currentMergeRect.min.x) !== x || Number(currentMergeRect.min.y) !== y) {
+            return;
+          }
+        } else if (currentPos.x !== x || currentPos.y !== y) {
+          return;
+        }
 
         const cellValue = await quadraticCore.getCellValue(sheet.id, x, y);
 
@@ -162,8 +196,7 @@ export function useHyperlinkPopup() {
           const linkSpan = cellValue.spans.length === 1 ? cellValue.spans[0] : undefined;
           const linkUrl = linkSpan?.link;
           if (linkSpan && linkUrl) {
-            const offsets = sheet.getCellOffsets(x, y);
-            const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+            const rect = getCellBounds(sheet, x, y);
             const codeCell = await quadraticCore.getCodeCell(sheet.id, x, y);
             const isFormula = codeCell?.language === 'Formula';
 
@@ -193,9 +226,16 @@ export function useHyperlinkPopup() {
       const cursor = sheet.cursor;
       if (cursor.isMultiCursor()) return;
 
-      const { x, y } = cursor.position;
-      const offsets = sheet.getCellOffsets(x, y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      let { x, y } = cursor.position;
+
+      // If the cursor is on a merged cell, use the top-left cell of the merge
+      const mergeRect = sheet.getMergeCellRect(x, y);
+      if (mergeRect) {
+        x = Number(mergeRect.min.x);
+        y = Number(mergeRect.min.y);
+      }
+
+      const rect = getCellBounds(sheet, x, y);
 
       try {
         // Check if the cell is a single-span hyperlink (entire cell is one link)
@@ -251,8 +291,16 @@ export function useHyperlinkPopup() {
       if (!location) return;
 
       const sheet = sheets.sheet;
-      const offsets = sheet.getCellOffsets(location.x, location.y);
-      const rect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+      let { x, y } = location;
+
+      // If the inline editor is on a merged cell, use the top-left cell of the merge
+      const mergeRect = sheet.getMergeCellRect(x, y);
+      if (mergeRect) {
+        x = Number(mergeRect.min.x);
+        y = Number(mergeRect.min.y);
+      }
+
+      const rect = getCellBounds(sheet, x, y);
 
       // If the selection precisely matches an existing hyperlink, pre-populate URL and text
       // Otherwise, leave URL blank and use the selected text (plain text)
@@ -264,8 +312,8 @@ export function useHyperlinkPopup() {
       visibilityRef.current.setModeRef('edit');
 
       setLinkData({
-        x: location.x,
-        y: location.y,
+        x,
+        y,
         url: urlValue,
         rect,
         source: 'inline',
@@ -360,8 +408,7 @@ export function useHyperlinkPopup() {
 
         v.setHoverTimeout(async () => {
           const sheet = sheets.sheet;
-          const offsets = sheet.getCellOffsets(link.x, link.y);
-          const cellRect = new Rectangle(offsets.x, offsets.y, offsets.width, offsets.height);
+          const cellRect = getCellBounds(sheet, link.x, link.y);
           const codeCell = await quadraticCore.getCodeCell(sheet.id, link.x, link.y);
           const isFormula = codeCell?.language === 'Formula';
 

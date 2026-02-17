@@ -377,7 +377,11 @@ export const AIUserMessageForm = memo(
     );
 
     return (
-      <div className={cn(showEmptyChatPromptSuggestions && messageIndex === 0 ? '' : 'relative')}>
+      <div
+        className={cn(
+          showEmptyChatPromptSuggestions && messageIndex === 0 ? 'flex min-h-0 flex-1 flex-col' : 'relative'
+        )}
+      >
         {!!showEmptyChatPromptSuggestions && messageIndex === 0 && (
           <AIAnalystEmptyChatPromptSuggestions submit={handleSubmit} />
         )}
@@ -586,14 +590,7 @@ const AIUserMessageFormFooter = memo(
               fileTypes={fileTypes}
               filesSupportedText={filesSupportedText}
             />
-            {isAnalyst && (
-              <AIUserMessageFormConnectionsButton
-                disabled={disabled}
-                context={context}
-                setContext={setContext}
-                textareaRef={textareaRef}
-              />
-            )}
+            {isAnalyst && <AIUserMessageFormConnectionsButton disabled={disabled} textareaRef={textareaRef} />}
             {isAnalyst && (
               <TooltipPopover label="Reference sheet data" fastMode={true}>
                 <Button

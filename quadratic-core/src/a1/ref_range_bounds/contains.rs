@@ -32,12 +32,14 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` contains `pos` regardless of data bounds.
+    /// Works for both normalized (A1:B10) and denormalized (B1:A10) ranges.
     pub fn contains_pos(self, pos: Pos) -> bool {
-        if pos.x < self.start.col() || pos.x > self.end.col() {
-            return false;
-        }
+        let min_col = self.start.col().min(self.end.col());
+        let max_col = self.start.col().max(self.end.col());
+        let min_row = self.start.row().min(self.end.row());
+        let max_row = self.start.row().max(self.end.row());
 
-        pos.y >= self.start.row() && pos.y <= self.end.row()
+        (pos.x >= min_col && pos.x <= max_col) && (pos.y >= min_row && pos.y <= max_row)
     }
 }
 
@@ -67,6 +69,12 @@ mod tests {
         assert!(!RefRangeBounds::test_a1("A1:D10").contains_pos(Pos::new(11, 1)));
 
         assert!(RefRangeBounds::test_a1("B7:G7").contains_pos(Pos::new(2, 7)));
+
+        // Denormalized range B1:A10 is the same as A1:B10
+        assert!(RefRangeBounds::test_a1("B1:A10").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test_a1("B1:A10").contains_pos(Pos::new(2, 10)));
+        assert!(RefRangeBounds::test_a1("B1:A10").contains_pos(Pos::new(1, 5)));
+        assert!(!RefRangeBounds::test_a1("B1:A10").contains_pos(Pos::new(3, 5)));
     }
 
     #[test]

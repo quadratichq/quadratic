@@ -51,17 +51,21 @@ impl Sheet {
                                 let new_x = (pos.x - origin.x) as u32;
                                 let new_y = (pos.y - origin.y) as u32;
 
+                                // For merged cells, get the value from the anchor cell
+                                let value_pos =
+                                    self.merge_cells.get_anchor(pos).unwrap_or(pos);
+
                                 // create quadratic clipboard values
                                 if let Some(cells) = cells.as_mut() {
                                     let cell_value =
-                                        self.cell_value(pos).unwrap_or(CellValue::Blank);
+                                        self.cell_value(value_pos).unwrap_or(CellValue::Blank);
                                     cells.set(new_x, new_y, cell_value);
                                 }
 
                                 // create quadratic clipboard value-only for PasteSpecial::Values
                                 if let Some(values) = values.as_mut() {
                                     let display_value =
-                                        self.display_value(pos).unwrap_or(CellValue::Blank);
+                                        self.display_value(value_pos).unwrap_or(CellValue::Blank);
                                     values.set(new_x, new_y, display_value);
                                 }
                             }
@@ -73,7 +77,7 @@ impl Sheet {
         }
 
         let mut data_tables = IndexMap::new();
-        if let Some(bounds) = sheet_bounds {
+        let merge_rects = if let Some(bounds) = sheet_bounds {
             let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
             let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
                 &bounds,
@@ -84,7 +88,15 @@ impl Sheet {
                 &mut values,
             );
             data_tables.extend(data_tables_in_rect);
-        }
+            let rects = self.merge_cells.get_merge_cells(bounds);
+            if rects.is_empty() {
+                None
+            } else {
+                Some(rects)
+            }
+        } else {
+            None
+        };
 
         Clipboard {
             origin,
@@ -99,6 +111,7 @@ impl Sheet {
                 .validations
                 .to_clipboard(selection, &origin, a1_context),
             data_tables,
+            merge_rects,
             operation: clipboard_operation,
         }
     }
@@ -359,5 +372,79 @@ mod tests {
         assert!(pasted_spans[3].bold.is_none());
         assert!(pasted_spans[3].italic.is_none());
         assert!(pasted_spans[3].link.is_none());
+    }
+
+    #[test]
+    fn copy_merged_cell_non_anchor_gets_anchor_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set value "hello" at B8 (anchor)
+        gc.set_cell_value(pos![sheet_id!B8], "hello".to_string(), None, false);
+
+        // Merge B8:B9 (B8 is anchor, B9 is non-anchor)
+        gc.merge_cells(A1Selection::test_a1("B8:B9"), None, false);
+
+        // Copy just B9 (non-anchor cell)
+        let sheet = gc.sheet(sheet_id);
+        let clipboard: JsClipboard = sheet
+            .copy_to_clipboard(
+                &A1Selection::test_a1("B9"),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                true,
+            )
+            .into();
+
+        // Paste at D10
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("D10"),
+            clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Pasted merge is D9:D10; value is written at D10 (paste position).
+        let sheet = gc.sheet(sheet_id);
+        let pasted_value = sheet.cell_value(pos![D10]);
+        assert_eq!(pasted_value, Some(CellValue::Text("hello".to_string())));
+    }
+
+    #[test]
+    fn copy_merged_cell_anchor_gets_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set value "hello" at B8 (anchor)
+        gc.set_cell_value(pos![sheet_id!B8], "hello".to_string(), None, false);
+
+        // Merge B8:B9 (B8 is anchor, B9 is non-anchor)
+        gc.merge_cells(A1Selection::test_a1("B8:B9"), None, false);
+
+        // Copy just B8 (anchor cell)
+        let sheet = gc.sheet(sheet_id);
+        let clipboard: JsClipboard = sheet
+            .copy_to_clipboard(
+                &A1Selection::test_a1("B8"),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                true,
+            )
+            .into();
+
+        // Paste at D10
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("D10"),
+            clipboard,
+            PasteSpecial::None,
+            None,
+            false,
+        );
+
+        // Verify the pasted cell has "hello"
+        let sheet = gc.sheet(sheet_id);
+        let pasted_value = sheet.cell_value(pos![D10]);
+        assert_eq!(pasted_value, Some(CellValue::Text("hello".to_string())));
     }
 }

@@ -43,6 +43,7 @@ export interface RenderClientCellsTextHashClear {
   overflowGridLines: JsCoordinate[];
   links: Link[];
   drawRects: DrawRects[];
+  codeOutlines: { x: number; y: number; width: number; height: number }[];
 }
 
 export interface ClientRenderViewport {

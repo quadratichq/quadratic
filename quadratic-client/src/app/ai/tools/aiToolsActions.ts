@@ -1,3 +1,4 @@
+import { getConditionalFormatsToolCall, updateConditionalFormatsToolCall } from '@/app/ai/tools/aiConditionalFormats';
 import {
   addDateTimeValidationToolCall,
   addListValidationToolCall,
@@ -9,7 +10,7 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
-import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { PlaidDocs, getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { countWords } from '@/app/ai/utils/wordCount';
@@ -387,6 +388,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Format the response
       const schemaText = connectionsInfo.map(getConnectionSchemaMarkdown).join('\n---\n\n');
 
+      // Add connection-type-specific documentation
+      const hasPlaidConnection = connectionsInfo.some(
+        (info) => info.connectionType.toUpperCase() === 'PLAID' && !info.error
+      );
+      const connectionDocs = hasPlaidConnection ? `\n\n${PlaidDocs}` : '';
+
       // Add connection summary for future reference
       const connectionSummary = connectionsInfo
         .filter((item) => item && !item.error)
@@ -400,7 +407,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [
         createTextContent(
           schemaText
-            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${connectionDocs}${summaryText}`
             : `No database schema information available.${summaryText}`
         ),
       ];
@@ -1283,6 +1290,50 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing set borders tool: ${e}`)];
     }
   },
+  [AITool.MergeCells]: async (args) => {
+    try {
+      const { sheet_name, selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in MergeCells tool call: ${e.message}.`)];
+      }
+
+      const response = await quadraticCore.mergeCells(jsSelection.save(), true);
+      if (response?.result) {
+        return [createTextContent('Merge cells tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing merge cells tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing merge cells tool: ${e}`)];
+    }
+  },
+  [AITool.UnmergeCells]: async (args) => {
+    try {
+      const { sheet_name, selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in UnmergeCells tool call: ${e.message}.`)];
+      }
+
+      const response = await quadraticCore.unmergeCells(jsSelection.save(), true);
+      if (response?.result) {
+        return [createTextContent('Unmerge cells tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing unmerge cells tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing unmerge cells tool: ${e}`)];
+    }
+  },
   [AITool.InsertColumns]: async (args) => {
     try {
       const { sheet_name, column, right, count } = args;
@@ -1593,6 +1644,36 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(text)];
     } catch (e) {
       return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+  [AITool.GetConditionalFormats]: async (args) => {
+    try {
+      const text = getConditionalFormatsToolCall(args.sheet_name);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get conditional formats tool: ${e}`)];
+    }
+  },
+  [AITool.UpdateConditionalFormats]: async (args) => {
+    try {
+      // Move AI cursor to the first selection if any create/update rules have selections
+      const firstRuleWithSelection = args.rules.find(
+        (r) => r.selection && (r.action === 'create' || r.action === 'update')
+      );
+      if (firstRuleWithSelection?.selection) {
+        try {
+          const sheetId = sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current;
+          const jsSelection = sheets.stringToSelection(firstRuleWithSelection.selection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
+      }
+      const text = await updateConditionalFormatsToolCall(args);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing update conditional formats tool: ${e}`)];
     }
   },
   [AITool.GetCodeCellValue]: async (args) => {

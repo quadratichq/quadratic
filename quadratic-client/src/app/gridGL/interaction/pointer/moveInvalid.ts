@@ -35,9 +35,9 @@ function getTablesInRect(rect: Rectangle): TableBounds[] {
   const tables = content.cellsSheet.tables;
   const result: TableBounds[] = [];
 
-  // Get large tables (multi-cell tables with UI)
-  const largeTables = tables.getLargeTablesInRect(rect);
-  for (const table of largeTables) {
+  // Get tables (DataTables with UI)
+  const dataTables = tables.getTablesInRect(rect);
+  for (const table of dataTables) {
     result.push({
       x: table.codeCell.x,
       y: table.codeCell.y,
@@ -49,7 +49,7 @@ function getTablesInRect(rect: Rectangle): TableBounds[] {
     });
   }
 
-  // Get single cell tables - these can be overwritten by anything
+  // Get single cell code cells (CellValue::Code) - these can be overwritten by anything
   const singleCellTables = tables.getSingleCellTablesInRectangle(rect);
   for (const codeCell of singleCellTables) {
     result.push({
@@ -66,7 +66,32 @@ function getTablesInRect(rect: Rectangle): TableBounds[] {
   return result;
 }
 
-// Checks if any part of the moving selection would land on a code table
+// Checks if any part of the destination rect would land on any table (code or data).
+// Single-cell tables can be overwritten; all other tables are invalid drop targets.
+function wouldOverlapTable(
+  destX: number,
+  destY: number,
+  width: number,
+  height: number,
+  sourceTables: TableBounds[]
+): boolean {
+  const destRect = new Rectangle(destX, destY, width, height);
+  const destTables = getTablesInRect(destRect);
+
+  for (const destTable of destTables) {
+    const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
+    if (isSourceTable) continue;
+    if (destTable.isSingleCell) continue;
+
+    if (rectanglesOverlap(destX, destY, width, height, destTable.x, destTable.y, destTable.width, destTable.height)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Checks if the destination would overlap any code table (excluding source and single-cell).
 function wouldOverlapCodeTable(
   destX: number,
   destY: number,
@@ -78,23 +103,19 @@ function wouldOverlapCodeTable(
   const destTables = getTablesInRect(destRect);
 
   for (const destTable of destTables) {
-    // Skip if this is one of our source tables (at original position)
+    if (!destTable.isCodeTable || destTable.isSingleCell) continue;
     const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
     if (isSourceTable) continue;
 
-    // Cannot drop onto a code table
-    if (destTable.isCodeTable) {
-      // Check if our destination rectangle overlaps with the code table
-      if (rectanglesOverlap(destX, destY, width, height, destTable.x, destTable.y, destTable.width, destTable.height)) {
-        return true;
-      }
+    if (rectanglesOverlap(destX, destY, width, height, destTable.x, destTable.y, destTable.width, destTable.height)) {
+      return true;
     }
   }
 
   return false;
 }
 
-// Checks if any part of the moving selection would land in a table's name row
+// Checks if the destination would overlap the name row of any table (excluding source tables).
 function wouldOverlapNameRow(
   destX: number,
   destY: number,
@@ -106,21 +127,13 @@ function wouldOverlapNameRow(
   const destTables = getTablesInRect(destRect);
 
   for (const destTable of destTables) {
-    // Skip if this is one of our source tables (at original position)
+    if (!destTable.hasNameRow) continue;
     const isSourceTable = sourceTables.some((src) => src.x === destTable.x && src.y === destTable.y);
     if (isSourceTable) continue;
 
-    // Check if the destination table has a name row and if we'd overlap it
-    if (destTable.hasNameRow) {
-      // The name row is at destTable.y
-      if (
-        destY <= destTable.y &&
-        destY + height > destTable.y &&
-        destX < destTable.x + destTable.width &&
-        destX + width > destTable.x
-      ) {
-        return true;
-      }
+    const nameRowHeight = 1;
+    if (rectanglesOverlap(destX, destY, width, height, destTable.x, destTable.y, destTable.width, nameRowHeight)) {
+      return true;
     }
   }
 
@@ -273,15 +286,8 @@ export function checkMoveDestinationInvalid(
     }
   }
 
-  // Check if any part of the destination would overlap a code table
-  // (normal content cannot be dropped onto code tables)
-  if (wouldOverlapCodeTable(destX, destY, width, height, sourceTables)) {
-    return true;
-  }
-
-  // Check if any part of the destination would overlap a data table's name row
-  // (this applies to all moves, not just table moves)
-  if (wouldOverlapNameRow(destX, destY, width, height, sourceTables)) {
+  // Do not allow dropping on any table (code or data)
+  if (wouldOverlapTable(destX, destY, width, height, sourceTables)) {
     return true;
   }
 

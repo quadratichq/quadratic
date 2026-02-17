@@ -13,6 +13,7 @@ import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/c
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -33,7 +34,7 @@ export const AIAnalystUserMessageForm = memo(
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
-    // Listen for connection selection events (from connections menu)
+    // Listen for connection selection/unselection events (from connections menus)
     useEffect(() => {
       const handleSelectConnection = (connectionUuid: string, connectionType: string, connectionName: string) => {
         setContext((prev) => ({
@@ -46,9 +47,18 @@ export const AIAnalystUserMessageForm = memo(
         }));
       };
 
+      const handleUnselectConnection = () => {
+        setContext((prev) => ({
+          ...prev,
+          connection: undefined,
+        }));
+      };
+
       events.on('aiAnalystSelectConnection', handleSelectConnection);
+      events.on('aiAnalystUnselectConnection', handleUnselectConnection);
       return () => {
         events.off('aiAnalystSelectConnection', handleSelectConnection);
+        events.off('aiAnalystUnselectConnection', handleUnselectConnection);
       };
     }, []);
 
@@ -88,7 +98,7 @@ export const AIAnalystUserMessageForm = memo(
     );
 
     return (
-      <div className="flex flex-col justify-end gap-2">
+      <div className={cn('flex flex-col justify-end gap-2', props.showEmptyChatPromptSuggestions && 'min-h-0 flex-1')}>
         <AIUserMessageForm
           {...props}
           ref={ref}

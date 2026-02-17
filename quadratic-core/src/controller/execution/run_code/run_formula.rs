@@ -4,7 +4,7 @@ use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::functions::financial::stock_history::StockHistoryParams,
-    formulas::{Ctx, ast::AstNodeContents, find_cell_references, parse_formula},
+    formulas::{Ctx, Formula, ast::AstNodeContents, find_cell_references, parse_formula},
     grid::{
         CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
         data_table::DataTableTemplate,
@@ -12,15 +12,18 @@ use crate::{
 };
 
 impl GridController {
-    pub(crate) fn run_formula(
+    /// Runs a formula, using a cached AST if available, otherwise parsing the code.
+    pub(crate) fn run_formula_with_cached_ast(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
+        cached_ast: Option<Formula>,
     ) {
-        self.run_formula_with_template(transaction, sheet_pos, code, None);
+        self.run_formula_internal(transaction, sheet_pos, code, None, cached_ast);
     }
 
+    /// Runs a formula with a template, parsing fresh.
     pub(crate) fn run_formula_with_template(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -28,85 +31,99 @@ impl GridController {
         code: String,
         template: Option<&DataTableTemplate>,
     ) {
+        self.run_formula_internal(transaction, sheet_pos, code, template, None);
+    }
+
+    fn run_formula_internal(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
+        code: String,
+        template: Option<&DataTableTemplate>,
+        cached_ast: Option<Formula>,
+    ) {
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 
-        match parse_formula(&code, parse_ctx, sheet_pos) {
-            Ok(parsed) => {
-                // Check if this is a STOCKHISTORY call at the AST level
-                // This properly handles cell references and expressions in arguments
-                if let AstNodeContents::FunctionCall { func, args } = &parsed.ast.inner
-                    && func.inner.eq_ignore_ascii_case("STOCKHISTORY")
-                {
-                    // Evaluate arguments to resolve cell refs, expressions, etc.
-                    if let Some(params) =
-                        StockHistoryParams::from_evaluated_args(args, &mut eval_ctx)
-                    {
-                        // Route to async connection infrastructure
-                        self.run_connection(
-                            transaction,
-                            sheet_pos,
-                            code.clone(),
-                            crate::grid::ConnectionKind::StockHistory,
-                            params.to_query_json(),
-                        );
-                        return;
-                    }
-                    // If params extraction fails, fall through to normal eval
-                    // which will produce a proper error message
+        // Use cached AST if available, otherwise parse
+        let parsed = if let Some(ast) = cached_ast {
+            ast
+        } else {
+            match parse_formula(&code, parse_ctx, sheet_pos) {
+                Ok(p) => p,
+                Err(error) => {
+                    let _ = self.code_cell_sheet_error(transaction, &error);
+                    return;
                 }
-
-                let output = parsed.eval(&mut eval_ctx).into_non_tuple();
-                let errors = output.inner.errors();
-                let new_code_run = CodeRun {
-                    language: CodeCellLanguage::Formula,
-                    code,
-                    std_out: None,
-                    std_err: (!errors.is_empty())
-                        .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: eval_ctx.take_cells_accessed(),
-                    error: None,
-                    return_type: None,
-                    line_number: None,
-                    output_type: None,
-                };
-
-                // Apply template properties if provided, otherwise use defaults
-                let (show_name, show_columns, header_is_first_row, chart_output) =
-                    if let Some(t) = template {
-                        (
-                            t.show_name,
-                            t.show_columns,
-                            t.header_is_first_row,
-                            t.chart_output,
-                        )
-                    } else {
-                        (None, None, false, None)
-                    };
-
-                let mut new_data_table = DataTable::new(
-                    DataTableKind::CodeRun(new_code_run),
-                    "Formula1",
-                    output.inner,
-                    header_is_first_row,
-                    show_name,
-                    show_columns,
-                    chart_output,
-                );
-
-                // Apply additional template properties not in DataTable::new
-                if let Some(t) = template {
-                    new_data_table.alternating_colors = t.alternating_colors;
-                    new_data_table.chart_pixel_output = t.chart_pixel_output;
-                }
-
-                self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
             }
-            Err(error) => {
-                let _ = self.code_cell_sheet_error(transaction, &error);
+        };
+
+        // Check if this is a STOCKHISTORY call at the AST level
+        // This properly handles cell references and expressions in arguments
+        if let AstNodeContents::FunctionCall { func, args } = &parsed.ast.inner
+            && func.inner.eq_ignore_ascii_case("STOCKHISTORY")
+        {
+            // Evaluate arguments to resolve cell refs, expressions, etc.
+            if let Some(params) = StockHistoryParams::from_evaluated_args(args, &mut eval_ctx) {
+                // Route to async connection infrastructure
+                self.run_connection(
+                    transaction,
+                    sheet_pos,
+                    code.clone(),
+                    crate::grid::ConnectionKind::StockHistory,
+                    params.to_query_json(),
+                );
+                return;
             }
         }
+
+        let output = parsed.eval(&mut eval_ctx).into_non_tuple();
+        let errors = output.inner.errors();
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code,
+            formula_ast: Some(parsed), // Store the AST for future runs
+            std_out: None,
+            std_err: (!errors.is_empty())
+                .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+            cells_accessed: eval_ctx.take_cells_accessed(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+
+        // Apply template properties if provided, otherwise use defaults
+        let (show_name, show_columns, header_is_first_row, chart_output) = if let Some(t) = template
+        {
+            (
+                t.show_name,
+                t.show_columns,
+                t.header_is_first_row,
+                t.chart_output,
+            )
+        } else {
+            (None, None, false, None)
+        };
+
+        let mut new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            "Formula1",
+            output.inner,
+            header_is_first_row,
+            show_name,
+            show_columns,
+            chart_output,
+        );
+
+        // Apply additional template properties not in DataTable::new
+        if let Some(t) = template {
+            new_data_table.alternating_colors = t.alternating_colors;
+            new_data_table.chart_pixel_output = t.chart_pixel_output;
+        }
+
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None, false);
     }
 
     pub(crate) fn add_formula_without_eval(
@@ -151,7 +168,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
-        Array, ArraySize, CellValue, Pos, SheetPos, Value, assert_code_language,
+        Array, ArraySize, CellValue, Pos, RunErrorMsg, SheetPos, Value, assert_code_language,
         controller::{
             GridController,
             active_transactions::pending_transaction::PendingTransaction,
@@ -530,5 +547,148 @@ mod test {
         let result = sheet.data_table_at(&pos).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
+    }
+
+    #[test]
+    fn test_formula_unbounded_column_row_trigger() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set initial values in column B
+        gc.set_cell_value(pos![sheet_id!B1], "10".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B2], "20".into(), None, false);
+
+        // Create formula that sums entire column B (formula at A1, outside column B)
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(B:B)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial result
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A1]),
+            Some(CellValue::Number(30.into()))
+        );
+
+        // Add a new value to column B - formula should recalculate
+        gc.set_cell_value(pos![sheet_id!B3], "15".into(), None, false);
+
+        // Verify formula was triggered and recalculated
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A1]),
+            Some(CellValue::Number(45.into()))
+        );
+
+        // Test unbounded row reference (formula at A5, outside row 4)
+        gc.set_cell_value(pos![sheet_id!A4], "5".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!B4], "10".into(), None, false);
+
+        gc.set_code_cell(
+            pos![sheet_id!A5],
+            CodeCellLanguage::Formula,
+            "SUM(4:4)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Verify initial row sum result
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Number(15.into())) // 5 + 10
+        );
+
+        // Add a new value to row 4 - formula should recalculate
+        gc.set_cell_value(pos![sheet_id!C4], "7".into(), None, false);
+
+        // Verify formula was triggered
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Number(22.into())) // 5 + 10 + 7
+        );
+    }
+
+    #[test]
+    fn test_self_referential_formula_does_not_hang() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set =SUM(A1) at A1 - this references itself
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(A1)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should complete (not hang) and produce an error
+        let sheet = gc.sheet(sheet_id);
+        let display = sheet.display_value(pos![A1]);
+
+        // Should have a value (error value, not blank from hanging)
+        assert!(
+            display.is_some(),
+            "Formula should produce a value, not hang"
+        );
+
+        // Verify the error is CircularReference
+        if let Some(CellValue::Error(err)) = display {
+            assert_eq!(err.msg, RunErrorMsg::CircularReference);
+        } else {
+            panic!("Expected CircularReference error, got {:?}", display);
+        }
+
+        // Verify subsequent operations still work
+        gc.set_cell_value(pos![sheet_id!B1], "test".into(), None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![B1]),
+            Some(CellValue::Text("test".into()))
+        );
+    }
+
+    #[test]
+    fn test_self_referential_range_formula_does_not_hang() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set =SUM(A:A) at A1 - this references entire column A including A1
+        gc.set_code_cell(
+            pos![sheet_id!A1],
+            CodeCellLanguage::Formula,
+            "SUM(A:A)".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        // Should complete (not hang) and produce an error
+        let sheet = gc.sheet(sheet_id);
+        let display = sheet.display_value(pos![A1]);
+
+        // Should have a value (error value, not blank from hanging)
+        assert!(
+            display.is_some(),
+            "Formula should produce a value, not hang"
+        );
+
+        // Verify the error is CircularReference
+        if let Some(CellValue::Error(err)) = display {
+            assert_eq!(err.msg, RunErrorMsg::CircularReference);
+        } else {
+            panic!("Expected CircularReference error, got {:?}", display);
+        }
+
+        // Verify subsequent operations still work
+        gc.set_cell_value(pos![sheet_id!B1], "test".into(), None, false);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![B1]),
+            Some(CellValue::Text("test".into()))
+        );
     }
 }

@@ -22,8 +22,7 @@ impl SheetDataTablesCache {
     #[wasm_bindgen(js_name = "new_empty")]
     pub fn new_empty() -> Self {
         SheetDataTablesCache {
-            single_cell_tables: Default::default(),
-            multi_cell_tables: Default::default(),
+            data_tables: Default::default(),
         }
     }
 
@@ -37,22 +36,10 @@ impl SheetDataTablesCache {
         self.get_pos_contains(pos)
     }
 
-    /// Returns all single-cell tables in the given rectangle.
-    #[wasm_bindgen(js_name = "getSingleCellTablesInRect")]
-    pub fn single_cell_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
-        self.single_cell_tables
-            .nondefault_rects_in_rect(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
-            .flat_map(|(rect, _)| {
-                rect.x_range()
-                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
-            })
-            .collect::<Vec<_>>()
-    }
-
-    /// Returns all tables that are not single cells in the given rectangle.
-    #[wasm_bindgen(js_name = "getLargeTablesInRect")]
-    pub fn large_tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
-        self.multi_cell_tables
+    /// Returns all tables in the given rectangle.
+    #[wasm_bindgen(js_name = "getTablesInRect")]
+    pub fn tables_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> Vec<Pos> {
+        self.data_tables
             .unique_values_in_rect(Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64))
             .into_iter()
             .flatten()
@@ -63,8 +50,7 @@ impl SheetDataTablesCache {
     #[wasm_bindgen(js_name = "hasTableInRect")]
     pub fn has_table_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> bool {
         let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
-        !self.multi_cell_tables.is_all_default_in_rect(rect)
-            && !self.single_cell_tables.is_all_default_in_rect(rect)
+        self.data_tables.has_content_in_rect(rect)
     }
 
     #[wasm_bindgen(js_name = "hasCodeCellInSelection")]

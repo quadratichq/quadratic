@@ -1,9 +1,11 @@
+import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { codeCellsById } from '@/app/helpers/codeCellLanguage';
 import { supportedFileTypes } from '@/app/helpers/files';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import {
   AddIcon,
   AIIcon,
@@ -13,7 +15,6 @@ import {
   ExamplesIcon,
   FileIcon,
 } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -26,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+
 import { useRef } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router';
@@ -137,20 +139,24 @@ export function NewFileButton() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from connections</DropdownMenuLabel>
-            {connections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map(({ uuid, name, type }) => {
+            {connections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map((connection) => {
+              const { uuid, name, type } = connection;
               const { label } = codeCellsById[type];
-              const to = newNewFileFromStateConnection({
-                isPrivate,
-                teamUuid,
-                query: '',
-                connectionType: type,
-                connectionUuid: uuid,
-              });
+              const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
+              const to = isReadyForUse
+                ? newNewFileFromStateConnection({
+                    isPrivate,
+                    teamUuid,
+                    query: '',
+                    connectionType: type,
+                    connectionUuid: uuid,
+                  })
+                : ROUTES.TEAM_CONNECTION(teamUuid, uuid, type);
               return (
                 <DropdownMenuItem key={uuid} asChild className="max-w-xs">
-                  <Link to={to} reloadDocument>
+                  <Link to={to} reloadDocument={isReadyForUse}>
                     <div className="mr-3">
-                      <LanguageIcon language={type} />
+                      <ConnectionIcon type={type} syncState={syncState} />
                     </div>
                     <div className="flex min-w-0 flex-col">
                       <span className="truncate">{name}</span>

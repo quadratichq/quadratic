@@ -1,0 +1,8 @@
+---
+globs: "**/*.tsx"
+alwaysApply: true
+---
+
+React Components
+
+When adding React components, create a new file unless they are very small.

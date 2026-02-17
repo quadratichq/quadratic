@@ -4,7 +4,7 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{RunError, grid::CellsAccessed};
+use crate::{RunError, formulas::Formula, grid::CellsAccessed};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
@@ -18,6 +18,11 @@ pub struct CodeRun {
     pub language: CodeCellLanguage,
 
     pub code: String,
+
+    /// Cached formula AST for Formula language cells.
+    /// When present, avoids re-parsing the formula string on each run.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub formula_ast: Option<Formula>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,

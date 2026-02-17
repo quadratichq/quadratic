@@ -246,12 +246,6 @@ fn replace_cell_range_references(
     replaced
 }
 
-/// Maximum recursion depth for parsing expressions.
-/// This prevents stack overflow on deeply nested formulas.
-/// Note: WASM has limited stack size (~1MB in browsers), so this value
-/// must be kept low enough to leave headroom for parsing operations.
-const MAX_PARSE_DEPTH: u32 = 100;
-
 /// Token parser used to assemble an AST.
 #[derive(Debug, Copy, Clone)]
 pub struct Parser<'a> {
@@ -266,9 +260,6 @@ pub struct Parser<'a> {
     pub ctx: &'a A1Context,
     /// Location where this formula was entered.
     pub pos: SheetPos,
-
-    /// Current recursion depth for parsing.
-    pub depth: u32,
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
@@ -285,7 +276,6 @@ impl<'a> Parser<'a> {
 
             ctx,
             pos,
-            depth: 0,
         };
 
         // Skip leading `=`
@@ -297,34 +287,14 @@ impl<'a> Parser<'a> {
         ret
     }
 
-    /// Checks if the recursion depth limit has been exceeded and returns an
-    /// error if so.
-    pub fn check_depth(&self) -> CodeResult<()> {
-        if self.depth >= MAX_PARSE_DEPTH {
-            Err(RunErrorMsg::FormulaTooComplex.with_span(self.span()))
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Increments the recursion depth, returning an error if the limit is
-    /// exceeded.
-    pub fn enter_depth(&mut self) -> CodeResult<()> {
-        self.depth += 1;
-        self.check_depth()
-    }
-
-    /// Decrements the recursion depth.
-    pub fn exit_depth(&mut self) {
-        self.depth = self.depth.saturating_sub(1);
-    }
-
     /// Returns the token at the cursor.
+    #[inline]
     pub fn current(self) -> Option<Token> {
         Some(self.tokens.get(self.cursor?)?.inner)
     }
     /// Returns the span of the current token. If there is no current token,
     /// returns an empty span at the beginning or end of the input appropriately.
+    #[inline]
     pub fn span(&self) -> Span {
         if let Some(idx) = self.cursor {
             if let Some(token) = self.tokens.get(idx) {
@@ -343,6 +313,7 @@ impl<'a> Parser<'a> {
     }
     /// Returns the source string of the current token. If there is no current
     /// token, returns an empty string.
+    #[inline]
     pub fn token_str(&self) -> &'a str {
         let Span { start, end } = self.span();
         &self.source_str[start as usize..end as usize]
@@ -350,6 +321,7 @@ impl<'a> Parser<'a> {
 
     /// Moves the cursor forward without skipping whitespace/comments and then
     /// returns the token at the cursor.
+    #[inline]
     pub fn next_noskip(&mut self) -> Option<Token> {
         // Add 1 or set to zero.
         self.cursor = Some(self.cursor.map(|idx| idx + 1).unwrap_or(0));
@@ -357,12 +329,14 @@ impl<'a> Parser<'a> {
     }
     /// Moves the cursor back without skipping whitespace/comments and then
     /// returns the token at the cursor.
+    #[inline]
     pub fn prev_noskip(&mut self) -> Option<Token> {
         // Subtract 1 if possible.
         self.cursor = self.cursor.and_then(|idx| idx.checked_sub(1));
         self.current()
     }
     /// Returns whether the current token would normally be skipped.
+    #[inline]
     pub fn is_skip(self) -> bool {
         if let Some(t) = self.current() {
             t.is_skip()
@@ -371,11 +345,13 @@ impl<'a> Parser<'a> {
         }
     }
     /// Returns whether the end of the input has been reached.
+    #[inline]
     pub fn is_done(self) -> bool {
         self.cursor.is_some() && self.current().is_none()
     }
 
     /// Moves the cursor forward and then returns the token at the cursor.
+    #[inline]
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Token> {
         loop {
@@ -386,6 +362,7 @@ impl<'a> Parser<'a> {
         }
     }
     /// Moves the cursor back and then returns the token at the cursor.
+    #[inline]
     pub fn prev(&mut self) -> Option<Token> {
         loop {
             self.prev_noskip();
@@ -397,6 +374,7 @@ impl<'a> Parser<'a> {
 
     /// Returns the token after the one at the cursor, without mutably moving
     /// the cursor.
+    #[inline]
     pub fn peek_next(self) -> Option<Token> {
         let mut tmp = self;
         tmp.next()
@@ -404,6 +382,7 @@ impl<'a> Parser<'a> {
 
     /// Returns the span of the token after the one at the cursor, without
     /// mutably moving the cursor.
+    #[inline]
     pub fn peek_next_span(self) -> Span {
         let mut tmp = self;
         tmp.next();
@@ -414,12 +393,14 @@ impl<'a> Parser<'a> {
     /// error if it fails. This should only be used when this syntax rule
     /// represents the only valid parse; if there are other options,
     /// `try_parse()` is preferred.
+    #[inline]
     pub fn parse<R: SyntaxRule>(&mut self, rule: R) -> CodeResult<R::Output> {
         self.try_parse(&rule).unwrap_or_else(|| self.expected(rule))
     }
     /// Applies a syntax rule starting at the cursor, returning `None` if the
     /// syntax rule definitely doesn't match (i.e., its `might_match()`
     /// implementation returned false).
+    #[inline]
     pub fn try_parse<R: SyntaxRule>(&mut self, rule: R) -> Option<CodeResult<R::Output>> {
         rule.prefix_matches(*self).then(|| {
             let old_state = *self; // Save state.
@@ -588,159 +569,64 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_depth_limit() {
+    fn test_formula_deep_nesting() {
+        use ast::AstNodeContents;
+
+        /// Counts the nesting depth of Paren nodes and returns the innermost
+        /// non-Paren content. Returns (depth, innermost_content).
+        fn count_paren_depth(node: &ast::AstNode) -> (usize, &AstNodeContents) {
+            match &node.inner {
+                AstNodeContents::Paren(contents) if contents.len() == 1 => {
+                    let (inner_depth, innermost) = count_paren_depth(&contents[0]);
+                    (1 + inner_depth, innermost)
+                }
+                other => (0, other),
+            }
+        }
+
         // A reasonably nested formula should parse fine
         let formula = "((((1 + 2) * 3) / 4) - 5)";
         assert!(simple_parse_formula(formula).is_ok());
 
-        // A deeply nested formula should return FormulaTooComplex error
-        // Each level of parentheses adds depth. We need to exceed MAX_PARSE_DEPTH (100)
-        // Each paren adds about 10 depth levels (for each precedence level traversal)
-        // So we need roughly 100 / 10 = ~10 levels of nesting to trigger the limit
-        // Using 15 parens to ensure we exceed the limit
-        let deeply_nested = format!("{}1{}", "(".repeat(15), ")".repeat(15));
-        let result = simple_parse_formula(&deeply_nested);
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert_eq!(err.msg, RunErrorMsg::FormulaTooComplex);
+        // The iterative Pratt parser uses an explicit stack on the heap,
+        // so there's no stack overflow risk regardless of nesting depth.
+
+        // Very deep nesting (100 levels) works fine
+        let deep_nested = format!("{}1{}", "(".repeat(100), ")".repeat(100));
+        let formula = simple_parse_formula(&deep_nested)
+            .expect("Formula with 100 levels of nesting should parse successfully");
+        let (depth, innermost) = count_paren_depth(&formula.ast);
+        assert_eq!(depth, 100, "Should have exactly 100 levels of Paren nodes");
+        assert!(
+            matches!(innermost, AstNodeContents::Number(n) if *n == 1.0),
+            "Innermost value should be the number 1"
+        );
+
+        // Much deeper nesting (300 levels) also works
+        let deeper_nested = format!("{}1{}", "(".repeat(300), ")".repeat(300));
+        let formula = simple_parse_formula(&deeper_nested)
+            .expect("Formula with 300 levels of nesting should parse successfully");
+        let (depth, innermost) = count_paren_depth(&formula.ast);
+        assert_eq!(depth, 300, "Should have exactly 300 levels of Paren nodes");
+        assert!(
+            matches!(innermost, AstNodeContents::Number(n) if *n == 1.0),
+            "Innermost value should be the number 1"
+        );
     }
 
     #[test]
-    fn test_check_depth_within_limit() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let parser = Parser::new("", &tokens, &ctx, pos);
+    fn test_complex_nested_if_formula() {
+        // This is a real-world formula that was reported as "too complex"
+        // It has 16 nested IF statements with ISNUMBER and SEARCH calls
+        // This should parse and evaluate successfully
+        let formula = r#"=G4*IF(ISNUMBER(SEARCH("YH",B4)),1E+24,IF(ISNUMBER(SEARCH("YSOL",B4)),1E+24,IF(ISNUMBER(SEARCH("ZH",B4)),1E+21,IF(ISNUMBER(SEARCH("ZSOL",B4)),1E+21,IF(ISNUMBER(SEARCH("EH",B4)),1000000000000000000,IF(ISNUMBER(SEARCH("ESOL",B4)),1000000000000000000,IF(ISNUMBER(SEARCH("PH",B4)),1000000000000000,IF(ISNUMBER(SEARCH("PSOL",B4)),1000000000000000,IF(ISNUMBER(SEARCH("TH",B4)),1000000000000,IF(ISNUMBER(SEARCH("TSOL",B4)),1000000000000,IF(ISNUMBER(SEARCH("GH",B4)),1000000000,IF(ISNUMBER(SEARCH("GSOL",B4)),1000000000,IF(ISNUMBER(SEARCH("MH",B4)),1000000,IF(ISNUMBER(SEARCH("MSOL",B4)),1000000,IF(ISNUMBER(SEARCH("KH",B4)),1000,IF(ISNUMBER(SEARCH("KSOL",B4)),1000,1))))))))))))))))"#;
 
-        // Initially depth is 0, should be well within limit
-        assert!(parser.check_depth().is_ok());
-    }
-
-    #[test]
-    fn test_check_depth_at_limit() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        // Set depth to exactly MAX_PARSE_DEPTH
-        parser.depth = MAX_PARSE_DEPTH;
-
-        // Should fail at exactly the limit
-        let result = parser.check_depth();
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().msg, RunErrorMsg::FormulaTooComplex);
-    }
-
-    #[test]
-    fn test_check_depth_just_below_limit() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        // Set depth to just below MAX_PARSE_DEPTH
-        parser.depth = MAX_PARSE_DEPTH - 1;
-
-        // Should still be OK
-        assert!(parser.check_depth().is_ok());
-    }
-
-    #[test]
-    fn test_enter_depth_increments() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        assert_eq!(parser.depth, 0);
-
-        // Enter depth multiple times
-        assert!(parser.enter_depth().is_ok());
-        assert_eq!(parser.depth, 1);
-
-        assert!(parser.enter_depth().is_ok());
-        assert_eq!(parser.depth, 2);
-
-        assert!(parser.enter_depth().is_ok());
-        assert_eq!(parser.depth, 3);
-    }
-
-    #[test]
-    fn test_enter_depth_fails_at_limit() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        // Set depth just below limit
-        parser.depth = MAX_PARSE_DEPTH - 1;
-
-        // This should succeed and bring us to the limit
-        let result = parser.enter_depth();
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().msg, RunErrorMsg::FormulaTooComplex);
-    }
-
-    #[test]
-    fn test_exit_depth_decrements() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        parser.depth = 5;
-
-        parser.exit_depth();
-        assert_eq!(parser.depth, 4);
-
-        parser.exit_depth();
-        assert_eq!(parser.depth, 3);
-    }
-
-    #[test]
-    fn test_exit_depth_saturates_at_zero() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        assert_eq!(parser.depth, 0);
-
-        // Should not go below zero (saturating_sub)
-        parser.exit_depth();
-        assert_eq!(parser.depth, 0);
-
-        parser.exit_depth();
-        assert_eq!(parser.depth, 0);
-    }
-
-    #[test]
-    fn test_enter_exit_depth_roundtrip() {
-        let g = GridController::new();
-        let pos = g.grid().origin_in_first_sheet();
-        let tokens = vec![];
-        let ctx = A1Context::test(&[], &[]);
-        let mut parser = Parser::new("", &tokens, &ctx, pos);
-
-        // Simulate entering and exiting nested scopes
-        assert!(parser.enter_depth().is_ok());
-        assert!(parser.enter_depth().is_ok());
-        assert!(parser.enter_depth().is_ok());
-        assert_eq!(parser.depth, 3);
-
-        parser.exit_depth();
-        parser.exit_depth();
-        assert_eq!(parser.depth, 1);
-
-        parser.exit_depth();
-        assert_eq!(parser.depth, 0);
+        // Should parse successfully (not return FormulaTooComplex error)
+        let result = simple_parse_formula(formula);
+        assert!(
+            result.is_ok(),
+            "Complex nested IF formula should parse successfully, got error: {:?}",
+            result.unwrap_err().msg
+        );
     }
 }

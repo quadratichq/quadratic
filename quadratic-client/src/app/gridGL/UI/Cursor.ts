@@ -25,8 +25,6 @@ const CURSOR_CELL_DEFAULT_VALUE = new Rectangle(0, 0, 0, 0);
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
 
-// todo: DF: this needs to be refactored as many of the table changes were hacks.
-
 export class Cursor extends Container {
   indicator: Rectangle;
   dirty = true;
@@ -48,6 +46,7 @@ export class Cursor extends Container {
     this.cursorRectangle = new Rectangle();
 
     events.on('setDirty', this.setDirty);
+    events.on('mergeCells', this.onMergeCellsChanged);
 
     // Listen for focus/blur events to update cursor color when grid focus changes
     // We listen on the document and check if the active element is the canvas
@@ -57,6 +56,7 @@ export class Cursor extends Container {
 
   destroy() {
     events.off('setDirty', this.setDirty);
+    events.off('mergeCells', this.onMergeCellsChanged);
     document.removeEventListener('focusin', this.handleFocusChange);
     document.removeEventListener('focusout', this.handleFocusChange);
     super.destroy();
@@ -69,6 +69,12 @@ export class Cursor extends Container {
 
   private setDirty = (dirty: DirtyObject) => {
     if (dirty.cursor) {
+      this.dirty = true;
+    }
+  };
+
+  private onMergeCellsChanged = (sheetId: string) => {
+    if (sheetId === sheets.current) {
       this.dirty = true;
     }
   };
@@ -115,7 +121,25 @@ export class Cursor extends Container {
       tableName = table.getTableNameBounds();
     }
     const tableColumn = tables.getColumnHeaderCell(cell);
-    let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
+
+    // Check if cursor is on a merged cell and get the full merged cell rect
+    const mergeRect = sheet.getMergeCellRect(cell.x, cell.y);
+    let cellBounds: Rectangle;
+    if (tableName) {
+      cellBounds = tableName;
+    } else if (tableColumn) {
+      cellBounds = new Rectangle(tableColumn.x, tableColumn.y, tableColumn.width, tableColumn.height);
+    } else if (mergeRect) {
+      cellBounds = sheet.getScreenRectangle(
+        Number(mergeRect.min.x),
+        Number(mergeRect.min.y),
+        Number(mergeRect.max.x) - Number(mergeRect.min.x) + 1,
+        Number(mergeRect.max.y) - Number(mergeRect.min.y) + 1
+      );
+    } else {
+      cellBounds = sheet.getCellOffsets(cell.x, cell.y);
+    }
+    let { x, y, width, height } = cellBounds;
     // Use light gray when grid doesn't have focus, otherwise use accent color
     const color = pixiAppSettings.isGridFocused() ? content.accentColor : getCSSVariableTint('muted-foreground');
     const codeCell = codeEditorState.codeCell;
@@ -124,7 +148,10 @@ export class Cursor extends Container {
 
     // it so we can autocomplete within tables, then we should change this logic.
     // draw cursor but leave room for cursor indicator if needed
+    // Don't show indicator if any cell in selection is in a merged cell
+    const hasMergedCellInSelection = sheet.cursor.containsMergedCells();
     const indicatorSize =
+      !hasMergedCellInSelection &&
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
       !content.cellsSheet.tables.isInTableHeader(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
@@ -413,7 +440,8 @@ export class Cursor extends Container {
         cursor.rangeCount() === 1 &&
         infiniteRanges.length === 0 &&
         !cursor.isOnHtmlImage() &&
-        !this.cursorIsOnSpill()
+        !this.cursorIsOnSpill() &&
+        !sheets.sheet.cursor.containsMergedCells()
       ) {
         this.drawCursorIndicator();
       }

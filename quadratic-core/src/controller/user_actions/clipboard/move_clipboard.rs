@@ -19,6 +19,42 @@ impl GridController {
         self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
     }
 
+    /// move cells from source to dest
+    /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
+    pub fn move_cells(
+        &mut self,
+        source: SheetRect,
+        dest: SheetPos,
+        columns: bool,
+        rows: bool,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
+        let ops = self.move_cells_operations(source, dest, columns, rows);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::MoveCells, is_ai);
+    }
+
+    /// Apply format painter: copy formatting from source selection to target selection.
+    /// The source formatting is tiled across the target selection if the target is larger.
+    pub fn apply_format_painter(
+        &mut self,
+        source_selection: &A1Selection,
+        target_selection: &A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), String> {
+        let ops = self
+            .apply_format_painter_operations(source_selection, target_selection)
+            .map_err(|e| e.to_string())?;
+        self.start_user_ai_transaction(
+            ops,
+            cursor,
+            TransactionName::FormatPainter,
+            is_ai,
+        );
+        Ok(())
+    }
+
     /// move multiple cell regions in a single transaction
     /// each move is a (source, dest) pair
     ///

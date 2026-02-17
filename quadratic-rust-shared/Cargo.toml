@@ -76,7 +76,7 @@ russh-config = { version = "0.54.0", optional = true }
 rustls = { version = "0.23.31", features = ["ring"], optional = true }
 rust_decimal = "1.30.0"
 serde = { version = "1.0.193", features = ["derive"] }
-serde_json = { version = "1.0.108" }
+serde_json = { version = "1.0.108", features = ["preserve_order"] }
 snowflake-api = { git = "https://github.com/quadratichq/snowflake-rs", branch = "main", optional = true }
 sqlx = { version = "0.7.4", default-features = false, features = [
   "chrono",
@@ -110,7 +110,7 @@ yup-oauth2 = { version = "11.0.0", optional = true }
 derivative = "2.2.0"
 
 [features]
-default = ["intrinio", "synced", "docker"]
+default = []
 arrow = ["dep:arrow", "arrow-array", "object_store", "parquet"]
 auth = ["http", "jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]

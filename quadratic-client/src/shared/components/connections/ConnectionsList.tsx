@@ -1,21 +1,21 @@
+import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { CloseIcon, EditIcon } from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
   ConnectionsListConnection,
   NavigateToView,
   OnConnectionSelectedCallback,
 } from '@/shared/components/connections/Connections';
-import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
-import { timeAgo } from '@/shared/utils/timeAgo';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { useLocation } from 'react-router';
@@ -144,116 +144,127 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled, isDemo, syncedConnectionUpdatedDate }, i) => {
-        const isNavigable = !(disabled || isDemo);
-        const showIconHideDemo = !disabled && isDemo;
-        // On dashboard, show "Open in spreadsheet" and "Edit connection" buttons
-        const showDashboardActions = !isApp && !disabled && !isDemo;
+      {filteredItems.map(
+        (
+          {
+            uuid,
+            name,
+            type,
+            createdDate,
+            disabled,
+            isDemo,
+            syncedConnectionUpdatedDate,
+            syncedConnectionPercentCompleted,
+            syncedConnectionLatestLogStatus,
+          },
+          i
+        ) => {
+          const isNavigable = !(disabled || isDemo);
+          const showIconHideDemo = !disabled && isDemo;
+          // On dashboard, show "Open in spreadsheet" and "Edit connection" buttons
+          const showDashboardActions = !isApp && !disabled && !isDemo;
+          const syncState = deriveSyncStateFromConnectionList({
+            syncedConnectionPercentCompleted,
+            syncedConnectionLatestLogStatus,
+          });
 
-        return (
-          <div className="group" key={uuid}>
-            <div
-              className={cn(
-                'relative flex w-full items-center gap-1',
-                disabled && 'cursor-not-allowed opacity-50',
-                // Only show hover state in app, not on dashboard
-                isApp && isNavigable && 'group-hover:bg-accent'
-              )}
-            >
-              {isApp ? (
-                // In-app: clickable row - if onConnectionSelected is provided, use it; otherwise edit view
-                <button
-                  onClick={() => {
-                    if (onConnectionSelected) {
-                      onConnectionSelected(uuid, type, name);
-                    } else {
-                      handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-                    }
-                  }}
-                  disabled={!isNavigable}
-                  key={uuid}
-                  className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}
-                >
-                  <div className="flex h-6 w-6 items-center justify-center">
-                    <LanguageIcon language={type} />
-                  </div>
-
-                  <div className="flex w-full min-w-0 flex-grow flex-col text-left">
-                    <span data-testid={`connection-name-${name}`} className="truncate text-sm">
-                      {name}
-                    </span>
-
-                    {isDemo ? (
-                      <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
-                    ) : syncedConnectionUpdatedDate !== undefined ? (
-                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                        <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} createdDate={createdDate} />
-                      </time>
-                    ) : (
-                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                        Created {timeAgo(createdDate)}
-                      </time>
-                    )}
-                  </div>
-                </button>
-              ) : (
-                // Dashboard: non-clickable row with action buttons
-                <div className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}>
-                  <div className="flex h-6 w-6 items-center justify-center">
-                    <LanguageIcon language={type} />
-                  </div>
-
-                  <div className="flex w-full min-w-0 flex-grow flex-col text-left">
-                    <span data-testid={`connection-name-${name}`} className="truncate text-sm">
-                      {name}
-                    </span>
-
-                    {isDemo ? (
-                      <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
-                    ) : syncedConnectionUpdatedDate !== undefined ? (
-                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                        <SyncedConnection connectionUuid={uuid} teamUuid={teamUuid} createdDate={createdDate} />
-                      </time>
-                    ) : (
-                      <time dateTime={createdDate} className="text-xs text-muted-foreground">
-                        Created {timeAgo(createdDate)}
-                      </time>
-                    )}
-                  </div>
-
-                  {showDashboardActions && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
-                    >
-                      <EditIcon />
-                      Edit
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {showIconHideDemo && (
-                <TooltipPopover label="Remove connection">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
-                    onClick={async () => {
-                      if (await confirmFn()) {
-                        handleShowConnectionDemo(false);
+          return (
+            <div className="group" key={uuid}>
+              <div
+                className={cn(
+                  'relative flex w-full items-center gap-1',
+                  disabled && 'cursor-not-allowed opacity-50',
+                  // Only show hover state in app, not on dashboard
+                  isApp && isNavigable && 'group-hover:bg-accent'
+                )}
+              >
+                {isApp ? (
+                  // In-app: clickable row - if onConnectionSelected is provided, use it; otherwise edit view
+                  <button
+                    onClick={() => {
+                      if (onConnectionSelected) {
+                        onConnectionSelected(uuid, type, name);
+                      } else {
+                        handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
                       }
                     }}
+                    disabled={!isNavigable}
+                    key={uuid}
+                    className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}
                   >
-                    <CloseIcon />
-                  </Button>
-                </TooltipPopover>
-              )}
+                    <div className="flex h-6 w-6 items-center justify-center">
+                      <ConnectionIcon type={type} syncState={syncState} />
+                    </div>
+
+                    <div className="flex w-full min-w-0 flex-grow flex-col text-left">
+                      <span data-testid={`connection-name-${name}`} className="truncate text-sm">
+                        {name}
+                      </span>
+
+                      {isDemo ? (
+                        <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                      ) : (
+                        <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                          Created {timeAgo(createdDate)}
+                        </time>
+                      )}
+                    </div>
+                  </button>
+                ) : (
+                  // Dashboard: non-clickable row with action buttons
+                  <div className={cn('flex w-full items-center gap-4 rounded px-1 py-2')}>
+                    <div className="flex h-6 w-6 items-center justify-center">
+                      <ConnectionIcon type={type} syncState={syncState} />
+                    </div>
+
+                    <div className="flex w-full min-w-0 flex-grow flex-col text-left">
+                      <span data-testid={`connection-name-${name}`} className="truncate text-sm">
+                        {name}
+                      </span>
+
+                      {isDemo ? (
+                        <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>
+                      ) : (
+                        <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                          Created {timeAgo(createdDate)}
+                        </time>
+                      )}
+                    </div>
+
+                    {showDashboardActions && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleNavigateToEditView({ connectionUuid: uuid, connectionType: type })}
+                      >
+                        <EditIcon className="mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {showIconHideDemo && (
+                  <TooltipPopover label="Remove connection">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
+                      onClick={async () => {
+                        if (await confirmFn()) {
+                          handleShowConnectionDemo(false);
+                        }
+                      }}
+                    >
+                      <CloseIcon />
+                    </Button>
+                  </TooltipPopover>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        }
+      )}
     </div>
   ) : (
     <Type className="py-2 text-center">No matches.</Type>
