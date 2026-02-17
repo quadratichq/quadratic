@@ -11,6 +11,7 @@
  * 3. Set the date to the release date (YYYY-MM-DD format)
  * 4. Add an array of changes for that version
  * 5. Optionally add a "details" field with HTML content for more detailed information
+ * 6. Optionally add a "title" field as a short headline for the left pane (defaults to first change)
  *
  * Example entry:
  * {
@@ -21,7 +22,8 @@
  *     "Bug fix Y",
  *     "Performance improvements"
  *   ],
- *   "details": "<p>More detailed information with <strong>HTML</strong> support.</p>"
+ *   "details": "<p>More detailed information with <strong>HTML</strong> support.</p>",
+ *   "title": "Optional short headline for the left pane (defaults to first change)"
  * }
  */
 import { changelogDialogAtom } from '@/shared/atom/changelogDialogAtom';
@@ -38,12 +40,15 @@ interface ChangelogEntry {
   date: string;
   changes: string[];
   details?: string | null;
+  title?: string;
 }
 
 const formatDate = (date: string): string => {
   const dateObj = new Date(date);
   return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 };
+
+const getDisplayTitle = (entry: ChangelogEntry): string => entry.title ?? entry.changes[0] ?? '';
 
 const CHANGELOG_ENTRIES: ChangelogEntry[] = changelogData as ChangelogEntry[];
 
@@ -94,7 +99,8 @@ export function ChangelogDialog() {
                         selectedVersion === entry.version ? 'bg-background text-foreground' : 'text-muted-foreground'
                       )}
                     >
-                      <div className="font-medium">v{entry.version}</div>
+                      <div className="truncate font-medium opacity-70">{getDisplayTitle(entry)}</div>
+                      <div className="">v{entry.version}</div>
                       <div className="text-xs opacity-70">{formatDate(entry.date)}</div>
                     </button>
                   ))}
@@ -132,7 +138,7 @@ export function ChangelogDialog() {
                         Details
                       </h4>
                       <div
-                        className="changelog-details text-sm text-foreground [&_a:hover]:text-primary/80 [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_p:last-child]:mb-0 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1"
+                        className="changelog-details text-sm text-foreground [&_a:hover]:text-primary/80 [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_p:last-child]:mb-0 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:mb-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1"
                         dangerouslySetInnerHTML={{ __html: selectedEntry.details }}
                       />
                     </div>
