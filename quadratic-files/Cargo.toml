@@ -33,7 +33,8 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "pubsub",
     "quadratic-api",
     "quadratic-database",
-    "storage"
+    "storage",
+    "synced",
 ] }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
