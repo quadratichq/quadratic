@@ -27,6 +27,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "auth",
     "cache",
     "environment",
+    "intrinio",
     "object_store",
     "protobuf",
     "pubsub",
@@ -34,6 +35,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "quadratic-database",
     "storage",
     "synced",
+    "zip",
 ] }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", default-features = false, features = ["json", "rustls-tls-native-roots", "serde_json"] }
@@ -55,9 +57,9 @@ tower-http = { version = "0.6.2", features = [
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
-zip = "2"
 
 [dev-dependencies]
+zip = "2"
 fake = { version = "4.0.0", features = ["derive"] }
 httpmock = "0.8"
 serial_test = "3.2.0"

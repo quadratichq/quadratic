@@ -5,6 +5,11 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "reqwest")]
+use crate::error::{Result, SharedError};
+#[cfg(feature = "reqwest")]
+use crate::intrinio::error::Intrinio as IntrinioError;
+
 /// Response from the Intrinio bulk downloads links endpoint.
 ///
 /// `GET https://api-v2.intrinio.com/bulk_downloads/links?api_key=API_KEY`
@@ -60,6 +65,40 @@ pub fn s3_object_key(link_name: &str) -> String {
         INTRINIO_S3_PREFIX,
         parquet_filename_from_link(link_name)
     )
+}
+
+/// Fetch the bulk download links from the Intrinio API.
+#[cfg(feature = "reqwest")]
+pub async fn fetch_bulk_download_links(api_key: &str) -> Result<BulkDownloadsResponse> {
+    let url = bulk_downloads_url(api_key);
+
+    let response = reqwest::get(&url).await.map_err(|e| {
+        SharedError::Intrinio(IntrinioError::Endpoint(
+            "bulk_downloads".to_string(),
+            format!("Failed to fetch bulk download links: {}", e),
+        ))
+    })?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "unknown".to_string());
+        return Err(SharedError::Intrinio(IntrinioError::Endpoint(
+            "bulk_downloads".to_string(),
+            format!("API returned status {}: {}", status, body),
+        )));
+    }
+
+    let body = response.json::<BulkDownloadsResponse>().await.map_err(|e| {
+        SharedError::Intrinio(IntrinioError::Endpoint(
+            "bulk_downloads".to_string(),
+            format!("Failed to parse bulk download response: {}", e),
+        ))
+    })?;
+
+    Ok(body)
 }
 
 #[cfg(test)]
