@@ -1,4 +1,5 @@
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { sharedEvents } from '@/shared/sharedEvents';
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect } from 'react';
 
@@ -46,4 +47,7 @@ function changeTheme(newTheme: 'light' | 'dark') {
   } else {
     document.body.classList.remove('dark');
   }
+
+  // Notify PixiJS components so they re-read CSS variables for the new theme
+  sharedEvents.emit('changeThemeAccentColor');
 }

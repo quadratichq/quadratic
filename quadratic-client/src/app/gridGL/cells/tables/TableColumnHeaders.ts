@@ -28,13 +28,18 @@ export class TableColumnHeaders extends Container {
     this.background = this.addChild(new Graphics());
     this.columns = this.addChild(new Container<TableColumnHeader>());
 
-    sharedEvents.on('changeThemeAccentColor', this.drawBackground);
+    sharedEvents.on('changeThemeAccentColor', this.onThemeChange);
   }
 
   destroy() {
-    sharedEvents.off('changeThemeAccentColor', this.drawBackground);
+    sharedEvents.off('changeThemeAccentColor', this.onThemeChange);
     super.destroy();
   }
+
+  private onThemeChange = () => {
+    this.drawBackground();
+    this.createColumnHeaders();
+  };
 
   toggleTableColumnSelection(hide: boolean) {
     this.drawBackground(hide);
@@ -44,7 +49,7 @@ export class TableColumnHeaders extends Container {
     this.background.clear();
 
     this.background.lineStyle();
-    this.background.beginFill(0xffffff);
+    this.background.beginFill(getCSSVariableTint('background'));
 
     // need to adjust so the outside border is still visible
     this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.columnsHeight));
