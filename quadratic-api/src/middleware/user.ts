@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { trackEvent } from '../analytics/mixpanel';
 import dbClient from '../dbClient';
-import { triggerJourney } from '../email/mailchimp';
+import { removeTeamInviteFromMailchimp, triggerJourney } from '../email/mailchimp';
 import { VERSION } from '../env-vars';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { Auth, RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
@@ -19,6 +19,9 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
     },
   });
   if (teamInvites.length) {
+    // Remove from Mailchimp drip campaign (stops follow-up emails)
+    removeTeamInviteFromMailchimp(email);
+
     for (const { teamId, role } of teamInvites) {
       await addUserToTeam({ userId, teamId, role });
     }
