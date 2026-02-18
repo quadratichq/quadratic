@@ -3,7 +3,15 @@ import { ConnectionFormSemantic } from '@/shared/components/connections/Connecti
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnectionStatus } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -57,18 +65,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
-        <p className="pb-2 text-sm">
-          Find your Property ID in Google Analytics under Admin → Property Settings.{' '}
-          <a
-            href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-primary"
-          >
-            Learn more
-          </a>
-          .
-        </p>
+        <p className="pb-2 text-sm">Find your Property ID in Google Analytics under Admin → Property Settings. .</p>
         <FormField
           control={form.control}
           name="name"
@@ -92,6 +89,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
+                <FormDescription>
+                  In your Google Analytics property settings. <LearnMore />
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -119,6 +119,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               <FormControl>
                 <Textarea autoComplete="off" {...field} className="h-48" />
               </FormControl>
+              <FormDescription className="!mt-0">
+                In Google Analytics, you must create a service account, assign roles for access, and generate
+                credentials. <LearnMore />
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -141,3 +145,16 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
     </Form>
   );
 };
+
+function LearnMore() {
+  return (
+    <a
+      href={DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline hover:text-primary"
+    >
+      Learn more.
+    </a>
+  );
+}

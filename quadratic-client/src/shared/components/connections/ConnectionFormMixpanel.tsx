@@ -3,7 +3,15 @@ import { ConnectionFormSemantic } from '@/shared/components/connections/Connecti
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnectionStatus } from '@/shared/components/connections/SyncedConnection';
 import { DOCUMENTATION_CONNECTIONS_MIXPANEL_URL } from '@/shared/constants/urls';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -56,18 +64,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
-        <p className="pb-2 text-sm">
-          Find your Project ID and API secret in your Mixpanel project's Settings → Access Keys.{' '}
-          <a
-            href={DOCUMENTATION_CONNECTIONS_MIXPANEL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-primary"
-          >
-            Learn more
-          </a>
-          .
-        </p>
         <FormField
           control={form.control}
           name="name"
@@ -90,6 +86,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               <FormControl>
                 <Input autoComplete="off" {...field} />
               </FormControl>
+              <FormDescription>
+                In your Mixpanel project settings. <LearnMore />
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -104,6 +103,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
+                <FormDescription>
+                  In your Mixpanel project settings. <LearnMore />
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -157,3 +159,16 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
     </Form>
   );
 };
+
+function LearnMore() {
+  return (
+    <a
+      href={DOCUMENTATION_CONNECTIONS_MIXPANEL_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline hover:text-primary"
+    >
+      Learn more.
+    </a>
+  );
+}
