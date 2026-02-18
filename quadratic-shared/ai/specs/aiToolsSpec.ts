@@ -965,7 +965,7 @@ This function requires the sheet name of the current sheet from the context, the
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
 Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
-IMPORTANT: If the target cells overlap with merged cell regions, you must place values at the anchor (top-left) cell of the merge, not at interior cells. Writing to a non-anchor cell in a merged region will fail. Check the context for merged cell regions before placing values.\n
+IMPORTANT: If the target cells overlap with merged cell regions, you must place values at the anchor (top-left) cell of the merge, not at interior cells. Writing to a non-anchor cell in a merged region will fail. Check the context for merged cell regions before placing values. When formatting a merged cell, apply the format to the anchor cell and it will apply to the entire merged region.\n
 `,
   },
   [AITool.GetCodeCellValue]: {
@@ -1080,7 +1080,7 @@ Code cell (Python and Javascript) placement instructions:\n
 - If the sheet is empty, place the code cell at A1.\n
 
 Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
-IMPORTANT: Do not place code cells at non-anchor cells within merged regions. The anchor cell is the top-left cell of the merge. Writing to a non-anchor cell in a merged region will fail.\n
+IMPORTANT: Do not place code cells at non-anchor cells within merged regions. The anchor cell is the top-left cell of the merge. Writing to a non-anchor cell in a merged region will fail. When formatting a merged cell, apply the format to the anchor cell and it will apply to the entire merged region.\n
 `,
   },
   [AITool.GetDatabaseSchemas]: {
@@ -1282,7 +1282,7 @@ Examples:
 - Basic arithmetic operations
 - Joining strings
 - Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
-IMPORTANT: Do not place formulas at non-anchor cells within merged regions. The anchor cell is the top-left cell of the merge. Writing to a non-anchor cell in a merged region will fail.\n
+IMPORTANT: Do not place formulas at non-anchor cells within merged regions. The anchor cell is the top-left cell of the merge. Writing to a non-anchor cell in a merged region will fail. When formatting a merged cell, apply the format to the anchor cell and it will apply to the entire merged region.\n
 `,
   },
   [AITool.MoveCells]: {
@@ -1584,7 +1584,8 @@ To clear/remove a format, set the value to null (or empty string for colors). Om
 Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .01 as a percentage will show as 1%. Formatting 1 as a percentage will show 100%.\n
 Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
 Example: To format an entire table column as currency, use: { "formats": [{ "selection": "Sales_Data[Revenue]", "number_type": "currency", "currency_symbol": "$" }] }\n
-You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n`,
+You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n
+When formatting merged cells, apply the format to the anchor (top-left) cell of the merge and it will apply to the entire merged region.\n`,
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
@@ -2350,6 +2351,7 @@ The selection is a range of cells, for example: A1:D1.\n
 The color must be a valid CSS color string.\n
 The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
 The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
+When setting borders on merged cells, use the full merged range (e.g., A1:C3) as the selection. Formatting the anchor cell of a merge will apply to the entire merged region.\n
 `,
   },
   [AITool.MergeCells]: {
