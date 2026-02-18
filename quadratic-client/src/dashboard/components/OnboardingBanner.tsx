@@ -1,5 +1,6 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
@@ -39,12 +40,13 @@ export function OnboardingBanner() {
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();
+  const { teamUuid: hookTeamUuid, isPrivate, createFile } = useCreateFile();
   const handleFileImport = useFileImport();
   const onClickImport = () => {
     trackEvent('[OnboardingBanner].newFileFromImport');
-    handleFileImport({ isPrivate: true, teamUuid });
+    handleFileImport({ isPrivate, teamUuid: hookTeamUuid });
   };
-  const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate: true, teamUuid });
+  const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate, teamUuid: hookTeamUuid });
 
   // Only show the banner to people who can 1) write to the team, and 2) haven't dismissed it yet
   const initialValueOfShowBanner = teamPermissions.includes('TEAM_EDIT') && !clientDataKv.onboardingBannerDismissed;
@@ -62,13 +64,11 @@ export function OnboardingBanner() {
 
   const handleCreateBlankFile = () => {
     trackEvent('[OnboardingBanner].newFileBlank');
-    // Onboarding creates team files (not private)
-    window.location.href = ROUTES.CREATE_FILE(teamUuid);
+    createFile();
   };
 
   const handleFetchFromApi = () => {
     trackEvent('[OnboardingBanner].newFileFromApi');
-    // Onboarding creates team files (not private)
     window.location.href = newApiFileToLink;
   };
 

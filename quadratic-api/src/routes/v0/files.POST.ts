@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -18,7 +19,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
-    body: { name, contents, version, teamUuid, isPrivate },
+    body: { name, contents, version, teamUuid, isPrivate, folderUuid },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -55,8 +56,23 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     throw new ApiError(403, 'User does not have permission to create a public file in this team.');
   }
 
+  // If a folder is specified, validate it exists and belongs to the same team
+  let folderId: number | undefined;
+  if (folderUuid) {
+    const folder = await dbClient.folder.findUnique({
+      where: { uuid: folderUuid },
+    });
+    if (!folder) {
+      throw new ApiError(404, 'Folder not found.');
+    }
+    if (folder.ownerTeamId !== teamId) {
+      throw new ApiError(400, 'Folder must belong to the same team.');
+    }
+    folderId = folder.id;
+  }
+
   // Ok, create it!
-  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate, jwt });
+  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate, jwt, folderId });
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
     team: {

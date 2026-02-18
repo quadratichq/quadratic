@@ -6,6 +6,7 @@ import { UserFilesList, type UserFilesListFile } from '@/dashboard/components/Us
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { useMemo } from 'react';
+import type { Folder } from 'quadratic-shared/typesAndSchemas';
 import { useLoaderData, type LoaderFunctionArgs } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -29,6 +30,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { sharedWithMeFiles };
 };
 
+function getFolderPath(folderUuid: string, folders: Folder[]): string {
+  const byUuid = Object.fromEntries(folders.map((f) => [f.uuid, f]));
+  const segments: string[] = [];
+  let folder: Folder | undefined = byUuid[folderUuid];
+  while (folder) {
+    segments.unshift(folder.name);
+    folder = folder.parentFolderUuid ? byUuid[folder.parentFolderUuid] : undefined;
+  }
+  return segments.join('/');
+}
+
 export const Component = () => {
   const { sharedWithMeFiles } = useLoaderData<typeof loader>();
   const {
@@ -36,6 +48,7 @@ export const Component = () => {
       team: { uuid: teamUuid },
       files: teamFiles,
       filesPrivate,
+      folders,
       userMakingRequest: { teamPermissions },
       users,
     },
@@ -69,6 +82,7 @@ export const Component = () => {
     // Add team files
     teamFiles.forEach(({ file, userMakingRequest }) => {
       const creator = usersById[file.creatorId];
+      const folderPath = file.folderUuid && folders.length > 0 ? getFolderPath(file.folderUuid, folders) : undefined;
       allFiles.push({
         hasScheduledTasks: file.hasScheduledTasks,
         name: file.name,
@@ -81,11 +95,13 @@ export const Component = () => {
         creator,
         fileType: 'team',
         requiresUpgradeToEdit: userMakingRequest.requiresUpgradeToEdit,
+        folderPath,
       });
     });
 
     // Add personal files
     filesPrivate.forEach(({ file, userMakingRequest }) => {
+      const folderPath = file.folderUuid && folders.length > 0 ? getFolderPath(file.folderUuid, folders) : undefined;
       allFiles.push({
         hasScheduledTasks: file.hasScheduledTasks,
         name: file.name,
@@ -98,6 +114,7 @@ export const Component = () => {
         creator: currentUser,
         fileType: 'private',
         requiresUpgradeToEdit: userMakingRequest.requiresUpgradeToEdit,
+        folderPath,
       });
     });
 
@@ -111,7 +128,7 @@ export const Component = () => {
 
     // Sort all files by last modified date (most recent first)
     return allFiles.sort((a, b) => new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime());
-  }, [teamFiles, filesPrivate, usersById, currentUser, sharedWithMeFiles]);
+  }, [teamFiles, filesPrivate, usersById, currentUser, sharedWithMeFiles, folders]);
 
   // const sharedAvatarClasses = '-ml-1 outline outline-2 outline-background';
 

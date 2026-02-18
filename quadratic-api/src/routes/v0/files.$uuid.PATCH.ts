@@ -27,18 +27,21 @@ async function handler(
 ) {
   const {
     params: { uuid },
-    body: { name, ownerUserId, timezone },
+    body: { name, ownerUserId, timezone, folderUuid },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
   } = req;
   const {
-    userMakingRequest: { filePermissions, id: userMakingRequestId },
+    file,
+    userMakingRequest: { filePermissions, teamPermissions, id: userMakingRequestId },
   } = await getFile({ uuid, userId });
 
-  // Can't change multiple things at once
-  const fieldsToUpdate = [name, ownerUserId, timezone].filter((field) => field !== undefined);
-  if (fieldsToUpdate.length > 1) {
+  // Can't change multiple things at once, except move-to-root + ownership in one call (for drag-drop)
+  const fieldsToUpdate = [name, ownerUserId, timezone, folderUuid].filter((field) => field !== undefined);
+  const isMoveToRootWithOwnership =
+    folderUuid !== undefined && ownerUserId !== undefined && folderUuid === null && fieldsToUpdate.length === 2;
+  if (fieldsToUpdate.length > 1 && !isMoveToRootWithOwnership) {
     return res.status(400).json({ error: { message: 'You can only change one thing at a time' } });
   }
 
@@ -86,41 +89,133 @@ async function handler(
     throw new ApiError(403, 'Permission denied');
   }
 
-  // Moving to a user's private (team) files?
-  if (ownerUserId) {
-    // The specified user must be the same person making the request
-    if (ownerUserId !== userMakingRequestId) {
-      throw new ApiError(400, 'You can only move your own files');
+  type MoveDb = Pick<typeof dbClient, 'file' | 'folder' | '$queryRaw'>;
+
+  const executeMove = async (
+    db: MoveDb
+  ): Promise<ApiTypes['/v0/files/:uuid.PATCH.response'] | null> => {
+    // Move to root and set ownership in one call (e.g. drag file to "Private Files" or "Team Files")
+    if (isMoveToRootWithOwnership) {
+      if (!filePermissions.includes(FILE_EDIT)) {
+        throw new ApiError(403, 'Permission denied');
+      }
+      if (ownerUserId !== null && ownerUserId !== userMakingRequestId) {
+        throw new ApiError(400, 'You can only move your own files');
+      }
+      await db.file.update({
+        where: { uuid },
+        data: { folderId: null, ownerUserId: ownerUserId ?? null },
+      });
+      return {
+        folderUuid: null,
+        ownerUserId: ownerUserId ?? undefined,
+      };
     }
 
-    const modifiedFile = await dbClient.file.update({
-      where: {
-        uuid,
-      },
-      data: {
-        ownerUserId,
-      },
-    });
-    if (!modifiedFile.ownerUserId) {
-      throw new ApiError(500, 'Failed to move file. Make sure the specified file and user exist.');
+    // Moving to a user's private (team) files?
+    if (ownerUserId) {
+      if (ownerUserId !== userMakingRequestId) {
+        throw new ApiError(400, 'You can only move your own files');
+      }
+      const modifiedFile = await db.file.update({
+        where: { uuid },
+        data: { ownerUserId },
+      });
+      if (!modifiedFile.ownerUserId) {
+        throw new ApiError(500, 'Failed to move file. Make sure the specified file and user exist.');
+      }
+      return { ownerUserId: modifiedFile.ownerUserId };
     }
-    return res.status(200).json({ ownerUserId: modifiedFile.ownerUserId });
-  }
 
-  // Moving to a team's public files?
-  if (ownerUserId === null) {
-    const modifiedFile = await dbClient.file.update({
-      where: {
-        uuid,
-      },
-      data: {
-        ownerUserId: null,
-      },
-    });
-    if (modifiedFile.ownerUserId !== null) {
-      throw new ApiError(500, 'Failed to move file. Make sure the specified team and user exist.');
+    // Moving to a team's public files?
+    if (ownerUserId === null) {
+      const modifiedFile = await db.file.update({
+        where: { uuid },
+        data: { ownerUserId: null },
+      });
+      if (modifiedFile.ownerUserId !== null) {
+        throw new ApiError(500, 'Failed to move file. Make sure the specified team and user exist.');
+      }
+      return { ownerUserId: undefined };
     }
-    return res.status(200).json({ ownerUserId: undefined });
+
+    // Moving to a folder?
+    if (folderUuid !== undefined) {
+      let folderId: number | null = null;
+      let adjustedOwnerUserId: number | null | undefined = undefined;
+
+      if (folderUuid !== null) {
+        const folder = await db.folder.findUnique({
+          where: { uuid: folderUuid },
+        });
+        if (!folder) {
+          throw new ApiError(404, 'Folder not found.');
+        }
+        if (folder.ownerTeamId !== file.ownerTeamId) {
+          throw new ApiError(400, 'Folder must belong to the same team as the file.');
+        }
+        if (folder.ownerUserId && folder.ownerUserId !== userId) {
+          throw new ApiError(403, 'You do not have access to the target folder.');
+        }
+        // Lock target folder so ownerUserId cannot change between check and update
+        await db.$queryRaw`SELECT id FROM "Folder" WHERE uuid = ${folderUuid} FOR UPDATE`;
+        folderId = folder.id;
+        const folderOwner = folder.ownerUserId ?? null;
+        const fileOwner = file.ownerUserId ?? null;
+        if (folderOwner !== fileOwner) {
+          adjustedOwnerUserId = folderOwner;
+        }
+      }
+
+      const data: { folderId: number | null; ownerUserId?: number | null } = { folderId };
+      if (adjustedOwnerUserId !== undefined) {
+        data.ownerUserId = adjustedOwnerUserId;
+      }
+
+      await db.file.update({
+        where: { uuid },
+        data,
+      });
+
+      return {
+        folderUuid: folderUuid,
+        ownerUserId: adjustedOwnerUserId !== undefined ? (adjustedOwnerUserId ?? undefined) : undefined,
+      };
+    }
+
+    return null;
+  };
+
+  // When moving to a folder or when the file is in a folder, use a transaction so folder row
+  // locks (FOR UPDATE) are held until the file update completes.
+  const movingToFolder = folderUuid !== undefined && folderUuid !== null;
+  if (file.folderId !== null || movingToFolder) {
+    const currentFolderId = file.folderId;
+    const result = await dbClient.$transaction(async (tx) => {
+      if (currentFolderId !== null) {
+        await tx.$queryRaw`SELECT id FROM "Folder" WHERE id = ${currentFolderId} FOR UPDATE`;
+        const currentFolder = await tx.folder.findUnique({
+          where: { id: currentFolderId },
+        });
+        if (currentFolder) {
+          if (currentFolder.ownerUserId !== null && currentFolder.ownerUserId !== userId) {
+            throw new ApiError(403, 'You do not have access to the current folder.');
+          }
+          if (currentFolder.ownerUserId === null && !teamPermissions?.includes('TEAM_EDIT')) {
+            throw new ApiError(403, 'You do not have access to the current folder.');
+          }
+        }
+      }
+      return executeMove(tx);
+    });
+    if (result) {
+      return res.status(200).json(result);
+    }
+  } else {
+    const result = await executeMove(dbClient);
+    if (result) {
+      return res.status(200).json(result);
+    }
   }
 
   // We don't know what you're asking for

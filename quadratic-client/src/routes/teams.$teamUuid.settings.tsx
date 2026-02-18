@@ -291,7 +291,7 @@ export const Component = () => {
                 </Link>
               </Button>
               <p className="mt-2 text-sm text-muted-foreground">
-                Files deleted in the 30 days remain available for recovery.
+                Files deleted in the last 30 days remain available for recovery.
               </p>
             </div>
           </SettingsRow>

@@ -27,6 +27,7 @@ interface FileImportProps {
   cursor?: string;
   isPrivate?: boolean;
   teamUuid?: string;
+  folderUuid?: string;
   isOverwrite?: boolean;
 }
 
@@ -40,7 +41,16 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
   const navigate = useNavigate();
 
   const doImport = useCallback(
-    async ({ files, sheetId, insertAt, cursor, isPrivate = true, teamUuid, isOverwrite }: FileImportProps) => {
+    async ({
+      files,
+      sheetId,
+      insertAt,
+      cursor,
+      isPrivate = true,
+      teamUuid,
+      folderUuid,
+      isOverwrite,
+    }: FileImportProps) => {
       quadraticCore.initWorker();
 
       if (!files) files = await uploadFile(supportedFileTypes);
@@ -201,6 +211,7 @@ export function useFileImport(): (props: FileImportProps) => Promise<void> {
                 file: data,
                 teamUuid,
                 isPrivate,
+                folderUuid,
                 abortController,
                 onUploadProgress,
               })

@@ -89,6 +89,17 @@ const FileSchema = z.object({
   hasScheduledTasks: z.boolean(),
 });
 
+export const FolderSchema = z.object({
+  uuid: z.string().uuid(),
+  name: z
+    .string()
+    .min(1, { message: 'Must be at least 1 character.' })
+    .max(140, { message: 'Cannot be longer than 140 characters.' }),
+  parentFolderUuid: z.string().uuid().nullable(),
+  ownerUserId: z.number().nullable(),
+});
+export type Folder = z.infer<typeof FolderSchema>;
+
 const TeamPrivateFileSchema = FileSchema.pick({
   uuid: true,
   name: true,
@@ -97,6 +108,8 @@ const TeamPrivateFileSchema = FileSchema.pick({
   publicLinkAccess: true,
   thumbnail: true,
   hasScheduledTasks: true,
+}).extend({
+  folderUuid: z.string().uuid().nullable(),
 });
 const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
   creatorId: z.number(),
@@ -180,6 +193,7 @@ export const ApiSchemas = {
     version: z.string(),
     teamUuid: TeamSchema.shape.uuid,
     isPrivate: z.boolean().optional(),
+    folderUuid: z.string().uuid().optional(),
   }),
   '/v0/files.POST.response': z.object({
     file: FileSchema.pick({ uuid: true, name: true }),
@@ -232,11 +246,13 @@ export const ApiSchemas = {
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
     timezone: FileSchema.shape.timezone.optional(),
+    folderUuid: z.string().uuid().nullable().optional(),
   }),
   '/v0/files/:uuid.PATCH.response': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.optional(),
     timezone: FileSchema.shape.timezone.optional(),
+    folderUuid: z.string().uuid().nullable().optional(),
   }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
@@ -385,6 +401,53 @@ export const ApiSchemas = {
 
   /**
    * ===========================================================================
+   * Folders
+   * ===========================================================================
+   */
+  '/v0/folders.POST.request': z.object({
+    name: FolderSchema.shape.name,
+    teamUuid: TeamSchema.shape.uuid,
+    parentFolderUuid: z.string().uuid().optional(),
+    isPrivate: z.boolean().optional(),
+  }),
+  '/v0/folders.POST.response': z.object({
+    folder: FolderSchema,
+  }),
+  '/v0/folders/:uuid.GET.response': z.object({
+    folder: FolderSchema,
+    breadcrumbs: z.array(FolderSchema.pick({ uuid: true, name: true })),
+    subfolders: z.array(FolderSchema.pick({ uuid: true, name: true })),
+    files: z.array(
+      z.object({
+        file: TeamPublicFileSchema,
+        userMakingRequest: TeamUserMakingRequestSchema,
+      })
+    ),
+    filesPrivate: z.array(
+      z.object({
+        file: TeamPrivateFileSchema,
+        userMakingRequest: TeamUserMakingRequestSchema,
+      })
+    ),
+  }),
+  '/v0/folders/:uuid.PATCH.request': z.object({
+    name: FolderSchema.shape.name.optional(),
+    parentFolderUuid: z.string().uuid().nullable().optional(),
+    ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
+  }),
+  '/v0/folders/:uuid.PATCH.response': z.object({
+    folder: FolderSchema,
+  }),
+  '/v0/folders/:uuid.DELETE.response': z.object({
+    message: z.string(),
+  }),
+  '/v0/folders/:uuid/delete-preview.GET.response': z.object({
+    files: z.array(z.object({ uuid: z.string().uuid(), name: z.string() })),
+    subfolderCount: z.number(),
+  }),
+
+  /**
+   * ===========================================================================
    * Teams
    * ===========================================================================
    */
@@ -447,6 +510,7 @@ export const ApiSchemas = {
       totalFiles: z.number(),
       maxEditableFiles: z.number().optional(),
     }),
+    folders: z.array(FolderSchema),
   }),
   '/v0/teams/:uuid.PATCH.request': z
     .object({

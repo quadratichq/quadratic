@@ -19,6 +19,7 @@ model User {
     onboardingResponses Json?             @map("onboarding_responses")
     ownedFiles          File[]            @relation(name: "OwnerRelation")
     createdFiles        File[]            @relation(name: "CreatorRelation")
+    ownedFolders        Folder[]          @relation(name: "FolderOwnerRelation")
     QFeedback           QFeedback[]
     UserTeamRole        UserTeamRole[]
     UserFileRole        UserFileRole[]
@@ -88,9 +89,14 @@ model File {
     AnalyticsAIChat  AnalyticsAIChat[]
     ScheduledTask    ScheduledTask[]
 
+    // Folder
+    folder   Folder? @relation(fields: [folderId], references: [id])
+    folderId Int?    @map("folder_id")
+
     @@index([uuid])
     @@index([ownerTeamId])
     @@index([id, ownerTeamId])
+    @@index([folderId])
 }
 
 model FileCheckpoint {
@@ -132,6 +138,7 @@ model Team {
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
     File         File[]
+    Folder       Folder[]
     Connection   Connection[]
 
     // Onboarding
@@ -296,18 +303,29 @@ model FileInvite {
     @@unique([email, fileId])
 }
 
-// Future: folders
-// model Folder {
-//     id             Int      @id @default(autoincrement())
-//     uuid           String   @unique @default(uuid())
-//     name           String
-//     createdDate    DateTime @default(now()) @map("created_date")
-//     createdBy      User     @relation(fields: [createByUserId], references: [id])
-//     createByUserId Int      @map("created_by_user_id")
-//     team           Team?    @relation(fields: [teamId], references: [id])
-// }
-// enum FolderRole {}
-// model UserFolderRole {}
+model Folder {
+    id   Int    @id @default(autoincrement())
+    uuid String @unique @default(uuid())
+    name String
+
+    // Subfolder support (self-referencing)
+    parentFolder   Folder?  @relation("FolderSubfolders", fields: [parentFolderId], references: [id])
+    parentFolderId Int?     @map("parent_folder_id")
+    subfolders     Folder[] @relation("FolderSubfolders")
+
+    // Ownership (mirrors File model pattern — ownerUser and ownerTeam are mutually exclusive)
+    ownerUser   User? @relation(name: "FolderOwnerRelation", fields: [ownerUserId], references: [id])
+    ownerUserId Int?  @map("owner_user_id")
+    ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id], onDelete: Cascade)
+    ownerTeamId Int   @map("owner_team_id")
+
+    // Files in this folder
+    files File[]
+
+    @@index([uuid])
+    @@index([ownerTeamId])
+    @@index([parentFolderId])
+}
 
 model QFeedback {
     id           Int      @id @default(autoincrement())

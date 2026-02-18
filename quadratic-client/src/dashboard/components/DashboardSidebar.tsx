@@ -1,5 +1,8 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { DashboardSidebarFolderTree } from '@/dashboard/components/DashboardSidebarFolderTree';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
+import { useOwnershipDropTarget } from '@/dashboard/hooks/useFolderDragDrop';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
@@ -15,8 +18,10 @@ import {
   EducationIcon,
   ExamplesIcon,
   ExternalLinkIcon,
-  FileIcon,
+  FolderIcon,
+  FolderSpecialIcon,
   GroupIcon,
+  HomeIcon,
   LabsIcon,
   LogoutIcon,
   RefreshIcon,
@@ -55,7 +60,7 @@ import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
 import { useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -77,6 +82,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const submit = useSubmit();
   const {
     eduStatus,
+    userMakingRequest: { id: userId },
     activeTeam: {
       userMakingRequest: { teamPermissions },
       team: { uuid: activeTeamUuid },
@@ -95,6 +101,25 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
   const classNameIcons = `mx-0.5 text-muted-foreground`;
 
+  // Track whether the folder tree for each section has been revealed by drag-hovering
+  const [dragRevealTeam, setDragRevealTeam] = useState(false);
+  const [dragRevealPrivate, setDragRevealPrivate] = useState(false);
+
+  // Reset both reveal flags when the drag operation ends.
+  // Only listen for 'dragend' (not 'drop') because a capture-phase 'drop' listener
+  // can cause React to unmount drag-revealed folder trees before their onDrop handlers fire.
+  // 'dragend' fires after 'drop' is fully processed, so it's safe to reset here.
+  useEffect(() => {
+    const reset = () => {
+      setDragRevealTeam(false);
+      setDragRevealPrivate(false);
+    };
+    document.addEventListener('dragend', reset, true);
+    return () => {
+      document.removeEventListener('dragend', reset, true);
+    };
+  }, []);
+
   return (
     <nav className={`flex h-full flex-col gap-4 overflow-auto bg-accent`}>
       <div className="sticky top-0 z-10 flex flex-col bg-accent px-3 pt-3">
@@ -102,24 +127,64 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       </div>
       <div className={`flex flex-col px-3`}>
         <div className="grid gap-0.5">
-          <div className="relative">
+          <div className="group relative">
             <SidebarNavLink to={ROUTES.TEAM_FILES(activeTeamUuid)} data-testid="dashboard-sidebar-team-files-link">
-              <FileIcon className={classNameIcons} />
-              Files
-              {canEditTeam && (
-                <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
-                  New file
-                </SidebarNavLinkCreateButton>
-              )}
+              <HomeIcon className={classNameIcons} />
+              <span className="min-w-0 truncate">Home</span>
+              {canEditTeam && <SidebarNavLinkCreateButton>New file</SidebarNavLinkCreateButton>}
             </SidebarNavLink>
           </div>
+          <SidebarOwnershipDropZone
+            className="mt-3"
+            targetOwnerUserId={null}
+            onDragReveal={() => setDragRevealTeam(true)}
+          >
+            <div className="group relative">
+              <SidebarNavLink to={ROUTES.TEAM_DRIVE_TEAM(activeTeamUuid)}>
+                <FolderIcon className={classNameIcons} />
+                <span className="min-w-0 truncate">Team Files</span>
+                {canEditTeam && (
+                  <SidebarNavLinkCreateButton overrideIsPrivate={false} overrideFolderUuid={null}>
+                    New file
+                  </SidebarNavLinkCreateButton>
+                )}
+              </SidebarNavLink>
+            </div>
+          </SidebarOwnershipDropZone>
+          <DashboardSidebarFolderTree
+            teamUuid={activeTeamUuid}
+            filter="team"
+            userId={userId}
+            forceShow={dragRevealTeam}
+            canEditTeam={canEditTeam}
+          />
+          <SidebarOwnershipDropZone targetOwnerUserId={userId} onDragReveal={() => setDragRevealPrivate(true)}>
+            <div className="group relative">
+              <SidebarNavLink to={ROUTES.TEAM_DRIVE_PRIVATE(activeTeamUuid)}>
+                <FolderSpecialIcon className={classNameIcons} />
+                <span className="min-w-0 truncate">Personal Files</span>
+                {canEditTeam && (
+                  <SidebarNavLinkCreateButton overrideIsPrivate={true} overrideFolderUuid={null}>
+                    New file
+                  </SidebarNavLinkCreateButton>
+                )}
+              </SidebarNavLink>
+            </div>
+          </SidebarOwnershipDropZone>
+          <DashboardSidebarFolderTree
+            teamUuid={activeTeamUuid}
+            filter="private"
+            userId={userId}
+            forceShow={dragRevealPrivate}
+            canEditTeam={canEditTeam}
+          />
           {canEditTeam && (
-            <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
+            <SidebarNavLink className="mt-3" to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
               Connections
             </SidebarNavLink>
           )}
-          <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
+          <SidebarNavLink className="mt-3" to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
             <GroupIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
@@ -238,27 +303,75 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   );
 }
 
+function SidebarOwnershipDropZone({
+  targetOwnerUserId,
+  onDragReveal,
+  children,
+  className,
+}: {
+  targetOwnerUserId: number | null;
+  onDragReveal?: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const { isOver, onDragOver, onDragLeave, onDrop } = useOwnershipDropTarget(targetOwnerUserId);
+
+  // Reveal the folder tree after hovering with a drag for 500ms
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stableOnDragReveal = useCallback(() => onDragReveal?.(), [onDragReveal]);
+
+  useEffect(() => {
+    if (isOver) {
+      revealTimer.current = setTimeout(stableOnDragReveal, 500);
+    }
+    return () => {
+      if (revealTimer.current) {
+        clearTimeout(revealTimer.current);
+        revealTimer.current = null;
+      }
+    };
+  }, [isOver, stableOnDragReveal]);
+
+  return (
+    <div
+      className={cn('rounded', isOver && 'border border-primary bg-primary/10 [&>a]:bg-transparent', className)}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {children}
+    </div>
+  );
+}
+
 function SidebarNavLinkCreateButton({
   children,
-  isPrivate,
-  teamUuid,
+  overrideIsPrivate,
+  overrideFolderUuid,
 }: {
   children: ReactNode;
-  isPrivate: boolean;
-  teamUuid: string;
+  /** When provided, forces `isPrivate` instead of deriving it from the current route. */
+  overrideIsPrivate?: boolean;
+  /** When provided, forces a specific folder (or `null` for root) instead of deriving it from the current route. */
+  overrideFolderUuid?: string | null;
 }) {
+  const { createFile } = useCreateFile();
+
   const handleClick = () => {
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    createFile({
+      ...(overrideIsPrivate !== undefined ? { isPrivate: overrideIsPrivate } : {}),
+      ...(overrideFolderUuid !== undefined ? { folderUuid: overrideFolderUuid } : {}),
+    });
   };
 
   return (
-    <div className="absolute right-2 top-1 ml-auto flex items-center gap-0.5">
+    <div className="absolute right-3 top-1/2 ml-auto flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon-sm"
-            className="!bg-transparent opacity-30 hover:opacity-100"
+            className="!bg-transparent text-muted-foreground hover:opacity-100"
             onClick={handleClick}
           >
             <AddIcon />
@@ -273,7 +386,7 @@ function SidebarNavLinkCreateButton({
 }
 
 const sidebarItemClasses = {
-  base: `dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
+  base: `w-full dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
   active: `bg-accent dark:brightness-125 brightness-95 saturate-150 dark:saturate-100`,
 };
 

@@ -165,6 +165,7 @@ export const apiClient = {
       file,
       teamUuid,
       isPrivate,
+      folderUuid,
       abortController,
       onUploadProgress,
     }: {
@@ -172,6 +173,7 @@ export const apiClient = {
       file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
+      folderUuid?: ApiTypes['/v0/files.POST.request']['folderUuid'];
       abortController?: AbortController;
       onUploadProgress?: (uploadProgress: number) => void;
     }) {
@@ -186,7 +188,7 @@ export const apiClient = {
         `/v0/files`,
         {
           method: 'POST',
-          data: { ...file, teamUuid, isPrivate },
+          data: { ...file, teamUuid, isPrivate, folderUuid },
           abortController,
           onUploadProgress,
         },
@@ -374,6 +376,36 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/users/:userId.DELETE.response']
         );
       },
+    },
+  },
+
+  folders: {
+    create(body: ApiTypes['/v0/folders.POST.request']) {
+      return fetchFromApi(
+        `/v0/folders`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/folders.POST.response']
+      );
+    },
+    get(uuid: string) {
+      return fetchFromApi(`/v0/folders/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/folders/:uuid.GET.response']);
+    },
+    update(uuid: string, body: ApiTypes['/v0/folders/:uuid.PATCH.request']) {
+      return fetchFromApi(
+        `/v0/folders/${uuid}`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/folders/:uuid.PATCH.response']
+      );
+    },
+    delete(uuid: string) {
+      return fetchFromApi(`/v0/folders/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/folders/:uuid.DELETE.response']);
+    },
+    getDeletePreview(uuid: string) {
+      return fetchFromApi(
+        `/v0/folders/${uuid}/delete-preview`,
+        { method: 'GET' },
+        ApiSchemas['/v0/folders/:uuid/delete-preview.GET.response']
+      );
     },
   },
 

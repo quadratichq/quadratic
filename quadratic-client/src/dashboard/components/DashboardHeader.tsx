@@ -23,7 +23,7 @@ export function DashboardHeader({
     <header
       className={`flex min-h-[60px] flex-col gap-2 pb-2 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0`}
     >
-      <div className="flex items-center">
+      <div className="flex min-w-0 flex-1 items-center">
         {titleStart}
         {titleNode ? titleNode : <DashboardHeaderTitle>{title}</DashboardHeaderTitle>}
         {titleEnd}

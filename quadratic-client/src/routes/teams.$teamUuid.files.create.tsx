@@ -62,11 +62,14 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // If there's no query params for the kind of file to create, just create a
   // new, blank file. If it's private, that's passed as a query param
   // /teams/:teamUuid/files/create?private
+  const folderUuid = searchParams.get('folder-uuid') ?? undefined;
+  searchParams.delete('folder-uuid');
+
   trackEvent('[Files].newFile', { isPrivate });
   try {
     const {
       file: { uuid },
-    } = await apiClient.files.create({ teamUuid, isPrivate });
+    } = await apiClient.files.create({ teamUuid, isPrivate, folderUuid });
 
     // Pass along a few of the search params
     let searchParamsToPass = new URLSearchParams();

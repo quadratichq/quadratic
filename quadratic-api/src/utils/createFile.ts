@@ -12,6 +12,7 @@ export async function createFile({
   teamId,
   isPrivate,
   jwt,
+  folderId,
 }: {
   contents?: string;
   name: string;
@@ -20,6 +21,7 @@ export async function createFile({
   teamId: number;
   isPrivate?: boolean;
   jwt: string;
+  folderId?: number;
 }) {
   return await dbClient.$transaction(async (transaction) => {
     // Create file in db
@@ -30,6 +32,7 @@ export async function createFile({
         ownerTeamId: teamId,
         // Is the file public to the entire team or private to the user creating it?
         ...(isPrivate ? { ownerUserId: userId } : {}),
+        ...(folderId ? { folderId } : {}),
       },
       select: {
         id: true,

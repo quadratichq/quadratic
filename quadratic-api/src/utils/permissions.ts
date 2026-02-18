@@ -105,7 +105,7 @@ export const getFilePermissions = ({
     const { fileRole } = userFileRelationship;
     // Check for any explicitly-defined role in the file
     if (fileRole === UserFileRoleSchema.enum.EDITOR) {
-      permissions.add(FILE_EDIT).add(FILE_VIEW);
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_MOVE);
     } else if (fileRole === UserFileRoleSchema.enum.VIEWER) {
       permissions.add(FILE_VIEW);
     }

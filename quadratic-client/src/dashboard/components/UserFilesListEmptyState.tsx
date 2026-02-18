@@ -1,7 +1,7 @@
 import { userFilesListFiltersAtom } from '@/dashboard/atoms/userFilesListFiltersAtom';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
@@ -81,15 +81,11 @@ const WrapperEmptyState = ({ className, children }: { className?: string; childr
 };
 
 const CreateFileEmptyState = ({ isPrivate = false, title }: { isPrivate?: boolean; title?: string }) => {
-  const {
-    activeTeam: {
-      team: { uuid: teamUuid },
-    },
-  } = useDashboardRouteLoaderData();
+  const { createFile } = useCreateFile();
 
   const handleCreateFile = () => {
     trackEvent('[FilesEmptyState].clickCreateBlankFile');
-    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+    createFile({ isPrivate });
   };
 
   return (

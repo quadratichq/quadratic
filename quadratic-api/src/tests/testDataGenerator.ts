@@ -9,6 +9,7 @@ import { getDecryptedTeam, type DecryptedTeam } from '../utils/teams';
 
 type UserData = Parameters<typeof dbClient.user.create>[0]['data'];
 type FileData = Parameters<typeof dbClient.file.create>[0]['data'];
+type FolderData = Parameters<typeof dbClient.folder.create>[0]['data'];
 type TeamData = Parameters<typeof dbClient.team.create>[0]['data'];
 type ConnectionData = Parameters<typeof dbClient.connection.create>[0]['data'];
 type ConnectionType = ConnectionData['type'];
@@ -58,6 +59,16 @@ export async function createFile({ data }: { data: FileData }) {
   });
 
   return dbFile;
+}
+
+/**
+ *
+ * Creating a folder
+ *
+ */
+export async function createFolder({ data }: { data: FolderData }) {
+  const dbFolder = await dbClient.folder.create({ data });
+  return dbFolder;
 }
 
 /**
@@ -286,6 +297,7 @@ export async function clearDb() {
     dbClient.fileInvite.deleteMany(),
     dbClient.userFileRole.deleteMany(),
     dbClient.file.deleteMany(),
+    dbClient.folder.deleteMany(),
     dbClient.syncedConnectionLog.deleteMany(),
     dbClient.syncedConnection.deleteMany(),
     dbClient.connection.deleteMany(),

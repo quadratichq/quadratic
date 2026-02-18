@@ -4,6 +4,7 @@ import { supportedFileTypes } from '@/app/helpers/files';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { useCreateFile } from '@/dashboard/hooks/useCreateFile';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import {
@@ -41,18 +42,13 @@ const stateToInsertAndRun = {
 
 export function NewFileButton() {
   const {
-    activeTeam: {
-      connections,
-      team: { uuid: teamUuid },
-    },
+    activeTeam: { connections },
   } = useDashboardRouteLoaderData();
+  const { teamUuid, isPrivate, folderUuid, createFile } = useCreateFile();
   const navigate = useNavigate();
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
-
-  // Sets the creation of new files as private by default
-  const isPrivate = true;
 
   if (isMobile) {
     return null;
@@ -65,7 +61,7 @@ export function NewFileButton() {
         variant="default"
         onClick={(e) => {
           e.preventDefault();
-          window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: isPrivate });
+          createFile();
         }}
       >
         New file
@@ -80,7 +76,7 @@ export function NewFileButton() {
         onChange={(e) => {
           const files = e.target.files;
           if (files) {
-            handleFileImport({ files: Array.from(files), isPrivate, teamUuid });
+            handleFileImport({ files: Array.from(files), isPrivate, teamUuid, folderUuid });
           }
         }}
       />
@@ -118,6 +114,7 @@ export function NewFileButton() {
                 window.location.href = ROUTES.CREATE_FILE(teamUuid, {
                   state: stateToInsertAndRun,
                   private: isPrivate,
+                  folderUuid,
                 });
               }}
             >

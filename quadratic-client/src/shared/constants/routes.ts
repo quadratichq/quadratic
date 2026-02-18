@@ -38,6 +38,7 @@ export const ROUTES = {
       connectionUuid?: string | null;
       connectionType?: ConnectionType | null;
       connectionName?: string | null;
+      folderUuid?: string | null;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -62,6 +63,9 @@ export const ROUTES = {
     }
     if (searchParams.connectionName) {
       url.searchParams.set('connection-name', searchParams.connectionName);
+    }
+    if (searchParams.folderUuid) {
+      url.searchParams.set('folder-uuid', searchParams.folderUuid);
     }
 
     return url.pathname + url.search;
@@ -98,6 +102,9 @@ export const ROUTES = {
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   ACTIVE_TEAM_SETTINGS: `/team/settings`,
+  TEAM_DRIVE_TEAM: (teamUuid: string) => `/teams/${teamUuid}/drive/team`,
+  TEAM_DRIVE_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/drive/private`,
+  TEAM_DRIVE_FOLDER: (teamUuid: string, folderUuid: string) => `/teams/${teamUuid}/drive/folders/${folderUuid}`,
   TEMPLATES: '/templates',
   LABS: '/labs',
 
