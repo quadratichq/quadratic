@@ -228,7 +228,7 @@ export const Connections = ({
   );
 
   return (
-    <ConnectionsProvider skipRecoilUpdates={hideSidebar}>
+    <ConnectionsProvider sshPublicKey={sshPublicKey}>
       <TooltipProvider>
         <div className={hideSidebar ? '' : 'grid-cols-12 gap-12 md:grid'}>
           <div className={hideSidebar ? '' : 'col-span-8'}>
@@ -329,7 +329,6 @@ export const Connections = ({
             <div className="col-span-4 mt-12 md:mt-0">
               <ConnectionsSidebar
                 staticIps={staticIps}
-                sshPublicKey={sshPublicKey}
                 connectionType={
                   activeConnectionState.view === 'create' || activeConnectionState.view === 'edit'
                     ? activeConnectionState.type

@@ -1,22 +1,15 @@
 import { createContext, useContext, type ReactNode } from 'react';
 
 interface ConnectionsContextValue {
-  /** Skip Recoil state updates (useful when rendering outside of RecoilRoot) */
-  skipRecoilUpdates: boolean;
+  sshPublicKey: string;
 }
 
 const ConnectionsContext = createContext<ConnectionsContextValue>({
-  skipRecoilUpdates: false,
+  sshPublicKey: '',
 });
 
 export const useConnectionsContext = () => useContext(ConnectionsContext);
 
-export const ConnectionsProvider = ({
-  children,
-  skipRecoilUpdates = false,
-}: {
-  children: ReactNode;
-  skipRecoilUpdates?: boolean;
-}) => {
-  return <ConnectionsContext.Provider value={{ skipRecoilUpdates }}>{children}</ConnectionsContext.Provider>;
+export const ConnectionsProvider = ({ children, sshPublicKey }: { children: ReactNode; sshPublicKey: string }) => {
+  return <ConnectionsContext.Provider value={{ sshPublicKey }}>{children}</ConnectionsContext.Provider>;
 };

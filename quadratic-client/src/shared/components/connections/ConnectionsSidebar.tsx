@@ -1,4 +1,3 @@
-import { connectionFormSshAtom } from '@/shared/atom/connectionFormSshAtom';
 import {
   DOCUMENTATION_CONNECTIONS_IP_LIST_URL,
   DOCUMENTATION_CONNECTIONS_URL,
@@ -9,22 +8,18 @@ import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 export const ConnectionsSidebar = ({
-  sshPublicKey,
   staticIps,
   connectionType,
   showIps,
 }: {
   staticIps: string[] | null;
-  sshPublicKey: string;
   connectionType?: ConnectionType;
   /** Whether to show the IP allow-list section (only shown on database/details pages) */
   showIps?: boolean;
 }) => {
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';
-  const useSsh = useRecoilValue(connectionFormSshAtom);
   const isSynced = connectionType ? isSyncedConnectionType(connectionType) : false;
 
   return (
@@ -49,14 +44,6 @@ export const ConnectionsSidebar = ({
           linkHref={DOCUMENTATION_CONNECTIONS_IP_LIST_URL}
         >
           <SidebarCopyContent text={staticIpsContent} />
-        </SidebarItem>
-      )}
-      {useSsh && (
-        <SidebarItem
-          title="Public SSH key"
-          description="If you’re connecting via SSH, you’ll need your team’s public key."
-        >
-          <SidebarCopyContent text={sshPublicKey} />
         </SidebarItem>
       )}
     </div>

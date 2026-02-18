@@ -1,11 +1,11 @@
-import { connectionFormSshAtom } from '@/shared/atom/connectionFormSshAtom';
 import { useConnectionsContext } from '@/shared/components/connections/ConnectionsContext';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
+import { Button } from '@/shared/shadcn/ui/button';
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
-import { useSetRecoilState } from 'recoil';
 
 interface ConnectionFormSshProps {
   form: UseFormReturn<any>;
@@ -16,6 +16,7 @@ const DEFAULTS = {
 };
 
 const Children = ({ form }: ConnectionFormSshProps) => {
+  const { sshPublicKey } = useConnectionsContext();
   return (
     <>
       <div className="grid grid-cols-3 gap-4">
@@ -62,34 +63,53 @@ const Children = ({ form }: ConnectionFormSshProps) => {
           )}
         />
       </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="ssh-public-key">SSH public key</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            id="ssh-public-key"
+            onClick={(e) => {
+              e.currentTarget.select();
+            }}
+            readOnly
+            autoComplete="off"
+            value={sshPublicKey}
+          />
+          <CopyButton value={sshPublicKey} />
+        </div>
+        <FormDescription>This is your team’s public key (you’ll need it if you’re connecting via SSH).</FormDescription>
+      </div>
     </>
   );
 };
 
-// Component to sync SSH state to Recoil (only used when inside RecoilRoot)
-const SshRecoilSync = ({ useSsh }: { useSsh: boolean }) => {
-  const setUseSsh = useSetRecoilState(connectionFormSshAtom);
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="w-24"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1000);
+      }}
+    >
+      {copied ? 'Copied!' : 'Copy'}
+    </Button>
+  );
+}
 
-  useEffect(() => {
-    setUseSsh(useSsh);
-
-    return () => {
-      setUseSsh(false);
-    };
-  }, [setUseSsh, useSsh]);
-
-  return null;
-};
-
-// Change the component signature to use the new props type
 export const ConnectionFormSsh = ({ form }: ConnectionFormSshProps) => {
   const name = 'useSsh';
   const useSsh: boolean = form.watch(name);
-  const { skipRecoilUpdates } = useConnectionsContext();
 
   return (
     <>
-      {!skipRecoilUpdates && <SshRecoilSync useSsh={useSsh} />}
       <FormField
         control={form.control}
         name={name}
