@@ -334,7 +334,7 @@ export const Connections = ({
                     ? activeConnectionState.type
                     : undefined
                 }
-                showIps={activeConnectionState.view === 'details'}
+                showIps={activeConnectionState.view === 'create' || activeConnectionState.view === 'edit'}
               />
             </div>
           )}
