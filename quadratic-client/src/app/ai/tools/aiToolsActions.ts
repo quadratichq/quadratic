@@ -157,6 +157,19 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
   return [createTextContent(`Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`)];
 };
 
+function getMergeCellError(sheetId: string, x: number, y: number): string | null {
+  const sheet = sheets.getById(sheetId);
+  if (!sheet) return null;
+  const mergeRect = sheet.getMergeCellRect(x, y);
+  if (!mergeRect) return null;
+  const anchor = { x: Number(mergeRect.min.x), y: Number(mergeRect.min.y) };
+  if (anchor.x === x && anchor.y === y) return null;
+  const cellA1 = xyToA1(x, y);
+  const anchorA1 = xyToA1(anchor.x, anchor.y);
+  const mergeA1 = `${anchorA1}:${xyToA1(Number(mergeRect.max.x), Number(mergeRect.max.y))}`;
+  return `Error: Cell ${cellA1} is inside merged region ${mergeA1}. To write to this merged cell, use the anchor cell ${anchorA1} instead.`;
+}
+
 type AIToolMessageMetaData = {
   source: AISource;
   chatId: string;
@@ -247,6 +260,19 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = selection.getCursor();
 
+      // Check if any target cell is a non-anchor cell in a merged region
+      if (cell_values.length > 0 && cell_values[0].length > 0) {
+        for (let row = 0; row < cell_values.length; row++) {
+          for (let col = 0; col < cell_values[row].length; col++) {
+            if (cell_values[row][col] === '') continue;
+            const mergeError = getMergeCellError(sheetId, x + col, y + row);
+            if (mergeError) {
+              return [createTextContent(mergeError)];
+            }
+          }
+        }
+      }
+
       if (cell_values.length > 0 && cell_values[0].length > 0) {
         // Move AI cursor to show the range being written
         try {
@@ -282,6 +308,11 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       const { x, y } = selection.getCursor();
+
+      const mergeError = getMergeCellError(sheetId, x, y);
+      if (mergeError) {
+        return [createTextContent(mergeError)];
+      }
 
       // Move AI cursor to the code cell position
       try {
@@ -431,6 +462,11 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const { x, y } = selection.getCursor();
 
+      const mergeError = getMergeCellError(sheetId, x, y);
+      if (mergeError) {
+        return [createTextContent(mergeError)];
+      }
+
       // Move AI cursor to the code cell position
       try {
         const selectionString = selection.save();
@@ -491,6 +527,23 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetFormulaCellValue]: async (args) => {
     try {
       const { formulas } = args;
+
+      // Check if any formula targets a non-anchor cell in a merged region
+      for (const formula of formulas) {
+        const sheetId = formula.sheet_name
+          ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        try {
+          const sel = sheets.stringToSelection(formula.code_cell_position, sheetId);
+          const cursor = sel.getCursor();
+          const mergeError = getMergeCellError(sheetId, cursor.x, cursor.y);
+          if (mergeError) {
+            return [createTextContent(mergeError)];
+          }
+        } catch {
+          // position parsing will be handled downstream
+        }
+      }
 
       // Group formulas by sheet
       const formulasBySheet = new Map<string, Array<{ selection: string; codeString: string }>>();

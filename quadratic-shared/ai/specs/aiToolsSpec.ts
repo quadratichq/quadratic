@@ -965,6 +965,7 @@ This function requires the sheet name of the current sheet from the context, the
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
 Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
+IMPORTANT: If the target cells overlap with merged cell regions, you must place values at the anchor (top-left) cell of the merge, not at interior cells. Writing to a non-anchor cell in a merged region will fail. Check the context for merged cell regions before placing values.\n
 `,
   },
   [AITool.GetCodeCellValue]: {
@@ -1079,6 +1080,7 @@ Code cell (Python and Javascript) placement instructions:\n
 - If the sheet is empty, place the code cell at A1.\n
 
 Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
+IMPORTANT: Do not place code cells at non-anchor cells within merged regions. The anchor cell is the top-left cell of the merge. Writing to a non-anchor cell in a merged region will fail.\n
 `,
   },
   [AITool.GetDatabaseSchemas]: {
@@ -1280,6 +1282,7 @@ Examples:
 - Basic arithmetic operations
 - Joining strings
 - Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
+IMPORTANT: Do not place formulas at non-anchor cells within merged regions. The anchor cell is the top-left cell of the merge. Writing to a non-anchor cell in a merged region will fail.\n
 `,
   },
   [AITool.MoveCells]: {
