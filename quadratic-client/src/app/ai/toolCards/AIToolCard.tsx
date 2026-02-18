@@ -19,6 +19,7 @@ import { GetCodeCellValue } from '@/app/ai/toolCards/GetCodeCellValue';
 import { GetConditionalFormats } from '@/app/ai/toolCards/GetConditionalFormats';
 import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
+import { IndexDataSource } from '@/app/ai/toolCards/IndexDataSource';
 import { GetValidations } from '@/app/ai/toolCards/GetValidations';
 import { HasCellData } from '@/app/ai/toolCards/HasCellData';
 import { InsertColumns } from '@/app/ai/toolCards/InsertColumns';
@@ -83,6 +84,8 @@ export const AIToolCard = memo(({ toolCall, className, isUpdate, hideIcon }: AIT
       );
     case AITool.GetDatabaseSchemas:
       return <GetDatabaseSchemas toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.IndexDataSource:
+      return <IndexDataSource toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetSQLCodeCellValue:
       return <SetSQLCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetFormulaCellValue:

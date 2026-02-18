@@ -20,6 +20,7 @@ export enum AITool {
   GetCodeCellValue = 'get_code_cell_value',
   SetCodeCellValue = 'set_code_cell_value',
   GetDatabaseSchemas = 'get_database_schemas',
+  IndexDataSource = 'index_data_source',
   SetSQLCodeCellValue = 'set_sql_code_cell_value',
   SetFormulaCellValue = 'set_formula_cell_value',
   MoveCells = 'move_cells',
@@ -81,6 +82,7 @@ export const AIToolSchema = z.enum([
   AITool.GetCodeCellValue,
   AITool.SetCodeCellValue,
   AITool.GetDatabaseSchemas,
+  AITool.IndexDataSource,
   AITool.SetSQLCodeCellValue,
   AITool.SetFormulaCellValue,
   AITool.MoveCells,
@@ -268,6 +270,10 @@ export const AIToolsArgsSchema = {
     connection_ids: z
       .preprocess((val) => (val ? val : []), z.array(z.string().uuid()))
       .transform((val) => val.filter((id) => !!id)),
+  }),
+  [AITool.IndexDataSource]: z.object({
+    connection_id: z.string().uuid(),
+    semantic_layer: z.string(),
   }),
   [AITool.SetSQLCodeCellValue]: z.object({
     sheet_name: z.string().nullable().optional(),
@@ -1110,6 +1116,90 @@ Retrieves detailed database table schemas including column names, data types, an
 Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
 If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
 This tool should always be called before writing SQL. If you don't have the table schema, you cannot write accurate SQL queries.\n
+`,
+  },
+  [AITool.IndexDataSource]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max', 'others'],
+    description: `
+Updates the semantic layer for a data source connection. The semantic layer helps AI understand the database structure, purpose of tables, column meanings, and relationships.\n
+Use this tool to document your understanding of a data source after exploring it.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        connection_id: {
+          type: 'string',
+          description: 'UUID string corresponding to the connection ID of the data source to index.',
+        },
+        semantic_layer: {
+          type: 'string',
+          description:
+            'YAML-formatted semantic layer description of the data source. Include table purposes, column descriptions, data types, relationships, and any important notes about data quality or usage patterns.',
+        },
+      },
+      required: ['connection_id', 'semantic_layer'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.IndexDataSource],
+    prompt: `
+Updates the semantic layer for a data source connection. The semantic layer is documentation that helps AI (and users) understand the database structure, purpose of tables, column meanings, relationships, and data patterns.
+
+When to use this tool:
+- When the user asks you to "index", "explore", "document", or "understand" a data source
+- After exploring a new connection to save your understanding
+- When the user wants to improve AI's ability to write queries against this data source
+
+How to build an effective semantic layer:
+1. First, use GetDatabaseSchemas to get the table and column structure
+2. Run sample queries using SetSQLCodeCellValue to understand the data:
+   - SELECT * FROM table_name LIMIT 5 to see sample data
+   - SELECT COUNT(*) FROM table_name to understand table sizes
+   - SELECT DISTINCT column_name FROM table_name LIMIT 20 for categorical columns
+3. Based on your exploration, create a comprehensive semantic layer
+
+Semantic layer format (YAML):
+\`\`\`yaml
+database_overview: |
+  Brief description of what this database contains and its primary use case.
+
+tables:
+  - name: table_name
+    purpose: |
+      What this table stores and when it's used.
+    row_represents: What each row in this table represents
+    key_columns:
+      - column_name: description of what this column contains
+      - another_column: description including data type notes, valid values, etc.
+    relationships:
+      - relates_to: other_table_name
+        via: foreign_key_column
+        type: one-to-many | many-to-one | many-to-many
+    notes: |
+      Any important notes about data quality, common query patterns, or gotchas.
+
+  - name: another_table
+    purpose: |
+      Description of this table.
+    # ... continue for each relevant table
+
+common_query_patterns:
+  - description: What this query answers
+    example: SELECT ... FROM ... (brief example)
+
+data_quality_notes: |
+  Any known issues with the data, null handling, or special values to be aware of.
+\`\`\`
+
+Important guidelines:
+- Be thorough but concise - focus on information that helps write accurate queries
+- Include data type notes when they're non-obvious (e.g., "stored as Unix timestamp in milliseconds")
+- Note any columns with encoded values or abbreviations
+- Document foreign key relationships between tables
+- Include common query patterns if you discover them during exploration
+- Note any data quality issues (nulls, inconsistent formats, etc.)
+
+The semantic layer you create will be saved to the connection and used to help write better queries in the future.
 `,
   },
   [AITool.SetSQLCodeCellValue]: {

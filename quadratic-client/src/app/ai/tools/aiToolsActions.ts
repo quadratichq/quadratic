@@ -420,6 +420,42 @@ export const aiToolsActions: AIToolActionsRecord = {
       ];
     }
   },
+  [AITool.IndexDataSource]: async (args) => {
+    const { connection_id, semantic_layer } = args;
+
+    // Get team UUID from the current context
+    const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
+    if (!teamUuid) {
+      return [createTextContent('Unable to update semantic layer. Access to team is required.')];
+    }
+
+    try {
+      // First, get the current connection to preserve existing fields
+      const connection = await apiClient.connections.get({ connectionUuid: connection_id, teamUuid });
+
+      // Update the connection with the new semantic layer
+      const updatedConnection = await apiClient.connections.update({
+        connectionUuid: connection_id,
+        teamUuid,
+        body: {
+          name: connection.name,
+          typeDetails: connection.typeDetails,
+          semanticDescription: semantic_layer,
+        },
+      });
+
+      return [
+        createTextContent(
+          `Successfully updated semantic layer for connection "${updatedConnection.name}".\n\nThe semantic layer has been saved and will be used to help write better queries against this data source in the future.`
+        ),
+      ];
+    } catch (error) {
+      console.error('[IndexDataSource] Error updating semantic layer:', error);
+      return [
+        createTextContent(`Error updating semantic layer: ${error instanceof Error ? error.message : String(error)}`),
+      ];
+    }
+  },
   [AITool.SetSQLCodeCellValue]: async (args, messageMetaData) => {
     try {
       let { sheet_name, code_cell_name, connection_kind, code_cell_position, sql_code_string, connection_id } = args;
