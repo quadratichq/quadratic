@@ -27,7 +27,6 @@ hyper = "1.3.1"
 hyper-util = { version = "0.1.5", features = ["service"] }
 jsonwebtoken = "9.2.0"
 log = "0.4.21"
-openssl = { version = "0.10.72", features = ["vendored"] }
 parquet = { version = "54.2.1", default-features = false, features = [
   "arrow",
   "arrow-array",
@@ -47,9 +46,10 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "sql",
   "synced",
 ] }
-reqwest = { version = "0.11.22", features = [
+reqwest = { version = "0.11.22", default-features = false, features = [
   "cookies",
   "json",
+  "rustls-tls-native-roots",
   "serde_json",
   "stream",
 ] }

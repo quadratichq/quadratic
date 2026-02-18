@@ -79,6 +79,9 @@ File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({
       if (sheetContext.connections && sheetContext.connections.length > 0) {
         text += `- ${sheetContext.connections.length} connection ${pluralize('table', sheetContext.connections.length)}\n`;
       }
+      if (sheetContext.merge_cells && sheetContext.merge_cells.length > 0) {
+        text += `- ${sheetContext.merge_cells.length} merged cell ${pluralize('region', sheetContext.merge_cells.length)}: ${sheetContext.merge_cells.join(', ')}\n`;
+      }
       text += '\n';
 
       // Data Tables
