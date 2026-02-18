@@ -2,13 +2,13 @@
 // Do not modify it manually.
 
 export type A1Error = { "type": "InvalidCellReference", "error": string } | { "type": "InvalidSheetId", "error": string } | { "type": "InvalidSheetMap", "error": string } | { "type": "InvalidColumn", "error": string } | { "type": "InvalidSheetName", "error": string } | { "type": "InvalidSheetNameMissingQuotes", "error": string } | { "type": "InvalidRange", "error": string } | { "type": "InvalidRow", "error": string } | { "type": "SpuriousDollarSign", "error": string } | { "type": "TooManySheets", "error": string } | { "type": "MismatchedQuotes", "error": string } | { "type": "WrongCellCount", "error": string } | { "type": "InvalidExclusion", "error": string } | { "type": "TranslateInvalid", "error": string } | { "type": "SheetNotFound" } | { "type": "InvalidTableRef", "error": string } | { "type": "TableNotFound", "error": string } | { "type": "MultipleColumnDefinitions" } | { "type": "MultipleRowDefinitions" } | { "type": "UnexpectedRowNumber" } | { "type": "InvalidRowRange", "error": string } | { "type": "OutOfBounds", "error": RefError };
-export type A1Selection = {
+export type A1Selection = { 
 /**
  * Current sheet.
  *
  * Selections can only span a single sheet.
  */
-sheet_id: SheetId,
+sheet_id: SheetId, 
 /**
  * Cursor position, which is moved using the arrow keys (while not holding
  * shift).
@@ -17,7 +17,7 @@ sheet_id: SheetId,
  * in the case of an infinite selection it contains information that cannot
  * be inferred from `ranges`.
  */
-cursor: Pos,
+cursor: Pos, 
 /**
  * Selected ranges (union).
  *
@@ -31,11 +31,11 @@ cursor: Pos,
  * holding the shift key.
  */
 ranges: Array<CellRefRange>, };
-export type ArraySize = {
+export type ArraySize = { 
 /**
  * Width (number of columns)
  */
-w: number,
+w: number, 
 /**
  * Height (number of rows)
  */
@@ -55,118 +55,118 @@ export type CellRefRangeEnd = { col: CellRefCoord, row: CellRefCoord, };
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
-export type ColorScale = {
+export type ColorScale = { 
 /**
  * The threshold points defining the color scale.
  * Must have at least 2 thresholds (min and max).
  * Thresholds should be ordered from lowest to highest value.
  */
-thresholds: Array<ColorScaleThreshold>,
+thresholds: Array<ColorScaleThreshold>, 
 /**
  * When true, automatically inverts text color (white/black) based on
  * the fill color's luminance to ensure readability.
  */
 invert_text_on_dark: boolean, };
-export type ColorScaleThreshold = {
+export type ColorScaleThreshold = { 
 /**
  * How to determine the threshold value.
  */
-value_type: ColorScaleThresholdValueType,
+value_type: ColorScaleThresholdValueType, 
 /**
  * The color at this threshold (hex format, e.g., "#ff0000").
  */
 color: string, };
 export type ColorScaleThresholdValueType = "Min" | "Max" | { "Number": number } | { "Percentile": number } | { "Percent": number };
-export type ConditionalFormat = {
+export type ConditionalFormat = { 
 /**
  * Unique identifier for this conditional format rule.
  */
-id: string,
+id: string, 
 /**
  * The selection of cells this conditional format applies to.
  */
-selection: A1Selection,
+selection: A1Selection, 
 /**
  * The configuration for this conditional format (formula-based or color scale).
  */
-config: ConditionalFormatConfig,
+config: ConditionalFormatConfig, 
 /**
  * Whether to apply the format to blank cells.
  * If None, uses the default based on the rule type.
  */
 apply_to_blank: boolean | null, };
-export type ConditionalFormatClient = {
+export type ConditionalFormatClient = { 
 /**
  * Unique identifier for this conditional format rule.
  */
-id: string,
+id: string, 
 /**
  * The selection of cells this conditional format applies to.
  */
-selection: A1Selection,
+selection: A1Selection, 
 /**
  * The configuration for this conditional format.
  */
-config: ConditionalFormatConfigClient,
+config: ConditionalFormatConfigClient, 
 /**
  * Whether to apply the format to blank cells.
  */
 apply_to_blank: boolean, };
-export type ConditionalFormatConfig = { "type": "Formula",
+export type ConditionalFormatConfig = { "type": "Formula", 
 /**
  * The style to apply when the condition is true.
  */
-style: ConditionalFormatStyle, } | { "type": "ColorScale",
+style: ConditionalFormatStyle, } | { "type": "ColorScale", 
 /**
  * The color scale configuration with threshold points.
  */
 color_scale: ColorScale, };
-export type ConditionalFormatConfigClient = { "type": "Formula",
+export type ConditionalFormatConfigClient = { "type": "Formula", 
 /**
  * The style to apply when the condition is true.
  */
-style: ConditionalFormatStyle,
+style: ConditionalFormatStyle, 
 /**
  * The parsed rule for display/editing.
  */
-rule: ConditionalFormatRule, } | { "type": "ColorScale",
+rule: ConditionalFormatRule, } | { "type": "ColorScale", 
 /**
  * The color scale configuration with threshold points.
  */
 color_scale: ColorScale, };
-export type ConditionalFormatConfigUpdate = { "type": "Formula",
+export type ConditionalFormatConfigUpdate = { "type": "Formula", 
 /**
  * The formula string (will be parsed into AST).
  */
-rule: string,
+rule: string, 
 /**
  * The style to apply when the condition is true.
  */
-style: ConditionalFormatStyle, } | { "type": "ColorScale",
+style: ConditionalFormatStyle, } | { "type": "ColorScale", 
 /**
  * The color scale configuration with threshold points.
  */
 color_scale: ColorScale, };
 export type ConditionalFormatRule = "IsEmpty" | "IsNotEmpty" | { "TextContains": { value: string, } } | { "TextNotContains": { value: string, } } | { "TextStartsWith": { value: string, } } | { "TextEndsWith": { value: string, } } | { "TextIsExactly": { value: string, } } | { "GreaterThan": { value: ConditionalFormatValue, } } | { "GreaterThanOrEqual": { value: ConditionalFormatValue, } } | { "LessThan": { value: ConditionalFormatValue, } } | { "LessThanOrEqual": { value: ConditionalFormatValue, } } | { "IsEqualTo": { value: ConditionalFormatValue, } } | { "IsNotEqualTo": { value: ConditionalFormatValue, } } | { "IsBetween": { min: ConditionalFormatValue, max: ConditionalFormatValue, } } | { "IsNotBetween": { min: ConditionalFormatValue, max: ConditionalFormatValue, } } | { "Custom": { formula: string, } };
 export type ConditionalFormatStyle = { bold: boolean | null, italic: boolean | null, underline: boolean | null, strike_through: boolean | null, text_color: string | null, fill_color: string | null, };
-export type ConditionalFormatUpdate = {
+export type ConditionalFormatUpdate = { 
 /**
  * If None, a new conditional format will be created with a new UUID.
  * If Some, the existing conditional format with this ID will be updated.
  */
-id: string | null,
+id: string | null, 
 /**
  * The sheet this conditional format belongs to.
  */
-sheet_id: string,
+sheet_id: string, 
 /**
  * The selection of cells as an A1 notation string.
  */
-selection: string,
+selection: string, 
 /**
  * The configuration for this conditional format.
  */
-config: ConditionalFormatConfigUpdate,
+config: ConditionalFormatConfigUpdate, 
 /**
  * Whether to apply the format to blank cells.
  * If None, uses the default based on the rule type.
@@ -215,32 +215,32 @@ export type JsHashValidationWarnings = { sheet_id: SheetId, hash: Pos | null, wa
 export type JsHtmlOutput = { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, };
 export type JsNumber = { decimals: number | null, commas: boolean | null, format: NumericFormat | null, };
 export type JsOffset = { column: number | null, row: number | null, size: number, };
-export type JsRenderCell = { x: bigint, y: bigint, value: string,
+export type JsRenderCell = { x: bigint, y: bigint, value: string, 
 /**
  * Code language, set only for the top left cell of a code output.
  */
-language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null,
+language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, 
 /**
  * Error text to display (e.g., "#N/A", "#DIV/0!", "#REF!")
  */
-errorText: string | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null,
+errorText: string | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, fontSize: number | null, tableName: boolean | null, columnHeader: boolean | null, 
 /**
  * Hyperlink spans for RichText cells with hyperlinks (character ranges + URLs).
  */
-linkSpans: Array<JsRenderCellLinkSpan>,
+linkSpans: Array<JsRenderCellLinkSpan>, 
 /**
  * Formatting spans for RichText cells with inline formatting overrides.
  */
 formatSpans: Array<JsRenderCellFormatSpan>, };
-export type JsRenderCellLinkSpan = {
+export type JsRenderCellLinkSpan = { 
 /**
  * Start character index (inclusive).
  */
-start: number,
+start: number, 
 /**
  * End character index (exclusive).
  */
-end: number,
+end: number, 
 /**
  * The hyperlink URL.
  */
@@ -265,31 +265,31 @@ export type NumberRange = { "Range": [number | null, number | null] } | { "Equal
 export type NumericFormat = { type: NumericFormatKind, symbol: string | null, };
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
 export type PasteSpecial = "None" | "Values" | "Formats";
-export type Pos = {
+export type Pos = { 
 /**
  * Column
  */
-x: bigint,
+x: bigint, 
 /**
  * Row
  */
 y: bigint, };
-export type Rect = {
+export type Rect = { 
 /**
  * Upper-left corner.
  */
-min: Pos,
+min: Pos, 
 /**
  * Lower-right corner.
  */
 max: Pos, };
 export type RefRangeBounds = { start: CellRefRangeEnd, end: CellRefRangeEnd, };
 export type Rgba = { red: number, green: number, blue: number, alpha: number, };
-export type RunError = {
+export type RunError = { 
 /**
  * Location of the source code where the error occurred (if any).
  */
-span: Span | null,
+span: Span | null, 
 /**
  * Type of error.
  */
@@ -300,26 +300,26 @@ export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without
 export type SheetId = { id: string, };
 export type SheetInfo = { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetPos = { x: bigint, y: bigint, sheet_id: SheetId, };
-export type SheetRect = {
+export type SheetRect = { 
 /**
  * Upper-left corner.
  */
-min: Pos,
+min: Pos, 
 /**
  * Lower-right corner.
  */
-max: Pos,
+max: Pos, 
 /**
  * The sheet that this region is on.
  */
 sheet_id: SheetId, };
 export type SmallTimestamp = number;
 export type SortDirection = "Ascending" | "Descending" | "None";
-export type Span = {
+export type Span = { 
 /**
  * The byte index of the first character.
  */
-start: number,
+start: number, 
 /**
  * The byte index after the last character.
  */
