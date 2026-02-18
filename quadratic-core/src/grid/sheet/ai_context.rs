@@ -32,7 +32,7 @@ impl Sheet {
         let merge_cells_list: Vec<String> = self
             .merge_cells
             .iter_merge_cells()
-            .filter(|rect| selection.contains_pos(rect.min, a1_context))
+            .filter(|rect| selection.intersects_rect(*rect, a1_context))
             .map(|rect| rect.a1_string())
             .collect();
 

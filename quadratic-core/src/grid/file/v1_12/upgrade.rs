@@ -51,12 +51,12 @@ fn is_single_cell_code(table: &current::DataTableSchema) -> bool {
 
     // Must not be a chart (HTML/image) -- these need to stay as DataTables
     // so the rendering code can find them and use chart_output dimensions
-    let is_html_or_image = match &table.value {
+    let is_html_or_image = matches!(
+        &table.value,
         current::OutputValueSchema::Single(
-            current::CellValueSchema::Html(_) | current::CellValueSchema::Image(_),
-        ) => true,
-        _ => false,
-    };
+            current::CellValueSchema::Html(_) | current::CellValueSchema::Image(_)
+        )
+    );
     if is_html_or_image {
         return false;
     }

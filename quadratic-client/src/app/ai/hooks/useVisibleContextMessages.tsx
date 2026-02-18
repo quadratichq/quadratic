@@ -95,7 +95,7 @@ export function useVisibleContextMessages() {
 Values in merged regions can only be written to the anchor (top-left) cell.
 `;
         for (const merge of sheetContext.merge_cells) {
-          const anchor = merge.split(':')[0];
+          const anchor = merge.includes(':') ? merge.split(':')[0] : merge;
           text += `- ${merge} (anchor: ${anchor})\n`;
         }
       }

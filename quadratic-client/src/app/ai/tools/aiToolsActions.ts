@@ -159,7 +159,7 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
 
 function getMergeCellError(sheetId: string, x: number, y: number): string | null {
   const sheet = sheets.getById(sheetId);
-  if (!sheet) return null;
+  if (!sheet) return `Error: Sheet with id ${sheetId} not found.`;
   const mergeRect = sheet.getMergeCellRect(x, y);
   if (!mergeRect) return null;
   const anchor = { x: Number(mergeRect.min.x), y: Number(mergeRect.min.y) };
@@ -168,6 +168,27 @@ function getMergeCellError(sheetId: string, x: number, y: number): string | null
   const anchorA1 = xyToA1(anchor.x, anchor.y);
   const mergeA1 = `${anchorA1}:${xyToA1(Number(mergeRect.max.x), Number(mergeRect.max.y))}`;
   return `Error: Cell ${cellA1} is inside merged region ${mergeA1}. To write to this merged cell, use the anchor cell ${anchorA1} instead.`;
+}
+
+function getMergeCellErrorContent(sheetId: string, x: number, y: number): ToolResultContent | null {
+  const error = getMergeCellError(sheetId, x, y);
+  return error ? [createTextContent(error)] : null;
+}
+
+function checkCellValuesMergeErrors(
+  sheetId: string,
+  originX: number,
+  originY: number,
+  cellValues: string[][]
+): ToolResultContent | null {
+  for (let row = 0; row < cellValues.length; row++) {
+    for (let col = 0; col < cellValues[row].length; col++) {
+      if (!cellValues[row][col]) continue;
+      const result = getMergeCellErrorContent(sheetId, originX + col, originY + row);
+      if (result) return result;
+    }
+  }
+  return null;
 }
 
 type AIToolMessageMetaData = {
@@ -262,15 +283,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       // Check if any target cell is a non-anchor cell in a merged region
       if (cell_values.length > 0 && cell_values[0].length > 0) {
-        for (let row = 0; row < cell_values.length; row++) {
-          for (let col = 0; col < cell_values[row].length; col++) {
-            if (cell_values[row][col] === '') continue;
-            const mergeError = getMergeCellError(sheetId, x + col, y + row);
-            if (mergeError) {
-              return [createTextContent(mergeError)];
-            }
-          }
-        }
+        const mergeError = checkCellValuesMergeErrors(sheetId, x, y, cell_values);
+        if (mergeError) return mergeError;
       }
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
@@ -309,10 +323,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const { x, y } = selection.getCursor();
 
-      const mergeError = getMergeCellError(sheetId, x, y);
-      if (mergeError) {
-        return [createTextContent(mergeError)];
-      }
+      const mergeError = getMergeCellErrorContent(sheetId, x, y);
+      if (mergeError) return mergeError;
 
       // Move AI cursor to the code cell position
       try {
@@ -462,10 +474,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const { x, y } = selection.getCursor();
 
-      const mergeError = getMergeCellError(sheetId, x, y);
-      if (mergeError) {
-        return [createTextContent(mergeError)];
-      }
+      const mergeError = getMergeCellErrorContent(sheetId, x, y);
+      if (mergeError) return mergeError;
 
       // Move AI cursor to the code cell position
       try {
@@ -535,10 +545,14 @@ export const aiToolsActions: AIToolActionsRecord = {
           : sheets.current;
         try {
           const sel = sheets.stringToSelection(formula.code_cell_position, sheetId);
-          const cursor = sel.getCursor();
-          const mergeError = getMergeCellError(sheetId, cursor.x, cursor.y);
-          if (mergeError) {
-            return [createTextContent(mergeError)];
+          const rect = sel.getSingleRectangleOrCursor(sheets.jsA1Context);
+          if (rect) {
+            for (let y = Number(rect.min.y); y <= Number(rect.max.y); y++) {
+              for (let x = Number(rect.min.x); x <= Number(rect.max.x); x++) {
+                const mergeError = getMergeCellErrorContent(sheetId, x, y);
+                if (mergeError) return mergeError;
+              }
+            }
           }
         } catch {
           // position parsing will be handled downstream
