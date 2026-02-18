@@ -1,4 +1,5 @@
 import { ConnectionFormCredentialsHelper } from '@/shared/components/connections/ConnectionFormCredentialsHelper';
+import { ConnectionFormIpAllowList } from '@/shared/components/connections/ConnectionFormIpAllowList';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
@@ -148,6 +149,8 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           />
         </div>
         <ConnectionFormCredentialsHelper />
+
+        <ConnectionFormIpAllowList />
 
         <ConnectionFormSemantic form={form} />
 

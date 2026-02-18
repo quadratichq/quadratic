@@ -1,4 +1,5 @@
 import { ConnectionFormCredentialsHelper } from '@/shared/components/connections/ConnectionFormCredentialsHelper';
+import { ConnectionFormIpAllowList } from '@/shared/components/connections/ConnectionFormIpAllowList';
 import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import { ConnectionFormSsh } from '@/shared/components/connections/ConnectionFormSsh';
@@ -144,6 +145,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           />
         </div>
         <ConnectionFormCredentialsHelper />
+
+        <ConnectionFormIpAllowList />
+
         <ConnectionFormSsh form={form} />
 
         <ConnectionFormSemantic form={form} />

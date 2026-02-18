@@ -228,7 +228,7 @@ export const Connections = ({
   );
 
   return (
-    <ConnectionsProvider sshPublicKey={sshPublicKey}>
+    <ConnectionsProvider sshPublicKey={sshPublicKey} staticIps={staticIps ?? []}>
       <TooltipProvider>
         <div className={hideSidebar ? '' : 'grid-cols-12 gap-12 md:grid'}>
           <div className={hideSidebar ? '' : 'col-span-8'}>
@@ -327,15 +327,7 @@ export const Connections = ({
           </div>
           {!hideSidebar && (
             <div className="col-span-4 mt-12 md:mt-0">
-              <ConnectionsSidebar
-                staticIps={staticIps}
-                connectionType={
-                  activeConnectionState.view === 'create' || activeConnectionState.view === 'edit'
-                    ? activeConnectionState.type
-                    : undefined
-                }
-                showIps={activeConnectionState.view === 'create' || activeConnectionState.view === 'edit'}
-              />
+              <ConnectionsSidebar />
             </div>
           )}
         </div>
