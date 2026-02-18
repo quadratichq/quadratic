@@ -1,4 +1,5 @@
 import {
+  restoreFileViewStateAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
   showGridLinesAtom,
@@ -16,6 +17,7 @@ export function GeneralSettings() {
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
   const [showScrollbars, setShowScrollbars] = useRecoilState(showScrollbarsAtom);
+  const [restoreFileViewState, setRestoreFileViewState] = useRecoilState(restoreFileViewStateAtom);
 
   return (
     <div className="space-y-6">
@@ -71,6 +73,24 @@ export function GeneralSettings() {
               </div>
             </div>
             <Switch id="show-code-peek" checked={showCodePeek} onCheckedChange={setShowCodePeek} />
+          </div>
+          <Separator />
+
+          <div className="flex items-center justify-between py-3">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="restore-file-view-state" className="cursor-pointer">
+                Restore sheet when reopening files
+              </Label>
+              <div className="text-xs text-muted-foreground">
+                Save your current sheet, cursor, and view on your local machine so when you open the file again, you
+                continue work where you left off.
+              </div>
+            </div>
+            <Switch
+              id="restore-file-view-state"
+              checked={restoreFileViewState}
+              onCheckedChange={setRestoreFileViewState}
+            />
           </div>
         </div>
       </div>

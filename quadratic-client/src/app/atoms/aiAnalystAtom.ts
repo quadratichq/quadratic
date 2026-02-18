@@ -105,6 +105,7 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         // This prevents the race condition where we read the default value (true) instead of
         // the saved localStorage value
         const gridSettings = getLoadable(gridSettingsAtom).getValue();
+
         const showAIAnalyst = gridSettings.showAIAnalystOnStartup;
         setSelf({
           ...defaultAIAnalystState,

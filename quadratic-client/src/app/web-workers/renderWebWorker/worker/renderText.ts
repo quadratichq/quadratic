@@ -125,7 +125,12 @@ class RenderText {
       }
     }
 
-    if (this.sheetId && firstRender && !this.firstRender) {
+    // Only signal first render complete once we have a real viewport (with
+    // actual dimensions). Without this guard, the update loop can fire
+    // firstRenderComplete immediately when ready() runs before the first
+    // clientRenderViewport arrives, causing a blank flash — especially
+    // visible when "Restore sheet" places the viewport far from origin.
+    if (this.sheetId && this.viewport && this.viewport.width > 0 && firstRender && !this.firstRender) {
       this.firstRender = true;
       renderClient.firstRenderComplete();
     }

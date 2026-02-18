@@ -1,6 +1,9 @@
-import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { UserFilesListType } from '@/dashboard/atoms/userFilesListFiltersAtom';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
+/** State param for CREATE_FILE when creating a file with code to insert and run (e.g. from AI flow). */
+export type CreateFileStateParam = { language: CodeCellLanguage; codeString: string };
 
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
@@ -31,7 +34,7 @@ export const ROUTES = {
   CREATE_FILE: (
     teamUuid: string,
     searchParams: {
-      state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
+      state?: CreateFileStateParam;
       prompt?: string | null;
       private?: boolean;
       chatId?: string | null;

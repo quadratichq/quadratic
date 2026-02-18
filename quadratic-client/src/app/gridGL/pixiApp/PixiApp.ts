@@ -18,6 +18,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
+import { fileViewState } from '@/app/fileViewState/fileViewState';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate, Rect } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -173,6 +174,11 @@ export class PixiApp {
       this.canvas.focus();
     }
     urlParams.show();
+
+    // Apply saved viewport/selection from IndexedDB before first render so
+    // the user never sees the default viewport flash.
+    fileViewState.applyViewportState();
+
     this.setViewportDirty();
   };
 

@@ -3,9 +3,15 @@ import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEd
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
-import { gridSettingsAtom, presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
+import {
+  gridSettingsAtom,
+  presentationModeAtom,
+  restoreFileViewStateAtom,
+  showHeadingsAtom,
+} from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
+import { fileViewState } from '@/app/fileViewState/fileViewState';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
@@ -84,6 +90,14 @@ export const PixiAppEffects = memo(() => {
   useEffect(() => {
     events.emit('pixiAppSettingsInitialized');
   }, []);
+
+  const restoreFileViewState = useRecoilValue(restoreFileViewStateAtom);
+
+  // Start saving view state when setting is on
+  useEffect(() => {
+    if (!restoreFileViewState) return;
+    fileViewState.startSaving();
+  }, [restoreFileViewState]);
 
   useEffect(() => {
     const handleMouseUp = () => {

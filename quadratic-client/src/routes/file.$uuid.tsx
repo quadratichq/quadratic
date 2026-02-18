@@ -1,5 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { fileViewState } from '@/app/fileViewState/fileViewState';
 import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
@@ -111,6 +112,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     loadPixi(),
     initWorkers(),
     initializeCoreClient(),
+    fileViewState.init(uuid),
   ]);
 
   // we were redirected to login, so we don't need to do anything else

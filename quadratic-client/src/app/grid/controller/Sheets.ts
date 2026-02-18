@@ -1,5 +1,6 @@
 import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
+import { fileViewState } from '@/app/fileViewState/fileViewState';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -72,12 +73,32 @@ export class Sheets {
     });
     this.sort();
 
-    // Look for an initial active sheet in the URL. If it's not there, use the first sheet
-    const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
-    if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
-      this._current = initialActiveSheetId;
+    // When "Restore sheet" is enabled, set the current sheet and viewport
+    // position early so pixiIsReady sends the correct sheet + bounds to the
+    // render worker. Without this, the worker renders origin hashes and fires
+    // firstRenderComplete before the restored viewport arrives.
+    const restoredSheetId = fileViewState.state?.sheetId;
+    if (restoredSheetId && this.getById(restoredSheetId)) {
+      this._current = restoredSheetId;
+
+      // Pre-apply the restored viewport position so getVisibleBounds()
+      // returns the correct area when pixiIsReady fires below.
+      const restoredViewport = fileViewState.state?.sheets[restoredSheetId]?.viewport;
+      if (restoredViewport) {
+        const sheet = this.getById(restoredSheetId);
+        if (sheet) {
+          sheet.cursor.viewport = restoredViewport;
+          pixiApp.viewport.loadViewport();
+        }
+      }
     } else {
-      this._current = this.sheets[0].id;
+      // Look for an initial active sheet in the URL. If it's not there, use the first sheet
+      const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
+      if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
+        this._current = initialActiveSheetId;
+      } else {
+        this._current = this.sheets[0].id;
+      }
     }
 
     content.cellsSheets.create();
