@@ -257,7 +257,9 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/connections/:connectionUuid/log.GET.response': z.array(SyncedConnectionLogSchema),
 
   // Plaid integration endpoints
-  '/v0/teams/:uuid/plaid/link-token.POST.request': z.object({}),
+  '/v0/teams/:uuid/plaid/link-token.POST.request': z.object({
+    primary_product: z.enum(['transactions', 'investments', 'liabilities']).default('transactions'),
+  }),
   '/v0/teams/:uuid/plaid/link-token.POST.response': z.object({
     linkToken: z.string(),
   }),

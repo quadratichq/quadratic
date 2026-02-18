@@ -10,7 +10,7 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
-import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { PlaidDocs, getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { countWords } from '@/app/ai/utils/wordCount';
@@ -157,6 +157,40 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
   return [createTextContent(`Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`)];
 };
 
+function getMergeCellError(sheetId: string, x: number, y: number): string | null {
+  const sheet = sheets.getById(sheetId);
+  if (!sheet) return `Error: Sheet with id ${sheetId} not found.`;
+  const mergeRect = sheet.getMergeCellRect(x, y);
+  if (!mergeRect) return null;
+  const anchor = { x: Number(mergeRect.min.x), y: Number(mergeRect.min.y) };
+  if (anchor.x === x && anchor.y === y) return null;
+  const cellA1 = xyToA1(x, y);
+  const anchorA1 = xyToA1(anchor.x, anchor.y);
+  const mergeA1 = `${anchorA1}:${xyToA1(Number(mergeRect.max.x), Number(mergeRect.max.y))}`;
+  return `Error: Cell ${cellA1} is inside merged region ${mergeA1}. To write to this merged cell, use the anchor cell ${anchorA1} instead.`;
+}
+
+function getMergeCellErrorContent(sheetId: string, x: number, y: number): ToolResultContent | null {
+  const error = getMergeCellError(sheetId, x, y);
+  return error ? [createTextContent(error)] : null;
+}
+
+function checkCellValuesMergeErrors(
+  sheetId: string,
+  originX: number,
+  originY: number,
+  cellValues: string[][]
+): ToolResultContent | null {
+  for (let row = 0; row < cellValues.length; row++) {
+    for (let col = 0; col < cellValues[row].length; col++) {
+      if (!cellValues[row][col]) continue;
+      const result = getMergeCellErrorContent(sheetId, originX + col, originY + row);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
 type AIToolMessageMetaData = {
   source: AISource;
   chatId: string;
@@ -247,6 +281,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = selection.getCursor();
 
+      // Check if any target cell is a non-anchor cell in a merged region
+      if (cell_values.length > 0 && cell_values[0].length > 0) {
+        const mergeError = checkCellValuesMergeErrors(sheetId, x, y, cell_values);
+        if (mergeError) return mergeError;
+      }
+
       if (cell_values.length > 0 && cell_values[0].length > 0) {
         // Move AI cursor to show the range being written
         try {
@@ -282,6 +322,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       const { x, y } = selection.getCursor();
+
+      const mergeError = getMergeCellErrorContent(sheetId, x, y);
+      if (mergeError) return mergeError;
 
       // Move AI cursor to the code cell position
       try {
@@ -388,6 +431,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Format the response
       const schemaText = connectionsInfo.map(getConnectionSchemaMarkdown).join('\n---\n\n');
 
+      // Add connection-type-specific documentation
+      const hasPlaidConnection = connectionsInfo.some(
+        (info) => info.connectionType.toUpperCase() === 'PLAID' && !info.error
+      );
+      const connectionDocs = hasPlaidConnection ? `\n\n${PlaidDocs}` : '';
+
       // Add connection summary for future reference
       const connectionSummary = connectionsInfo
         .filter((item) => item && !item.error)
@@ -401,7 +450,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [
         createTextContent(
           schemaText
-            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${connectionDocs}${summaryText}`
             : `No database schema information available.${summaryText}`
         ),
       ];
@@ -424,6 +473,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       const { x, y } = selection.getCursor();
+
+      const mergeError = getMergeCellErrorContent(sheetId, x, y);
+      if (mergeError) return mergeError;
 
       // Move AI cursor to the code cell position
       try {
@@ -485,6 +537,27 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetFormulaCellValue]: async (args) => {
     try {
       const { formulas } = args;
+
+      // Check if any formula targets a non-anchor cell in a merged region
+      for (const formula of formulas) {
+        const sheetId = formula.sheet_name
+          ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        try {
+          const sel = sheets.stringToSelection(formula.code_cell_position, sheetId);
+          const rect = sel.getSingleRectangleOrCursor(sheets.jsA1Context);
+          if (rect) {
+            for (let y = Number(rect.min.y); y <= Number(rect.max.y); y++) {
+              for (let x = Number(rect.min.x); x <= Number(rect.max.x); x++) {
+                const mergeError = getMergeCellErrorContent(sheetId, x, y);
+                if (mergeError) return mergeError;
+              }
+            }
+          }
+        } catch {
+          // position parsing will be handled downstream
+        }
+      }
 
       // Group formulas by sheet
       const formulasBySheet = new Map<string, Array<{ selection: string; codeString: string }>>();

@@ -173,7 +173,7 @@ jobs:
           ${{ matrix.test_command }}
 
       - name: Generate coverage for quadratic-${{ matrix.package }}
-        if: always() && steps.test.outcome != 'skipped'
+        if: always() && steps.test.outcome == 'success'
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
@@ -191,7 +191,7 @@ jobs:
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-${{ matrix.package }}
-        if: always() && steps.test.outcome != 'skipped'
+        if: always() && steps.test.outcome == 'success'
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -324,9 +324,12 @@ jobs:
 
       - name: Build core
         run: |
-          npm run build:dev --workspace=quadratic-core & \
-          npm run export_types --workspace=quadratic-core & \
-          wait
+          npm run build:dev --workspace=quadratic-core &
+          BUILD_PID=$!
+          npm run export_types --workspace=quadratic-core &
+          TYPES_PID=$!
+          wait $BUILD_PID || exit 1
+          wait $TYPES_PID || exit 1
 
       - name: Build python
         run: |
@@ -488,9 +491,12 @@ jobs:
 
       - name: Build core
         run: |
-          npm run build:dev --workspace=quadratic-core & \
-          npm run export_types --workspace=quadratic-core & \
-          wait
+          npm run build:dev --workspace=quadratic-core &
+          BUILD_PID=$!
+          npm run export_types --workspace=quadratic-core &
+          TYPES_PID=$!
+          wait $BUILD_PID || exit 1
+          wait $TYPES_PID || exit 1
 
       - name: Lint quadratic-client
         run: |
