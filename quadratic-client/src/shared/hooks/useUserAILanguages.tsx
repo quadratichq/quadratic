@@ -66,12 +66,10 @@ export function preloadUserAILanguages() {
           return;
         }
 
-        return apiClient.user.aiLanguages
-          .get()
-          .then((response) => {
-            store.set(aiLanguagesAtom, response.aiLanguages);
-            store.set(loadStateAtom, 'loaded');
-          });
+        return apiClient.user.aiLanguages.get().then((response) => {
+          store.set(aiLanguagesAtom, response.aiLanguages);
+          store.set(loadStateAtom, 'loaded');
+        });
       })
       .catch((error) => {
         console.error('Failed to preload AI languages:', error);

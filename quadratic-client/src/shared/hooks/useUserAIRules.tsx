@@ -48,14 +48,12 @@ export function useUserAIRules() {
             return;
           }
 
-          return apiClient.user.aiRules
-            .get()
-            .then((response) => {
-              globalAIRulesCache = response.aiRules ?? null;
-              globalAIRulesLoaded = true;
-              globalAIRulesLoading = false;
-              notifyListeners();
-            });
+          return apiClient.user.aiRules.get().then((response) => {
+            globalAIRulesCache = response.aiRules ?? null;
+            globalAIRulesLoaded = true;
+            globalAIRulesLoading = false;
+            notifyListeners();
+          });
         })
         .catch((error) => {
           console.error('Failed to preload AI rules:', error);
@@ -106,14 +104,12 @@ export function preloadUserAIRules() {
           return;
         }
 
-        return apiClient.user.aiRules
-          .get()
-          .then((response) => {
-            globalAIRulesCache = response.aiRules ?? null;
-            globalAIRulesLoaded = true;
-            globalAIRulesLoading = false;
-            notifyListeners();
-          });
+        return apiClient.user.aiRules.get().then((response) => {
+          globalAIRulesCache = response.aiRules ?? null;
+          globalAIRulesLoaded = true;
+          globalAIRulesLoading = false;
+          notifyListeners();
+        });
       })
       .catch((error) => {
         console.error('Failed to preload AI rules:', error);
