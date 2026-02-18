@@ -39,6 +39,7 @@ COPY ./quadratic-core-cloud/. ./quadratic-core-cloud/
 COPY ./quadratic-cloud-worker/. ./quadratic-cloud-worker/
 
 WORKDIR /quadratic/quadratic-cloud-worker
+COPY Cargo.lock .
 
 RUN cargo build --release
 
