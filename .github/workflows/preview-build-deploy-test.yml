@@ -4,13 +4,12 @@ on:
   pull_request:
     types: [synchronize, reopened, labeled, unlabeled]
 
-# Concurrency: cancel in-progress builds for:
-# - synchronize: new code pushes should cancel old builds
-# - unlabeled with 'preview': removing preview label should cancel the build
-# For other events (labeled, reopened), queue behind any running build.
+# Concurrency: cancel in-progress builds for all preview-relevant events.
+# Non-preview label changes (cancel-in-progress: false) queue harmlessly
+# since their jobs all skip via conditions.
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-preview-build
-  cancel-in-progress: ${{ github.event.action == 'synchronize' || (github.event.action == 'unlabeled' && github.event.label.name == 'preview') }}
+  cancel-in-progress: ${{ github.event.action == 'synchronize' || github.event.action == 'reopened' || github.event.label.name == 'preview' }}
 
 jobs:
   create_deployment:
@@ -362,13 +361,10 @@ jobs:
               break
             fi
 
-            # Wait and check again if stack is still being created/updated
-            if [[ $STATUS == *IN_PROGRESS* ]]; then
-              echo "Stack operation in progress. Waiting 30 seconds..."
-              sleep 30
-              ATTEMPTS=$((ATTEMPTS + 1))
-              continue
-            fi
+            # For any other state (IN_PROGRESS, DELETE_COMPLETE, etc.), wait and retry
+            echo "Stack not ready (status: $STATUS). Waiting 30 seconds..."
+            sleep 30
+            ATTEMPTS=$((ATTEMPTS + 1))
           done
 
           if [ $ATTEMPTS -eq ${{ env.MAX_ATTEMPTS }} ]; then
@@ -1067,7 +1063,7 @@ jobs:
     name: Tests-E2E Status
     needs: [test-e2e-matrix-run]
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    if: always()
+    if: ${{ always() && needs.test-e2e-matrix-run.result != 'skipped' }}
     timeout-minutes: 5
     steps:
       - name: Check E2E test results

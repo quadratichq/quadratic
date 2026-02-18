@@ -32,6 +32,7 @@ COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 COPY --link ./quadratic-cloud-controller/. ./quadratic-cloud-controller/
 
 WORKDIR /quadratic/quadratic-cloud-controller
+COPY Cargo.lock .
 
 RUN cargo build --release
 
