@@ -102,6 +102,11 @@ extern "C" {
         sheet_validations: Vec<u8>, /* Vec<Validation> */
     );
 
+    pub fn jsSheetConditionalFormats(
+        sheet_id: String,
+        conditional_formats: Vec<u8>, /* Vec<ConditionalFormat> */
+    );
+
     pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */);
 
     pub fn jsMultiplayerSynced();
@@ -118,6 +123,12 @@ extern "C" {
     pub fn jsCodeRunningState(transaction_id: String, code_operations: String);
 
     pub fn jsTimestamp() -> u64;
+
+    pub fn jsMergeCells(
+        sheet_id: String,
+        merge_cells: Vec<u8>,      /* MergeCells */
+        dirty_hashes: Vec<u8>,     /* JSON Vec<Pos> of affected hash positions */
+    );
 }
 
 #[cfg(test)]
@@ -498,6 +509,18 @@ pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Va
 
 #[cfg(test)]
 #[allow(non_snake_case)]
+pub fn jsSheetConditionalFormats(
+    sheet_id: String,
+    conditional_formats: Vec<u8>, /* Vec<ConditionalFormat> */
+) {
+    js_call(
+        "jsSheetConditionalFormats",
+        format!("{sheet_id},{conditional_formats:?}"),
+    );
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
 pub fn jsRequestRowHeights(
     transaction_id: String,
     sheet_id: String,
@@ -565,4 +588,13 @@ pub fn jsCodeRunningState(_transaction_id: String, _code_operations: String) {
 pub fn jsTimestamp() -> u64 {
     // Return a fixed timestamp for deterministic tests
     1234567890000 // Jan 13, 2009 23:31:30 GMT
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8>, dirty_hashes: Vec<u8>) {
+    js_call(
+        "jsMergeCells",
+        format!("{sheet_id},{merge_cells:?},{dirty_hashes:?}"),
+    );
 }

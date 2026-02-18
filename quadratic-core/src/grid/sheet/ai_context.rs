@@ -29,6 +29,13 @@ impl Sheet {
         max_rows: Option<usize>,
         a1_context: &A1Context,
     ) -> JsSummaryContext {
+        let merge_cells_list: Vec<String> = self
+            .merge_cells
+            .iter_merge_cells()
+            .filter(|rect| selection.intersects_rect(*rect, a1_context))
+            .map(|rect| rect.a1_string())
+            .collect();
+
         let mut summary = JsSummaryContext {
             sheet_name: self.name.clone(),
             data_rects: self.get_data_rects_in_selection(&selection, max_rows, a1_context),
@@ -37,6 +44,11 @@ impl Sheet {
             code_tables: None,
             connections: None,
             charts: None,
+            merge_cells: if merge_cells_list.is_empty() {
+                None
+            } else {
+                Some(merge_cells_list)
+            },
         };
         if let Some(tables) = self.get_tables_context(&selection, max_rows, a1_context) {
             summary.data_tables = Some(tables.data_tables);
@@ -372,6 +384,7 @@ mod tests {
         let code_run_1 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "abcd".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -399,6 +412,7 @@ mod tests {
         let code_run_2 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "abcd".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: Some("error".to_string()),
             cells_accessed: Default::default(),
@@ -426,6 +440,7 @@ mod tests {
         let code_run_3 = CodeRun {
             language: CodeCellLanguage::Python,
             code: "[[1, 2], [3, 4]]".to_string(),
+            formula_ast: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

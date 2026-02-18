@@ -6,21 +6,25 @@ impl Sheet {
         let mut horizontal = vec![];
         let mut vertical = vec![];
 
-        // get sheet borders
-        if let Some(h) = self.borders.horizontal_borders(None) {
+        // get sheet borders with merged cell handling
+        if let Some(h) = self
+            .borders
+            .horizontal_borders(None, Some(&self.merge_cells))
+        {
             horizontal.extend(h);
         }
-        if let Some(v) = self.borders.vertical_borders(None) {
+        if let Some(v) = self.borders.vertical_borders(None, Some(&self.merge_cells)) {
             vertical.extend(v);
         }
 
         // get table borders and translate them to sheet coordinates
+        // Tables cannot overlap merged cells, so we don't need to check merge_cells for table borders
         self.data_tables.expensive_iter().for_each(|(pos, table)| {
             if let Some(borders) = table.borders.as_ref() {
-                if let Some(h) = borders.horizontal_borders(Some((*pos, table))) {
+                if let Some(h) = borders.horizontal_borders(Some((*pos, table)), None) {
                     horizontal.extend(h);
                 }
-                if let Some(v) = borders.vertical_borders(Some((*pos, table))) {
+                if let Some(v) = borders.vertical_borders(Some((*pos, table)), None) {
                     vertical.extend(v);
                 }
             }

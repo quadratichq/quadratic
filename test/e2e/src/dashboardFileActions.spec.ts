@@ -1,6 +1,6 @@
 import { chromium, expect, test } from '@playwright/test';
 import { navigateOnSheet, typeInCell } from './helpers/app.helper';
-import { logIn } from './helpers/auth.helpers';
+import { dismissGettingStartedDialog, logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 
 test('Create New File', async ({ page }) => {
@@ -23,6 +23,9 @@ test('Create New File', async ({ page }) => {
 
   // Clean up
   await cleanUpFiles(page, { fileName });
+
+  // Dismiss the "Getting started" dialog if it appears
+  await dismissGettingStartedDialog(page);
 
   //--------------------------------
   // Act:
@@ -51,6 +54,24 @@ test('Create New File', async ({ page }) => {
   await page.mouse.up();
   await page.locator(`[data-testid="format_fill_color"]`).click({ timeout: 60 * 1000 });
   await page.locator(`[aria-label="Select color #E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
+
+  // Close the color picker dropdown if it's still open
+  await page.keyboard.press('Escape');
+
+  // Wait for all poppers/dropdowns to close before proceeding
+  const popperLocator = page.locator('[data-radix-popper-content-wrapper]');
+  const popperCount = await popperLocator.count();
+  if (popperCount > 0) {
+    // Wait for poppers to close (they may be removed from DOM or hidden)
+    const startTime = Date.now();
+    while (Date.now() - startTime < 5000) {
+      const count = await popperLocator.count();
+      if (count === 0) {
+        break;
+      }
+      await page.waitForTimeout(50);
+    }
+  }
 
   // Ensure the cell color is updated (you can add specific assertions if needed)
   await page.waitForTimeout(5 * 1000); // Give some time for the update

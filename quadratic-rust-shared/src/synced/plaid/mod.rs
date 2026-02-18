@@ -8,6 +8,7 @@ use crate::error::Result;
 use crate::synced::plaid::client::{PlaidClient, PlaidEnvironment};
 use crate::synced::{DATE_FORMAT, SyncedClient, SyncedConnection, SyncedConnectionKind};
 
+pub mod balance;
 pub mod client;
 pub mod investments;
 pub mod liabilities;

@@ -81,7 +81,6 @@ export const AIAnalystConnectionSchema = memo(() => {
           teamUuid={teamUuid}
           type={connectionType}
           uuid={aiAnalystActiveSchemaConnectionUuid}
-          showSyncedConnection={true}
           eventSource="app-left-side"
         />
       </div>

@@ -24,9 +24,11 @@ impl<R: fmt::Display, F> fmt::Display for TokenMapper<R, F> {
 impl<B, R: SyntaxRule, F: Fn(R::Output) -> B> SyntaxRule for TokenMapper<R, F> {
     type Output = B;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.inner.prefix_matches(p)
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         self.inner.consume_match(p).map(&self.f)
     }
@@ -67,6 +69,7 @@ impl<R: fmt::Display> fmt::Display for Surround<R> {
 impl<R: Copy + SyntaxRule> SyntaxRule for Surround<R> {
     type Output = Spanned<R::Output>;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.start.prefix_matches(p)
     }
@@ -116,6 +119,7 @@ impl<R: fmt::Display> fmt::Display for List<R> {
 impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
     type Output = Spanned<Vec<R::Output>>;
 
+    #[inline]
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.start.prefix_matches(p)
     }
@@ -162,9 +166,11 @@ impl_display!(for Epsilon, "nothing");
 impl SyntaxRule for Epsilon {
     type Output = ();
 
+    #[inline]
     fn prefix_matches(&self, _p: Parser<'_>) -> bool {
         true
     }
+    #[inline]
     fn consume_match(&self, _p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(())
     }
@@ -177,9 +183,11 @@ impl_display!(for EndOfFile, "end of file");
 impl SyntaxRule for EndOfFile {
     type Output = ();
 
+    #[inline]
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next().is_none()
     }
+    #[inline]
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         match p.next() {
             Some(_) => Ok(()),

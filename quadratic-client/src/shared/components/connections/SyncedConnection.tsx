@@ -1,70 +1,84 @@
-import { useSyncedConnection } from '@/app/atoms/useSyncedConnection';
+import type { SyncState } from '@/app/atoms/useSyncedConnection';
+import { CheckCircleIcon, ErrorIcon, SyncIcon } from '@/shared/components/Icons';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { type SyncedConnectionLog } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useState } from 'react';
 
-export const SyncedConnectionLogs = ({ connectionUuid, teamUuid }: { connectionUuid: string; teamUuid: string }) => {
-  const { getLogs, showLogs } = useSyncedConnection(connectionUuid, teamUuid);
-  const [logs, setLogs] = useState<SyncedConnectionLog[]>([]);
-
-  useEffect(() => {
-    if (connectionUuid && showLogs) {
-      getLogs(1, 100).then((logs) => setLogs(logs));
-    }
-  }, [connectionUuid, getLogs, showLogs]);
-
-  return (
-    <div className="max-h-40 min-h-0 flex-1 overflow-y-auto rounded border px-2 py-1 shadow-sm">
-      {logs.map((log: SyncedConnectionLog) => (
-        <p key={log.id} className="mb-2 mt-2 text-xs">
-          {log.status === 'COMPLETED' && `Synced "${log.syncedDates.join('", "')}" `} {timeAgo(log.createdDate)}
-        </p>
-      ))}
-    </div>
-  );
-};
-
-export const SyncedConnection = ({
-  connectionUuid,
-  teamUuid,
+export const SyncedConnectionStatus = ({
+  syncState,
+  updatedDate,
+  latestLogError,
   createdDate,
 }: {
-  connectionUuid: string;
-  teamUuid: string;
+  syncState: SyncState | undefined;
+  updatedDate?: string | null;
+  latestLogError?: string | null;
   createdDate?: string;
 }) => {
-  const { syncedConnection, syncState } = useSyncedConnection(connectionUuid, teamUuid);
-
-  const renderSyncStatus = () => {
-    switch (syncState) {
-      case 'not_synced':
-        return 'Not synced';
-      case 'syncing':
-        return 'Syncing';
-      case 'synced':
-        return syncedConnection.updatedDate ? `Last synced ${timeAgo(syncedConnection.updatedDate)}` : 'Synced';
-      case 'failed':
-        return 'Sync failed';
-    }
-  };
-
-  // If there's an error, use flex-col to stack content; otherwise render inline
-  if (syncedConnection.latestLogError) {
+  if (syncState === 'syncing' || syncState === 'not_synced') {
     return (
-      <div className="flex flex-col">
-        <span>
-          {renderSyncStatus()}
-          {createdDate && ` · Created ${timeAgo(createdDate)}`}
-        </span>
-        <span className="mt-1 text-destructive">Error: {syncedConnection.latestLogError}</span>
-      </div>
+      <Alert variant="warning">
+        <SyncIcon className="animate-spin" />
+        <AlertTitle>Syncing</AlertTitle>
+        <AlertDescription>
+          The data for this connection is currently syncing. This may take a few minutes. You can use your connection
+          when it’s done. {createdDate && <>(Created {timeAgo(createdDate)})</>}
+        </AlertDescription>
+      </Alert>
     );
   }
 
-  return (
-    <span>
-      {renderSyncStatus()}
-      {createdDate && ` · Created ${timeAgo(createdDate)}`}
-    </span>
-  );
+  if (syncState === 'synced') {
+    return (
+      <Alert variant="success">
+        <CheckCircleIcon />
+        <AlertTitle>Synced</AlertTitle>
+        <AlertDescription>
+          This data is up to date. {updatedDate && <>(Last synced {timeAgo(updatedDate)})</>}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (syncState === 'failed') {
+    return (
+      <Alert variant="destructive">
+        <ErrorIcon />
+        <AlertTitle>Sync failed</AlertTitle>
+        <AlertDescription>
+          <p>
+            Check the details and try again. If you need help,{' '}
+            <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="underline">
+              contact us.
+            </a>
+          </p>
+          {latestLogError && <p className="mt-1 font-mono text-xs">{latestLogError}</p>}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return null;
+};
+
+export const SyncedConnectionStatusMinimal = ({
+  syncState,
+  updatedDate,
+}: {
+  syncState: SyncState | null;
+  updatedDate?: string | null;
+}): string | null => {
+  if (syncState === 'synced' && updatedDate) {
+    return `Last synced ${timeAgo(updatedDate)}`;
+  }
+
+  if (syncState === 'syncing' || syncState === 'not_synced') {
+    return `Syncing…`;
+  }
+
+  if (syncState === 'failed') {
+    return `Sync failed`;
+  }
+
+  return null;
 };

@@ -48,7 +48,10 @@ const insertColumnLeft: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const columnsSelected = getColumnsSelected();
-    quadraticCore.insertColumns(sheets.current, sheets.sheet.cursor.position.x, columnsSelected, true, false);
+    const { x, y } = sheets.sheet.cursor.position;
+    const mergeRect = sheets.sheet.getMergeCellRect(x, y);
+    const column = mergeRect ? Number(mergeRect.min.x) : x;
+    quadraticCore.insertColumns(sheets.current, column, columnsSelected, true, false);
     focusGrid();
   },
 };
@@ -66,13 +69,10 @@ const insertColumnRight: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const columnsSelected = getColumnsSelected();
-    quadraticCore.insertColumns(
-      sheets.current,
-      sheets.sheet.cursor.position.x + columnsSelected,
-      columnsSelected,
-      false,
-      false
-    );
+    const { x, y } = sheets.sheet.cursor.position;
+    const mergeRect = sheets.sheet.getMergeCellRect(x, y);
+    const column = mergeRect ? Number(mergeRect.max.x) + 1 : x + columnsSelected;
+    quadraticCore.insertColumns(sheets.current, column, columnsSelected, false, false);
     focusGrid();
   },
 };
@@ -108,7 +108,10 @@ const insertRowAbove: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const rowsSelected = getRowsSelected();
-    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y, rowsSelected, true, false);
+    const { x, y } = sheets.sheet.cursor.position;
+    const mergeRect = sheets.sheet.getMergeCellRect(x, y);
+    const row = mergeRect ? Number(mergeRect.min.y) : y;
+    quadraticCore.insertRows(sheets.current, row, rowsSelected, true, false);
     focusGrid();
   },
 };
@@ -126,7 +129,10 @@ const insertRowBelow: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const rowsSelected = getRowsSelected();
-    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y + rowsSelected, rowsSelected, false, false);
+    const { x, y } = sheets.sheet.cursor.position;
+    const mergeRect = sheets.sheet.getMergeCellRect(x, y);
+    const row = mergeRect ? Number(mergeRect.max.y) + 1 : y + rowsSelected;
+    quadraticCore.insertRows(sheets.current, row, rowsSelected, false, false);
     focusGrid();
   },
 };

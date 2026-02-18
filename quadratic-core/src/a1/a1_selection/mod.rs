@@ -10,10 +10,11 @@ mod delete;
 mod display;
 mod exclude;
 mod intersects;
+mod merge_cells;
 mod mutate;
 mod parse;
 mod query;
-mod select;
+pub(crate) mod select;
 mod select_table;
 
 /// Maximum number of columns that can be parsed in a column name.

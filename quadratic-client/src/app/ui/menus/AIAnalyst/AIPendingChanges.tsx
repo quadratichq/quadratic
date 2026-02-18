@@ -4,6 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { FormatPaintIcon, GridActionIcon, TableIcon, TableRowsIcon, UndoIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -78,7 +79,7 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
         label = 'Wrote SQL';
         name = args.code_cell_name;
         position = args.code_cell_position;
-        icon = <LanguageIcon language={args.connection_kind || 'SQL'} />;
+        icon = <ConnectionIcon type={args.connection_kind || 'SQL'} />;
         break;
       case AITool.SetFormulaCellValue:
         label = 'Wrote formula';

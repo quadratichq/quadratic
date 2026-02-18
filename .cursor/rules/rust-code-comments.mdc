@@ -1,0 +1,8 @@
+---
+globs: "**/*.{rs,ts,tsx}"
+alwaysApply: true
+---
+
+Code Comments
+
+When writing code comments, don't add change-specific comments, only comments that will help future devs understand the purpose of the code. For example, don't include "Improved performance of this loop by removing the second iteration", as it's not useful for future developers.

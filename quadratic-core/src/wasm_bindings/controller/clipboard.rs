@@ -116,6 +116,23 @@ impl GridController {
         })
     }
 
+    /// Apply format painter: copy formatting from source selection to target selection
+    #[wasm_bindgen(js_name = "applyFormatPainter")]
+    pub fn js_apply_format_painter(
+        &mut self,
+        source_selection: String,
+        target_selection: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> Result<(), JsValue> {
+        let source_selection = serde_json::from_str::<A1Selection>(&source_selection)
+            .map_err(|e| format!("Unable to parse source A1Selection: {e}"))?;
+        let target_selection = serde_json::from_str::<A1Selection>(&target_selection)
+            .map_err(|e| format!("Unable to parse target A1Selection: {e}"))?;
+        self.apply_format_painter(&source_selection, &target_selection, cursor, is_ai)
+            .map_err(|e| JsValue::from_str(&e))
+    }
+
     #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "moveCodeCellHorizontally")]
     pub fn js_move_code_cell_horizontally(

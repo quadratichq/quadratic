@@ -1,12 +1,10 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionUuid } from '@/app/helpers/codeCellLanguage';
 import { newSingleSelection, validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
-import { SyncedConnection } from '@/shared/components/connections/SyncedConnection';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -18,7 +16,6 @@ export function CodeEditorHeaderLabel() {
   const [cellRef, setCellRef] = useState<string | undefined>(undefined);
 
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
-  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const { connections } = useConnectionsFetcher();
 
   useEffect(() => {
@@ -146,52 +143,61 @@ export function CodeEditorHeaderLabel() {
 
   const tableNameDisplayClasses = 'text-sm font-medium leading-4';
 
+  // Single-cell code cells don't have table names, so hide the name section
+  const showTableName = !codeCellState.isSingleCell;
+
   return (
     <div className="ml-1 mr-3 flex flex-grow flex-col gap-0.5 overflow-hidden p-[1px]">
-      <div className={cn('flex min-w-0 flex-initial')}>
-        {isRenaming ? (
-          <Input
-            className={cn(
-              'h-5 px-1',
-              tableNameDisplayClasses,
-              'focus-visible:ring-1',
-              'aria-[invalid=true]:border-destructive',
-              'aria-[invalid=true]:focus-visible:ring-destructive'
-            )}
-            autoFocus
-            defaultValue={tableName}
-            onInput={handleInput}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-          />
-        ) : (
-          <button
-            onClick={() => setIsRenaming(true)}
-            className={cn(
-              'max-w-full truncate rounded px-1 text-left',
-              tableName ? 'hover:cursor-pointer hover:bg-accent' : 'text-muted-foreground',
-              tableNameDisplayClasses
-            )}
-            disabled={!tableName}
-          >
-            {tableName ? tableName : '[Untitled]'}
-          </button>
-        )}
-      </div>
+      {showTableName && (
+        <div className={cn('flex min-w-0 flex-initial')}>
+          {isRenaming ? (
+            <Input
+              className={cn(
+                'h-5 px-1',
+                tableNameDisplayClasses,
+                'focus-visible:ring-1',
+                'aria-[invalid=true]:border-destructive',
+                'aria-[invalid=true]:focus-visible:ring-destructive'
+              )}
+              autoFocus
+              defaultValue={tableName}
+              onInput={handleInput}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+            />
+          ) : (
+            <button
+              onClick={() => setIsRenaming(true)}
+              className={cn(
+                'max-w-full truncate rounded px-1 text-left',
+                tableName ? 'hover:cursor-pointer hover:bg-accent' : 'text-muted-foreground',
+                tableNameDisplayClasses
+              )}
+              disabled={!tableName}
+            >
+              {tableName ? tableName : '[Untitled]'}
+            </button>
+          )}
+        </div>
+      )}
 
       {!isRenaming && (
-        <div className="flex min-w-0 max-w-full flex-initial flex-wrap text-xs leading-4 text-muted-foreground">
+        <div
+          className={cn(
+            'flex min-w-0 max-w-full flex-initial flex-wrap leading-4',
+            // Use larger styling when there's no table name (single-cell code cells)
+            showTableName ? 'text-xs text-muted-foreground' : tableNameDisplayClasses
+          )}
+        >
           {currentConnection && (
             <span className="truncate px-1 after:ml-1 after:content-['·']">{currentConnection.name}</span>
           )}
-          <button className="rounded text-left hover:cursor-pointer hover:bg-accent" onClick={focusCellRef}>
+          <button
+            className="max-w-full truncate rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
+            onClick={focusCellRef}
+          >
             {cellRef}
           </button>
-          {currentConnection && currentConnection.syncedConnectionUpdatedDate && (
-            <span className="px-1">
-              · <SyncedConnection connectionUuid={currentConnection.uuid} teamUuid={teamUuid} />
-            </span>
-          )}
         </div>
       )}
     </div>

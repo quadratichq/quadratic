@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-cloud-controller"
-version = "0.23.11"
+version = "0.24.0"
 edition = "2024"
 authors = ["Quadratic"]
 description = "Kubernetes controller for file workers in Quadratic Cloud Kubernetes cluster"
