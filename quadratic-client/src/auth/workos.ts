@@ -25,31 +25,77 @@ function getBaseDomain(hostname: string): string {
   return parts.slice(-2).join('.');
 }
 
-// Create the client as a module-scoped promise so all loaders will wait
-// for this one single instance of client to resolve
-let client: Awaited<ReturnType<typeof createClient>> | null = null;
+type WorkOSClient = Awaited<ReturnType<typeof createClient>>;
+
+let client: WorkOSClient | null = null;
+
+// Shared promise prevents concurrent initialization (e.g., parallel route loaders)
+let clientPromise: Promise<WorkOSClient> | null = null;
 
 // Store the state from the redirect callback
 let redirectState: Record<string, any> | null = null;
 
-async function getClient() {
+// Matches browser-level fetch failures (e.g., DNS, connectivity)
+function isNetworkError(e: unknown): boolean {
+  return e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'));
+}
+
+// Creates and initializes the WorkOS client. createClient() calls
+// client.initialize() internally, which exchanges the OAuth code
+// if the current URL is a redirect callback.
+async function createWorkosClient(): Promise<WorkOSClient> {
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const newClient = await createClient(VITE_WORKOS_CLIENT_ID, {
+    redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
+    apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
+    https: true,
+    onBeforeAutoRefresh: () => true,
+    onRedirectCallback: (params) => {
+      redirectState = params.state;
+    },
+  });
+  if (!newClient) throw new Error('Failed to create WorkOS client');
+  return newClient;
+}
+
+// Best-effort retry on transient network errors. In most cases the OAuth
+// code is still valid because the request never reached the server, but if
+// the connection dropped mid-flight the code may already be consumed and
+// the retry will fail with an auth error — callers should handle that.
+async function initializeClientWithRetry(): Promise<WorkOSClient> {
+  try {
+    return await createWorkosClient();
+  } catch (firstError) {
+    if (!isNetworkError(firstError)) throw firstError;
+    console.warn('WorkOS client initialization failed with network error, retrying…', firstError);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      return await createWorkosClient();
+    } catch (retryError) {
+      console.error('WorkOS client retry also failed (original error logged above):', retryError);
+      throw retryError;
+    }
+  }
+}
+
+// Returns the singleton WorkOS client, initializing it on first call.
+// Multiple concurrent callers (e.g., parallel route loaders) share
+// the same promise. On failure the promise is cleared so the next
+// call can retry with a fresh initialization attempt.
+async function getClient(): Promise<WorkOSClient> {
   if (client) {
     return client;
-  } else {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    client = await createClient(VITE_WORKOS_CLIENT_ID, {
-      redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-      apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
-      https: true,
-      onBeforeAutoRefresh: () => true,
-      onRedirectCallback: (params) => {
-        redirectState = params.state;
-      },
-    });
-    if (!client) throw new Error('Failed to create WorkOS client');
-    await client.initialize();
+  }
+  if (!clientPromise) {
+    clientPromise = initializeClientWithRetry();
+  }
+  try {
+    client = await clientPromise;
     return client;
+  } catch (e) {
+    clientPromise = null;
+    throw e;
   }
 }
 

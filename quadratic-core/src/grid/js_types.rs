@@ -140,6 +140,7 @@ pub struct JsSummaryContext {
     pub code_tables: Option<Vec<JsCodeTableContext>>,
     pub connections: Option<Vec<JsCodeTableContext>>,
     pub charts: Option<Vec<JsChartContext>>,
+    pub merge_cells: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]

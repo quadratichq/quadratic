@@ -34,6 +34,7 @@ COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 COPY ./quadratic-multiplayer/. ./quadratic-multiplayer/
 
 WORKDIR /quadratic/quadratic-multiplayer
+COPY Cargo.lock .
 
 RUN cargo build --release
 

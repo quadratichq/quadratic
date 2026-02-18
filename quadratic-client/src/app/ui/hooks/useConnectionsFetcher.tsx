@@ -8,14 +8,22 @@ import { useFetcher } from 'react-router';
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
 
+// Tracks the teamUuid of the in-flight initial fetch to prevent duplicate
+// requests. Multiple components call this hook simultaneously on mount, and
+// React batches their effects before the shared fetcher state updates from
+// 'idle' to 'loading', so the fetcher.state check alone is insufficient.
+// Storing the teamUuid (rather than a boolean) ensures that navigating to a
+// different team correctly triggers a new fetch.
+let pendingFetchTeamUuid: string | null = null;
+
 /**
  * The data for this accessed in various places in the app (cell type menu,
  * new file dialog, connections menu) and so we centralize storing it, as it can
  * change and therefore requires revalidation as well.
  *
- * Uses a shared fetcher key so all instances share the same state, which
- * naturally prevents duplicate fetches (fetcher.state won't be 'idle' while
- * a fetch is in progress).
+ * Uses a shared fetcher key so all instances share the same state, with
+ * a module-level guard to prevent duplicate fetches when multiple
+ * components mount simultaneously.
  */
 export const useConnectionsFetcher = () => {
   const {
@@ -29,14 +37,30 @@ export const useConnectionsFetcher = () => {
   fetcherRef.current = fetcher;
 
   // Fetch on the initial use of the hook, but only if the user has permission
-  // in the current team. The shared fetcher key ensures all instances share
-  // state, so the idle check prevents duplicate fetches.
+  // in the current team.
   const permissionsHasTeamEdit = useMemo(() => teamPermissions?.includes('TEAM_EDIT'), [teamPermissions]);
   useEffect(() => {
-    if (permissionsHasTeamEdit && fetcher.state === 'idle' && fetcher.data === undefined) {
+    if (
+      permissionsHasTeamEdit &&
+      fetcher.state === 'idle' &&
+      fetcher.data === undefined &&
+      pendingFetchTeamUuid !== teamUuid
+    ) {
+      pendingFetchTeamUuid = teamUuid;
       fetcher.load(ROUTES.API.CONNECTIONS.LIST(teamUuid));
     }
   }, [teamUuid, permissionsHasTeamEdit, fetcher]);
+
+  // Reset the guard when data arrives or the fetch settles without data
+  // (e.g., network error, abort). This prevents a failed fetch from
+  // permanently blocking retries for that team.
+  useEffect(() => {
+    if (fetcher.data !== undefined) {
+      pendingFetchTeamUuid = null;
+    } else if (fetcher.state === 'idle' && pendingFetchTeamUuid !== null) {
+      pendingFetchTeamUuid = null;
+    }
+  }, [fetcher.data, fetcher.state]);
 
   const connections = useMemo(() => (fetcher.data ? fetcher.data.connections : []), [fetcher.data]);
   const staticIps = useMemo(

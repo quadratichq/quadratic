@@ -32,6 +32,7 @@ COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 COPY ./quadratic-connection/. ./quadratic-connection/
 
 WORKDIR /quadratic/quadratic-connection
+COPY Cargo.lock .
 
 RUN cargo build --release
 
