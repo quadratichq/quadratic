@@ -20,8 +20,9 @@ export class QuadraticAppErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     sendAnalyticsError('QuadraticApp', 'ErrorBoundary', error, error.message);
+    console.error('QuadraticApp ErrorBoundary caught error:', error, errorInfo);
   }
 
   render() {

@@ -28,7 +28,6 @@ class HTMLCellsHandler {
   detach = () => {
     this.cells.forEach((cell) => {
       cell.destroy();
-      cell.div.remove();
     });
     this.cells.clear();
     this.div.remove();
@@ -92,7 +91,6 @@ class HTMLCellsHandler {
     // remove old cells
     old.forEach((cell) => {
       cell.destroy();
-      cell.div.remove();
       this.cells.delete(cell);
     });
   }
