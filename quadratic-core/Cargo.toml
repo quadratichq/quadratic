@@ -62,7 +62,7 @@ getrandom = { version = "0.3.1", features = ["wasm_js"] }
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 rand = "0.9"
-regex = "1.7"
+regex = "1.12"
 rstar = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -107,7 +107,7 @@ parquet = { version = "54.2.1", default-features = false, features = [
   "flate2",
   "snap",
 ] }
-bytes = "1.5.0"
+bytes = "1.11.1"
 arrow-array = "54.2.1"
 arrow-schema = "54.2.1"
 arrow-buffer = "54.2.1"

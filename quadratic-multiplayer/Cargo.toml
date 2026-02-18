@@ -19,7 +19,7 @@ futures-util = { version = "0.3.29", default-features = false, features = [
     "std",
 ] }
 headers = "0.4.0"
-jsonwebtoken = "9.2.0"
+jsonwebtoken = "10.3.0"
 prost = "0.13.5"
 prost-reflect = "0.15.2"
 prost-types = "0.13.5"
