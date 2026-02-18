@@ -2,8 +2,8 @@ import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { VITE_AUTH_TYPE, VITE_WORKOS_CLIENT_ID } from '@/env-vars';
 import { ROUTES } from '@/shared/constants/routes';
-import { captureEvent } from '@sentry/react';
-import { createClient } from '@workos-inc/authkit-js';
+import { captureEvent, captureException } from '@sentry/react';
+import { createClient, LoginRequiredError } from '@workos-inc/authkit-js';
 
 // verify all Workos env variables are set (only when Workos auth is enabled)
 if (VITE_AUTH_TYPE === 'workos' && !VITE_WORKOS_CLIENT_ID) {
@@ -50,6 +50,7 @@ async function createWorkosClient(): Promise<WorkOSClient> {
     redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
     apiHostname: isLocalhost ? undefined : `authenticate.${getBaseDomain(hostname)}`,
     https: true,
+    onBeforeAutoRefresh: () => true,
     onRedirectCallback: (params) => {
       redirectState = params.state;
     },
@@ -207,11 +208,24 @@ export const workosClient: AuthClient = {
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
-      if (!skipRedirect) {
-        const href = request ? request.url : window.location.href;
-        const url = new URL(href);
-        await this.login({ redirectTo: url.toString(), href });
-        await waitForAuthClientToRedirect();
+      if (e instanceof LoginRequiredError) {
+        if (!skipRedirect) {
+          const href = request ? request.url : window.location.href;
+          const url = new URL(href);
+          await this.login({ redirectTo: url.toString(), href });
+          await waitForAuthClientToRedirect();
+        }
+      } else {
+        captureException(e, {
+          tags: { context: 'workos-token-refresh' },
+          extra: { skipRedirect, documentHidden: document.hidden },
+        });
+        if (!skipRedirect) {
+          const href = request ? request.url : window.location.href;
+          const url = new URL(href);
+          await this.login({ redirectTo: url.toString(), href });
+          await waitForAuthClientToRedirect();
+        }
       }
     }
     return '';
