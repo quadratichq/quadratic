@@ -3,6 +3,7 @@ import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { CheckIcon } from '@/shared/components/Icons';
@@ -29,6 +30,7 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
     if (contextMenu.rename) return;
 
     setContextMenu({});
+    focusGrid();
   }, [contextMenu.rename, setContextMenu]);
 
   useEffect(() => {
