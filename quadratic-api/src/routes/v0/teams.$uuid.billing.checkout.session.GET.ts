@@ -87,7 +87,7 @@ async function handler(
         });
         return res.status(500).json({
           error: {
-            message: errorMessage || 'Failed to upgrade subscription plan',
+            message: 'Failed to upgrade subscription plan. Please try again later.',
           },
         });
       }
@@ -155,18 +155,17 @@ async function handler(
 
     const data: ApiTypes['/v0/teams/:uuid/billing/checkout/session.GET.response'] = { url: session.url };
     return res.status(200).json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Error creating checkout session', {
-      error: error.message,
-      stripeError: error.type,
-      code: error.code,
+      error: errorMessage,
       teamUuid: uuid,
       plan,
       priceId,
     });
     return res.status(500).json({
       error: {
-        message: error.message || 'Failed to create checkout session',
+        message: 'Failed to create checkout session. Please try again later.',
       },
     });
   }
