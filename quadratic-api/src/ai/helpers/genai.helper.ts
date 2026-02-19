@@ -1,4 +1,5 @@
 import type { GenerateContentResponse, Schema } from '@google/genai';
+import { EmptyMessagesError } from './errors';
 import {
   FunctionCallingConfigMode,
   Type,
@@ -153,6 +154,10 @@ export function getGenAIApiArgs(
       return acc;
     }
   }, []);
+
+  if (messages.length === 0) {
+    throw new EmptyMessagesError();
+  }
 
   const tools = getGenAITools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getGenAIToolChoice(toolName) : undefined;

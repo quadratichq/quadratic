@@ -34,6 +34,7 @@ import type {
   ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { EmptyMessagesError } from './errors';
 import { getOrphanFilterIds } from './filterOrphanedToolCalls';
 import { getFilteredTools } from './tools';
 
@@ -224,6 +225,10 @@ export function getAnthropicApiArgs(
       return acc;
     }
   }, []);
+
+  if (messages.length === 0) {
+    throw new EmptyMessagesError();
+  }
 
   const tools = getAnthropicTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;

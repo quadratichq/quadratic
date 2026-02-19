@@ -21,6 +21,20 @@ export const gemini_2_5_pro_rate: AIRates = {
   rate_per_million_cache_write_tokens: 4.5,
 };
 
+export const gemini_3_flash_rate: AIRates = {
+  rate_per_million_input_tokens: 0.5,
+  rate_per_million_output_tokens: 3,
+  rate_per_million_cache_read_tokens: 0.05,
+  rate_per_million_cache_write_tokens: 1,
+};
+
+export const gemini_3_pro_rate: AIRates = {
+  rate_per_million_input_tokens: 2,
+  rate_per_million_output_tokens: 12,
+  rate_per_million_cache_read_tokens: 0.2,
+  rate_per_million_cache_write_tokens: 4.5,
+};
+
 // Gemini 2.5 Flash pricing sources:
 // https://cloud.google.com/vertex-ai/generative-ai/pricing
 // https://ai.google.dev/gemini-api/docs/pricing

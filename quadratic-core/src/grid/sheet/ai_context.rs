@@ -30,6 +30,14 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> JsSummaryContext {
         let (default_column_width, default_row_height) = self.offsets.defaults();
+
+        let merge_cells_list: Vec<String> = self
+            .merge_cells
+            .iter_merge_cells()
+            .filter(|rect| selection.intersects_rect(*rect, a1_context))
+            .map(|rect| rect.a1_string())
+            .collect();
+
         let mut summary = JsSummaryContext {
             sheet_name: self.name.clone(),
             default_column_width,
@@ -40,6 +48,11 @@ impl Sheet {
             code_tables: None,
             connections: None,
             charts: None,
+            merge_cells: if merge_cells_list.is_empty() {
+                None
+            } else {
+                Some(merge_cells_list)
+            },
         };
         if let Some(tables) = self.get_tables_context(&selection, max_rows, a1_context) {
             summary.data_tables = Some(tables.data_tables);

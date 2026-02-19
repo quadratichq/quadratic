@@ -48,6 +48,7 @@ COPY ./quadratic-client/public/images/icon-connection.png ./assets/icons/
 COPY ./quadratic-client/public/emojis/. ./assets/emojis/
 
 WORKDIR /quadratic/quadratic-cloud-worker
+COPY Cargo.lock .
 
 RUN cargo build --release
 

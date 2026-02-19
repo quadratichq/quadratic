@@ -1,3 +1,4 @@
+import { checkCellValuesMergeErrors } from '@/app/ai/tools/aiToolsHelpers';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
@@ -74,6 +75,11 @@ export const cellDataToolsActions: CellDataToolActions = {
       const { x, y } = selection.getCursor();
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
+        const mergeError = checkCellValuesMergeErrors(sheetId, x, y, cell_values);
+        if (mergeError) return mergeError;
+      }
+
+      if (cell_values.length > 0 && cell_values[0].length > 0) {
         // Move AI cursor to show the range being written
         try {
           const endX = x + cell_values[0].length - 1;
@@ -144,38 +150,71 @@ export const cellDataToolsActions: CellDataToolActions = {
   },
   [AITool.MoveCells]: async (args) => {
     try {
-      const { sheet_name, source_selection_rect, target_top_left_position } = args;
+      const { sheet_name, moves, source_selection_rect, target_top_left_position } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const sourceSelection = sheets.stringToSelection(source_selection_rect, sheetId);
-      const sourceRect = sourceSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
-      if (!sourceRect) {
-        return [createTextContent('Invalid source selection, this should be a single rectangle, not a range')];
-      }
-      const sheetRect: SheetRect = {
-        min: {
-          x: sourceRect.min.x,
-          y: sourceRect.min.y,
-        },
-        max: {
-          x: sourceRect.max.x,
-          y: sourceRect.max.y,
-        },
-        sheet_id: {
-          id: sheetId,
-        },
+
+      const parseMove = (sourceRect: string, targetPos: string) => {
+        const sourceSelection = sheets.stringToSelection(sourceRect, sheetId);
+        const rect = sourceSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
+        if (!rect) {
+          throw new Error(`Invalid source selection "${sourceRect}", this should be a single rectangle, not a range`);
+        }
+        const sheetRect: SheetRect = {
+          min: { x: rect.min.x, y: rect.min.y },
+          max: { x: rect.max.x, y: rect.max.y },
+          sheet_id: { id: sheetId },
+        };
+        const targetSelection = sheets.stringToSelection(targetPos, sheetId);
+        if (!targetSelection.isSingleSelection(sheets.jsA1Context)) {
+          throw new Error(`Invalid target position "${targetPos}", this should be a single cell, not a range`);
+        }
+        const { x, y } = targetSelection.getCursor();
+        return {
+          sheetRect,
+          x,
+          y,
+          rangeWidth: Number(rect.max.x - rect.min.x),
+          rangeHeight: Number(rect.max.y - rect.min.y),
+        };
       };
 
-      const targetSelection = sheets.stringToSelection(target_top_left_position, sheetId);
-      if (!targetSelection.isSingleSelection(sheets.jsA1Context)) {
-        return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
+      let movesToProcess: { source_selection_rect: string; target_top_left_position: string }[];
+      if (moves && moves.length > 0) {
+        movesToProcess = moves;
+      } else if (source_selection_rect && target_top_left_position) {
+        movesToProcess = [{ source_selection_rect, target_top_left_position }];
+      } else {
+        return [
+          createTextContent(
+            'Invalid arguments: provide either moves array or source_selection_rect and target_top_left_position'
+          ),
+        ];
       }
-      const { x, y } = targetSelection.getCursor();
-      const rangeWidth = Number(sourceRect.max.x - sourceRect.min.x);
-      const rangeHeight = Number(sourceRect.max.y - sourceRect.min.y);
 
-      // Move AI cursor to show the target destination
+      const parseResults = movesToProcess.map((m, index) => {
+        try {
+          return { success: true as const, data: parseMove(m.source_selection_rect, m.target_top_left_position) };
+        } catch (e) {
+          return {
+            success: false as const,
+            error: `Move ${index + 1} (${m.source_selection_rect} \u2192 ${m.target_top_left_position}): ${e instanceof Error ? e.message : String(e)}`,
+          };
+        }
+      });
+
+      const errors = parseResults.filter((r) => !r.success);
+      if (errors.length > 0) {
+        const errorMessages = errors.map((e) => (e.success ? '' : e.error)).join('\n');
+        return [createTextContent(`Invalid move(s):\n${errorMessages}`)];
+      }
+
+      const parsedMoves = parseResults
+        .filter((r): r is { success: true; data: ReturnType<typeof parseMove> } => r.success)
+        .map((r) => r.data);
+
+      const first = parsedMoves[0];
       try {
-        const targetRange = `${xyToA1(x, y)}:${xyToA1(x + rangeWidth, y + rangeHeight)}`;
+        const targetRange = `${xyToA1(first.x, first.y)}:${xyToA1(first.x + first.rangeWidth, first.y + first.rangeHeight)}`;
         const jsSelection = sheets.stringToSelection(targetRange, sheetId);
         const selectionString = jsSelection.save();
         aiUser.updateSelection(selectionString, sheetId);
@@ -183,12 +222,23 @@ export const cellDataToolsActions: CellDataToolActions = {
         console.warn('Failed to update AI user selection:', e);
       }
 
-      await quadraticCore.moveCellsBatch([{ source: sheetRect, targetX: x, targetY: y, targetSheetId: sheetId }], true);
+      await quadraticCore.moveCellsBatch(
+        parsedMoves.map((m) => ({
+          source: m.sheetRect,
+          targetX: m.x,
+          targetY: m.y,
+          targetSheetId: sheetId,
+        })),
+        true
+      );
 
-      // Move viewport to the target destination so the user can see where the content was moved
-      ensureRectVisible(sheetId, { x, y }, { x: x + rangeWidth, y: y + rangeHeight });
+      ensureRectVisible(
+        sheetId,
+        { x: first.x, y: first.y },
+        { x: first.x + first.rangeWidth, y: first.y + first.rangeHeight }
+      );
 
-      return [createTextContent('Executed move cells tool successfully.')];
+      return [createTextContent(`Executed move cells tool successfully for ${movesToProcess.length} move(s).`)];
     } catch (e) {
       return [createTextContent(`Error executing move cells tool: ${e}`)];
     }

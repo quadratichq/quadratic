@@ -1,6 +1,8 @@
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -131,6 +133,40 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
     ),
   ];
 };
+
+export function getMergeCellError(sheetId: string, x: number, y: number): string | null {
+  const sheet = sheets.getById(sheetId);
+  if (!sheet) return `Error: Sheet with id ${sheetId} not found.`;
+  const mergeRect = sheet.getMergeCellRect(x, y);
+  if (!mergeRect) return null;
+  const anchor = { x: Number(mergeRect.min.x), y: Number(mergeRect.min.y) };
+  if (anchor.x === x && anchor.y === y) return null;
+  const cellA1 = xyToA1(x, y);
+  const anchorA1 = xyToA1(anchor.x, anchor.y);
+  const mergeA1 = `${anchorA1}:${xyToA1(Number(mergeRect.max.x), Number(mergeRect.max.y))}`;
+  return `Error: Cell ${cellA1} is inside merged region ${mergeA1}. To write to this merged cell, use the anchor cell ${anchorA1} instead.`;
+}
+
+export function getMergeCellErrorContent(sheetId: string, x: number, y: number): ToolResultContent | null {
+  const error = getMergeCellError(sheetId, x, y);
+  return error ? [createTextContent(error)] : null;
+}
+
+export function checkCellValuesMergeErrors(
+  sheetId: string,
+  originX: number,
+  originY: number,
+  cellValues: string[][]
+): ToolResultContent | null {
+  for (let row = 0; row < cellValues.length; row++) {
+    for (let col = 0; col < cellValues[row].length; col++) {
+      if (!cellValues[row][col]) continue;
+      const result = getMergeCellErrorContent(sheetId, originX + col, originY + row);
+      if (result) return result;
+    }
+  }
+  return null;
+}
 
 export type AIToolMessageMetaData = {
   source: AISource;
