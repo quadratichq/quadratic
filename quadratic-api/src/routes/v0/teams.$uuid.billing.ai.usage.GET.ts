@@ -43,11 +43,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     user: { id: userId },
   } = req;
 
-  // If the billing limit is not set, we don't need to check if the user has exceeded it
-  if (!BILLING_AI_USAGE_LIMIT) {
-    return res.status(200).json({ exceededBillingLimit: false });
-  }
-
   // Lookup the team
   const team = await dbClient.team.findUnique({
     where: {
@@ -73,6 +68,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Free plan: use message limit and return early
   if (isFree) {
+    if (!BILLING_AI_USAGE_LIMIT) {
+      return res.status(200).json({ exceededBillingLimit: false });
+    }
+
     const freeUsage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
     if (!userTeamRole || !isOnPaidPlan) {
       const exceededBillingLimit = BillingAIUsageLimitExceeded(freeUsage);
