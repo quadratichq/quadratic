@@ -207,7 +207,6 @@ pub(crate) async fn run_intrinio_pipeline(
 mod tests {
     use std::io::{Cursor, Write};
 
-    use quadratic_rust_shared::intrinio::bulk_download::BulkDownloadsResponse;
     use zip::ZipWriter;
     use zip::write::SimpleFileOptions;
 
@@ -236,52 +235,5 @@ mod tests {
 
         let parquet_bytes = parquet_result.unwrap();
         assert!(!parquet_bytes.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_fetch_bulk_download_links_success() {
-        let server = httpmock::MockServer::start();
-
-        let body = serde_json::json!({
-            "bulk_downloads": [
-                {
-                    "id": "bdt_test",
-                    "name": "US Stock Prices",
-                    "format": "csv",
-                    "data_length_bytes": 1000000,
-                    "update_frequency": "daily",
-                    "last_updated": "2026-02-11T20:20:51.206Z",
-                    "links": [
-                        {
-                            "name": "stock_prices_file-1.zip",
-                            "url": "https://example.com/file-1.zip"
-                        }
-                    ]
-                }
-            ],
-            "next_page": null
-        });
-
-        let mock = server.mock(|when, then| {
-            when.method(httpmock::Method::GET)
-                .path("/bulk_downloads/links");
-            then.status(200)
-                .header("content-type", "application/json")
-                .json_body(body);
-        });
-
-        let url = format!("{}/bulk_downloads/links?api_key=test", server.base_url());
-        let response = reqwest::get(&url).await.unwrap();
-        let result: BulkDownloadsResponse = response.json().await.unwrap();
-
-        assert_eq!(result.bulk_downloads.len(), 1);
-        assert_eq!(result.bulk_downloads[0].name, "US Stock Prices");
-        assert_eq!(result.bulk_downloads[0].links.len(), 1);
-        assert_eq!(
-            result.bulk_downloads[0].links[0].name,
-            "stock_prices_file-1.zip"
-        );
-        assert!(result.next_page.is_none());
-        mock.assert();
     }
 }

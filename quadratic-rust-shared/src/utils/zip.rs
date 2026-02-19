@@ -21,18 +21,21 @@ pub fn extract_csv_from_zip(zip_data: &[u8]) -> Result<Vec<u8>> {
             .map_err(|e| SharedError::Generic(format!("Failed to read ZIP entry {}: {}", i, e)))?;
 
         if file.name().to_lowercase().ends_with(".csv") {
-            if file.size() > MAX_DECOMPRESSED_SIZE {
+            let capacity = std::cmp::min(file.size(), MAX_DECOMPRESSED_SIZE) as usize;
+            let mut csv_data = Vec::with_capacity(capacity);
+            file.take(MAX_DECOMPRESSED_SIZE + 1)
+                .read_to_end(&mut csv_data)
+                .map_err(|e| {
+                    SharedError::Generic(format!("Failed to extract CSV from ZIP: {}", e))
+                })?;
+
+            if csv_data.len() as u64 > MAX_DECOMPRESSED_SIZE {
                 return Err(SharedError::Generic(format!(
                     "CSV file {} exceeds maximum allowed decompressed size of {} bytes",
                     file.name(),
                     MAX_DECOMPRESSED_SIZE
                 )));
             }
-
-            let mut csv_data = Vec::with_capacity(file.size() as usize);
-            file.read_to_end(&mut csv_data).map_err(|e| {
-                SharedError::Generic(format!("Failed to extract CSV from ZIP: {}", e))
-            })?;
 
             return Ok(csv_data);
         }

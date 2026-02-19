@@ -44,5 +44,13 @@ pub async fn download_file(url: &str) -> Result<bytes::Bytes> {
         .await
         .map_err(|e| SharedError::Request(format!("Failed to read response bytes: {}", e)))?;
 
+    if bytes.len() as u64 > MAX_DOWNLOAD_SIZE {
+        return Err(SharedError::Request(format!(
+            "Downloaded file size {} bytes exceeds maximum allowed size of {} bytes",
+            bytes.len(),
+            MAX_DOWNLOAD_SIZE
+        )));
+    }
+
     Ok(bytes)
 }

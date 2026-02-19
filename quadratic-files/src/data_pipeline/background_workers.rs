@@ -59,6 +59,8 @@ async fn intrinio_pipeline_worker(state: Arc<State>, cancellation_token: Cancell
         _ = tokio::time::sleep(Duration::from_secs(30)) => {}
     }
 
+    // The first tick fires immediately (tokio::time::interval behavior), which
+    // is intentional — we want an initial data load after the startup delay.
     let mut interval = time::interval(Duration::from_secs(DATA_PIPELINE_INTERVAL_H * 60 * 60));
 
     loop {
