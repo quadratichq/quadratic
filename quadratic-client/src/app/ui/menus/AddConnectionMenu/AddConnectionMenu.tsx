@@ -41,7 +41,7 @@ export const AddConnectionMenu = memo(() => {
   const selectConnectionType = useCallback(
     (type: ConnectionType) => {
       setShowAddConnectionMenu(false);
-      setShowConnectionsMenu({ initialConnectionType: type });
+      setShowConnectionsMenu({ connectionType: type });
     },
     [setShowAddConnectionMenu, setShowConnectionsMenu]
   );

@@ -3,8 +3,14 @@ import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/edito
 import { events } from '@/app/events/events';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
-import { Connections } from '@/shared/components/connections/Connections';
+import {
+  ConnectionFormCreate,
+  ConnectionFormEdit,
+  type OnConnectionCreatedCallback,
+} from '@/shared/components/connections/ConnectionForm';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
+import { ConnectionsProvider } from '@/shared/components/connections/ConnectionsContext';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useCallback } from 'react';
@@ -18,57 +24,66 @@ export function ConnectionsMenu() {
   const {
     team: { uuid: teamUuid, sshPublicKey },
   } = useFileRouteLoaderData();
-  const { connections, staticIps, isLoading } = useConnectionsFetcher();
+  const { staticIps } = useConnectionsFetcher();
+
+  const close = useCallback(() => {
+    setShowConnectionsMenu(undefined);
+  }, [setShowConnectionsMenu]);
 
   const onConnectionCreated: OnConnectionCreatedCallback = useCallback(
     (connectionUuid, connectionType, connectionName) => {
-      // Close the connections dialog
-      setShowConnectionsMenu(false);
-
-      // Open the AI analyst panel with schema viewer
+      close();
       setShowAIAnalyst(true);
       setAIAnalystActiveSchemaConnectionUuid(connectionUuid);
-
-      // Add the connection as context in AI chat (without auto-submitting a prompt)
       events.emit('aiAnalystSelectConnection', connectionUuid, connectionType, connectionName);
-
-      // Focus the AI analyst input
       focusAIAnalyst();
     },
-    [setShowConnectionsMenu, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
+    [close, setShowAIAnalyst, setAIAnalystActiveSchemaConnectionUuid]
   );
 
-  const isOpen = showConnectionsMenu !== false;
-  const menuState = typeof showConnectionsMenu === 'object' ? showConnectionsMenu : undefined;
-  const initialView = menuState?.initialView ?? (showConnectionsMenu === true ? 'list' : undefined);
-  const initialConnectionType = menuState?.initialConnectionType;
-  const initialConnectionUuid = menuState?.initialConnectionUuid;
+  const isOpen = showConnectionsMenu !== undefined;
+  const connectionType = showConnectionsMenu?.connectionType;
+  const connectionUuid =
+    showConnectionsMenu && 'connectionUuid' in showConnectionsMenu ? showConnectionsMenu.connectionUuid : undefined;
+  const isEdit = !!connectionUuid;
+
+  const connectionTypeInfo = connectionType ? connectionsByType[connectionType] : undefined;
+  const title = connectionTypeInfo ? `${isEdit ? 'Edit' : 'Create'} ${connectionTypeInfo.name} connection` : '';
 
   return (
-    <Dialog open={!!showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
+    <Dialog open={isOpen} onOpenChange={close}>
       <DialogContent
-        className="max-w-4xl"
+        className="max-w-xl"
         onPointerDownOutside={(event) => {
           event.preventDefault();
         }}
         aria-describedby={undefined}
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-1">Manage team connections</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <LanguageIcon language={connectionType} className="mr-1" />
+            {title}
+          </DialogTitle>
         </DialogHeader>
-        {/* Unmount it so we reset the state */}
-        {isOpen && (
-          <Connections
-            connections={connections}
-            connectionsAreLoading={isLoading}
-            teamUuid={teamUuid}
-            sshPublicKey={sshPublicKey}
-            staticIps={staticIps}
-            initialView={initialView}
-            onConnectionCreated={onConnectionCreated}
-            initialConnectionType={initialConnectionType}
-            initialConnectionUuid={initialConnectionUuid}
-          />
+        {isOpen && connectionType && (
+          <ConnectionsProvider sshPublicKey={sshPublicKey} staticIps={staticIps ?? []}>
+            {isEdit ? (
+              <ConnectionFormEdit
+                connectionUuid={connectionUuid}
+                connectionType={connectionType}
+                onClose={close}
+                teamUuid={teamUuid}
+              />
+            ) : (
+              <ConnectionFormCreate
+                teamUuid={teamUuid}
+                type={connectionType}
+                onClose={close}
+                onCancel={close}
+                onConnectionCreated={onConnectionCreated}
+              />
+            )}
+          </ConnectionsProvider>
         )}
       </DialogContent>
     </Dialog>

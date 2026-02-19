@@ -65,7 +65,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
-        <p className="pb-2 text-sm">Find your Property ID in Google Analytics under Admin → Property Settings. .</p>
         <FormField
           control={form.control}
           name="name"

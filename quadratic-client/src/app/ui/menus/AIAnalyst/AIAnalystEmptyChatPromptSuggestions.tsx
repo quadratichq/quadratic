@@ -309,8 +309,8 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
                       handleSelectConnection(connection.uuid, connection.type, connection.name);
                     } else {
                       setShowConnectionsMenu({
-                        initialConnectionUuid: connection.uuid,
-                        initialConnectionType: connection.type,
+                        connectionUuid: connection.uuid,
+                        connectionType: connection.type,
                       });
                     }
                   }}

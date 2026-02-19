@@ -20,8 +20,8 @@ export type OnConnectionCreatedCallback = (
 ) => void;
 
 export type ConnectionFormProps = {
-  handleNavigateToListView: () => void;
-  handleCancelForm: () => void;
+  onClose: () => void;
+  onCancel: () => void;
   handleSubmitForm: (formValues: ConnectionFormValues) => void;
   connection?: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response'];
   plaidCategory?: PlaidCategory;
@@ -31,15 +31,15 @@ export function ConnectionFormCreate({
   teamUuid,
   type,
   plaidCategory,
-  handleNavigateToListView,
-  handleNavigateToNewView,
+  onClose,
+  onCancel,
   onConnectionCreated,
 }: {
   teamUuid: string;
   type: ConnectionType;
   plaidCategory?: PlaidCategory;
-  handleNavigateToListView: () => void;
-  handleNavigateToNewView: () => void;
+  onClose: () => void;
+  onCancel: () => void;
   onConnectionCreated?: OnConnectionCreatedCallback;
 }) {
   const fetcher = useFetcher<{ ok: boolean; connectionUuid?: string }>();
@@ -63,16 +63,14 @@ export function ConnectionFormCreate({
 
     fetcher.submit(json, options);
 
-    // Only navigate to list view if there's no onConnectionCreated callback
-    // If callback exists, it will handle closing the dialog when the API responds
     if (!onConnectionCreated) {
-      handleNavigateToListView();
+      onClose();
     }
   };
 
   const props: ConnectionFormProps = {
-    handleNavigateToListView,
-    handleCancelForm: () => handleNavigateToNewView(),
+    onClose,
+    onCancel,
     handleSubmitForm,
     plaidCategory,
   };
@@ -83,12 +81,12 @@ export function ConnectionFormCreate({
 export function ConnectionFormEdit({
   connectionUuid,
   connectionType,
-  handleNavigateToListView,
+  onClose,
   teamUuid,
 }: {
   connectionUuid: string;
   connectionType: ConnectionType;
-  handleNavigateToListView: () => void;
+  onClose: () => void;
   teamUuid: string;
 }) {
   const submit = useSubmit();
@@ -111,7 +109,7 @@ export function ConnectionFormEdit({
       typeDetails,
     });
     submit(json, { ...options, navigate: false });
-    handleNavigateToListView();
+    onClose();
   };
 
   return fetcher.data?.ok ? (
@@ -120,8 +118,8 @@ export function ConnectionFormEdit({
       teamUuid={teamUuid}
       props={{
         connection: fetcher.data.connection,
-        handleNavigateToListView,
-        handleCancelForm: () => handleNavigateToListView(),
+        onClose,
+        onCancel: onClose,
         handleSubmitForm,
       }}
     />
@@ -184,7 +182,7 @@ function ConnectionFormWrapper({
   return (
     <ConnectionForm
       handleSubmitForm={handleSubmitMiddleware}
-      handleCancelForm={props.handleCancelForm}
+      handleCancelForm={props.onCancel}
       form={form}
       teamUuid={teamUuid}
       connection={props.connection}
@@ -193,8 +191,8 @@ function ConnectionFormWrapper({
     >
       <ConnectionFormActions
         form={form}
-        handleCancelForm={props.handleCancelForm}
-        handleNavigateToListView={props.handleNavigateToListView}
+        onCancel={props.onCancel}
+        onClose={props.onClose}
         connectionUuid={props.connection?.uuid}
         connectionType={type}
         teamUuid={teamUuid}

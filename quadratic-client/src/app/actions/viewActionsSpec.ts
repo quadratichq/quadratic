@@ -132,7 +132,7 @@ export const viewActionsSpec: ViewActionSpec = {
           ...prev,
           showCellTypeMenu: false,
           showCommandPalette: false,
-          showConnectionsMenu: false,
+          showConnectionsMenu: undefined,
           showGoToMenu: false,
           showFeedbackMenu: false,
           showRenameFileMenu: false,

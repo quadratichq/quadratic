@@ -2,7 +2,6 @@ import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/ac
 import {
   editorInteractionStateShowAddConnectionMenuAtom,
   editorInteractionStateShowCellTypeMenuAtom,
-  editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import type {
   CommandGroup,
@@ -12,6 +11,11 @@ import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPal
 import { AddIcon, DatabaseIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
 
+// TODO: change these to be 1 of 4 things:
+// 1. Query a connection
+// 2. Prompt a connection
+// 3. Manage connections (if there are some)
+// 4. Add a connection
 const commands: CommandGroup = {
   heading: 'Connections',
   commands: [
@@ -37,11 +41,9 @@ const commands: CommandGroup = {
       label: 'Manage connections',
       isAvailable: ({ teamPermissions }) => !!teamPermissions && teamPermissions.includes('TEAM_EDIT'),
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+        // const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
 
-        return (
-          <CommandPaletteListItem {...props} action={() => setShowConnectionsMenu(true)} icon={<DatabaseIcon />} />
-        );
+        return <CommandPaletteListItem {...props} action={() => {}} icon={<DatabaseIcon />} />;
       },
     },
   ],

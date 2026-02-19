@@ -47,7 +47,7 @@ export const AddConnectionMenuItems = memo(({ onAddConnection }: AddConnectionMe
 
   const handleAddConnection = useCallback(
     (type: ConnectionType) => {
-      setShowConnectionsMenu({ initialConnectionType: type });
+      setShowConnectionsMenu({ connectionType: type });
       onAddConnection?.(type);
     },
     [onAddConnection, setShowConnectionsMenu]
@@ -147,7 +147,7 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
     if (isReadyForUse) {
       onClick();
     } else {
-      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+      setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
     }
   }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
 
@@ -156,7 +156,7 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
     // bubble up to the parent dropdown menu so it closes, and we'll handle the
     // manage connection in handleClick() instead.
     manageClickedRef.current = true;
-    setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+    setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
   }, [setShowConnectionsMenu, connection.uuid, connection.type]);
 
   return (

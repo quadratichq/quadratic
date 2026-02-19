@@ -110,7 +110,7 @@ export const CellTypeMenu = memo(() => {
 
   // const manageConnections = useCallback(() => {
   //   setShowCellTypeMenu(false);
-  //   setShowConnectionsMenu({ initialView: 'list' });
+  //   setShowConnectionsMenu(...);
   // }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
   const selectConnection = useCallback(
@@ -201,14 +201,14 @@ const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionC
       onSelect();
     } else {
       setShowCellTypeMenu(false);
-      setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+      setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
     }
   }, [isReadyForUse, setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type, onSelect]);
 
   const handleManageClick = useCallback(() => {
     manageClickedRef.current = true;
     setShowCellTypeMenu(false);
-    setShowConnectionsMenu({ initialConnectionUuid: connection.uuid, initialConnectionType: connection.type });
+    setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
   }, [setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type]);
 
   return (

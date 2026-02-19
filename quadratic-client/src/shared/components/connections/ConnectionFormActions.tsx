@@ -15,15 +15,15 @@ export function ConnectionFormActions({
   connectionType,
   connectionUuid,
   form,
-  handleCancelForm,
-  handleNavigateToListView,
+  onCancel,
+  onClose,
   teamUuid,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
-  handleCancelForm: () => void;
-  handleNavigateToListView: () => void;
+  onCancel: () => void;
+  onClose: () => void;
   teamUuid: string;
 }) {
   const submit = useSubmit();
@@ -61,7 +61,7 @@ export function ConnectionFormActions({
                       ...options,
                       navigate: false,
                     });
-                    handleNavigateToListView();
+                    onClose();
                   }
                 }}
               >
@@ -70,7 +70,7 @@ export function ConnectionFormActions({
             )}
           </div>
           {isSubmitting && <SpinnerIcon className="mr-2 text-primary" />}
-          <Button variant="outline" onClick={handleCancelForm} type="button" disabled={isSubmitting}>
+          <Button variant="outline" onClick={onCancel} type="button" disabled={isSubmitting}>
             Cancel
           </Button>
 

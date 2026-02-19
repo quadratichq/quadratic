@@ -104,9 +104,7 @@ export const ConnectionSchemaBrowser = ({
                   <h3 className="truncate font-medium leading-4 tracking-tight">{data.name}</h3>
                   {isSynced && uuid && syncState && (
                     <button
-                      onClick={() =>
-                        setShowConnectionsMenu({ initialConnectionUuid: uuid, initialConnectionType: type })
-                      }
+                      onClick={() => setShowConnectionsMenu({ connectionUuid: uuid, connectionType: type })}
                       className="flex items-center text-xs text-muted-foreground hover:underline"
                     >
                       <SyncedConnectionStatusMinimal

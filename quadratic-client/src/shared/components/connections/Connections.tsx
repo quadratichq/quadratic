@@ -247,7 +247,7 @@ export const Connections = ({
                 <ConnectionFormEdit
                   connectionUuid={activeConnectionState.uuid}
                   connectionType={activeConnectionState.type}
-                  handleNavigateToListView={handleNavigateToListView}
+                  onClose={handleNavigateToListView}
                   teamUuid={teamUuid}
                 />
               </>
@@ -293,8 +293,8 @@ export const Connections = ({
                   teamUuid={teamUuid}
                   type={activeConnectionState.type}
                   plaidCategory={activeConnectionState.plaidCategory}
-                  handleNavigateToListView={handleNavigateToListView}
-                  handleNavigateToNewView={handleNavigateToNewView}
+                  onClose={handleNavigateToListView}
+                  onCancel={handleNavigateToNewView}
                   onConnectionCreated={onConnectionCreated}
                 />
               </>

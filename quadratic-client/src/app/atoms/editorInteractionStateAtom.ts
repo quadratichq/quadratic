@@ -10,8 +10,9 @@ import { atom, DefaultValue, selector } from 'recoil';
 type AnnotationState = 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
 
 export type ConnectionsMenuState =
-  | boolean
-  | { initialView?: 'new' | 'list'; initialConnectionType?: ConnectionType; initialConnectionUuid?: string };
+  | undefined
+  | { connectionType: ConnectionType }
+  | { connectionUuid: string; connectionType: ConnectionType };
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
@@ -47,7 +48,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showCellTypeMenu: false,
   showCommandPalette: false,
   showAddConnectionMenu: false,
-  showConnectionsMenu: false,
+  showConnectionsMenu: undefined,
   showGoToMenu: false,
   showFeedbackMenu: false,
   showRenameFileMenu: false,
