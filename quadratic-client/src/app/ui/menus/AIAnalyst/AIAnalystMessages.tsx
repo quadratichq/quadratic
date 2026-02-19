@@ -8,7 +8,6 @@ import {
   promptSuggestionsAtom,
   promptSuggestionsCountAtom,
   promptSuggestionsLoadingAtom,
-  waitingOnMessageIndexAtom,
   webSearchLoadingAtom,
 } from '@/app/ai/atoms/aiAnalystAtoms';
 import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
@@ -237,7 +236,6 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     [toolGroupInfo]
   );
 
-  const waitingOnMessageIndex = useAtomValue(waitingOnMessageIndexAtom);
   const promptSuggestionsCount = useAtomValue(promptSuggestionsCountAtom);
   const promptSuggestionsLoading = useAtomValue(promptSuggestionsLoadingAtom);
 
@@ -498,7 +496,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
         );
       })}
 
-      {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
+      {messagesCount > 1 && !loading && <PromptSuggestions />}
 
       <PDFImportLoading />
 

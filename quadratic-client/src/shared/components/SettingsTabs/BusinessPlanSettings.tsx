@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { setAllowOveragePayments, teamBillingAtom } from '@/shared/atom/teamBillingAtom';
+import { setAllowOveragePayments, setTeamMonthlyBudgetLimit, teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -52,9 +52,9 @@ export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
         .then((data) => {
           setAiUsageData(data);
           setOnDemandUsage(data.allowOveragePayments ?? false);
-          setSpendingLimit(data.teamMonthlyBudgetLimit?.toString() ?? '');
-          // Sync global billing state with fetched allowOveragePayments value
+          setSpendingLimit(data.teamMonthlyBudgetLimit?.toFixed(2) ?? '');
           setAllowOveragePayments(data.allowOveragePayments ?? false);
+          setTeamMonthlyBudgetLimit(data.teamMonthlyBudgetLimit ?? null);
         })
         .catch((error) => {
           console.error('[BusinessPlanSettings] Failed to fetch AI usage data:', error);
@@ -66,6 +66,17 @@ export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
     }
   }, [team?.uuid, isBusiness]);
 
+  const refreshUsageData = useCallback(async () => {
+    if (!team?.uuid) return;
+    try {
+      const data = await apiClient.teams.billing.aiUsage(team.uuid);
+      setAiUsageData(data);
+      setSpendingLimit(data.teamMonthlyBudgetLimit?.toFixed(2) ?? '');
+    } catch (error) {
+      console.error('[BusinessPlanSettings] Failed to refresh AI usage data:', error);
+    }
+  }, [team?.uuid]);
+
   const handleOnDemandToggle = useCallback(
     async (checked: boolean) => {
       if (!team?.uuid) return;
@@ -74,19 +85,20 @@ export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
       try {
         await apiClient.teams.billing.updateOverage(team.uuid, checked);
         setOnDemandUsage(checked);
-        // Update the global billing state so other components (like AIUsageExceeded) react immediately
         setAllowOveragePayments(checked);
         addGlobalSnackbar(checked ? 'On-demand usage enabled' : 'On-demand usage disabled', { severity: 'success' });
+        if (checked) {
+          await refreshUsageData();
+        }
       } catch (error) {
         console.error('[BusinessPlanSettings] Failed to update on-demand usage:', error);
         addGlobalSnackbar('Failed to update on-demand usage', { severity: 'error' });
-        // Revert the toggle on error
         setOnDemandUsage(!checked);
       } finally {
         setIsUpdatingOnDemand(false);
       }
     },
-    [team?.uuid, addGlobalSnackbar]
+    [team?.uuid, addGlobalSnackbar, refreshUsageData]
   );
 
   const handleSpendingLimitSave = useCallback(async () => {
@@ -103,20 +115,21 @@ export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
       }
 
       await apiClient.teams.billing.updateBudget(team.uuid, limitValue);
-      // Update the cached data and input state so hasSpendingLimitChanged reflects the new saved value
       setAiUsageData((prev) => (prev ? { ...prev, teamMonthlyBudgetLimit: limitValue } : prev));
-      setSpendingLimit(limitValue?.toString() ?? '');
+      setSpendingLimit(limitValue?.toFixed(2) ?? '');
+      setTeamMonthlyBudgetLimit(limitValue);
       addGlobalSnackbar(limitValue ? 'Spending limit updated' : 'Spending limit removed', { severity: 'success' });
+      await refreshUsageData();
     } catch (error) {
       console.error('[BusinessPlanSettings] Failed to update spending limit:', error);
       addGlobalSnackbar('Failed to update spending limit', { severity: 'error' });
     } finally {
       setIsUpdatingLimit(false);
     }
-  }, [team?.uuid, spendingLimit, isUpdatingLimit, addGlobalSnackbar]);
+  }, [team?.uuid, isUpdatingLimit, spendingLimit, addGlobalSnackbar, refreshUsageData]);
 
   const hasSpendingLimitChanged = useMemo(() => {
-    const currentLimit = aiUsageData?.teamMonthlyBudgetLimit?.toString() ?? '';
+    const currentLimit = aiUsageData?.teamMonthlyBudgetLimit?.toFixed(2) ?? '';
     return spendingLimit !== currentLimit;
   }, [spendingLimit, aiUsageData?.teamMonthlyBudgetLimit]);
 

@@ -6,12 +6,14 @@ export interface TeamBillingState {
   isOnPaidPlan: boolean;
   planType: PlanType;
   allowOveragePayments: boolean;
+  teamMonthlyBudgetLimit: number | null;
 }
 
 const defaultState: TeamBillingState = {
   isOnPaidPlan: false,
   planType: 'FREE',
   allowOveragePayments: false,
+  teamMonthlyBudgetLimit: null,
 };
 
 const baseTeamBillingAtom = atom<TeamBillingState>(defaultState);
@@ -37,6 +39,14 @@ export const updateTeamBilling = (updates: Partial<TeamBillingState>) => {
  */
 export const setAllowOveragePayments = (value: boolean) => {
   updateTeamBilling({ allowOveragePayments: value });
+};
+
+/**
+ * Set the teamMonthlyBudgetLimit value.
+ * Convenience helper for updating just this field.
+ */
+export const setTeamMonthlyBudgetLimit = (value: number | null) => {
+  updateTeamBilling({ teamMonthlyBudgetLimit: value });
 };
 
 /**

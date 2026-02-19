@@ -174,8 +174,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
-  // Get plan type for the team
-  const planType = getPlanType(team);
+  // Get plan type from the re-fetched team to reflect any updateBilling changes
+  const planType = getPlanType(dbTeam);
 
   // Get file limit info (includes editable file IDs and whether team is over limit)
   // For free teams, only the N most recently created files are editable

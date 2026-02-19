@@ -12,7 +12,7 @@ import { useRecoilValue } from 'recoil';
 export const AIUsageExceeded = memo(() => {
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const setWaitingOnMessageIndex = useSetAtom(waitingOnMessageIndexAtom);
-  const { planType, allowOveragePayments } = useAtomValue(teamBillingAtom);
+  const { planType, allowOveragePayments, teamMonthlyBudgetLimit } = useAtomValue(teamBillingAtom);
   const canManageBilling = useRecoilValue(editorInteractionStateCanManageBillingAtom);
 
   const suggestion = useMemo(
@@ -20,18 +20,17 @@ export const AIUsageExceeded = memo(() => {
     [planType, allowOveragePayments]
   );
 
-  // Track the initial suggestion when this component first mounts (i.e., when the
-  // billing limit was hit). If the billing state later changes such that the
-  // suggestion differs, it means the user upgraded or enabled overage — clear the
-  // waiting state so they can resume using AI.
-  const initialSuggestionRef = useRef(suggestion);
+  // Track the initial billing state when this component first mounts (i.e., when
+  // the billing limit was hit). If the billing state later changes — plan upgrade,
+  // overage toggle, or budget limit increase — clear the waiting state so the user
+  // can resume using AI.
+  const initialBillingRef = useRef({ suggestion, teamMonthlyBudgetLimit });
   useEffect(() => {
-    const initial = initialSuggestionRef.current;
-    if (initial === suggestion) return;
+    const initial = initialBillingRef.current;
+    if (initial.suggestion === suggestion && initial.teamMonthlyBudgetLimit === teamMonthlyBudgetLimit) return;
 
-    // Billing state changed since the limit was hit — unblock the user
     setWaitingOnMessageIndex(undefined);
-  }, [suggestion, setWaitingOnMessageIndex]);
+  }, [suggestion, teamMonthlyBudgetLimit, setWaitingOnMessageIndex]);
 
   const { title, description, buttonText } = useMemo(() => {
     if (!suggestion) {
@@ -61,8 +60,8 @@ export const AIUsageExceeded = memo(() => {
     if (targetPlan === 'PRO') {
       return {
         title: 'Monthly AI free tier exceeded',
-        description: 'Upgrade to a Pro plan to continue using Quadratic AI.',
-        buttonText: 'Upgrade to Pro',
+        description: 'Upgrade to continue using Quadratic AI.',
+        buttonText: 'Upgrade',
       };
     } else {
       return {

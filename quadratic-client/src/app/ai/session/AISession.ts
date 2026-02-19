@@ -424,9 +424,10 @@ export class AISession {
     abortController: AbortController,
     getUserPromptSuggestions?: () => void
   ): boolean {
-    // Check if waiting on user input
+    // Check if waiting on user input (billing limit hit)
     const waitingOnMsgIndex = aiStore.get(waitingOnMessageIndexAtom);
     if (waitingOnMsgIndex !== undefined) {
+      getUserPromptSuggestions?.();
       return true;
     }
 

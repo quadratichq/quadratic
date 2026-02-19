@@ -114,7 +114,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const userBudgetLimit = await getUserBudgetLimit(team.id, userId);
   const teamMonthlyBudgetLimit = team.teamMonthlyBudgetLimit;
   const teamCurrentMonthOverageCost =
-    teamMonthlyBudgetLimit != null ? await getCurrentMonthOverageCostForTeam(team) : null;
+    team.allowOveragePayments || teamMonthlyBudgetLimit != null ? await getCurrentMonthOverageCostForTeam(team) : null;
   const teamExceededBudget = await hasExceededTeamBudget(team);
 
   // Check if exceeded allowance
