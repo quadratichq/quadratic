@@ -22,8 +22,18 @@ pub fn extract_csv_from_zip(zip_data: &[u8]) -> Result<Vec<u8>> {
 
         if file.name().to_lowercase().ends_with(".csv") {
             let file_name = file.name().to_string();
-            let capacity = std::cmp::min(file.size(), MAX_DECOMPRESSED_SIZE) as usize;
-            let mut csv_data = Vec::with_capacity(capacity);
+
+            if file.size() > MAX_DECOMPRESSED_SIZE {
+                return Err(SharedError::Generic(format!(
+                    "CSV file {} reports uncompressed size {} bytes, exceeds maximum allowed {} bytes",
+                    file_name,
+                    file.size(),
+                    MAX_DECOMPRESSED_SIZE
+                )));
+            }
+
+            let mut csv_data = Vec::with_capacity(file.size() as usize);
+            // Secondary protection: limit actual bytes read in case the header size is spoofed
             file.take(MAX_DECOMPRESSED_SIZE + 1)
                 .read_to_end(&mut csv_data)
                 .map_err(|e| {

@@ -11,7 +11,7 @@ use std::time::Duration;
 use quadratic_rust_shared::arrow::object_store::{ObjectStore, upload_multipart};
 use quadratic_rust_shared::intrinio::bulk_download::{fetch_bulk_download_links, s3_object_key};
 use quadratic_rust_shared::parquet::csv::csv_bytes_to_parquet_bytes;
-use quadratic_rust_shared::utils::http::download_file;
+use quadratic_rust_shared::utils::http::{build_client, download_file};
 use quadratic_rust_shared::utils::zip::extract_csv_from_zip;
 
 use crate::error::{FilesError, Result};
@@ -32,13 +32,14 @@ fn to_mb(bytes: usize) -> f64 {
 /// Process a single bulk download file: download ZIP, extract CSV, convert to
 /// Parquet, and upload to S3.
 async fn process_bulk_download_file(
+    client: &reqwest::Client,
     object_store: &Arc<dyn ObjectStore>,
     link_name: &str,
     link_url: &str,
 ) -> Result<()> {
     tracing::trace!("Downloading Intrinio bulk download file: {}", link_name);
 
-    let zip_data = download_file(link_url)
+    let zip_data = download_file(client, link_url)
         .await
         .map_err(pipeline_error)?;
     let zip_size = zip_data.len();
@@ -87,6 +88,7 @@ async fn process_bulk_download_file(
 
 /// Process a single file with retries using exponential backoff.
 async fn process_with_retry(
+    client: &reqwest::Client,
     object_store: &Arc<dyn ObjectStore>,
     link_name: &str,
     link_url: &str,
@@ -106,7 +108,7 @@ async fn process_with_retry(
             tokio::time::sleep(delay).await;
         }
 
-        match process_bulk_download_file(object_store, link_name, link_url).await {
+        match process_bulk_download_file(client, object_store, link_name, link_url).await {
             Ok(()) => return Ok(()),
             Err(e) => {
                 last_error = Some(e);
@@ -134,6 +136,7 @@ pub(crate) async fn run_intrinio_pipeline(
 ) -> Result<()> {
     tracing::info!("Starting Intrinio bulk download data pipeline");
 
+    let client = build_client().map_err(pipeline_error)?;
     let start_time = std::time::Instant::now();
     let response = fetch_bulk_download_links(api_key)
         .await
@@ -154,7 +157,7 @@ pub(crate) async fn run_intrinio_pipeline(
             total_files += 1;
 
             if let Err(e) =
-                process_with_retry(object_store, &link.name, &link.url).await
+                process_with_retry(&client, object_store, &link.name, &link.url).await
             {
                 tracing::error!(
                     "Error processing {} (after {} retries): {}",
