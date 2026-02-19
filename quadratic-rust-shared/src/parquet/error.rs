@@ -8,6 +8,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Parquet {
+    #[error("Error with Csv: {0}")]
+    Csv(String),
+
     #[error("Error with Json: {0}")]
     Json(String),
 

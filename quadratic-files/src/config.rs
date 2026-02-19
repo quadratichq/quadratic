@@ -68,6 +68,10 @@ pub(crate) struct Config {
     pub(crate) plaid_client_id: String,
     pub(crate) plaid_secret: String,
     pub(crate) plaid_environment: PlaidEnvironment,
+
+    // Intrinio (for data pipeline)
+    #[serde(default)]
+    pub(crate) intrinio_api_key: String,
 }
 
 /// Load the global configuration from the environment into Config.

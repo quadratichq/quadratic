@@ -21,6 +21,7 @@ import ClickhouseLogo from './logo-clickhouse.svg?react';
 import CockroachdbLogo from './logo-cockroachdb.svg?react';
 import DatabricksLogo from './logo-databricks.svg?react';
 import DynamoDBLogo from './logo-dynamodb.svg?react';
+import FinancialMarketDataLogo from './logo-financial-market-data.svg?react';
 import GoogleAnalyticsLogo from './logo-google-analytics.svg?react';
 import HubspotLogo from './logo-hubspot.svg?react';
 import MariadbLogo from './logo-mariadb.svg?react';
@@ -166,6 +167,17 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     Logo: PlaidLogo,
     ConnectionForm: Plaid.ConnectionForm,
     useConnectionForm: Plaid.useConnectionForm,
+  },
+  DATAFUSION: {
+    name: 'DataFusion',
+    Logo: FinancialMarketDataLogo,
+    // DataFusion connections are platform-managed and not user-editable
+    ConnectionForm: () => {
+      throw new Error('DATAFUSION connections are platform-managed and cannot be edited');
+    },
+    useConnectionForm: () => {
+      throw new Error('DATAFUSION connections are platform-managed and cannot be edited');
+    },
   },
 };
 

@@ -19,6 +19,7 @@ export const codeCellsById = {
   MIXPANEL: { id: 'MIXPANEL', label: 'Mixpanel', type: 'connection' },
   GOOGLE_ANALYTICS: { id: 'GOOGLE_ANALYTICS', label: 'Google Analytics', type: 'connection' },
   PLAID: { id: 'PLAID', label: 'Plaid', type: 'connection' },
+  DATAFUSION: { id: 'DATAFUSION', label: 'DataFusion', type: 'connection' },
   // STOCKHISTORY is an internal connection type for the STOCKHISTORY formula (not user-manageable)
   STOCKHISTORY: { id: 'STOCKHISTORY', label: 'Stock History', type: 'internal' },
 } as const;
@@ -85,6 +86,8 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
       case 'GOOGLE_ANALYTICS':
         return 'sql';
       case 'PLAID':
+        return 'sql';
+      case 'DATAFUSION':
         return 'sql';
     }
   }

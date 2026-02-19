@@ -47,6 +47,18 @@ class CoreConnection {
       return;
     }
 
+    // Guard against empty queries - don't send request if there's no SQL.
+    // Must yield before calling connectionComplete to release the WASM borrow
+    // on GridController (which is still held during this callback).
+    if (!code || code.trim().length === 0) {
+      await Promise.resolve();
+      const buffer = new ArrayBuffer(0);
+      const std_err = 'No query provided. Write a SQL query and run again.';
+      core.connectionComplete(transactionId, buffer, undefined, std_err, undefined);
+      this.lastTransactionId = undefined;
+      return;
+    }
+
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const kind = connector_type.toLocaleLowerCase().replace(/_/g, '-');
     const url = `${base}/${kind}/query`;

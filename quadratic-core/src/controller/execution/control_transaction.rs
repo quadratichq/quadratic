@@ -248,6 +248,7 @@ impl GridController {
                             ConnectionKind::Mixpanel => "Mixpanel1",
                             ConnectionKind::GoogleAnalytics => "GoogleAnalytics1",
                             ConnectionKind::Plaid => "Plaid1",
+                            ConnectionKind::Datafusion => "Datafusion1",
                             ConnectionKind::StockHistory => "StockHistory",
                         },
                         // Formula-based connections (like STOCKHISTORY)

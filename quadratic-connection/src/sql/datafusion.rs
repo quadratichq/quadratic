@@ -17,6 +17,7 @@ use quadratic_rust_shared::{
         plaid::{PlaidConnection, client::PlaidClient},
     },
 };
+use serde::Deserialize;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -142,6 +143,102 @@ pub(crate) async fn schema(
     let team_id = get_team_id_header(&headers)?;
     let api_connection =
         get_connection((**state).clone(), &claims, &id, &team_id, &headers).await?;
+
+    schema_generic(api_connection, state, params).await
+}
+
+// =============================================================================
+// Generic DataFusion handlers
+//
+// These handlers read `prefix` and `streams` from the connection's typeDetails,
+// making them reusable for any DataFusion-backed connection (e.g. Intrinio
+// financial data, or any future data stored as Parquet on S3).
+// =============================================================================
+
+/// Type details expected for a generic DataFusion connection.
+#[derive(Debug, Deserialize)]
+struct GenericDatafusionTypeDetails {
+    /// Optional S3 prefix override (defaults to connection_id if absent).
+    prefix: Option<String>,
+    /// Table/stream names available under this prefix.
+    #[serde(default)]
+    streams: Vec<String>,
+}
+
+/// Build a DatafusionConnection from a generic connection's typeDetails.
+async fn get_generic_connection(
+    state: State,
+    claims: &Claims,
+    connection_id: &Uuid,
+    team_id: &Uuid,
+    headers: &HeaderMap,
+) -> Result<ApiConnection<DatafusionConnection>> {
+    let api_connection: ApiConnection<GenericDatafusionTypeDetails> = match cfg!(not(test)) {
+        true => {
+            get_api_connection(&state, "", &claims.email, connection_id, team_id, headers).await?
+        }
+        false => ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            type_details: GenericDatafusionTypeDetails {
+                prefix: None,
+                streams: vec![],
+            },
+        },
+    };
+
+    let mut datafusion_connection = match cfg!(not(test)) {
+        true => state.settings.datafusion_connection,
+        false => new_datafusion_test_connection(),
+    };
+
+    datafusion_connection.connection_id = Some(*connection_id);
+    datafusion_connection.prefix = api_connection.type_details.prefix;
+    datafusion_connection.streams = api_connection.type_details.streams;
+
+    let api_connection = ApiConnection {
+        uuid: *connection_id,
+        name: api_connection.name,
+        r#type: api_connection.r#type,
+        type_details: datafusion_connection,
+    };
+
+    Ok(api_connection)
+}
+
+/// Generic DataFusion query handler — reads streams/prefix from typeDetails.
+pub(crate) async fn query_generic_datafusion(
+    headers: HeaderMap,
+    state: Extension<Arc<State>>,
+    claims: Claims,
+    sql_query: Json<SqlQuery>,
+) -> Result<impl IntoResponse> {
+    let team_id = get_team_id_header(&headers)?;
+    let connection_id = sql_query.connection_id;
+    let connection = get_generic_connection(
+        (**state).clone(),
+        &claims,
+        &connection_id,
+        &team_id,
+        &headers,
+    )
+    .await?;
+
+    query_generic::<DatafusionConnection>(connection.type_details, state, sql_query).await
+}
+
+/// Generic DataFusion schema handler — reads streams/prefix from typeDetails.
+pub(crate) async fn schema_generic_datafusion(
+    Path(id): Path<Uuid>,
+    headers: HeaderMap,
+    state: Extension<Arc<State>>,
+    claims: Claims,
+    Query(params): Query<SchemaQuery>,
+) -> Result<Json<Schema>> {
+    let team_id = get_team_id_header(&headers)?;
+    let api_connection =
+        get_generic_connection((**state).clone(), &claims, &id, &team_id, &headers).await?;
 
     schema_generic(api_connection, state, params).await
 }

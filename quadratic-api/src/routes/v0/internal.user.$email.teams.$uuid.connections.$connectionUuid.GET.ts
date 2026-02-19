@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
-import { connectionDemo } from '../../data/connections';
+import { connectionDemo, connectionFinancialData } from '../../data/connections';
 import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getTeamConnection } from '../../middleware/getTeamConnection';
@@ -29,9 +29,12 @@ async function handler(req: Request, res: Response) {
     throw new ApiError(400, 'The user with that email could not be found.');
   }
 
-  // If it's our hard-coded connection, return that
+  // If it's one of our hard-coded connections, return that
   if (connectionUuid === connectionDemo?.uuid) {
     return res.status(200).json(connectionDemo);
+  }
+  if (connectionUuid === connectionFinancialData?.uuid) {
+    return res.status(200).json(connectionFinancialData);
   }
 
   // Get the connection

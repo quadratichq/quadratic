@@ -1,6 +1,6 @@
 import type { Connection, SyncedConnection, SyncedConnectionLog } from '@prisma/client';
 import type { ConnectionList, SyncedConnectionLatestLogStatus } from 'quadratic-shared/typesAndSchemasConnections';
-import { connectionDemo } from '../data/connections';
+import { connectionDemo, connectionFinancialData } from '../data/connections';
 
 export function getTeamConnectionsList({
   dbConnections,
@@ -38,6 +38,21 @@ export function getTeamConnectionsList({
       createdDate: connectionDemo.createdDate,
       type: connectionDemo.type,
       semanticDescription: connectionDemo.semanticDescription || undefined,
+      isDemo: true,
+      syncedConnectionPercentCompleted: undefined,
+      syncedConnectionUpdatedDate: undefined,
+      syncedConnectionLatestLogStatus: undefined,
+      syncedConnectionLatestLogError: undefined,
+    });
+  }
+
+  if (connectionFinancialData && settingShowConnectionDemo) {
+    connections.push({
+      uuid: connectionFinancialData.uuid,
+      name: connectionFinancialData.name,
+      createdDate: connectionFinancialData.createdDate,
+      type: connectionFinancialData.type,
+      semanticDescription: connectionFinancialData.semanticDescription || undefined,
       isDemo: true,
       syncedConnectionPercentCompleted: undefined,
       syncedConnectionUpdatedDate: undefined,

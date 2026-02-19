@@ -74,7 +74,9 @@ export const connectionClient = {
         | 'google_analytics'
         | 'GOOGLE_ANALYTICS'
         | 'plaid'
-        | 'PLAID',
+        | 'PLAID'
+        | 'datafusion'
+        | 'DATAFUSION',
       connectionId: string,
       teamUuid: string,
       forceCacheRefresh: boolean = false,

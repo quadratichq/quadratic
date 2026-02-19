@@ -36,6 +36,9 @@ pub enum FilesError {
     #[error("Error creating object store: {0}")]
     CreateObjectStore(String),
 
+    #[error("Data pipeline error: {0}")]
+    DataPipeline(String),
+
     #[error("Error connecting to database: {0}")]
     DatabaseConnect(String),
 

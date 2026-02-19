@@ -41,8 +41,8 @@ use crate::{
     sql::{
         bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
         datafusion::{
-            query as query_datafusion, schema as schema_datafusion, test_google_analytics,
-            test_mixpanel, test_plaid,
+            query as query_datafusion, query_generic_datafusion, schema as schema_datafusion,
+            schema_generic_datafusion, test_google_analytics, test_mixpanel, test_plaid,
         },
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
@@ -162,6 +162,10 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         .route("/plaid/test", post(test_plaid))
         .route("/plaid/query", post(query_datafusion))
         .route("/plaid/schema/:id", get(schema_datafusion))
+        //
+        // generic datafusion (reads streams/prefix from connection typeDetails)
+        .route("/datafusion/query", post(query_generic_datafusion))
+        .route("/datafusion/schema/:id", get(schema_generic_datafusion))
         //
         // financial
         .route("/financial/stock-prices", post(stock_prices))

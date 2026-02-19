@@ -1,6 +1,6 @@
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
-import { CONNECTION_DEMO } from '../env-vars';
+import { CONNECTION_DEMO, CONNECTION_FINANCIAL_DATA } from '../env-vars';
 import logger from '../utils/logger';
 
 /**
@@ -27,4 +27,25 @@ try {
   });
 } catch (error) {
   logger.warn('CONNECTION_DEMO env var is missing or malformed. No demo connection will be available.', error);
+}
+
+/**
+ * Financial Market Data — a platform-provided, read-only connection
+ * backed by Intrinio stock price data stored as Parquet files on S3.
+ * Follows the same pattern as the demo connection above.
+ */
+export let connectionFinancialData: Connection | undefined;
+try {
+  connectionFinancialData = ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response'].parse({
+    ...JSON.parse(CONNECTION_FINANCIAL_DATA.replace(/\\"/g, '"')),
+
+    createdDate: '2022-01-01T00:00:00.000Z',
+    updatedDate: '2022-01-01T00:00:00.000Z',
+    isDemo: true,
+  });
+} catch (error) {
+  logger.warn(
+    'CONNECTION_FINANCIAL_DATA env var is missing or malformed. No financial data connection will be available.',
+    error
+  );
 }

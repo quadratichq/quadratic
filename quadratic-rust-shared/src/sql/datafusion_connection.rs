@@ -38,6 +38,7 @@ pub struct EmptyConnection {}
 pub struct DatafusionConnection {
     pub connection_id: Option<Uuid>,
     pub database: Option<String>,
+    pub prefix: Option<String>,
     pub streams: Vec<String>,
     #[serde(skip, default = "DatafusionConnection::new_session_context")]
     #[derivative(Debug = "ignore")]
@@ -54,6 +55,7 @@ impl DatafusionConnection {
         DatafusionConnection {
             connection_id: None,
             database: None,
+            prefix: None,
             streams: vec![],
             session_context: Self::new_session_context(),
             object_store,
@@ -83,20 +85,26 @@ impl DatafusionConnection {
         SessionContext::new_with_config(config)
     }
 
-    /// Get the parquet path for a table in the object store
-    /// For S3: full URL path (s3://bucket/{connection_id}/{table}/)
-    /// For FileSystem: relative path (/{connection_id}/{table}/) since LocalFileSystem adds its prefix
+    /// Get the parquet path for a table in the object store.
+    ///
+    /// Uses `prefix` if set, otherwise falls back to `connection_id`.
+    /// For S3: full URL path (s3://bucket/{prefix}/{table}/)
+    /// For FileSystem: relative path (/{prefix}/{table}/) since LocalFileSystem adds its prefix
     pub fn object_store_parquet_path(&self, table: &str) -> Result<String> {
-        let connection_id = self
-            .connection_id
-            .ok_or_else(|| connect_error("Connection ID is required"))?;
+        let prefix = match &self.prefix {
+            Some(p) => p.clone(),
+            None => self
+                .connection_id
+                .ok_or_else(|| connect_error("Connection ID is required"))?
+                .to_string(),
+        };
 
         // For file:// URLs, use relative path since LocalFileSystem::new_with_prefix
         // already handles the base path. For S3, use the full URL.
         let path = if self.object_store_url.scheme() == "file" {
-            format!("/{}/{}/", connection_id, table)
+            format!("/{}/{}/", prefix, table)
         } else {
-            format!("{}/{}/{}/", self.object_store_url, connection_id, table)
+            format!("{}/{}/{}/", self.object_store_url, prefix, table)
         };
 
         Ok(path)
