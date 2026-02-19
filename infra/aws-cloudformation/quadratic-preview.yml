@@ -142,8 +142,13 @@ Resources:
           GCP_PRIVATE_KEY=$(aws ssm get-parameter --name "/quadratic-development/GCP_PRIVATE_KEY" --with-decryption --query "Parameter.Value" --output text)
           GCP_GEMINI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/GCP_GEMINI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
 
-          # ai api keys
+          # ai billing
           BILLING_AI_USAGE_LIMIT=$(aws ssm get-parameter --name "/quadratic-development/BILLING_AI_USAGE_LIMIT" --with-decryption --query "Parameter.Value" --output text)
+          AI_ALLOWANCE_PRO=$(aws ssm get-parameter --name "/quadratic-development/AI_ALLOWANCE_PRO" --with-decryption --query "Parameter.Value" --output text)
+          AI_ALLOWANCE_BUSINESS=$(aws ssm get-parameter --name "/quadratic-development/AI_ALLOWANCE_BUSINESS" --with-decryption --query "Parameter.Value" --output text)
+          AI_MARGIN=$(aws ssm get-parameter --name "/quadratic-development/AI_MARGIN" --with-decryption --query "Parameter.Value" --output text)
+
+          # ai api keys
           ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           AZURE_OPENAI_ENDPOINT=$(aws ssm get-parameter --name "/quadratic-development/AZURE_OPENAI_ENDPOINT" --with-decryption --query "Parameter.Value" --output text)

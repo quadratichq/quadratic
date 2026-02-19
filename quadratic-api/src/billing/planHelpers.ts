@@ -295,6 +295,8 @@ export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise
 /**
  * Check if a user can make an AI request based on allowance, budget, and overage settings.
  * Returns { allowed: boolean, reason?: string }
+ *
+ * Fetches all billing data in parallel to minimize latency, since this runs on every AI request.
  */
 export const canMakeAiRequest = async (
   team: Team | DecryptedTeam,
@@ -306,57 +308,51 @@ export const canMakeAiRequest = async (
     return { allowed: true };
   }
 
-  // Check user allowance
-  const exceededUserAllowance = await hasExceededAllowance(team, userId);
-  if (exceededUserAllowance) {
-    // Check if overage is allowed
-    if (planType === PlanType.BUSINESS && team.allowOveragePayments) {
-      // Check budget limits instead
-      const exceededUserBudget = await hasExceededUserBudget(team.id, userId);
-      const exceededTeamBudget = await hasExceededTeamBudget(team);
+  const allowancePerUser = getMonthlyAiAllowancePerUser(team);
 
-      if (exceededUserBudget) {
-        return {
-          allowed: false,
-          reason: 'User monthly budget limit exceeded',
-        };
-      }
-
-      if (exceededTeamBudget) {
-        return {
-          allowed: false,
-          reason: 'Team monthly budget limit exceeded',
-        };
-      }
-
-      // Overage allowed and within budget
+  if (planType === PlanType.PRO) {
+    if (allowancePerUser === 0) {
       return { allowed: true };
     }
-
-    // No overage allowed or not Business plan
-    return {
-      allowed: false,
-      reason: 'Monthly AI allowance exceeded',
-    };
+    const userCost = await getCurrentMonthAiCostForUser(team.id, userId);
+    if (userCost >= allowancePerUser) {
+      return { allowed: false, reason: 'Monthly AI allowance exceeded' };
+    }
+    return { allowed: true };
   }
 
-  // Within allowance, check budget limits (if set)
-  if (planType === PlanType.BUSINESS) {
-    const exceededUserBudget = await hasExceededUserBudget(team.id, userId);
-    if (exceededUserBudget) {
-      return {
-        allowed: false,
-        reason: 'User monthly budget limit exceeded',
-      };
-    }
+  // Business plan: fetch all billing data in parallel
+  const [userCost, budgetLimit, teamCost, userCount] = await Promise.all([
+    getCurrentMonthAiCostForUser(team.id, userId),
+    getUserBudgetLimit(team.id, userId),
+    getCurrentMonthAiCostForTeam(team.id),
+    dbClient.userTeamRole.count({ where: { teamId: team.id } }),
+  ]);
 
-    const exceededTeamBudget = await hasExceededTeamBudget(team);
-    if (exceededTeamBudget) {
-      return {
-        allowed: false,
-        reason: 'Team monthly budget limit exceeded',
-      };
+  const teamAllowance = allowancePerUser * userCount;
+  const exceededUserAllowance = allowancePerUser > 0 && userCost >= allowancePerUser;
+  const exceededUserBudget = budgetLimit !== null && userCost >= budgetLimit.limit;
+  const overageCost = teamAllowance > 0 ? Math.max(0, teamCost - teamAllowance) : 0;
+  const exceededTeamBudget = team.teamMonthlyBudgetLimit != null && overageCost >= team.teamMonthlyBudgetLimit;
+
+  if (exceededUserAllowance) {
+    if (team.allowOveragePayments) {
+      if (exceededUserBudget) {
+        return { allowed: false, reason: 'User monthly budget limit exceeded' };
+      }
+      if (exceededTeamBudget) {
+        return { allowed: false, reason: 'Team monthly budget limit exceeded' };
+      }
+      return { allowed: true };
     }
+    return { allowed: false, reason: 'Monthly AI allowance exceeded' };
+  }
+
+  if (exceededUserBudget) {
+    return { allowed: false, reason: 'User monthly budget limit exceeded' };
+  }
+  if (exceededTeamBudget) {
+    return { allowed: false, reason: 'Team monthly budget limit exceeded' };
   }
 
   return { allowed: true };

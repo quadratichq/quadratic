@@ -30,13 +30,14 @@ export interface TrackAICostParams {
   usage: AIUsage;
   modelKey: AIModelKey;
   source: AIChatSource;
+  isFreePlan?: boolean;
 }
 
 /**
  * Tracks the cost of an AI request in the database.
  * This function is non-blocking - errors are logged but don't throw.
- *
- * @param params - Parameters for tracking AI cost
+ * Skips tracking for free plan users so their full allowance is
+ * available when they subscribe.
  */
 export async function trackAICost({
   userId,
@@ -45,7 +46,10 @@ export async function trackAICost({
   usage,
   modelKey,
   source,
+  isFreePlan,
 }: TrackAICostParams): Promise<void> {
+  if (isFreePlan) return;
+
   try {
     const cost = calculateUsage({ ...usage, modelKey });
 

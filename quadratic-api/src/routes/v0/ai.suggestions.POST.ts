@@ -202,6 +202,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
       usage: parsedResponse.usage,
       modelKey: DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS,
       source: 'AIAnalyst',
+      isFreePlan: isFree,
     });
 
     const responseText = parsedResponse.responseMessage.content

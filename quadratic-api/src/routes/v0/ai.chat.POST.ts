@@ -160,7 +160,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     restrictedCountry,
     abortController.signal,
     userId,
-    ownerTeam.id
+    ownerTeam.id,
+    isFree
   );
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
@@ -213,6 +214,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       usage: parsedResponse.usage,
       modelKey,
       source: toAIChatSource(source),
+      isFreePlan: isFree,
     });
   }
 

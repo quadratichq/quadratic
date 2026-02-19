@@ -182,6 +182,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
           usage: parsedResponse.usage,
           modelKey,
           source: 'AIAnalyst',
+          isFreePlan: isFree,
         });
       }
 
@@ -215,6 +216,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
         usage: parsedResponse.usage,
         modelKey,
         source: 'AIAnalyst',
+        isFreePlan: isFree,
       });
 
       const planText = parsedResponse.responseMessage.content
