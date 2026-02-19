@@ -2,6 +2,7 @@ mod config;
 mod error;
 mod worker;
 
+use rustls::crypto::ring::default_provider;
 use tracing::{error, info};
 
 use crate::config::Config;
@@ -10,6 +11,10 @@ use crate::worker::Worker;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Install default crypto provider for rustls if not already installed
+    // Ignore error if already installed (happens in tests when multiple connections are created)
+    let _ = default_provider().install_default();
+
     tracing_subscriber::fmt::init();
 
     info!("Parsing config from environment...");
