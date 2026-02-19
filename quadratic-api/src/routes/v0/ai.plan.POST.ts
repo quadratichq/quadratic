@@ -38,13 +38,13 @@ Data (include "being consumed" if data is being used from an existing source; in
 List the name of the data source as well as key columns/fields, one per line, only if data is relevant to answer the query. Data may sometimes not be relevant if it is a calculation or task that does not require data.
 
 Analysis:
-Key calculations and/or charts that will be created to answer the query. 
+Key calculations and/or charts that will be created to answer the query.
 
 Steps:
 1. First action
 2. Second action
 3. Third action
-Etc. 
+Etc.
 
 Be brief. No lengthy explanations. Plain text only.`;
 
@@ -92,8 +92,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
   // This encourages users to try the "Start with AI" flow without penalty
   // However, we still check and track the limit status for reporting
   let exceededBillingLimit = false;
-  const isFree = await isFreePlan(team);
-  
+  const isFree = isFreePlan(team);
+
   if (isFree) {
     if (!isOnPaidPlan) {
       const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);

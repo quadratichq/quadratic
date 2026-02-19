@@ -37,7 +37,7 @@ describe('getPlanType', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    const planType = await getPlanType(team);
+    const planType = getPlanType(team);
     expect(planType).toBe(PlanType.FREE);
   });
 
@@ -51,7 +51,7 @@ describe('getPlanType', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    const planType = await getPlanType(updatedTeam);
+    const planType = getPlanType(updatedTeam);
     expect(planType).toBe(PlanType.PRO);
   });
 
@@ -69,7 +69,7 @@ describe('getPlanType', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    const planType = await getPlanType(updatedTeam);
+    const planType = getPlanType(updatedTeam);
     expect(planType).toBe(PlanType.BUSINESS);
   });
 });
@@ -81,9 +81,9 @@ describe('isFreePlan, isProPlan, isBusinessPlan', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    expect(await isFreePlan(team)).toBe(true);
-    expect(await isProPlan(team)).toBe(false);
-    expect(await isBusinessPlan(team)).toBe(false);
+    expect(isFreePlan(team)).toBe(true);
+    expect(isProPlan(team)).toBe(false);
+    expect(isBusinessPlan(team)).toBe(false);
   });
 
   it('correctly identifies PRO plan', async () => {
@@ -96,9 +96,9 @@ describe('isFreePlan, isProPlan, isBusinessPlan', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    expect(await isFreePlan(updatedTeam)).toBe(false);
-    expect(await isProPlan(updatedTeam)).toBe(true);
-    expect(await isBusinessPlan(updatedTeam)).toBe(false);
+    expect(isFreePlan(updatedTeam)).toBe(false);
+    expect(isProPlan(updatedTeam)).toBe(true);
+    expect(isBusinessPlan(updatedTeam)).toBe(false);
   });
 
   it('correctly identifies BUSINESS plan', async () => {
@@ -115,9 +115,9 @@ describe('isFreePlan, isProPlan, isBusinessPlan', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    expect(await isFreePlan(updatedTeam)).toBe(false);
-    expect(await isProPlan(updatedTeam)).toBe(false);
-    expect(await isBusinessPlan(updatedTeam)).toBe(true);
+    expect(isFreePlan(updatedTeam)).toBe(false);
+    expect(isProPlan(updatedTeam)).toBe(false);
+    expect(isBusinessPlan(updatedTeam)).toBe(true);
   });
 });
 
@@ -128,7 +128,7 @@ describe('getMonthlyAiAllowancePerUser', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
-    const allowance = await getMonthlyAiAllowancePerUser(team);
+    const allowance = getMonthlyAiAllowancePerUser(team);
     expect(allowance).toBe(0);
   });
 
@@ -142,7 +142,7 @@ describe('getMonthlyAiAllowancePerUser', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    const allowance = await getMonthlyAiAllowancePerUser(updatedTeam);
+    const allowance = getMonthlyAiAllowancePerUser(updatedTeam);
     expect(allowance).toBe(20);
   });
 
@@ -160,7 +160,7 @@ describe('getMonthlyAiAllowancePerUser', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    const allowance = await getMonthlyAiAllowancePerUser(updatedTeam);
+    const allowance = getMonthlyAiAllowancePerUser(updatedTeam);
     expect(allowance).toBe(40);
   });
 
@@ -178,7 +178,7 @@ describe('getMonthlyAiAllowancePerUser', () => {
     const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
     if (!updatedTeam) throw new Error('Team not found');
 
-    const allowance = await getMonthlyAiAllowancePerUser(updatedTeam);
+    const allowance = getMonthlyAiAllowancePerUser(updatedTeam);
     expect(allowance).toBe(50);
   });
 });

@@ -12,15 +12,13 @@ export { PlanType };
  * - ACTIVE subscription = PRO (default, can be upgraded to BUSINESS)
  * - No subscription = FREE
  */
-export const getPlanType = async (team: Team | DecryptedTeam): Promise<PlanType> => {
+export const getPlanType = (team: Team | DecryptedTeam): PlanType => {
   if (team.planType) {
     return team.planType;
   }
 
   // Infer from subscription status
   if (team.stripeSubscriptionStatus === 'ACTIVE') {
-    // Default to PRO for existing active subscriptions
-    // This will be updated when they upgrade to BUSINESS
     return PlanType.PRO;
   }
 
@@ -30,40 +28,29 @@ export const getPlanType = async (team: Team | DecryptedTeam): Promise<PlanType>
 /**
  * Check if team is on Business plan
  */
-export const isBusinessPlan = async (team: Team | DecryptedTeam): Promise<boolean> => {
-  const planType = await getPlanType(team);
-  return planType === PlanType.BUSINESS;
+export const isBusinessPlan = (team: Team | DecryptedTeam): boolean => {
+  return getPlanType(team) === PlanType.BUSINESS;
 };
 
 /**
  * Check if team is on Pro plan
  */
-export const isProPlan = async (team: Team | DecryptedTeam): Promise<boolean> => {
-  const planType = await getPlanType(team);
-  return planType === PlanType.PRO;
+export const isProPlan = (team: Team | DecryptedTeam): boolean => {
+  return getPlanType(team) === PlanType.PRO;
 };
 
 /**
  * Check if team is on Free plan
  */
-export const isFreePlan = async (team: Team | DecryptedTeam): Promise<boolean> => {
-  const planType = await getPlanType(team);
-  return planType === PlanType.FREE;
+export const isFreePlan = (team: Team | DecryptedTeam): boolean => {
+  return getPlanType(team) === PlanType.FREE;
 };
 
 /**
- * Get the monthly AI allowance per user for a team.
- * - FREE: 0 (uses message limit instead)
- * - PRO: $20/user/month
- * - BUSINESS: $40/user/month
+ * Get the default monthly AI allowance per user for a plan type.
+ * Does not consider any team-level overrides.
  */
-export const getMonthlyAiAllowancePerUser = async (team: Team | DecryptedTeam): Promise<number> => {
-  if (team.monthlyAiAllowancePerUser !== null && team.monthlyAiAllowancePerUser !== undefined) {
-    return team.monthlyAiAllowancePerUser;
-  }
-
-  // Otherwise calculate based on plan type
-  const planType = await getPlanType(team);
+export const getDefaultAllowanceForPlan = (planType: PlanType): number => {
   switch (planType) {
     case PlanType.FREE:
       return 0;
@@ -77,10 +64,24 @@ export const getMonthlyAiAllowancePerUser = async (team: Team | DecryptedTeam): 
 };
 
 /**
+ * Get the monthly AI allowance per user for a team.
+ * - FREE: 0 (uses message limit instead)
+ * - PRO: $20/user/month
+ * - BUSINESS: $40/user/month
+ */
+export const getMonthlyAiAllowancePerUser = (team: Team | DecryptedTeam): number => {
+  if (team.monthlyAiAllowancePerUser !== null && team.monthlyAiAllowancePerUser !== undefined) {
+    return team.monthlyAiAllowancePerUser;
+  }
+
+  return getDefaultAllowanceForPlan(getPlanType(team));
+};
+
+/**
  * Calculate the total monthly AI allowance for a team (allowance per user * number of users)
  */
 export const getTeamMonthlyAiAllowance = async (team: Team | DecryptedTeam): Promise<number> => {
-  const allowancePerUser = await getMonthlyAiAllowancePerUser(team);
+  const allowancePerUser = getMonthlyAiAllowancePerUser(team);
   if (allowancePerUser === 0) {
     return 0;
   }
@@ -150,12 +151,12 @@ export const getCurrentMonthAiCostForUser = async (teamId: number, userId: numbe
  * For FREE plan, this always returns false (uses message limit instead).
  */
 export const hasExceededAllowance = async (team: Team | DecryptedTeam, userId: number): Promise<boolean> => {
-  const planType = await getPlanType(team);
+  const planType = getPlanType(team);
   if (planType === PlanType.FREE) {
-    return false; // Free plan uses message limit, not allowance
+    return false;
   }
 
-  const allowancePerUser = await getMonthlyAiAllowancePerUser(team);
+  const allowancePerUser = getMonthlyAiAllowancePerUser(team);
   if (allowancePerUser === 0) {
     return false;
   }
@@ -168,9 +169,9 @@ export const hasExceededAllowance = async (team: Team | DecryptedTeam, userId: n
  * Check if a team has exceeded its monthly AI allowance.
  */
 export const hasTeamExceededAllowance = async (team: Team | DecryptedTeam): Promise<boolean> => {
-  const planType = await getPlanType(team);
+  const planType = getPlanType(team);
   if (planType === PlanType.FREE) {
-    return false; // Free plan uses message limit, not allowance
+    return false;
   }
 
   const teamAllowance = await getTeamMonthlyAiAllowance(team);
@@ -253,9 +254,8 @@ export const canMakeAiRequest = async (
   team: Team | DecryptedTeam,
   userId: number
 ): Promise<{ allowed: boolean; reason?: string }> => {
-  const planType = await getPlanType(team);
+  const planType = getPlanType(team);
 
-  // Free plan: use existing message limit check (handled elsewhere)
   if (planType === PlanType.FREE) {
     return { allowed: true };
   }

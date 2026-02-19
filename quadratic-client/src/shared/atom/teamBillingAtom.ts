@@ -14,16 +14,21 @@ const defaultState: TeamBillingState = {
   allowOveragePayments: false,
 };
 
-export const teamBillingAtom = atom<TeamBillingState>(defaultState);
+const baseTeamBillingAtom = atom<TeamBillingState>(defaultState);
+
+export const teamBillingAtom = atom(
+  (get) => get(baseTeamBillingAtom),
+  (get, set, updates: Partial<TeamBillingState>) => {
+    set(baseTeamBillingAtom, { ...get(baseTeamBillingAtom), ...updates });
+  }
+);
 
 /**
  * Update team billing state from any context (React or non-React).
  * Merges the provided updates with the current state.
  */
 export const updateTeamBilling = (updates: Partial<TeamBillingState>) => {
-  const store = getDefaultStore();
-  const current = store.get(teamBillingAtom);
-  store.set(teamBillingAtom, { ...current, ...updates });
+  getDefaultStore().set(teamBillingAtom, updates);
 };
 
 /**
@@ -39,7 +44,7 @@ export const setAllowOveragePayments = (value: boolean) => {
  * Used when initializing from loader data.
  */
 export const setTeamBilling = (state: TeamBillingState) => {
-  getDefaultStore().set(teamBillingAtom, state);
+  getDefaultStore().set(baseTeamBillingAtom, state);
 };
 
 /**

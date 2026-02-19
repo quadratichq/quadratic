@@ -2,7 +2,7 @@ import { PlanType, SubscriptionStatus, type Team } from '@prisma/client';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
 import { trackEvent } from '../analytics/mixpanel';
-import { getMonthlyAiAllowancePerUser } from '../billing/planHelpers';
+import { getDefaultAllowanceForPlan } from '../billing/planHelpers';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';
@@ -78,6 +78,8 @@ export const upgradeSubscriptionPlan = async (
   }
 
   const currentItem = subscriptionItems[0];
+  const previousPriceId = currentItem.price.id;
+  const previousMetadataPlanType = subscription.metadata?.plan_type;
 
   // Update the subscription with the new price
   const updatedSubscription = await stripe.subscriptions.update(team.stripeSubscriptionId, {
@@ -94,13 +96,51 @@ export const upgradeSubscriptionPlan = async (
     },
   });
 
-  // Update team's plan type in database
-  await dbClient.team.update({
-    where: { id: team.id },
-    data: {
-      planType: planType === 'business' ? PlanType.BUSINESS : PlanType.PRO,
-    },
-  });
+  // Update team's plan type in database. If this fails, revert the Stripe
+  // change so the two systems don't get out of sync.
+  try {
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: {
+        planType: planType === 'business' ? PlanType.BUSINESS : PlanType.PRO,
+      },
+    });
+  } catch (dbError) {
+    logger.error('Database update failed after Stripe upgrade, reverting Stripe subscription', {
+      teamId: team.id,
+      teamUuid: team.uuid,
+      newPlanType: planType,
+      subscriptionId: team.stripeSubscriptionId,
+      error: dbError,
+    });
+
+    try {
+      await stripe.subscriptions.update(team.stripeSubscriptionId, {
+        items: [
+          {
+            id: updatedSubscription.items.data[0].id,
+            price: previousPriceId,
+            quantity: currentItem.quantity,
+          },
+        ],
+        proration_behavior: 'none',
+        metadata: {
+          plan_type: previousMetadataPlanType ?? '',
+        },
+      });
+    } catch (revertError) {
+      logger.error('Failed to revert Stripe subscription after DB failure — manual intervention required', {
+        teamId: team.id,
+        teamUuid: team.uuid,
+        subscriptionId: team.stripeSubscriptionId,
+        attemptedPlanType: planType,
+        previousPriceId,
+        revertError,
+      });
+    }
+
+    throw dbError;
+  }
 
   logger.info('Subscription plan upgraded', {
     teamId: team.id,
@@ -289,13 +329,7 @@ export const updateTeamStatus = async (
     planType = PlanType.FREE;
   }
 
-  // Get monthly AI allowance based on plan type (uses shared logic from planHelpers)
-  let monthlyAiAllowancePerUser: number | null = null;
-  if (planType !== null) {
-    // Create a temporary team object to pass to getMonthlyAiAllowancePerUser
-    const tempTeam = { planType } as Team;
-    monthlyAiAllowancePerUser = await getMonthlyAiAllowancePerUser(tempTeam);
-  }
+  const monthlyAiAllowancePerUser = planType !== null ? getDefaultAllowanceForPlan(planType) : null;
 
   // Use a transaction to get old data and update atomically
   const result = await dbClient.$transaction(async (tx) => {

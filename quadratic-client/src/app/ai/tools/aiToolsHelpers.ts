@@ -34,7 +34,6 @@ export const setCodeCellResult = async (
   y: number,
   messageMetaData: AIToolMessageMetaData
 ): Promise<ToolResultContent> => {
-  console.log(`[setCodeCellResult] Getting code cell at (${x}, ${y}) on sheet ${sheetId}`);
   const tableCodeCell = content.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
   const codeCell = tableCodeCell
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
@@ -43,13 +42,6 @@ export const setCodeCellResult = async (
     console.error(`[setCodeCellResult] Code cell not found at (${x}, ${y})`);
     return [createTextContent('Error executing set code cell value tool')];
   }
-  console.log(`[setCodeCellResult] Code cell found:`, {
-    position: `(${tableCodeCell.x}, ${tableCodeCell.y})`,
-    size: `${tableCodeCell.w}x${tableCodeCell.h}`,
-    is_html: tableCodeCell.is_html,
-    std_err: codeCell.std_err ? 'present' : 'none',
-    spill_error: codeCell.spill_error ? 'present' : 'none',
-  });
 
   if (codeCell.std_err || codeCell.spill_error) {
     // log code run error in analytics, if enabled
@@ -102,12 +94,10 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
   }
 
   if (tableCodeCell.is_html) {
-    console.log(`[setCodeCellResult] Successfully created plotly chart`);
     return [
       createTextContent(`${consoleOutput}Executed set code cell value tool successfully to create a plotly chart.`),
     ];
   } else if (tableCodeCell.is_html_image) {
-    console.log(`[setCodeCellResult] Successfully created javascript chart`);
     return [
       createTextContent(`${consoleOutput}Executed set code cell value tool successfully to create a javascript chart.`),
     ];

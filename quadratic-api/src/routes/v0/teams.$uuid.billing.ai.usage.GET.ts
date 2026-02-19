@@ -69,13 +69,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   });
 
   const isOnPaidPlan = await getIsOnPaidPlan(team);
-  const isFree = await isFreePlan(team);
+  const isFree = isFreePlan(team);
 
-  // Get usage information based on plan type
-  let freeUsage: Awaited<ReturnType<typeof BillingAIUsageMonthlyForUserInTeam>> | null = null;
+  // Free plan: use message limit and return early
   if (isFree) {
-    freeUsage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-    // Free plan: use message limit
+    const freeUsage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
     if (!userTeamRole || !isOnPaidPlan) {
       const exceededBillingLimit = BillingAIUsageLimitExceeded(freeUsage);
       const currentPeriodUsage = BillingAIUsageForCurrentMonth(freeUsage);
@@ -109,7 +107,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Pro/Business plan: use cost-based limits
   const currentMonthAiCost = await getCurrentMonthAiCostForUser(team.id, userId);
-  const monthlyAiAllowancePerUser = await getMonthlyAiAllowancePerUser(team);
+  const monthlyAiAllowancePerUser = getMonthlyAiAllowancePerUser(team);
   const remainingAllowance = Math.max(0, monthlyAiAllowancePerUser - currentMonthAiCost);
 
   // Get budget limits
@@ -136,31 +134,18 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     }
   }
 
-  // For FREE plan, get team-level message data
-  let teamCurrentMonthMessages: number | null = null;
-  let teamMessageLimit: number | null = null;
-  if (isFree) {
-    teamCurrentMonthMessages = await getCurrentMonthAiMessagesForTeam(team.id);
-    const userCount = await dbClient.userTeamRole.count({
-      where: {
-        teamId: team.id,
-      },
-    });
-    teamMessageLimit = (BILLING_AI_USAGE_LIMIT ?? 0) * userCount;
-  }
-
   const data = {
     exceededBillingLimit: finalExceededBillingLimit,
-    billingLimit: isFree ? BILLING_AI_USAGE_LIMIT : null,
-    currentPeriodUsage: freeUsage ? BillingAIUsageForCurrentMonth(freeUsage) : null,
-    planType: isFree ? 'FREE' : team.planType || 'PRO',
+    billingLimit: null,
+    currentPeriodUsage: null,
+    planType: team.planType || 'PRO',
     currentMonthAiCost,
     monthlyAiAllowance: monthlyAiAllowancePerUser,
     remainingAllowance,
     teamMonthlyBudgetLimit,
     teamCurrentMonthCost: teamCurrentMonthOverageCost,
-    teamCurrentMonthMessages: isFree ? teamCurrentMonthMessages : null,
-    teamMessageLimit: isFree ? teamMessageLimit : null,
+    teamCurrentMonthMessages: null,
+    teamMessageLimit: null,
     userMonthlyBudgetLimit: userBudgetLimit?.limit ?? null,
     userCurrentMonthCost: userBudgetLimit ? currentMonthAiCost : null,
     allowOveragePayments: team.allowOveragePayments || false,

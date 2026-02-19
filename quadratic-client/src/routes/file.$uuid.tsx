@@ -268,7 +268,8 @@ export const Component = memo(() => {
 
     setTimezoneIfNeeded();
   }, [fileTimezone, filePermissions, fileUuid]);
-  // Handle subscription success: show toast, close dialog, update billing state, and clean up URL params
+  // Handle subscription success: show toast, close dialog, and clean up URL params.
+  // Billing state is already set correctly by the loader from the server response.
   useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription');
     if (
@@ -282,10 +283,6 @@ export const Component = memo(() => {
         severity: 'success',
       });
       setShowUpgradeDialog({ open: false, eventSource: null });
-      updateTeamBilling({
-        isOnPaidPlan: true,
-        planType: isUpgrade ? 'BUSINESS' : 'PRO',
-      });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });

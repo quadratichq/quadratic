@@ -1,17 +1,13 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import {
-  BillingAIUsageForCurrentMonth,
-  BillingAIUsageMonthlyForUserInTeam,
-} from '../../billing/AIUsageHelpers';
+import { BillingAIUsageForCurrentMonth, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import {
   getCurrentMonthAiCostForUser,
   getMonthlyAiAllowancePerUser,
+  getPlanType,
   getUserBudgetLimit,
   isFreePlan,
-  getPlanType,
-  PlanType,
 } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
@@ -36,7 +32,10 @@ export default [
   handler,
 ];
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response']>) {
+async function handler(
+  req: RequestWithUser,
+  res: Response<ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response']>
+) {
   const {
     params: { uuid },
     user: { id: userId },
@@ -50,9 +49,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   const isOnPaidPlan = await getIsOnPaidPlan(team);
-  const isFree = await isFreePlan(team);
-  const planType = await getPlanType(team);
-  const monthlyAiAllowancePerUser = await getMonthlyAiAllowancePerUser(team);
+  const isFree = isFreePlan(team);
+  const planType = getPlanType(team);
+  const monthlyAiAllowancePerUser = getMonthlyAiAllowancePerUser(team);
 
   // Get all users in the team
   const dbUsers = await dbClient.userTeamRole.findMany({

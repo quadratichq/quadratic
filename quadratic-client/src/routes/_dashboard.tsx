@@ -4,7 +4,6 @@ import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
-import { updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { ChangelogDialog } from '@/shared/components/ChangelogDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -186,7 +185,8 @@ export const Component = () => {
   const hasProcessedSubscriptionSuccess = useRef(false);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
-  // Handle subscription success: show toast, close dialog, update billing state, and clean up URL params
+  // Handle subscription success: show toast, close dialog, and clean up URL params.
+  // Billing state is already set correctly by the loader from the server response.
   useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription');
     if (
@@ -200,10 +200,6 @@ export const Component = () => {
         severity: 'success',
       });
       setShowUpgradeDialog({ open: false, eventSource: null });
-      updateTeamBilling({
-        isOnPaidPlan: true,
-        planType: isUpgrade ? 'BUSINESS' : 'PRO',
-      });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });

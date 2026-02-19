@@ -38,7 +38,7 @@ async function handler(
   }
 
   // Budget limits are only available for Business plan
-  const isBusiness = await isBusinessPlan(team);
+  const isBusiness = isBusinessPlan(team);
   if (!isBusiness) {
     return res.status(400).json({
       error: { message: 'Budget limits are only available for Business plan.' },

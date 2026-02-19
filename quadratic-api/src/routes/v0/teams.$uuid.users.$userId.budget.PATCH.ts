@@ -9,7 +9,6 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
-import { ApiError } from '../../utils/ApiError';
 
 const schema = z.object({
   params: z.object({
@@ -54,7 +53,7 @@ async function handler(
   }
 
   // Budget limits are only available for Business plan
-  const isBusiness = await isBusinessPlan(team);
+  const isBusiness = isBusinessPlan(team);
   if (!isBusiness) {
     return res.status(400).json({
       error: { message: 'User budget limits are only available for Business plan.' },

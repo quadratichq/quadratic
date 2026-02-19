@@ -43,8 +43,6 @@ export function CancellationDialog({ teamUuid, trigger }: CancellationDialogProp
 
       const checkEligibility = async () => {
         try {
-          console.log('[CancellationDialog] Checking eligibility for team:', teamUuid);
-
           // Add timeout to prevent hanging indefinitely
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('Request timeout')), 10000);
@@ -52,7 +50,6 @@ export function CancellationDialog({ teamUuid, trigger }: CancellationDialogProp
 
           const result = await Promise.race([apiClient.teams.billing.retentionDiscount.get(teamUuid), timeoutPromise]);
 
-          console.log('[CancellationDialog] Eligibility result:', result);
           if (!isCancelled) {
             setCurrentStep(result.isEligible ? 'offer-discount' : 'get-feedback');
           }
@@ -82,7 +79,6 @@ export function CancellationDialog({ teamUuid, trigger }: CancellationDialogProp
 
   // Track when the dialog opens
   const handleOpenChange = useCallback((open: boolean) => {
-    console.log('[CancellationDialog] handleOpenChange called with:', open);
     if (open) {
       trackEvent('[CancellationFlow].opened');
     }

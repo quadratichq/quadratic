@@ -61,7 +61,8 @@ export const BillingPlans = ({ canManageBilling, eventSource, teamUuid }: Billin
         addGlobalSnackbar('Your plan has been upgraded to Business! 🎉', { severity: 'success' });
       } catch (error) {
         console.error('Failed to upgrade to Business:', error);
-        addGlobalSnackbar('Failed to upgrade to Business. Please try again.', { severity: 'error' });
+        const message = error instanceof Error ? error.message : 'Failed to upgrade to Business. Please try again.';
+        addGlobalSnackbar(message, { severity: 'error' });
       } finally {
         setIsUpgradingToBusiness(false);
       }

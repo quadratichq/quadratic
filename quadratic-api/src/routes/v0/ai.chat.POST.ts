@@ -89,7 +89,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   let exceededBillingLimit = false;
 
   const messageType = getLastUserMessageType(args.messages);
-  const isFree = await isFreePlan(ownerTeam);
+  const isFree = isFreePlan(ownerTeam);
 
   // Check billing limits based on plan type
   // Skip limit check for subagent messages (they are part of an already-approved turn)

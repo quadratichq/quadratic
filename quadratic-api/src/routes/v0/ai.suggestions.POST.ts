@@ -81,7 +81,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
   }
 
   let exceededBillingLimit = false;
-  const isFree = await isFreePlan(team);
+  const isFree = isFreePlan(team);
 
   // Check billing limits based on plan type
   if (isFree) {
