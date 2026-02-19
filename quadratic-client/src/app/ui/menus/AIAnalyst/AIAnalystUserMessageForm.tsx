@@ -11,6 +11,7 @@ import { events } from '@/app/events/events';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { cn } from '@/shared/shadcn/utils';
@@ -33,6 +34,14 @@ export const AIAnalystUserMessageForm = memo(
     const importFilesToGridLoading = useRecoilValue(aiAnalystImportFilesToGridLoadingAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+    const { connections } = useConnectionsFetcher();
+
+    // Clear context connection if it was deleted
+    useEffect(() => {
+      if (context.connection && connections.length > 0 && !connections.some((c) => c.uuid === context.connection?.id)) {
+        setContext((prev) => ({ ...prev, connection: undefined }));
+      }
+    }, [connections, context.connection, setContext]);
 
     // Listen for connection selection/unselection events (from connections menus)
     useEffect(() => {

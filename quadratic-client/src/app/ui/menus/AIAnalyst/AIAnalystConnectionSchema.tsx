@@ -8,7 +8,7 @@ import { ConnectionSchemaBrowser } from '@/shared/components/connections/Connect
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIAnalystConnectionSchema = memo(() => {
@@ -38,19 +38,20 @@ export const AIAnalystConnectionSchema = memo(() => {
     [setPanelWidth]
   );
 
-  if (presentationMode || !aiAnalystActiveSchemaConnectionUuid) {
-    return null;
-  }
-
   const connection =
     connections && aiAnalystActiveSchemaConnectionUuid
       ? connections.find((connection) => connection.uuid === aiAnalystActiveSchemaConnectionUuid)
       : undefined;
   const connectionType = connection?.type;
 
-  // This should never happen, but just in case
-  if (!connectionType) {
-    throw new Error('A connection with a known UUID could not find its corresponding type');
+  useEffect(() => {
+    if (aiAnalystActiveSchemaConnectionUuid && connections && !connection) {
+      setAIAnalystActiveSchemaConnectionUuid(undefined);
+    }
+  }, [aiAnalystActiveSchemaConnectionUuid, connections, connection, setAIAnalystActiveSchemaConnectionUuid]);
+
+  if (presentationMode || !aiAnalystActiveSchemaConnectionUuid || !connectionType) {
+    return null;
   }
 
   return (
