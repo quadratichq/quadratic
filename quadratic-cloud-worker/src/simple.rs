@@ -1,13 +1,12 @@
-// every minute, print the current time in a separate thread
 use anyhow::Result;
 use quadratic_core_cloud::worker::Worker;
 use quadratic_rust_shared::quadratic_api::{get_file_init_data, get_scheduled_tasks};
+use rustls::crypto::ring::default_provider;
 use tokio::signal;
 use tokio::task::LocalSet;
 use tokio::time::{Duration, interval};
 use tracing::info;
 
-// const INTERVAL_MS: u64 = 60000; // every minute
 const INTERVAL_MS: u64 = 20000; // every 20 seconds
 const API_URL: &str = "http://localhost:8000";
 const JWT: &str = "JWT";
@@ -16,6 +15,10 @@ const CONNECTION_URL: &str = "http://localhost:3003";
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Install default crypto provider for rustls if not already installed
+    // Ignore error if already installed (happens in tests when multiple connections are created)
+    let _ = default_provider().install_default();
+
     tracing_subscriber::fmt::init();
 
     let mut interval = interval(Duration::from_millis(INTERVAL_MS));
