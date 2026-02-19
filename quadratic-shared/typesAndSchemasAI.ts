@@ -35,12 +35,7 @@ export type VertexAnthropicModel =
   | 'claude-opus-4-5@20251101'
   | 'claude-opus-4-6@20260205';
 
-export type VertexAIModel =
-  | 'gemini-2.5-flash'
-  | 'gemini-2.5-flash-lite'
-  | 'gemini-2.5-pro'
-  | 'gemini-3-flash'
-  | 'gemini-3-pro-preview';
+export type VertexAIModel = 'gemini-2.5-flash' | 'gemini-2.5-flash-lite' | 'gemini-3-flash' | 'gemini-3-pro-preview';
 
 export type GenAIModel = 'gemini-2.5-flash-lite-preview-06-17';
 
@@ -120,7 +115,6 @@ export type VertexAIModelKey =
   | 'vertexai:gemini-2.5-flash:thinking-toggle-on'
   | 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off'
   | 'vertexai:gemini-2.5-flash-lite:thinking-toggle-on'
-  | 'vertexai:gemini-2.5-pro'
   | 'vertexai:gemini-3-flash'
   | 'vertexai:gemini-3-pro-preview';
 
@@ -590,7 +584,6 @@ const VertexAnthropicModelSchema = z.enum([
 const VertexAIModelSchema = z.enum([
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
-  'gemini-2.5-pro',
   'gemini-3-flash',
   'gemini-3-pro-preview',
 ]) satisfies z.ZodType<VertexAIModel>;
@@ -687,7 +680,6 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-off',
   'vertexai:gemini-2.5-flash-lite:thinking-toggle-on',
-  'vertexai:gemini-2.5-pro',
   'vertexai:gemini-3-flash',
   'vertexai:gemini-3-pro-preview',
 ]) satisfies z.ZodType<VertexAIModelKey>;
