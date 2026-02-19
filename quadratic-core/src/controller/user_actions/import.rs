@@ -4,6 +4,7 @@ use crate::Pos;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::grid::SheetId;
+use crate::util::catch_panic;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -43,6 +44,16 @@ impl GridController {
 
     /// Imports an Excel file into the grid.
     ///
+    /// Uses `catch_unwind` to gracefully handle panics from the calamine
+    /// library (e.g., OOM/capacity overflow when parsing very large files in
+    /// WASM), converting them into user-friendly errors instead of WASM traps.
+    ///
+    /// Note: the closure captures `&mut self` via `AssertUnwindSafe`. This is
+    /// acceptable because `import_excel_operations` builds a fresh `Vec<Operation>`
+    /// from the file bytes without mutating persistent controller state. If a
+    /// panic occurs, `self` remains in its pre-call state and the error
+    /// propagates to the caller.
+    ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
     #[function_timer::function_timer]
     pub fn import_excel(
@@ -52,7 +63,13 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) -> Result<String> {
-        let (ops, response_prompt) = self.import_excel_operations(file, file_name)?;
+        let (ops, response_prompt) = catch_panic(|| self.import_excel_operations(file, file_name))
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to import '{file_name}': {e}. The file may be too large or corrupted."
+                )
+            })?;
+
         if cursor.is_some() {
             self.start_user_ai_transaction(ops, cursor, TransactionName::Import, is_ai);
         } else {

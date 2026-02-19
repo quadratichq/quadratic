@@ -1,5 +1,6 @@
 use std::fmt;
 use std::ops::Range;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
@@ -391,6 +392,31 @@ pub fn case_fold_ascii(s: &str) -> String {
 /// Uppercase ascii-only string suitable for case-insensitive comparison.
 pub fn case_fold_ascii_in_place(s: &mut str) {
     s.make_ascii_uppercase();
+}
+
+/// Runs a closure, catching any panics and converting them to
+/// `anyhow::Result`. Useful for calling into libraries (e.g. calamine) that
+/// may panic on malformed or very large inputs in WASM.
+///
+/// # Safety note
+///
+/// The closure is wrapped in [`AssertUnwindSafe`], which bypasses Rust's
+/// unwind-safety checks. Callers **must not** pass closures that mutate
+/// shared or externally-observable state in a way that could leave it
+/// inconsistent if a panic occurs partway through. Prefer closures that
+/// operate on owned data or read-only references and produce a fresh result.
+pub fn catch_panic<T>(f: impl FnOnce() -> anyhow::Result<T>) -> anyhow::Result<T> {
+    match catch_unwind(AssertUnwindSafe(f)) {
+        Ok(result) => result,
+        Err(panic_info) => {
+            let msg = panic_info
+                .downcast_ref::<String>()
+                .map(|s| s.as_str())
+                .or_else(|| panic_info.downcast_ref::<&str>().copied())
+                .unwrap_or("unknown error");
+            Err(anyhow::anyhow!("{msg}"))
+        }
+    }
 }
 
 pub fn set_panic_hook() {

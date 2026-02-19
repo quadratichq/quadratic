@@ -1,3 +1,4 @@
+import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { atom, getDefaultStore, useAtom } from 'jotai';
 import { type AILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
@@ -57,11 +58,18 @@ export function preloadUserAILanguages() {
   if (loadState === 'idle') {
     store.set(loadStateAtom, 'loading');
 
-    apiClient.user.aiLanguages
-      .get()
-      .then((response) => {
-        store.set(aiLanguagesAtom, response.aiLanguages);
-        store.set(loadStateAtom, 'loaded');
+    authClient
+      .isAuthenticated()
+      .then((isAuthenticated) => {
+        if (!isAuthenticated) {
+          store.set(loadStateAtom, 'idle');
+          return;
+        }
+
+        return apiClient.user.aiLanguages.get().then((response) => {
+          store.set(aiLanguagesAtom, response.aiLanguages);
+          store.set(loadStateAtom, 'loaded');
+        });
       })
       .catch((error) => {
         console.error('Failed to preload AI languages:', error);

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.23.11"
+version = "0.24.0"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -19,7 +19,6 @@ futures-util = { version = "0.3.29", default-features = false, features = [
 headers = "0.4.0"
 http = "1.1.0"
 jsonwebtoken = "9.2.0"
-openssl = { version = "0.10.72", features = ["vendored"] }
 quadratic-core = { path = "../quadratic-core", default-features = false, features = [
     "console_error_panic_hook",
     "js",
@@ -38,7 +37,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
     "synced",
 ] }
 rayon = "1.8.0"
-reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
+reqwest = { version = "0.11.22", default-features = false, features = ["json", "rustls-tls-native-roots", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 sha2 = "0.10"
