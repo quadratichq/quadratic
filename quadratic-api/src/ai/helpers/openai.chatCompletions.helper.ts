@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type OpenAI from 'openai';
+import { EmptyMessagesError } from './errors';
 import type {
   ChatCompletionContentPart,
   ChatCompletionContentPartText,
@@ -144,6 +145,10 @@ export function getOpenAIChatCompletionsApiArgs(
       return [...acc, openaiMessage];
     }
   }, []);
+
+  if (messages.length === 0) {
+    throw new EmptyMessagesError();
+  }
 
   const openaiMessages: ChatCompletionMessageParam[] = [
     { role: 'system', content: systemMessages.map((message) => createTextContent(message.trim())) },

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-cloud-worker"
-version = "0.23.11"
+version = "0.24.0"
 edition = "2024"
 authors = ["Quadratic"]
 description = "File processing worker for Quadratic Cloud"

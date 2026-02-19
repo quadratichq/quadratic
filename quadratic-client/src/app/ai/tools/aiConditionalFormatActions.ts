@@ -12,6 +12,7 @@ import type {
   ConditionalFormatUpdate,
 } from '@/app/quadratic-core-types';
 import { conditionalFormatRuleToFormula } from '@/app/quadratic-core/quadratic_core';
+import { aiUser } from '@/app/web-workers/multiplayerWebWorker/aiUser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -419,6 +420,19 @@ export const conditionalFormatToolsActions: ConditionalFormatToolActions = {
   },
   [AITool.UpdateConditionalFormats]: async (args) => {
     try {
+      const firstRuleWithSelection = args.rules.find(
+        (r) => r.selection && (r.action === 'create' || r.action === 'update')
+      );
+      if (firstRuleWithSelection?.selection) {
+        try {
+          const sheetId = sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current;
+          const jsSelection = sheets.stringToSelection(firstRuleWithSelection.selection, sheetId);
+          const selectionString = jsSelection.save();
+          aiUser.updateSelection(selectionString, sheetId);
+        } catch (e) {
+          console.warn('Failed to update AI user selection:', e);
+        }
+      }
       const text = await updateConditionalFormatsToolCall(args);
       return [createTextContent(text)];
     } catch (e) {

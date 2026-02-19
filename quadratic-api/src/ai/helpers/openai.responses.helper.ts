@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type OpenAI from 'openai';
+import { EmptyMessagesError } from './errors';
 import type {
   ResponseFunctionToolCall,
   ResponseInput,
@@ -200,6 +201,10 @@ export function getOpenAIResponsesApiArgs(
       return [...acc, openaiMessage];
     }
   }, []);
+
+  if (messages.length === 0) {
+    throw new EmptyMessagesError();
+  }
 
   const openaiMessages: ResponseInput = [
     {

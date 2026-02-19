@@ -1,6 +1,6 @@
 import type { AIToolMessageMetaData } from '@/app/ai/tools/aiToolsHelpers';
 import { setCodeCellResult, waitForSetCodeCellValue } from '@/app/ai/tools/aiToolsHelpers';
-import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
+import { PlaidDocs, getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { content } from '@/app/gridGL/pixiApp/Content';
@@ -91,6 +91,12 @@ export const connectionToolsActions: ConnectionToolActions = {
       // Format the response
       const schemaText = connectionsInfo.map(getConnectionSchemaMarkdown).join('\n---\n\n');
 
+      // Add connection-type-specific documentation
+      const hasPlaidConnection = connectionsInfo.some(
+        (info) => info.connectionType.toUpperCase() === 'PLAID' && !info.error
+      );
+      const connectionDocs = hasPlaidConnection ? `\n\n${PlaidDocs}` : '';
+
       // Add connection summary for future reference
       const connectionSummary = connectionsInfo
         .filter((item) => item && !item.error)
@@ -104,7 +110,7 @@ export const connectionToolsActions: ConnectionToolActions = {
       return [
         createTextContent(
           schemaText
-            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${connectionDocs}${summaryText}`
             : `No database schema information available.${summaryText}`
         ),
       ];

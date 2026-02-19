@@ -13,6 +13,7 @@ import type {
   ToolResultContentBlock,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
+import { EmptyMessagesError } from './errors';
 import {
   createTextContent,
   getSystemPromptMessages,
@@ -170,6 +171,10 @@ export function getBedrockApiArgs(
       return acc;
     }
   }, []);
+
+  if (messages.length === 0) {
+    throw new EmptyMessagesError();
+  }
 
   const tools = getBedrockTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getBedrockToolChoice(toolName) : undefined;

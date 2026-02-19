@@ -87,6 +87,7 @@ Percentages in Quadratic work the same as in any spreadsheet. E.g. formatting .0
 Example: To bold A1:B5 and make C1:D5 italic with red text, use: { "formats": [{ "selection": "A1:B5", "bold": true }, { "selection": "C1:D5", "italic": true, "text_color": "#FF0000" }] }\n
 Example: To format an entire table column as currency, use: { "formats": [{ "selection": "Sales_Data[Revenue]", "number_type": "currency", "currency_symbol": "$" }] }\n
 You MAY want to use the get_text_formats function if you need to check the current text formats of the cells before setting them.\n
+When formatting merged cells, apply the format to the anchor (top-left) cell of the merge. Formatting non-anchor cells inside a merged region may not have the expected effect.\n
 `,
     parameters: {
       type: 'object',
@@ -245,6 +246,7 @@ The selection is a range of cells, for example: A1:D1.\n
 The color must be a valid CSS color string.\n
 The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
 The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
+When setting borders on merged cells, use the full merged range to ensure borders are applied correctly.\n
 `,
     parameters: {
       type: 'object',
