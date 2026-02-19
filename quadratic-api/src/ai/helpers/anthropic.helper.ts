@@ -25,7 +25,6 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIUsage,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
@@ -35,7 +34,9 @@ import type {
   ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { getAIToolsInOrder } from './tools';
+import { EmptyMessagesError } from './errors';
+import { getOrphanFilterIds } from './filterOrphanedToolCalls';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
   return content
@@ -138,16 +139,7 @@ export function getAnthropicApiArgs(
     ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
-  // First pass: collect all valid tool_use IDs from assistant messages
-  // This is needed to filter out orphaned tool_results (e.g., when user aborts mid-tool-call)
-  const validToolUseIds = new Set<string>();
-  for (const message of promptMessages) {
-    if (isAIPromptMessage(message)) {
-      for (const toolCall of message.toolCalls) {
-        validToolUseIds.add(toolCall.id);
-      }
-    }
-  }
+  const { validToolCallIds: validToolUseIds, existingToolResultIds } = getOrphanFilterIds(promptMessages);
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
@@ -178,12 +170,16 @@ export function getAnthropicApiArgs(
           }
         });
 
-      const toolUseContent = message.toolCalls.map((toolCall) => ({
-        type: 'tool_use' as const,
-        id: toolCall.id,
-        name: toolCall.name,
-        input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
-      }));
+      // Filter out tool_use blocks that don't have corresponding tool_results
+      // This can happen when chat is forked mid-tool-call or abort leaves inconsistent state
+      const toolUseContent = message.toolCalls
+        .filter((toolCall) => existingToolResultIds.has(toolCall.id))
+        .map((toolCall) => ({
+          type: 'tool_use' as const,
+          id: toolCall.id,
+          name: toolCall.name,
+          input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
+        }));
 
       const combinedContent = [...filteredContent, ...toolUseContent];
 
@@ -230,22 +226,22 @@ export function getAnthropicApiArgs(
     }
   }, []);
 
+  if (messages.length === 0) {
+    throw new EmptyMessagesError();
+  }
+
   const tools = getAnthropicTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+function getAnthropicTools(
+  source: AIRequestHelperArgs['source'],
+  aiModelMode: ModelMode,
+  toolName?: AITool
+): Tool[] | undefined {
+  const tools = getFilteredTools({ source, aiModelMode, toolName });
 
   if (tools.length === 0) {
     return undefined;
@@ -451,6 +447,9 @@ export async function parseAnthropicStream(
     });
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -518,14 +517,17 @@ export function parseAnthropicResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: result.usage.input_tokens,
     outputTokens: result.usage.output_tokens,
     cacheReadTokens: result.usage.cache_read_input_tokens ?? 0,
     cacheWriteTokens: result.usage.cache_creation_input_tokens ?? 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

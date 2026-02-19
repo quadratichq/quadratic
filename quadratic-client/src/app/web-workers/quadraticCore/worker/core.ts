@@ -993,6 +993,7 @@ class Core {
         line_number: null,
         output_display_type: null,
         chart_pixel_output: null,
+        chart_image: null,
         has_headers: false,
       };
       const jsCodeResultArray = toUint8Array(codeResult);

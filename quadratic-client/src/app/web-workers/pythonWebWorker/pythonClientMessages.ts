@@ -66,17 +66,33 @@ export interface PythonClientStockPrices {
   frequency: string | null;
 }
 
+export interface PythonClientCaptureChartImage {
+  type: 'pythonClientCaptureChartImage';
+  id: number;
+  html: string;
+  width: number;
+  height: number;
+}
+
+export interface ClientPythonChartImage {
+  type: 'clientPythonChartImage';
+  id: number;
+  image: string | null;
+}
+
 export type PythonClientMessage =
   | PythonClientLoadError
   | PythonClientState
   | PythonClientInit
   | PythonClientGetJwt
   | PythonClientGetTeamUuid
-  | PythonClientStockPrices;
+  | PythonClientStockPrices
+  | PythonClientCaptureChartImage;
 
 export type ClientPythonMessage =
   | ClientPythonInit
   | ClientPythonCoreChannel
   | ClientPythonGetJwt
   | ClientPythonGetTeamUuid
-  | ClientPythonStockPrices;
+  | ClientPythonStockPrices
+  | ClientPythonChartImage;

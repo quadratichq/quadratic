@@ -9,6 +9,8 @@ members = [
   "quadratic-files",
   "quadratic-multiplayer",
   "quadratic-rust-shared",
+  "quadratic-rust-renderer/core",
+  "quadratic-rust-renderer/native",
 ]
 exclude = ["poc/number_type", "dev-rust"]
 
@@ -26,3 +28,5 @@ version = "0.24.0"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+# Enable thin LTO for better dead code elimination across crates
+lto = "thin"

@@ -1,9 +1,18 @@
 use super::Sheet;
 use crate::{CellValue, Pos, Value, grid::js_types::JsSheetPosText};
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 const MAX_NEIGHBOR_TEXT: usize = 1000;
+
+fn regex_matches(regex: &Regex, text: &str, whole_cell: bool) -> bool {
+    if whole_cell {
+        regex.find(text).is_some_and(|m| m.as_str() == text)
+    } else {
+        regex.is_match(text)
+    }
+}
 
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -16,6 +25,8 @@ pub struct SearchOptions {
     pub search_code: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sheet_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub regex: Option<bool>,
 }
 
 impl Sheet {
@@ -31,59 +42,45 @@ impl Sheet {
         pos: Pos,
         case_sensitive: bool,
         whole_cell: bool,
+        regex: Option<&Regex>,
     ) -> Option<String> {
         match cell_value {
             CellValue::Text(text) => {
-                if (case_sensitive && text == query)
-                    || (!case_sensitive && text.to_lowercase() == *query)
-                {
-                    Some(text.to_string())
-                } else if !whole_cell {
-                    if (!case_sensitive && text.to_lowercase().contains(&query.to_lowercase()))
-                        || (case_sensitive && text.contains(query))
-                    {
-                        Some(text.to_string())
-                    } else {
-                        None
-                    }
+                let matches = if let Some(regex) = regex {
+                    regex_matches(regex, text, whole_cell)
                 } else {
-                    None
-                }
+                    (case_sensitive && text == query)
+                        || (!case_sensitive && text.to_lowercase() == *query)
+                        || (!whole_cell
+                            && ((!case_sensitive
+                                && text.to_lowercase().contains(&query.to_lowercase()))
+                                || (case_sensitive && text.contains(query))))
+                };
+                matches.then(|| text.to_string())
             }
             CellValue::Number(n) => {
-                if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
-                    let numeric_format = self.formats.numeric_format.get(pos);
-                    let numeric_decimals = self.formats.numeric_decimals.get(pos);
-                    let numeric_commas = self.formats.numeric_commas.get(pos);
-                    let display = cell_value.to_number_display(
-                        numeric_format,
-                        numeric_decimals,
-                        numeric_commas,
-                    );
-                    Some(display)
+                let display = self.rendered_value(pos).unwrap_or_else(|| n.to_string());
+                let raw = n.to_string();
+
+                let matches = if let Some(regex) = regex {
+                    regex_matches(regex, &raw, whole_cell)
+                        || regex_matches(regex, &display, whole_cell)
                 } else {
-                    let numeric_format = self.formats.numeric_format.get(pos);
-                    let numeric_decimals = self.formats.numeric_decimals.get(pos);
-                    let numeric_commas = self.formats.numeric_commas.get(pos);
-                    let display = cell_value.to_number_display(
-                        numeric_format,
-                        numeric_decimals,
-                        numeric_commas,
-                    );
-                    if display == *query || (!whole_cell && display.contains(query)) {
-                        Some(display)
-                    } else {
-                        None
-                    }
-                }
+                    raw == *query
+                        || display == *query
+                        || (!whole_cell && (raw.contains(query) || display.contains(query)))
+                };
+                matches.then_some(display)
             }
             CellValue::Logical(b) => {
-                let query = query.to_lowercase();
-                if (*b && query == "true") || (!(*b) && query == "false") {
-                    Some(query)
+                let text = if *b { "true" } else { "false" };
+                let matches = if let Some(regex) = regex {
+                    regex_matches(regex, text, false)
                 } else {
-                    None
-                }
+                    let query = query.to_lowercase();
+                    (*b && query == "true") || (!(*b) && query == "false")
+                };
+                matches.then(|| text.to_string())
             }
             _ => None,
         }
@@ -95,6 +92,7 @@ impl Sheet {
         query: &String,
         case_sensitive: bool,
         whole_cell: bool,
+        regex: Option<&Regex>,
     ) -> Vec<JsSheetPosText> {
         self.columns
             .expensive_iter()
@@ -106,6 +104,7 @@ impl Sheet {
                         Pos { x: *x, y: *y },
                         case_sensitive,
                         whole_cell,
+                        regex,
                     )
                     .map(|text| JsSheetPosText {
                         sheet_id: self.id.to_string(),
@@ -124,22 +123,27 @@ impl Sheet {
         case_sensitive: bool,
         whole_cell: bool,
         search_code: bool,
+        regex: Option<&Regex>,
     ) -> Vec<JsSheetPosText> {
         let mut results = vec![];
         self.data_tables
             .expensive_iter()
             .for_each(|(data_table_pos, data_table)| {
-                if search_code
-                    && let Some(code_run) = data_table.code_run()
-                    && ((case_sensitive && code_run.code.contains(query))
-                        || (!case_sensitive && code_run.code.to_lowercase().contains(query)))
-                {
-                    results.push(JsSheetPosText {
-                        sheet_id: self.id.to_string(),
-                        x: data_table_pos.x,
-                        y: data_table_pos.y,
-                        text: Some(code_run.code.to_string()),
-                    });
+                if search_code && let Some(code_run) = data_table.code_run() {
+                    let code_matches = if let Some(regex) = regex {
+                        regex.is_match(&code_run.code)
+                    } else {
+                        (case_sensitive && code_run.code.contains(query))
+                            || (!case_sensitive && code_run.code.to_lowercase().contains(query))
+                    };
+                    if code_matches {
+                        results.push(JsSheetPosText {
+                            sheet_id: self.id.to_string(),
+                            x: data_table_pos.x,
+                            y: data_table_pos.y,
+                            text: Some(code_run.code.to_string()),
+                        });
+                    }
                 }
 
                 // we can return early if the data table has a spill or error
@@ -156,6 +160,7 @@ impl Sheet {
                             *data_table_pos,
                             case_sensitive,
                             whole_cell,
+                            regex,
                         ) {
                             results.push(JsSheetPosText {
                                 sheet_id: self.id.to_string(),
@@ -193,6 +198,7 @@ impl Sheet {
                                     },
                                     case_sensitive,
                                     whole_cell,
+                                    regex,
                                 ) {
                                     let y = data_table_pos.y + y_adjustment + display_row as i64;
                                     if y >= data_table_pos.y {
@@ -219,15 +225,36 @@ impl Sheet {
     /// Returns `Vec<SheetPos>` for all cells that match.
     pub fn search(&self, query: &String, options: &SearchOptions) -> Vec<JsSheetPosText> {
         let case_sensitive = options.case_sensitive.unwrap_or(false);
-        let query = if case_sensitive {
+        let is_regex = options.regex.unwrap_or(false);
+        let query = if case_sensitive || is_regex {
             query.to_owned()
         } else {
             query.to_lowercase()
         };
         let whole_cell = options.whole_cell.unwrap_or(false);
         let search_code = options.search_code.unwrap_or(false);
-        let mut results = self.search_cell_values(&query, case_sensitive, whole_cell);
-        results.extend(self.search_data_tables(&query, case_sensitive, whole_cell, search_code));
+
+        // Build regex if enabled
+        let regex = if is_regex {
+            let pattern = if case_sensitive {
+                query.clone()
+            } else {
+                format!("(?i){}", query)
+            };
+            Regex::new(&pattern).ok()
+        } else {
+            None
+        };
+
+        let mut results =
+            self.search_cell_values(&query, case_sensitive, whole_cell, regex.as_ref());
+        results.extend(self.search_data_tables(
+            &query,
+            case_sensitive,
+            whole_cell,
+            search_code,
+            regex.as_ref(),
+        ));
         results.sort_by(|a, b| {
             let order = a.x.cmp(&b.x);
             if order == std::cmp::Ordering::Equal {
@@ -1014,5 +1041,165 @@ mod test {
                 text: Some("MO".to_string()),
             }
         );
+    }
+
+    #[test]
+    fn regex_search_basic() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("world".into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Text("hello world".into()));
+
+        // Search for words starting with 'h'
+        let results = sheet.search(
+            &"^h".into(),
+            &SearchOptions {
+                regex: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().any(|r| r.text == Some("hello".to_string())));
+        assert!(
+            results
+                .iter()
+                .any(|r| r.text == Some("hello world".to_string()))
+        );
+    }
+
+    #[test]
+    fn regex_search_digits() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("abc123".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("def456".into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Text("nodigits".into()));
+
+        // Search for cells containing digits
+        let results = sheet.search(
+            &r"\d+".into(),
+            &SearchOptions {
+                regex: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().any(|r| r.text == Some("abc123".to_string())));
+        assert!(results.iter().any(|r| r.text == Some("def456".to_string())));
+    }
+
+    #[test]
+    fn regex_search_case_insensitive() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("HELLO".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("hello".into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Text("HeLLo".into()));
+
+        // Case insensitive regex (default)
+        let results = sheet.search(
+            &"hello".into(),
+            &SearchOptions {
+                regex: Some(true),
+                case_sensitive: Some(false),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 3);
+
+        // Case sensitive regex
+        let results = sheet.search(
+            &"hello".into(),
+            &SearchOptions {
+                regex: Some(true),
+                case_sensitive: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].text, Some("hello".to_string()));
+    }
+
+    #[test]
+    fn regex_search_whole_cell() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("test".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("testing".into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Text("test123".into()));
+
+        // Regex with whole_cell - should only match exact "test"
+        let results = sheet.search(
+            &"^test$".into(),
+            &SearchOptions {
+                regex: Some(true),
+                whole_cell: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].text, Some("test".to_string()));
+
+        // Regex without whole_cell - should match partial
+        let results = sheet.search(
+            &"test".into(),
+            &SearchOptions {
+                regex: Some(true),
+                whole_cell: Some(false),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 3);
+    }
+
+    #[test]
+    fn regex_search_alternation() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("apple".into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Text("banana".into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Text("cherry".into()));
+
+        // Search for apple or cherry
+        let results = sheet.search(
+            &"apple|cherry".into(),
+            &SearchOptions {
+                regex: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().any(|r| r.text == Some("apple".to_string())));
+        assert!(results.iter().any(|r| r.text == Some("cherry".to_string())));
+    }
+
+    #[test]
+    fn regex_search_invalid_pattern() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Text("test".into()));
+
+        // Invalid regex pattern should return no results (regex fails to compile)
+        let results = sheet.search(
+            &"[invalid".into(),
+            &SearchOptions {
+                regex: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn regex_search_numbers() {
+        let mut sheet = Sheet::test();
+        sheet.set_value(Pos { x: 1, y: 1 }, CellValue::Number(123.into()));
+        sheet.set_value(Pos { x: 2, y: 2 }, CellValue::Number(456.into()));
+        sheet.set_value(Pos { x: 3, y: 3 }, CellValue::Number(789.into()));
+
+        // Search for numbers containing "2" or "5"
+        let results = sheet.search(
+            &"[25]".into(),
+            &SearchOptions {
+                regex: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 2);
     }
 }

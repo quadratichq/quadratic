@@ -24,6 +24,7 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
     "js",
 ] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
+    "arrow",
     "auth",
     "cache",
     "environment",

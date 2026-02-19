@@ -20,6 +20,7 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     line_number: lineNumber ?? null,
     output_display_type: null,
     chart_pixel_output: null,
+    chart_image: null,
     has_headers: false,
   };
 
@@ -54,6 +55,7 @@ export function javascriptResults(
 
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
     chart_pixel_output: chartPixelOutput || null,
+    chart_image: null,
 
     has_headers: false,
   };

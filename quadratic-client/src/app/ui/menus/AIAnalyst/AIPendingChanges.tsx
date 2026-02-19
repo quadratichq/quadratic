@@ -1,4 +1,4 @@
-import { aiAnalystCurrentChatMessagesAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { currentChatMessagesAtom, loadingAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -9,11 +9,11 @@ import { FormatPaintIcon, GridActionIcon, TableIcon, TableRowsIcon, UndoIcon } f
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import { useAtomValue } from 'jotai';
 import { isAIPromptMessage, isUserPromptMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 // Tool calls that modify the grid and should be shown as pending changes
 const MODIFYING_TOOLS = new Set([
@@ -195,8 +195,8 @@ function getToolCallLabel(toolCall: AIToolCall): PendingChange {
 }
 
 export const AIPendingChanges = memo(() => {
-  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const messages = useAtomValue(currentChatMessagesAtom);
+  const loading = useAtomValue(loadingAtom);
   const [isExpanded, setIsExpanded] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
   const [userMadeChanges, setUserMadeChanges] = useState(false);

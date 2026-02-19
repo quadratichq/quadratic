@@ -24,6 +24,7 @@
     "build:wasm:javascript": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
     "build:wasm:nodejs": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target nodejs --out-dir ../quadratic-client/src/app/quadratic-core/__mocks__ --weak-refs",
     "build:wasm:javascript:dev": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --dev",
+    "build:emojis": "npm install puppeteer --no-save && node scripts/emojis.js",
     "start:production": "serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
     "test:unit": "which vitest",

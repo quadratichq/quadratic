@@ -1,5 +1,5 @@
+import { aiStore, failingSqlConnectionsAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { getConnectionMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
-import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { FAILING_SQL_CONNECTIONS_EXPIRATION_TIME } from '@/shared/constants/connectionsConstant';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
@@ -9,7 +9,7 @@ import { useRecoilCallback } from 'recoil';
 
 export function useSqlContextMessages() {
   const getSqlContext = useRecoilCallback(
-    ({ snapshot, set }) =>
+    ({ snapshot }) =>
       async ({ connections, context }: { connections: ConnectionList; context: Context }): Promise<ChatMessage[]> => {
         try {
           const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
@@ -22,11 +22,11 @@ export function useSqlContextMessages() {
             return [];
           }
 
-          let failingSqlConnections = await snapshot.getPromise(aiAnalystFailingSqlConnectionsAtom);
+          let failingSqlConnections = aiStore.get(failingSqlConnectionsAtom);
           const currentTime = Date.now();
           if (currentTime - failingSqlConnections.lastResetTimestamp > FAILING_SQL_CONNECTIONS_EXPIRATION_TIME) {
             failingSqlConnections = { uuids: [], lastResetTimestamp: currentTime };
-            set(aiAnalystFailingSqlConnectionsAtom, failingSqlConnections);
+            aiStore.set(failingSqlConnectionsAtom, failingSqlConnections);
           }
 
           let contextText = '';
@@ -45,10 +45,11 @@ export function useSqlContextMessages() {
                   const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
                   contextText += getConnectionMarkdown(connectionTableInfo);
                 } catch (error) {
-                  set(aiAnalystFailingSqlConnectionsAtom, (prev) => ({
+                  const prev = aiStore.get(failingSqlConnectionsAtom);
+                  aiStore.set(failingSqlConnectionsAtom, {
                     ...prev,
                     uuids: [...prev.uuids.filter((uuid) => uuid !== connection.uuid), connection.uuid],
-                  }));
+                  });
 
                   console.warn(
                     `[useSqlContextMessages] Failed to get table names for connection ${connection.uuid}:`,

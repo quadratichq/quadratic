@@ -31,13 +31,22 @@ pub(crate) async fn run_python(
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
     fetch_stock_prices: FetchStockPricesFn,
+    chart_pixel_width: f32,
+    chart_pixel_height: f32,
 ) -> Result<()> {
     tracing::info!(
         "[Python] Starting execution for transaction: {}",
         transaction_id
     );
 
-    let js_code_result = execute(code, transaction_id, get_cells, fetch_stock_prices)?;
+    let js_code_result = execute(
+        code,
+        transaction_id,
+        get_cells,
+        fetch_stock_prices,
+        chart_pixel_width,
+        chart_pixel_height,
+    )?;
 
     grid.lock()
         .await
@@ -51,6 +60,8 @@ pub(crate) fn execute(
     transaction_id: &str,
     get_cells: Box<dyn FnMut(String) -> Result<JsCellsA1Response> + Send + 'static>,
     fetch_stock_prices: FetchStockPricesFn,
+    chart_pixel_width: f32,
+    chart_pixel_height: f32,
 ) -> Result<JsCodeResult> {
     let result: std::result::Result<JsCodeResult, PyErr> = Python::with_gil(|py| {
         let empty_result = empty_js_code_result(transaction_id);
@@ -70,6 +81,10 @@ pub(crate) fn execute(
 
         // create a globals dict to capture q.cells("A1") call early
         let globals = pyo3::types::PyDict::new(py);
+
+        // Set chart pixel dimensions for process_output.py to use
+        globals.set_item("__chart_pixel_width__", chart_pixel_width)?;
+        globals.set_item("__chart_pixel_height__", chart_pixel_height)?;
 
         // create a Python callable that uses the get_cells closure and returns converted values/DataFrames
         let get_cells_py = create_get_cells_function(py, get_cells)?;
@@ -151,8 +166,24 @@ with redirect_stdout(__quadratic_std_out__):
         let processed_result = py.eval(&c_get_result, Some(&globals), Some(&locals))?;
 
         // extract fields from Python dictionary
-        let output_type = processed_result.get_item("output_type")?.extract()?;
+        let output_type: String = processed_result.get_item("output_type")?.extract()?;
         let has_headers = processed_result.get_item("has_headers")?.extract()?;
+
+        // extract chart_image if present (base64 WebP data URL)
+        let chart_image = processed_result
+            .get_item("chart_image")?
+            .extract::<Option<String>>()?;
+
+        // Log chart image status for debugging
+        tracing::debug!(
+            "[Python] output_type={}, chart_image={}",
+            output_type,
+            if let Some(ref img) = chart_image {
+                format!("present ({} bytes)", img.len())
+            } else {
+                "None".to_string()
+            }
+        );
 
         // convert to JsCellValueResult format (tuple struct with value, type_id)
         let output_value = processed_result
@@ -195,13 +226,13 @@ with redirect_stdout(__quadratic_std_out__):
         let c_std_out = c_string("__quadratic_std_out__.getvalue()")?;
         let std_out_value = py.eval(&c_std_out, Some(&globals), None)?;
         let std_out_string = std_out_value.extract::<String>()?;
-        let std_out = (!std_out_string.is_empty()).then_some(std_out_string);
+        let std_out = (!std_out_string.is_empty()).then_some(std_out_string.clone());
 
         // capture std_err from python
         let c_std_err = c_string("__quadratic_std_err__.getvalue()")?;
         let std_err_value = py.eval(&c_std_err, Some(&globals), None)?;
         let std_err_string = std_err_value.extract::<String>()?;
-        let std_err = (!std_err_string.is_empty()).then_some(std_err_string);
+        let std_err = (!std_err_string.is_empty()).then_some(std_err_string.clone());
 
         Ok(JsCodeResult {
             transaction_id: transaction_id.to_string(),
@@ -213,6 +244,7 @@ with redirect_stdout(__quadratic_std_out__):
             output_array: js_output_array,
             output_display_type: Some(output_type),
             chart_pixel_output: None,
+            chart_image,
             has_headers,
         })
     });
@@ -264,6 +296,7 @@ with redirect_stdout(__quadratic_std_out__):
                     output_array: None,
                     output_display_type: None,
                     chart_pixel_output: None,
+                    chart_image: None,
                     has_headers: false,
                 });
             }
@@ -290,6 +323,7 @@ with redirect_stdout(__quadratic_std_out__):
                 output_array: None,
                 output_display_type: None,
                 chart_pixel_output: None,
+                chart_image: None,
                 has_headers: false,
             })
         }),
@@ -301,6 +335,7 @@ mod tests {
     use std::time::Instant;
 
     use super::*;
+    use quadratic_core::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH};
     use serial_test::serial;
 
     fn test_get_cells(a1: String) -> Result<JsCellsA1Response> {
@@ -327,6 +362,8 @@ mod tests {
             "test",
             Box::new(test_get_cells),
             Box::new(test_fetch_stock_prices),
+            DEFAULT_HTML_WIDTH,
+            DEFAULT_HTML_HEIGHT,
         )
         .unwrap();
         let end = Instant::now();
@@ -407,6 +444,7 @@ not python code on line 2
             output_array: None,
             output_display_type: None,
             chart_pixel_output: None,
+            chart_image: None,
             has_headers: false,
         };
 

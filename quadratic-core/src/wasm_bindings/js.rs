@@ -37,6 +37,8 @@ extern "C" {
         y: i32,
         sheet_id: String,
         code: String,
+        chart_pixel_width: f32,
+        chart_pixel_height: f32,
     ) -> JsValue;
 
     pub fn jsRunJavascript(
@@ -279,10 +281,14 @@ pub fn jsRunPython(
     y: i32,
     sheet_id: String,
     code: String,
+    chart_pixel_width: f32,
+    chart_pixel_height: f32,
 ) -> JsValue {
     js_call(
         "jsRunPython",
-        format!("{transactionId},{x},{y},{sheet_id},{code}"),
+        format!(
+            "{transactionId},{x},{y},{sheet_id},{code},{chart_pixel_width},{chart_pixel_height}"
+        ),
     );
     JsValue::NULL
 }
