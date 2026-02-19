@@ -2,7 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { fileManuallyRenamedAtom } from '@/app/atoms/fileNamingAtom';
 import { apiClient } from '@/shared/api/apiClient';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -33,7 +33,7 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
 export const FileProvider = ({ children }: { children: React.ReactElement }) => {
   // We can guarantee this is in the URL when it runs, so cast as string
   const { uuid } = useParams() as { uuid: string };
-  const initialFileData = useFileRouteLoaderData();
+  const initialFileData = useFileRouteLoaderDataRequired();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.file.name);
   const [timezone, setTimezone] = useState<FileContextType['timezone']>(initialFileData.file.timezone);
   let isFirstUpdate = useRef(true);

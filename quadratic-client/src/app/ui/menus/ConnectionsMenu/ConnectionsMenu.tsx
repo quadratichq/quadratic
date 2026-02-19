@@ -5,7 +5,7 @@ import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import type { OnConnectionCreatedCallback } from '@/shared/components/connections/ConnectionForm';
 import { Connections } from '@/shared/components/connections/Connections';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -17,7 +17,7 @@ export function ConnectionsMenu() {
 
   const {
     team: { uuid: teamUuid, sshPublicKey },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const { connections, staticIps, isLoading } = useConnectionsFetcher();
 
   const onConnectionCreated: OnConnectionCreatedCallback = useCallback(

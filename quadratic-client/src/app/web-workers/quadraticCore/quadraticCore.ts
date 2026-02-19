@@ -53,6 +53,8 @@ import type {
 import { JsMergeCells, SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import type {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -294,6 +296,18 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientA1Context') {
       events.emit('a1Context', e.data.context);
       return;
+    } else if (e.data.type === 'coreClientRequestInitPython') {
+      await pythonWebWorker.ensureInitialized();
+      return;
+    } else if (e.data.type === 'coreClientRequestInitJavascript') {
+      try {
+        await javascriptWebWorker.ensureInitialized();
+      } catch (error) {
+        console.error('[quadraticCore] Failed to initialize JavaScript worker:', error);
+        // Emit error event so the core can handle it gracefully
+        events.emit('coreError', 'javascriptWorker', error);
+      }
+      return;
     } else if (e.data.type === 'coreClientCoreError') {
       if (debugFlag('debug')) {
         console.error('[quadraticCore] core error', e.data.from, e.data.error);
@@ -353,12 +367,14 @@ class QuadraticCore {
     url,
     version,
     sequenceNumber,
+    noMultiplayer,
   }: {
     fileId: string;
     teamUuid: string;
     url: string;
     version: string;
     sequenceNumber: number;
+    noMultiplayer: boolean;
   }): Promise<{ version?: string; error?: string }> {
     // this is the channel between the core worker and the render worker
     const port = new MessageChannel();
@@ -386,6 +402,7 @@ class QuadraticCore {
         id,
         fileId,
         teamUuid,
+        noMultiplayer,
       };
       if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
@@ -2113,6 +2130,19 @@ class QuadraticCore {
         type: 'clientCoreGetAITransactions',
         id,
       });
+    });
+  }
+
+  /**
+   * Update the viewport cache in the core worker.
+   * Used when SharedArrayBuffer is not available.
+   */
+  updateViewport(topLeft: Pos, bottomRight: Pos, sheetId: string): void {
+    this.send({
+      type: 'clientCoreViewportUpdate',
+      topLeft,
+      bottomRight,
+      sheetId,
     });
   }
 }

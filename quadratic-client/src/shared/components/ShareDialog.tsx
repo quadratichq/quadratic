@@ -1,18 +1,31 @@
 import { getActionFileMove, type Action as FileAction } from '@/routes/api.files.$uuid';
 import type { Action as FileShareAction, FilesSharingLoader } from '@/routes/api.files.$uuid.sharing';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { apiClient } from '@/shared/api/apiClient';
 import { syncFileLocation } from '@/shared/atom/fileLocationAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { GroupAddIcon, GroupIcon, GroupOffIcon, MailIcon, PublicIcon, PublicOffIcon } from '@/shared/components/Icons';
+import {
+  ChevronRightIcon,
+  CodeIcon,
+  GroupAddIcon,
+  GroupIcon,
+  GroupOffIcon,
+  MailIcon,
+  PublicIcon,
+  PublicOffIcon,
+} from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, DOCUMENTATION_EMBED_URL } from '@/shared/constants/urls';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/shadcn/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
 import {
   Select,
   SelectContent,
@@ -21,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/shadcn/ui/select';
+import { Separator } from '@/shared/shadcn/ui/separator';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -36,7 +50,7 @@ import type {
 } from 'quadratic-shared/typesAndSchemas';
 import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent, ReactNode } from 'react';
-import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Children, forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FetcherSubmitFunction } from 'react-router';
 import { useFetcher, useFetchers, useNavigate, useSubmit } from 'react-router';
 
@@ -279,11 +293,13 @@ function ShareFileDialogBody({
   data,
   upgradeMember,
   setUpgradeMember,
+  currentSheetName,
 }: {
   uuid: string;
   data: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
   upgradeMember: UpgradeMember;
   setUpgradeMember: SetUpgradeMember;
+  currentSheetName?: string;
 }) {
   const {
     file: { publicLinkAccess },
@@ -340,6 +356,9 @@ function ShareFileDialogBody({
     [data.userMakingRequest.teamRole]
   );
 
+  const publicLinkRowRef = useRef<HTMLDivElement>(null);
+  const [highlightPublicLinkRow, setHighlightPublicLinkRow] = useState(false);
+
   return (
     <>
       {filePermissions.includes('FILE_EDIT') && (
@@ -352,7 +371,15 @@ function ShareFileDialogBody({
         />
       )}
 
-      <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
+      <div className={cn(filePermissions.includes('FILE_EDIT') && 'mt-3')}>
+        <ListItemPublicLink
+          ref={publicLinkRowRef}
+          uuid={uuid}
+          publicLinkAccess={publicLinkAccess}
+          disabled={!canEditFile}
+          highlight={highlightPublicLinkRow}
+        />
+      </div>
 
       {teamRole && (
         <ListItemTeamFile
@@ -430,6 +457,15 @@ function ShareFileDialogBody({
       {pendingInvites.map((invite, i) => (
         <ManageInvite key={i} invite={invite} />
       ))}
+
+      <Separator />
+      <ListItemEmbed
+        publicLinkRowRef={publicLinkRowRef}
+        setHighlightPublicLinkRow={setHighlightPublicLinkRow}
+        uuid={uuid}
+        publicLinkAccess={publicLinkAccess}
+        currentSheetName={currentSheetName}
+      />
     </>
   );
 }
@@ -624,7 +660,17 @@ function CopyLinkButton({
 type UpgradeMember = { email: string; role: UserFileRole; showUpgrade?: boolean } | null;
 type SetUpgradeMember = React.Dispatch<React.SetStateAction<UpgradeMember>>;
 
-export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
+export function ShareFileDialog({
+  uuid,
+  name,
+  onClose,
+  currentSheetName,
+}: {
+  uuid: string;
+  name: string;
+  onClose: () => void;
+  currentSheetName?: string;
+}) {
   const fetcher = useFetcher<FilesSharingLoader>();
   const loadState = useMemo(() => (!fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED'), [fetcher]);
 
@@ -714,6 +760,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
               data={loaderData}
               setUpgradeMember={setUpgradeMember}
               upgradeMember={upgradeMember}
+              currentSheetName={currentSheetName}
             />
           )}
         </DialogBody>
@@ -1180,7 +1227,7 @@ function ListItemTeamFile({
         value={value}
         onValueChange={(value: 'team-file' | 'personal-file') => onCheckedChange(value === 'team-file')}
       >
-        <SelectTrigger className={`w-auto`}>
+        <SelectTrigger className="w-28">
           <SelectValue>{value === 'team-file' ? 'Can access' : 'No access'}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -1192,15 +1239,10 @@ function ListItemTeamFile({
   );
 }
 
-function ListItemPublicLink({
-  uuid,
-  publicLinkAccess,
-  disabled,
-}: {
-  uuid: string;
-  publicLinkAccess: PublicLinkAccess;
-  disabled: boolean;
-}) {
+const ListItemPublicLink = forwardRef<
+  HTMLDivElement,
+  { uuid: string; publicLinkAccess: PublicLinkAccess; disabled: boolean; highlight?: boolean }
+>(function ListItemPublicLink({ uuid, publicLinkAccess, disabled, highlight }, ref) {
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.API.FILE_SHARING(uuid);
 
@@ -1237,7 +1279,13 @@ function ListItemPublicLink({
   const activeOptionLabel = useMemo(() => optionsByValue[publicLinkAccess], [publicLinkAccess, optionsByValue]);
 
   return (
-    <ListItem>
+    <ListItem
+      ref={ref}
+      className="rounded-sm transition-shadow duration-300"
+      style={{
+        boxShadow: highlight ? '0 0 0 2px hsl(var(--primary))' : '0 0 0 0px hsl(var(--primary) / 0)',
+      }}
+    >
       <div className="flex h-6 w-6 items-center justify-center">
         {publicLinkAccess === 'NOT_SHARED' ? <PublicOffIcon /> : <PublicIcon />}
       </div>
@@ -1259,7 +1307,7 @@ function ListItemPublicLink({
             setPublicLinkAccess(value);
           }}
         >
-          <SelectTrigger className={`w-auto`} data-testid="public-link-access-select">
+          <SelectTrigger className="w-28" data-testid="public-link-access-select">
             <SelectValue>{activeOptionLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -1273,22 +1321,250 @@ function ListItemPublicLink({
       </div>
     </ListItem>
   );
-}
+});
 
-function ListItem({ className, children }: { className?: string; children: React.ReactNode }) {
-  if (Children.count(children) !== 3) {
-    console.warn('<ListItem> expects exactly 3 children');
-  }
+function ListItemEmbed({
+  publicLinkRowRef,
+  setHighlightPublicLinkRow,
+  uuid,
+  publicLinkAccess,
+  currentSheetName,
+}: {
+  publicLinkRowRef: React.RefObject<HTMLDivElement | null>;
+  setHighlightPublicLinkRow: React.Dispatch<React.SetStateAction<boolean>>;
+  uuid: string;
+  publicLinkAccess: PublicLinkAccess;
+  currentSheetName?: string;
+}) {
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [embedReadonly, setEmbedReadonly] = useState(false);
+  const [embedSheet, setEmbedSheet] = useState('');
+  const [preloadPython, setPreloadPython] = useState(false);
+  const [preloadJS, setPreloadJS] = useState(false);
+  const [embedUuid, setEmbedUuid] = useState<string | null>(null);
+  const [isLoadingEmbed, setIsLoadingEmbed] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const isPublic = publicLinkAccess !== 'NOT_SHARED';
+  const sheetPlaceholder = currentSheetName ? `e.g. ${currentSheetName}` : 'e.g. Sheet1';
+  const [expanded, setExpanded] = useState(false);
+
+  // When user opens Embed and file is not public, flash the "Anyone with the link" row
+  const hasFlashedRef = useRef(false);
+  useEffect(() => {
+    if (!expanded) {
+      hasFlashedRef.current = false;
+      return;
+    }
+    if (expanded && !isPublic && !hasFlashedRef.current) {
+      hasFlashedRef.current = true;
+      publicLinkRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      let count = 0;
+      const interval = window.setInterval(() => {
+        count++;
+        setHighlightPublicLinkRow((prev) => !prev);
+        if (count >= 4) {
+          window.clearInterval(interval);
+          setHighlightPublicLinkRow(false);
+        }
+      }, 400);
+
+      setHighlightPublicLinkRow(true);
+      return () => {
+        window.clearInterval(interval);
+        setHighlightPublicLinkRow(false);
+      };
+    }
+  }, [expanded, isPublic, publicLinkRowRef, setHighlightPublicLinkRow]);
+
+  // Fetch or create embed record when the file is public
+  useEffect(() => {
+    if (!isPublic || fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    const fetchOrCreateEmbed = async () => {
+      setIsLoadingEmbed(true);
+      try {
+        const embeds = await apiClient.embeds.list(uuid);
+        if (embeds.length > 0) {
+          setEmbedUuid(embeds[0].uuid);
+        } else {
+          const newEmbed = await apiClient.embeds.create(uuid);
+          setEmbedUuid(newEmbed.uuid);
+        }
+      } catch {
+        addGlobalSnackbar('Failed to load embed link.', { severity: 'error' });
+      } finally {
+        setIsLoadingEmbed(false);
+      }
+    };
+
+    fetchOrCreateEmbed();
+  }, [isPublic, uuid, addGlobalSnackbar]);
+
+  const embedUrl = useMemo(() => {
+    if (!isPublic || !embedUuid) return '';
+    const preload: ('python' | 'js')[] = [];
+    if (preloadPython) preload.push('python');
+    if (preloadJS) preload.push('js');
+    return (
+      window.location.origin +
+      ROUTES.EMBED({
+        embedId: embedUuid,
+        readonly: embedReadonly || undefined,
+        sheet: embedSheet.trim() || undefined,
+        preload: preload.length ? preload : undefined,
+      })
+    );
+  }, [embedUuid, isPublic, embedReadonly, embedSheet, preloadPython, preloadJS]);
+
+  const handleCopyEmbedLink = useCallback(() => {
+    if (!embedUrl) return;
+    trackEvent('[FileSharing].embed.clickCopyLink');
+    navigator.clipboard
+      .writeText(embedUrl)
+      .then(() => {
+        addGlobalSnackbar('Copied embed link to clipboard.');
+      })
+      .catch(() => {
+        addGlobalSnackbar('Failed to copy embed link to clipboard.', { severity: 'error' });
+      });
+  }, [embedUrl, addGlobalSnackbar]);
+
+  const handleCopyEmbedHtml = useCallback(() => {
+    if (!embedUrl) return;
+    trackEvent('[FileSharing].embed.clickCopyHtml');
+    const iframe = `<iframe src="${embedUrl}" width="100%" height="600" style="border: none;"></iframe>`;
+    navigator.clipboard
+      .writeText(iframe)
+      .then(() => {
+        addGlobalSnackbar('Copied embed HTML to clipboard.');
+      })
+      .catch(() => {
+        addGlobalSnackbar('Failed to copy embed HTML to clipboard.', { severity: 'error' });
+      });
+  }, [embedUrl, addGlobalSnackbar]);
 
   return (
-    <div
-      data-testid="share-dialog-list-item"
-      className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}
-    >
-      {children}
-    </div>
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <CollapsibleTrigger asChild>
+        <button className="flex w-full cursor-pointer items-center gap-3 rounded-sm py-1 hover:bg-accent">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <CodeIcon />
+          </div>
+          <Type variant="body2">Embed</Type>
+          <ChevronRightIcon
+            className={cn('ml-auto text-muted-foreground transition-transform', expanded ? 'rotate-90' : '-rotate-90')}
+          />
+        </button>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent>
+        <div className="flex flex-col gap-3 pb-1 pl-9 pt-2">
+          {isPublic ? (
+            isLoadingEmbed ? (
+              <Skeleton className="h-8 w-full" />
+            ) : (
+              <>
+                <div className="flex gap-6">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="embed-readonly"
+                        checked={embedReadonly}
+                        onCheckedChange={(checked) => setEmbedReadonly(checked === true)}
+                      />
+                      <Label htmlFor="embed-readonly" className="cursor-pointer text-sm font-normal">
+                        Read-only
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="embed-preload-python"
+                        checked={preloadPython}
+                        onCheckedChange={(checked) => setPreloadPython(checked === true)}
+                      />
+                      <Label htmlFor="embed-preload-python" className="cursor-pointer text-sm font-normal">
+                        Preload Python
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="embed-preload-js"
+                        checked={preloadJS}
+                        onCheckedChange={(checked) => setPreloadJS(checked === true)}
+                      />
+                      <Label htmlFor="embed-preload-js" className="cursor-pointer text-sm font-normal">
+                        Preload JavaScript
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="embed-sheet" className="text-sm font-normal">
+                      Only show sheet
+                    </Label>
+                    <Input
+                      id="embed-sheet"
+                      className="h-7 w-28"
+                      placeholder={sheetPlaceholder}
+                      value={embedSheet}
+                      onChange={(e) => setEmbedSheet(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Anyone with the link can view or edit an embedded file. To save changes, they{'\u2019'}ll need to log
+                  in to Quadratic, which creates a copy of the file in their account.{' '}
+                  <a
+                    href={DOCUMENTATION_EMBED_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline hover:no-underline"
+                  >
+                    Learn more
+                  </a>
+                </p>
+                <Input className="h-8 text-xs" readOnly value={embedUrl} onClick={(e) => e.currentTarget.select()} />
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="secondary" onClick={handleCopyEmbedLink}>
+                    Copy link
+                  </Button>
+                  <Button variant="secondary" onClick={handleCopyEmbedHtml}>
+                    Copy HTML
+                  </Button>
+                </div>
+              </>
+            )
+          ) : (
+            <Type variant="caption" className="text-muted-foreground">
+              Share publicly above to get an embed link.
+            </Type>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
+
+const ListItem = forwardRef<HTMLDivElement, { className?: string; style?: React.CSSProperties; children: ReactNode }>(
+  function ListItem({ className, style, children }, ref) {
+    if (Children.count(children) !== 3) {
+      console.warn('<ListItem> expects exactly 3 children');
+    }
+
+    return (
+      <div
+        ref={ref}
+        data-testid="share-dialog-list-item"
+        className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}
+        style={style}
+      >
+        {children}
+      </div>
+    );
+  }
+);
 
 // TODO: write tests for these
 function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserTeamRole; numberOfOwners: number }) {

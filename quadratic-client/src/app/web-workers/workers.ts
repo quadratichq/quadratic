@@ -7,10 +7,22 @@ import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWork
 // this configures the Monaco editor to use web workers
 import './monacoInit';
 
-export const initWorkers = () => {
+export interface WorkerInitOptions {
+  preloadPython?: boolean;
+  preloadJavascript?: boolean;
+}
+
+export const initWorkers = (options: WorkerInitOptions = {}) => {
+  const { preloadPython = true, preloadJavascript = true } = options;
+
   renderWebWorker.initWorker();
   multiplayer.initWorker();
   quadraticCore.initWorker();
-  pythonWebWorker.initWorker();
-  javascriptWebWorker.initWorker();
+
+  if (preloadPython) {
+    pythonWebWorker.initWorker();
+  }
+  if (preloadJavascript) {
+    javascriptWebWorker.initWorker();
+  }
 };

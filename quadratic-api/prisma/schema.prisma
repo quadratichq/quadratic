@@ -87,10 +87,21 @@ model File {
     FileInvite       FileInvite[]
     AnalyticsAIChat  AnalyticsAIChat[]
     ScheduledTask    ScheduledTask[]
+    Embed            Embed[]
 
     @@index([uuid])
     @@index([ownerTeamId])
     @@index([id, ownerTeamId])
+}
+
+model Embed {
+    id          Int      @id @default(autoincrement())
+    uuid        String   @unique @default(uuid())
+    file        File     @relation(fields: [fileId], references: [id])
+    fileId      Int      @map("file_id")
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@index([fileId])
 }
 
 model FileCheckpoint {
@@ -436,4 +447,18 @@ model ScheduledTaskLog {
     @@index([status])
     @@index([runId, createdDate(sort: Desc)])
     @@index([createdDate(sort: Desc)])
+}
+
+// Unclaimed files from embed "Edit in Quadratic" flow
+// These are temporary records that hold file data until a user claims them after authentication
+model UnclaimedFile {
+    id          Int      @id @default(autoincrement())
+    claimToken  String   @unique @map("claim_token")
+    storageKey  String   @map("storage_key") // Storage path for the file
+    version     String // Quadratic file version
+    createdDate DateTime @default(now()) @map("created_date")
+    expiresAt   DateTime @map("expires_at") // 24 hours from creation
+
+    @@index([claimToken])
+    @@index([expiresAt])
 }

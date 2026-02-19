@@ -6,6 +6,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import type { SpanFormatting } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorSpans';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { FormatPainterButton } from '@/app/ui/menus/Toolbar/FormatPainterButton';
 import {
@@ -21,6 +22,7 @@ import {
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
+import { cn } from '@/shared/shadcn/utils';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useRecoilValue } from 'recoil';
@@ -49,6 +51,7 @@ export const FormattingBar = memo(() => {
   const alignmentFormattingRef = useRef<HTMLDivElement>(null);
   const clearRef = useRef<HTMLDivElement>(null);
   const insertLinkFormattingRef = useRef<HTMLDivElement>(null);
+  const formatPainterRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
@@ -92,9 +95,11 @@ export const FormattingBar = memo(() => {
 
       const menuWidth = menuRef.current?.clientWidth;
       const moreButtonWidth = moreButtonRef.current?.clientWidth ?? 0;
+      const formatPainterWidth = formatPainterRef.current?.clientWidth ?? 0;
 
-      // First, calculate total width without more button
-      let totalWidth = 0;
+      // First, calculate total width without more button (include FormatPainterButton
+      // since it's always visible and never moves to the overflow menu)
+      let totalWidth = formatPainterWidth;
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
         if (itemWidth) {
@@ -108,8 +113,8 @@ export const FormattingBar = memo(() => {
         return;
       }
 
-      // Otherwise, find which items to hide accounting for more button width
-      let currentWidth = moreButtonWidth;
+      // Otherwise, find which items to hide accounting for more button and FormatPainterButton widths
+      let currentWidth = moreButtonWidth + formatPainterWidth;
       const hiddenItems: FormattingTypes[] = [];
       Object.entries(refs).forEach(([key, ref]) => {
         const itemWidth = ref.current?.clientWidth;
@@ -129,10 +134,23 @@ export const FormattingBar = memo(() => {
       setHiddenItems(hiddenItems);
     };
 
-    checkFit();
+    // Use ResizeObserver to detect container width changes (works for initial render
+    // and when embed/container size changes without a window resize event)
+    const resizeObserver = new ResizeObserver(checkFit);
+    if (menuRef.current) {
+      resizeObserver.observe(menuRef.current);
+    }
+
+    // Also listen to window resize as a fallback
     window.addEventListener('resize', checkFit);
+
+    // Run checkFit after a frame to ensure layout is calculated
+    const rafId = requestAnimationFrame(checkFit);
+
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', checkFit);
+      cancelAnimationFrame(rafId);
     };
   }, [portalContainer]);
 
@@ -211,13 +229,16 @@ export const FormattingBar = memo(() => {
               <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
               <Clear ref={clearRef} hideLabel={true} />
               <InsertLinkFormatting ref={insertLinkFormattingRef} hideLabel={true} />
+              <div ref={formatPainterRef}>
+                <FormatPainterButton />
+              </div>
               <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
             </div>
           </div>,
           portalContainer
         )}
 
-      <div className="flex h-full w-full flex-grow" ref={menuRef}>
+      <div className="flex h-full min-w-0 flex-1 overflow-hidden" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
           <div className="flex flex-shrink select-none items-center">
             {!hiddenItems.includes('NumberFormatting') && (
@@ -250,7 +271,7 @@ export const FormattingBar = memo(() => {
                   <FormatMoreButton setShowMore={setShowMore} showMore={showMore} />
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="hidden w-fit p-2 md:block" align="start">
+              <PopoverContent className={cn('w-fit p-2', isEmbed ? 'block' : 'hidden md:block')} align="start">
                 <div className="flex gap-1 text-sm">
                   {hiddenItems.includes('NumberFormatting') && (
                     <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />

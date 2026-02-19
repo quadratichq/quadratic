@@ -10,6 +10,7 @@
 import { getJavascriptFetchOverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptFetchOverride';
 import { getJavascriptXHROverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptXHROverride';
 import { LINE_NUMBER_VAR } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
+import { addAwaitToCellCalls } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptTransformAsync';
 import { javascriptLibrary } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import * as esbuild from 'esbuild-wasm';
@@ -62,6 +63,73 @@ export function transformCode(code: string): JavascriptTransformedCode {
   return { code: transformedCode, imports };
 }
 
+/**
+ * Async cells override for when SharedArrayBuffer is not available.
+ * This code is injected into the runner to override q.cells with a Promise-based version.
+ */
+const asyncCellsOverride = `
+const __pendingCellRequests = new Map();
+let __nextCellRequestId = 0;
+
+// Override q.cells with async version
+const __originalQCells = q.cells.bind(q);
+q.cells = function(a1) {
+  if (typeof a1 !== 'string') {
+    throw new Error('q.cell requires at least 1 argument, received q.cell(' + a1 + ')');
+  }
+  return new Promise((resolve, reject) => {
+    const requestId = __nextCellRequestId++;
+    __pendingCellRequests.set(requestId, { resolve, reject });
+    self.postMessage({ type: 'getCellsA1Async', requestId, a1 });
+  });
+};
+
+// Listen for async cell responses
+self.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'getCellsA1AsyncResponse') {
+    const pending = __pendingCellRequests.get(e.data.requestId);
+    if (pending) {
+      __pendingCellRequests.delete(e.data.requestId);
+      if (e.data.error) {
+        pending.reject(new Error(e.data.error));
+      } else {
+        try {
+          const results = JSON.parse(e.data.resultsStringified);
+          if (!results || !results.values || results.error) {
+            pending.reject(new Error(results?.error?.core_error ?? 'Failed to get cells'));
+            return;
+          }
+          const startY = results.values.y;
+          const startX = results.values.x;
+          const height = results.values.h;
+          const width = results.values.w;
+          const cells = Array(height).fill(null).map(() => Array(width).fill(undefined));
+          for (const cell of results.values.cells) {
+            const typed = cell ? convertType(cell) : undefined;
+            cells[cell.y - startY][cell.x - startX] = typed === null ? undefined : typed;
+          }
+          if (cells.length === 1 && cells[0].length === 1 && !results.values.one_dimensional) {
+            pending.resolve(cells[0][0]);
+          } else if (!results.values.two_dimensional) {
+            if (cells.every(row => row.length === 1)) {
+              pending.resolve(cells.map(row => row[0]));
+            } else if (cells.length === 1) {
+              pending.resolve(cells[0]);
+            } else {
+              pending.resolve(cells);
+            }
+          } else {
+            pending.resolve(cells);
+          }
+        } catch (err) {
+          pending.reject(err);
+        }
+      }
+    }
+  }
+});
+`;
+
 // Prepares code to be sent to the worker for execution. This includes moving
 // moving import statements outside of async wrapper; adding line number
 // variables (although if we get an error, we'll try it without the variables);
@@ -72,9 +140,16 @@ export function prepareJavascriptCode(
   y: number,
   withLineNumbers: boolean,
   proxyUrl: string,
-  jwt: string
+  jwt: string,
+  hasSharedArrayBuffer: boolean = true
 ): string {
-  const code = withLineNumbers ? javascriptAddLineNumberVars(transform) : transform.code;
+  let userCode = withLineNumbers ? javascriptAddLineNumberVars(transform) : transform.code;
+
+  // When SAB is not available, transform user code to add await before q.cells() calls
+  if (!hasSharedArrayBuffer) {
+    userCode = addAwaitToCellCalls(userCode);
+  }
+
   const javascriptXHROverride = getJavascriptXHROverride(proxyUrl, jwt);
   const javascriptFetchOverride = getJavascriptFetchOverride(proxyUrl, jwt);
   let replacedJavascriptLibrary = javascriptLibrary;
@@ -83,15 +158,20 @@ export function prepareJavascriptCode(
     '{COMMUNITY_A1_FILE_UPDATE_URL}',
     COMMUNITY_A1_FILE_UPDATE_URL
   ); // replace the COMMUNITY_A1_FILE_UPDATE_URL with the correct url
+
+  // When SAB is not available, inject async cells override after the library
+  const asyncOverride = hasSharedArrayBuffer ? '' : asyncCellsOverride;
+
   const compiledCode =
     javascriptXHROverride +
     javascriptFetchOverride +
     transform.imports +
     (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 0;` : '') +
     replacedJavascriptLibrary +
+    asyncOverride +
     '(async() => {try{' +
     'let results = await (async () => {' +
-    code +
+    userCode +
     '\n })();' +
     'let chartPixelOutput = undefined;' +
     'if (results instanceof OffscreenCanvas) { chartPixelOutput = [results.width, results.height]; results = await results.convertToBlob(); }' +

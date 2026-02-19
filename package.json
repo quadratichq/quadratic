@@ -17,7 +17,8 @@
     "quadratic-kernels/python-wasm",
     "quadratic-multiplayer",
     "quadratic-rust-shared",
-    "quadratic-shared"
+    "quadratic-shared",
+    "test/embed"
   ],
   "type": "module",
   "scripts": {
@@ -82,7 +83,9 @@
     "e2e:ui": "cd test/e2e && npm run test:ui",
     "e2e:headed": "cd test/e2e && npm run test:headed",
     "e2e:report": "cd test/e2e && npm run test:report",
-    "e2e:users": "cd test/e2e && npm run ensure-users"
+    "e2e:users": "cd test/e2e && npm run ensure-users",
+    "test:embed": "node test/embed/test-embed-server.js"
+
   },
   "overrides": {
     "@types/react": "^18.3.27",

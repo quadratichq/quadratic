@@ -124,13 +124,60 @@ def rc(x: int, y: int) -> int | float | str | bool | None:
     q._conversion_error(old, new)
 
 
+def _process_cells_response(response, first_row_header: bool):
+    """Helper function to process cells response (shared between sync and async versions)."""
+    if response.error != None:
+        raise Exception(response.error.core_error)
+
+    result = response.values
+
+    if result == None:
+        return None
+
+    if result.w == 1 and result.h == 1:
+        return result_to_value(result.cells[0])
+
+    data = [[None] * result.w for _ in range(result.h)]
+    for cell in result.cells:
+        row = cell.y - result.y
+        col = cell.x - result.x
+        data[row][col] = to_python_type_df(cell.v, cell.t)
+
+    # Create DataFrame from 2D array
+    df = DataFrame(data)
+
+    # Move the first row to the header
+    if first_row_header or result.has_headers:
+        # Convert first row to strings to ensure they work as column names
+        headers = [str(val) for val in df.iloc[0]]
+        df.columns = headers
+        df = df.iloc[1:].reset_index(drop=True)
+
+    return df
+
+
 class q:
     def __init__(self, pos):
         self._pos = pos
 
-    def cells(self, a1: str, first_row_header: bool = False):
+        # Check if SharedArrayBuffer is available to determine if cells should be sync or async
+        try:
+            import hasSharedArrayBuffer
+            has_sab = hasSharedArrayBuffer()
+        except:
+            # Fallback: assume SAB is available if module not found
+            has_sab = True
+
+        if has_sab:
+            # SAB is available - use synchronous cells method
+            self.cells = self._cells_sync
+        else:
+            # SAB not available - use async cells method
+            self.cells = self._cells_async
+
+    def _cells_sync(self, a1: str, first_row_header: bool = False):
         """
-        Reference cells in the grid.
+        Reference cells in the grid (synchronous version when SharedArrayBuffer is available).
 
         Args:
             a1: A string representing a cell or range of cells.
@@ -143,35 +190,34 @@ class q:
             c = q.cells("A1:B5")
         """
         response = getCellsA1(a1)
+        return _process_cells_response(response, first_row_header)
 
-        if response.error != None:
-            raise Exception(response.error.core_error)
+    async def _cells_async(self, a1: str, first_row_header: bool = False):
+        """
+        Reference cells in the grid (async version when SharedArrayBuffer is not available).
 
-        result = response.values
+        Args:
+            a1: A string representing a cell or range of cells.
+            first_row_header: If True the first row will be used as the header.
 
-        if result == None:
-            return None
+        Returns:
+            For single returns: the value of the cell referenced. For multiple returns: A pandas DataFrame of the cells referenced.
 
-        if result.w == 1 and result.h == 1:
-            return result_to_value(result.cells[0])
-        
-        data = [[None] * result.w for _ in range(result.h)]
-        for cell in result.cells:
-            row = cell.y - result.y
-            col = cell.x - result.x
-            data[row][col] = to_python_type_df(cell.v, cell.t)
+        Typical usage example:
+            c = await q.cells("A1:B5")
+        """
+        response_result = getCellsA1(a1)
 
-        # Create DataFrame from 2D array
-        df = DataFrame(data)
+        # Check if getCellsA1 returned a Promise (has 'then' method)
+        # In embed mode without SharedArrayBuffer, it returns a Promise
+        if hasattr(response_result, 'then'):
+            # It's a Promise, await it
+            response = await response_result
+        else:
+            # It's already the response object (shouldn't happen in async mode, but handle it)
+            response = response_result
 
-        # Move the first row to the header
-        if first_row_header or result.has_headers:
-            # Convert first row to strings to ensure they work as column names
-            headers = [str(val) for val in df.iloc[0]]
-            df.columns = headers
-            df = df.iloc[1:].reset_index(drop=True)
-
-        return df
+        return _process_cells_response(response, first_row_header)
 
     def pos(self) -> tuple[int, int]:
         """

@@ -1,11 +1,11 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 
 export const useIsAvailableArgs = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { fileTeamPrivacy, teamPermissions, filePermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
 
   const isAvailableArgs = {
     isAuthenticated,

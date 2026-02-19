@@ -38,11 +38,7 @@ interface SelectAIModelMenuProps {
 }
 export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const {
-    userMakingRequest,
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
-  const restrictedModel = userMakingRequest.restrictedModel;
+  const fileRouteData = useFileRouteLoaderData();
   const { isOnPaidPlan } = useIsOnPaidPlan();
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
@@ -70,6 +66,13 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
     () => (knowsAboutModelPicker ? false : userMessagesCount > 4),
     [knowsAboutModelPicker, userMessagesCount]
   );
+
+  // Not available in embed mode
+  if (!fileRouteData) {
+    return null;
+  }
+
+  const restrictedModel = fileRouteData.userMakingRequest.restrictedModel;
 
   // Debug mode where any non-disabled model is shown
   if (debugShowAIModelMenu) {

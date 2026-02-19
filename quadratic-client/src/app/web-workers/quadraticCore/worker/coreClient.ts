@@ -21,6 +21,7 @@ import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConne
 import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
 import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
 import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { getCachedViewport, updateCachedViewport } from '@/app/web-workers/quadraticCore/worker/coreViewportCache';
 import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
@@ -65,7 +66,22 @@ declare var self: WorkerGlobalScope &
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
     sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
+    getCachedViewportJson: () => string | null;
   };
+
+/**
+ * Get cached viewport as JSON string for Rust callback.
+ * Used when SharedArrayBuffer is not available.
+ */
+function getCachedViewportJson(): string | null {
+  const viewport = getCachedViewport();
+  if (!viewport) return null;
+  return JSON.stringify({
+    top_left: { x: viewport.topLeft.x, y: viewport.topLeft.y },
+    bottom_right: { x: viewport.bottomRight.x, y: viewport.bottomRight.y },
+    sheet_id: viewport.sheetId,
+  });
+}
 
 class CoreClient {
   private id = 0;
@@ -105,6 +121,7 @@ class CoreClient {
     self.sendContentCache = coreClient.sendContentCache;
     self.sendMergeCells = coreClient.sendMergeCells;
     self.sendCodeRunningState = coreClient.sendCodeRunningState;
+    self.getCachedViewportJson = getCachedViewportJson;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
@@ -123,7 +140,7 @@ class CoreClient {
     switch (e.data.type) {
       case 'clientCoreLoad':
         this.sendStartupTimer('offlineSync', { start: performance.now() });
-        await offline.init(e.data.fileId);
+        await offline.init(e.data.fileId, e.data.noMultiplayer);
 
         this.send({
           type: 'coreClientLoad',
@@ -955,6 +972,11 @@ class CoreClient {
         }
         return;
 
+      case 'clientCoreViewportUpdate':
+        // Update cached viewport for non-SAB mode
+        updateCachedViewport(e.data.topLeft, e.data.bottomRight, e.data.sheetId);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
@@ -1151,6 +1173,14 @@ class CoreClient {
 
   sendMergeCells = (sheetId: string, mergeCells: Uint8Array) => {
     this.send({ type: 'coreClientMergeCells', sheetId, mergeCells }, mergeCells.buffer);
+  };
+
+  requestInitPython = () => {
+    this.send({ type: 'coreClientRequestInitPython' });
+  };
+
+  requestInitJavascript = () => {
+    this.send({ type: 'coreClientRequestInitJavascript' });
   };
 }
 

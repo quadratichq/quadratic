@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { getIsEmbedMode } from '@/app/helpers/sharedArrayBufferSupport';
 import type {
   ClientJavascriptMessage,
   JavascriptClientGetJwt,
@@ -13,6 +14,8 @@ class JavascriptWebWorker {
   state: LanguageState = 'loading';
 
   private worker?: Worker;
+  private initPromise?: Promise<void>;
+  private initReject?: (error: Error) => void;
 
   private send(message: ClientJavascriptMessage, port?: MessagePort) {
     if (!this.worker) throw new Error('Expected worker to be defined in javascript.ts');
@@ -51,12 +54,81 @@ class JavascriptWebWorker {
 
   initWorker() {
     this.worker?.terminate();
-    this.worker = new Worker(new URL('./worker/javascript.worker.ts', import.meta.url), { type: 'module' });
-    this.worker.onmessage = this.handleMessage;
+    try {
+      this.worker = new Worker(new URL('./worker/javascript.worker.ts', import.meta.url), { type: 'module' });
+      this.worker.onmessage = this.handleMessage;
+      this.worker.onerror = (error) => {
+        console.error('[javascriptWebWorker] Worker error:', error);
+        const errorObj = error.error || new Error('JavaScript worker error');
+        if (this.initReject) {
+          this.initReject(errorObj);
+          this.initReject = undefined;
+        }
+      };
 
-    const JavascriptCoreChannel = new MessageChannel();
-    this.send({ type: 'clientJavascriptCoreChannel', env: import.meta.env }, JavascriptCoreChannel.port1);
-    quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
+      const JavascriptCoreChannel = new MessageChannel();
+      this.send(
+        { type: 'clientJavascriptCoreChannel', env: import.meta.env, isEmbedMode: getIsEmbedMode() },
+        JavascriptCoreChannel.port1
+      );
+      quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
+    } catch (error) {
+      if (this.initReject) {
+        this.initReject(error instanceof Error ? error : new Error(String(error)));
+        this.initReject = undefined;
+      }
+      throw error;
+    }
+  }
+
+  isInitialized(): boolean {
+    return this.worker !== undefined;
+  }
+
+  async ensureInitialized(): Promise<void> {
+    if (this.worker && this.state === 'ready') {
+      return;
+    }
+
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    // Emit loading event when initialization starts
+    events.emit('javascriptLoading');
+
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      this.initReject = reject;
+
+      const timeout = setTimeout(() => {
+        events.off('javascriptInit', onInit);
+        this.initPromise = undefined;
+        this.initReject = undefined;
+        reject(new Error('JavaScript worker initialization timed out'));
+      }, 30000); // 30 second timeout
+
+      const onInit = () => {
+        clearTimeout(timeout);
+        events.off('javascriptInit', onInit);
+        this.initPromise = undefined;
+        this.initReject = undefined;
+        resolve();
+      };
+
+      events.on('javascriptInit', onInit);
+
+      try {
+        this.initWorker();
+      } catch (error) {
+        clearTimeout(timeout);
+        events.off('javascriptInit', onInit);
+        this.initPromise = undefined;
+        this.initReject = undefined;
+        reject(error);
+      }
+    });
+
+    return this.initPromise;
   }
 
   cancelExecution = () => {

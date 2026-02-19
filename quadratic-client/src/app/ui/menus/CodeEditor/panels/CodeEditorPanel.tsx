@@ -1,5 +1,6 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
@@ -24,10 +25,9 @@ type CodeEditorPanelProps = {
 
 export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPanelProps) => {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const {
-    userMakingRequest: { teamPermissions },
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const teamPermissions = fileRouteData?.userMakingRequest?.teamPermissions;
+  const teamUuid = fileRouteData?.team?.uuid;
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
   const { panelPosition } = useCodeEditorPanelData();
@@ -58,7 +58,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   );
 
   const schemaBrowser =
-    isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
+    isAuthenticated && connectionInfo !== undefined && teamUuid && teamPermissions?.includes('TEAM_EDIT') ? (
       <ConnectionSchemaBrowser
         teamUuid={teamUuid}
         type={connectionInfo.kind}
@@ -72,7 +72,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
       />
     ) : undefined;
 
-  const showAIAssistant = Boolean(isAuthenticated);
+  const showAIAssistant = Boolean(isAuthenticated) && !isEmbed;
 
   return (
     <>

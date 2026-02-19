@@ -7,6 +7,7 @@ import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { isNoMultiplayer } from '@/app/helpers/isEmbed';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -61,8 +62,8 @@ export const QuadraticApp = memo(() => {
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
-        // If we're loading a specific checkpoint (version history), don't load multiplayer
-        if (sequenceNum !== null) {
+        // If we're loading a specific checkpoint (version history) or noMultiplayer mode, don't load multiplayer
+        if (sequenceNum !== null || isNoMultiplayer) {
           setMultiplayerLoading(false);
           setOfflineLoading(false);
           return;

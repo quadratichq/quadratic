@@ -115,6 +115,10 @@ extern "C" {
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
+    /// Check if SharedArrayBuffer is available in the current context.
+    /// Returns false in embed mode without cross-origin isolation headers.
+    pub fn jsHasSharedArrayBuffer() -> bool;
+
     pub fn jsClientMessage(message: String, error: String);
 
     pub fn jsA1Context(context: Vec<u8> /* A1Context */);
@@ -131,6 +135,10 @@ extern "C" {
         merge_cells: Vec<u8>,      /* MergeCells */
         dirty_hashes: Vec<u8>,     /* JSON Vec<Pos> of affected hash positions */
     );
+
+    /// Get viewport from JS cache when SharedArrayBuffer is not available.
+    /// Returns JSON string with viewport info, or null if not available.
+    pub fn jsGetViewport() -> Option<String>;
 }
 
 #[cfg(test)]
@@ -558,6 +566,13 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
+pub fn jsHasSharedArrayBuffer() -> bool {
+    // In tests, always return true so viewport buffer tests work
+    true
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
 pub fn jsClientMessage(message: String, severity: String) {
     js_call("jsClientMessage", format!("{message},{severity}"));
 }
@@ -603,4 +618,11 @@ pub fn jsMergeCells(sheet_id: String, merge_cells: Vec<u8>, dirty_hashes: Vec<u8
         "jsMergeCells",
         format!("{sheet_id},{merge_cells:?},{dirty_hashes:?}"),
     );
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsGetViewport() -> Option<String> {
+    // Return None in tests - viewport not available
+    None
 }

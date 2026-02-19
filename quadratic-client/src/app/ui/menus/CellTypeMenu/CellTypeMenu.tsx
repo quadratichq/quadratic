@@ -5,13 +5,14 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { AddIcon, SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -24,8 +25,8 @@ import {
 } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { type ConnectionList, type ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import React, { memo, useCallback, useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface CellTypeOption {
   name: string;
@@ -60,10 +61,13 @@ export const CellTypeMenu = memo(() => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
+  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const { connections } = useConnectionsFetcher();
   const {
     userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
+  const includeLanguages = useMemo(() => showCellTypeMenu !== 'connections', [showCellTypeMenu]);
+  const searchLabel = useMemo(() => `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`, [includeLanguages]);
 
   useEffect(() => {
     trackEvent('[CellTypeMenu].opened');
@@ -131,7 +135,7 @@ export const CellTypeMenu = memo(() => {
       }}
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
-      <CommandInput placeholder="Choose a cell type…" id="CellTypeMenuInputID" />
+      <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
 
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
@@ -150,29 +154,34 @@ export const CellTypeMenu = memo(() => {
         </CommandGroup>
         <CommandSeparator />
 
-        {teamPermissions?.includes('TEAM_EDIT') && (
-          <CommandGroup heading="Connections">
-            {connections.map((connection, i) => (
-              <ConnectionCommandItem
-                key={connection.uuid}
-                connection={connection}
-                index={i}
-                onSelect={() => selectConnection(connection.uuid, connection.type, connection.name)}
-              />
-            ))}
-
-            <CommandItemWrapper
-              name="Add connection"
-              icon={<AddIcon className="text-muted-foreground opacity-80" />}
-              onSelect={addConnection}
-            />
-            <CommandItemWrapper
-              name="Manage connections"
-              icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
-              onSelect={manageConnections}
-            />
-          </CommandGroup>
-        )}
+        <CommandGroup heading="Connections">
+          {isEmbed ? (
+            <div className="px-2 py-1.5 text-sm">Only available in the full Quadratic app</div>
+          ) : (
+            teamPermissions?.includes('TEAM_EDIT') && (
+              <>
+                {connections.map((connection, i) => (
+                  <ConnectionCommandItem
+                    key={connection.uuid}
+                    connection={connection}
+                    index={i}
+                    onSelect={() => selectConnection(connection.uuid, connection.type, connection.name)}
+                  />
+                ))}
+                <CommandItemWrapper
+                  name="Add connection"
+                  icon={<AddIcon className="text-muted-foreground opacity-80" />}
+                  onSelect={addConnection}
+                />
+                <CommandItemWrapper
+                  name="Manage connections"
+                  icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
+                  onSelect={manageConnections}
+                />
+              </>
+            )
+          )}
+        </CommandGroup>
       </CommandList>
     </CommandDialog>
   );

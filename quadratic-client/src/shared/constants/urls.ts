@@ -17,6 +17,7 @@ export const DOCUMENTATION_NEGATIVE_OFFSETS = `${DOCUMENTATION_URL}/spreadsheet/
 export const DOCUMENTATION_ANALYTICS_AI = `${DOCUMENTATION_URL}/quadratic-ai/security`;
 export const DOCUMENTATION_SCHEDULED_TASKS_URL = `${DOCUMENTATION_URL}/spreadsheet/scheduled-tasks`;
 export const DOCUMENTATION_CRON = `${DOCUMENTATION_URL}/spreadsheet/scheduled-tasks`;
+export const DOCUMENTATION_EMBED_URL = `${DOCUMENTATION_URL}/spreadsheet/embed`;
 export const TRUST_CENTER = 'https://trust.quadratichq.com';
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const TWITTER = 'https://twitter.com/quadratichq';

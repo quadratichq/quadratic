@@ -1,4 +1,5 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { getHasSharedArrayBuffer } from '@/app/helpers/sharedArrayBufferSupport';
 import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -36,11 +37,36 @@ class Python {
     this.init();
   }
 
-  private getCellsA1 = (a1: string): JsCellsA1Response => {
+  /**
+   * Get cells - sync version using SharedArrayBuffer
+   */
+  private getCellsA1Sync = (a1: string): JsCellsA1Response => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
     return pythonCore.sendGetCellsA1(this.transactionId, a1);
+  };
+
+  /**
+   * Get cells - async version returning Promise (for non-SAB environments)
+   * Python will await this Promise when using await q.cells()
+   */
+  private getCellsA1Async = (a1: string): Promise<JsCellsA1Response> => {
+    if (!this.transactionId) {
+      return Promise.reject(new Error('No transactionId in getCellsA1'));
+    }
+    return pythonCore.sendGetCellsA1Async(this.transactionId, a1);
+  };
+
+  /**
+   * Get cells - routes to sync or async based on SAB availability
+   */
+  private getCellsA1 = (a1: string): JsCellsA1Response | Promise<JsCellsA1Response> => {
+    if (getHasSharedArrayBuffer()) {
+      return this.getCellsA1Sync(a1);
+    } else {
+      return this.getCellsA1Async(a1);
+    }
   };
 
   private init = async (): Promise<void> => {
@@ -122,6 +148,9 @@ class Python {
     });
 
     this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
+
+    // Expose a flag to check if SharedArrayBuffer is available
+    this.pyodide.registerJsModule('hasSharedArrayBuffer', () => getHasSharedArrayBuffer());
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');

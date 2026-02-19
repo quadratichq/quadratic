@@ -6,7 +6,7 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useAIAnalystConnectionSchemaPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { ChevronLeftIcon } from '@/shared/components/Icons';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useAtom } from 'jotai';
 import { memo, useCallback, useRef } from 'react';
@@ -15,7 +15,7 @@ import { useRecoilValue } from 'recoil';
 export const AIAnalystConnectionSchema = memo(() => {
   const {
     team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const presentationMode = useRecoilValue(presentationModeAtom);
   const panelRef = useRef<HTMLDivElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystConnectionSchemaPanelWidth();

@@ -70,6 +70,7 @@ declare var self: WorkerGlobalScope &
     sendMergeCells: (sheetId: string, mergeCells: Uint8Array) => void;
     sendMergeCellsRender: (sheetId: string, mergeCells: Uint8Array, dirtyHashes: Uint8Array) => void;
     sendCodeRunningState: (transactionId: string, codeOperations: string) => void;
+    getCachedViewportJson: () => string | null;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -248,6 +249,23 @@ export const jsClientMessage = (message: string, severity: JsSnackbarSeverity) =
 
 export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
   self.sendViewportBuffer(buffer);
+};
+
+/**
+ * Check if SharedArrayBuffer is available.
+ * Called by Rust to determine whether to use SAB or fallback to async viewport.
+ */
+export const jsHasSharedArrayBuffer = (): boolean => {
+  return typeof SharedArrayBuffer !== 'undefined';
+};
+
+/**
+ * Get the cached viewport for non-SAB mode.
+ * Called by Rust when SharedArrayBuffer is not available.
+ * Returns a JSON string with viewport info, or null if not available.
+ */
+export const jsGetViewport = (): string | null => {
+  return self.getCachedViewportJson();
 };
 
 export const jsA1Context = (context: Uint8Array) => {

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Quadratic Embed</title>
+  <link rel="stylesheet" href="test-embed.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Test Quadratic Embed</h1>
+      <p>Enter an embed URL to test Quadratic spreadsheet embedding.</p>
+      <div class="controls">
+        <input
+          type="text"
+          id="urlInput"
+          placeholder=""
+          value=""
+          autocomplete="off"
+        />
+        <div class="url-list" id="urlListDropdown"></div>
+        <button onclick="loadUrl()">Load</button>
+      </div>
+      <div class="preload-controls">
+        <label>
+          <input type="checkbox" id="preloadPython" />
+          Preload Python
+        </label>
+        <label>
+          <input type="checkbox" id="preloadJS" />
+          Preload JavaScript
+        </label>
+        <span class="separator">|</span>
+        <label>
+          <input type="checkbox" id="readonlyMode" />
+          Read-only
+        </label>
+        <label>
+          Sheet name:
+          <span class="sheet-input-wrapper">
+            <input type="text" id="sheetName" placeholder="e.g., Sheet1" class="sheet-input" />
+            <button type="button" id="clearSheetName" class="sheet-input-clear" aria-label="Clear sheet name">×</button>
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="iframe-container" id="iframeContainer">
+      <div class="loading" id="loading">Enter a URL and click "Load" to test</div>
+      <iframe id="quadraticIframe" style="display: none;"></iframe>
+    </div>
+    <div class="info" id="info">
+      <strong>Current embed URL:</strong> <code id="currentUrl">none</code>
+      <button id="copyUrlBtn" class="copy-btn" style="display: none;" onclick="copyCurrentUrl()">Copy</button>
+      <br><br>
+      <strong>Instructions:</strong><br>
+      1. Enter an embed URL (e.g., <code id="exampleUrlFileId"></code> or <code id="exampleUrlImport"></code>)<br>
+      2. Click "Load" to test the embed<br>
+      3. Your last URL will be saved and automatically loaded on next visit<br>
+      4. Changing the flags will reload the embed with those options<br><br>
+    </div>
+  </div>
+
+  <script src="test-embed.js"></script>
+</body>
+</html>

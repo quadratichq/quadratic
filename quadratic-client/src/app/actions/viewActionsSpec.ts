@@ -7,6 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { isAiDisabled } from '@/app/helpers/isEmbed';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CodeIcon, GoToIcon, MentionIcon } from '@/shared/components/Icons';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
@@ -184,7 +185,8 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => openCodeEditor(),
   },
   [Action.ToggleAIAnalyst]: {
-    label: () => 'New chat',
+    label: () => 'Sheet chat',
+    isAvailable: () => !isAiDisabled,
     run: () => {
       toggleShowAIAnalyst();
     },
@@ -192,6 +194,7 @@ export const viewActionsSpec: ViewActionSpec = {
   [Action.AddReferenceToAIAnalyst]: {
     label: () => 'Reference in chat',
     Icon: MentionIcon,
+    isAvailable: () => !isAiDisabled,
     run: (reference: ViewActionArgs[Action.AddReferenceToAIAnalyst]) => {
       trackEvent('[AIMentions].addReferenceFromGrid', {
         showAIAnalyst: getShowAIAnalyst(),

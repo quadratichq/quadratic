@@ -56,9 +56,8 @@ const ALL_WALKTHROUGH_STEPS: WalkthroughStep[] = [
 
 export function FeatureWalkthrough() {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const {
-    userMakingRequest: { clientDataKv },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const clientDataKv = fileRouteData?.userMakingRequest?.clientDataKv;
 
   // Optimistic state - when user completes/skips, immediately hide the walkthrough
   const [optimisticCompleted, setOptimisticCompleted] = useState(false);

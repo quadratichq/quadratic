@@ -16,6 +16,7 @@ export interface PythonClientState {
 
 export interface ClientPythonCoreChannel {
   type: 'clientPythonCoreChannel';
+  isEmbedMode: boolean;
 }
 
 export interface ClientPythonInit {
