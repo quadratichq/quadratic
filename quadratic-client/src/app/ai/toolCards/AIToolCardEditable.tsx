@@ -15,11 +15,13 @@ interface AIToolCardEditableProps {
   onToolCallChange?: (toolCall: AIToolCall) => void;
 }
 export const AIToolCardEditable = memo(({ toolCall, onToolCallChange }: AIToolCardEditableProps) => {
-  if (onToolCallChange) {
-    return <AIToolCallEditor toolCall={toolCall} onToolCallChange={onToolCallChange} />;
-  }
+  const content = onToolCallChange ? (
+    <AIToolCallEditor toolCall={toolCall} onToolCallChange={onToolCallChange} />
+  ) : (
+    <AIToolCard toolCall={toolCall} />
+  );
 
-  return <AIToolCard toolCall={toolCall} />;
+  return content;
 });
 
 interface AIToolCallEditorProps {

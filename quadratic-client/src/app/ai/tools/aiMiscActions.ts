@@ -6,6 +6,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolMessageMetaData } from './aiToolsHelpers';
 
 type MiscToolActions = {
   [K in
@@ -22,7 +23,7 @@ type MiscToolActions = {
     | AITool.Undo
     | AITool.Redo
     | AITool.ContactUs
-    | AITool.OptimizePrompt]: (args: AIToolsArgs[K]) => Promise<ToolResultContent>;
+    | AITool.OptimizePrompt]: (args: AIToolsArgs[K], metaData?: AIToolMessageMetaData) => Promise<ToolResultContent>;
 };
 
 export const miscToolsActions: MiscToolActions = {
@@ -140,8 +141,6 @@ export const miscToolsActions: MiscToolActions = {
     }
   },
   [AITool.ContactUs]: async () => {
-    // This tool doesn't perform any action - it just returns content
-    // The actual UI interaction (opening feedback modal) is handled in the tool card component
     return [createTextContent('Please use the buttons below to contact our team or start a new chat.')];
   },
   [AITool.OptimizePrompt]: async (args) => {

@@ -59,10 +59,13 @@ export const setCodeCellResult = async (
     }
   }
 
+  // Build console output prefix if there's any stdout
+  const consoleOutput = codeCell.std_out ? `Console output:\n\`\`\`\n${codeCell.std_out}\n\`\`\`\n\n` : '';
+
   if (codeCell.std_err) {
     return [
       createTextContent(
-        `The code cell run has resulted in an error:
+        `${consoleOutput}The code cell run has resulted in an error:
 \`\`\`
 ${codeCell.std_err}
 \`\`\`
@@ -75,8 +78,7 @@ Think and reason about the error and try to fix it. Do not attempt the same fix 
   if (codeCell.spill_error) {
     return [
       createTextContent(
-        `
-The code cell has spilled, because the output overlaps with existing data on the sheet.
+        `${consoleOutput}The code cell has spilled, because the output overlaps with existing data on the sheet.
 Output size when not spilled will be ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.\n
 Use the move tool to move just the single cell position of the code you attempted to place to a new position.\n
 This should be a single cell, not a range. E.g. if you're moving the code cell you placed at C1 to G1 then you should move to G1:G1.\n
@@ -87,9 +89,13 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
   }
 
   if (tableCodeCell.is_html) {
-    return [createTextContent('Executed set code cell value tool successfully to create a plotly chart.')];
+    return [
+      createTextContent(`${consoleOutput}Executed set code cell value tool successfully to create a plotly chart.`),
+    ];
   } else if (tableCodeCell.is_html_image) {
-    return [createTextContent('Executed set code cell value tool successfully to create a javascript chart.')];
+    return [
+      createTextContent(`${consoleOutput}Executed set code cell value tool successfully to create a javascript chart.`),
+    ];
   }
 
   // single cell output
@@ -98,15 +104,19 @@ Move the code cell to a new position that will avoid spilling. Make sure the new
     if (singleCell === undefined || singleCell.value === '') {
       return [
         createTextContent(
-          'You returned a single empty cell. Was this on purpose? If not, you may have mistakenly not put what you want to return as the last line of code. It cannot be nested in a conditional. If you used if-else or try-catch, delete the conditionals unless the user explicitly asked for them. It must be outside all functions or conditionals as the very last line of code.'
+          `${consoleOutput}You returned a single empty cell. Was this on purpose? If not, you may have mistakenly not put what you want to return as the last line of code. It cannot be nested in a conditional. If you used if-else or try-catch, delete the conditionals unless the user explicitly asked for them. It must be outside all functions or conditionals as the very last line of code.`
         ),
       ];
     }
-    return [createTextContent(`Output is: ${singleCell.value}`)];
+    return [createTextContent(`${consoleOutput}Output is: ${singleCell.value}`)];
   }
 
   // multiple cell output
-  return [createTextContent(`Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`)];
+  return [
+    createTextContent(
+      `${consoleOutput}Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.`
+    ),
+  ];
 };
 
 export function getMergeCellError(sheetId: string, x: number, y: number): string | null {

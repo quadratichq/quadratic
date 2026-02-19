@@ -1,5 +1,4 @@
 // AI Session - Class-based architecture for AI requests
-// This replaces the React hook-based approach in useSubmitAIAnalystPrompt
 
 // Main session class
 export { AISession, aiSession } from './AISession';

@@ -105,6 +105,7 @@ vi.mock('../atoms/aiAnalystAtoms', () => ({
     set: mockStoreSet,
   },
   loadingAtom: Symbol('loadingAtom'),
+  loadingWithPersistenceAtom: Symbol('loadingWithPersistenceAtom'),
   pdfImportAtom: Symbol('pdfImportAtom'),
   showAIAnalystAtom: Symbol('showAIAnalystAtom'),
   showChatHistoryAtom: Symbol('showChatHistoryAtom'),
@@ -134,6 +135,7 @@ vi.mock('./ContextBuilder', () => ({
   contextBuilder: {
     buildContext: mockContextBuilderBuildContext,
   },
+  ContextBuilder: class MockContextBuilder {},
 }));
 
 vi.mock('./ToolExecutor', () => ({
@@ -156,7 +158,13 @@ vi.mock('./AIAPIClient', () => ({
 // eslint-disable-next-line import/first
 import { aiSession } from './AISession';
 // eslint-disable-next-line import/first
-import { abortControllerAtom, loadingAtom, pdfImportAtom, webSearchAtom } from '../atoms/aiAnalystAtoms';
+import {
+  abortControllerAtom,
+  loadingAtom,
+  loadingWithPersistenceAtom,
+  pdfImportAtom,
+  webSearchAtom,
+} from '../atoms/aiAnalystAtoms';
 
 // ============================================================================
 // Test Helpers
@@ -309,8 +317,8 @@ describe('AISession', () => {
     it('clears loading state in finally block', async () => {
       await aiSession.execute(createDefaultRequest(), createDefaultOptions());
 
-      // Verify loadingAtom was set to false
-      expect(mockStoreSet).toHaveBeenCalledWith(loadingAtom, false);
+      // Verify loadingWithPersistenceAtom was set to false
+      expect(mockStoreSet).toHaveBeenCalledWith(loadingWithPersistenceAtom, false);
     });
   });
 

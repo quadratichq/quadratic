@@ -18,6 +18,7 @@ import {
   abortControllerAtom,
   aiStore,
   loadingAtom,
+  loadingWithPersistenceAtom,
   pdfImportAtom,
   showAIAnalystAtom,
   showChatHistoryAtom,
@@ -28,13 +29,7 @@ import { aiAPIClient } from './AIAPIClient';
 import { contextBuilder } from './ContextBuilder';
 import { messageManager } from './MessageManager';
 import { toolExecutor } from './ToolExecutor';
-import {
-  type AIAPIResponse,
-  type AISessionRequest,
-  type AISessionResult,
-  type Connection,
-  type ImportFile,
-} from './types';
+import type { AIAPIResponse, AISessionRequest, AISessionResult, Connection, ImportFile } from './types';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 35;
@@ -84,8 +79,6 @@ interface ToolCallLoopContext {
 export class AISession {
   /**
    * Execute an AI session with the given request.
-   * Note: This class uses a singleton pattern and is not intended for concurrent
-   * executions. The loadingAtom check prevents concurrent calls.
    */
   async execute(request: AISessionRequest, options: ExecuteOptions): Promise<AISessionResult> {
     const { messageSource, content, context, messageIndex, importFiles, connections } = request;
@@ -153,7 +146,7 @@ export class AISession {
       return { success: false, error: String(error), chatId };
     } finally {
       aiStore.set(abortControllerAtom, undefined);
-      aiStore.set(loadingAtom, false);
+      aiStore.set(loadingWithPersistenceAtom, false);
     }
   }
 

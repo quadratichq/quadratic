@@ -61,6 +61,7 @@ const getPromptMessagesWithoutPDF = (messages: ChatMessage[]): ChatMessage[] => 
 export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
   const messagesWithoutPDF = getPromptMessagesWithoutPDF(messages);
   const messagesWithoutInternal = messagesWithoutPDF.filter((message) => !isInternalMessage(message));
+
   const messagesWithUserContext = messagesWithoutInternal.map((message) => {
     if (!isUserPromptMessage(message)) {
       return { ...message };
@@ -277,53 +278,137 @@ export const createInternalImportFilesContent = (
   };
 };
 
-// Cleans up old get_ tool messages to avoid expensive contexts.
-export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
-  const CLEAN_UP_MESSAGE =
-    'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST use Python.';
+/**
+ * Tools whose results and/or arguments should be compressed after
+ * the most recent N occurrences.
+ *
+ * - compressArgs: if true, the tool call arguments on the assistant
+ *   message will also be truncated (for tools that send large payloads
+ *   in their arguments, e.g. full code bodies or 2D data arrays).
+ */
+const COMPRESSIBLE_TOOLS: Record<string, { keepLast: number; compressArgs: boolean }> = {
+  get_cell_data: { keepLast: 2, compressArgs: false },
+  get_text_formats: { keepLast: 2, compressArgs: false },
+  text_search: { keepLast: 2, compressArgs: false },
+  set_code_cell_value: { keepLast: 2, compressArgs: true },
+  set_formula_cell_value: { keepLast: 2, compressArgs: true },
+  set_sql_code_cell_value: { keepLast: 2, compressArgs: true },
+  get_code_cell_value: { keepLast: 2, compressArgs: false },
+  set_cell_values: { keepLast: 2, compressArgs: true },
+  add_data_table: { keepLast: 2, compressArgs: true },
+};
 
-  const getToolIds = new Set();
-  messages.forEach((message) => {
+const RESULT_COMPRESSED_MESSAGE =
+  'NOTE: The full results from this tool call have been removed from context to save space. Use the tool again if you need the data.';
+
+const ARGS_COMPRESSED_MESSAGE = '[content compressed to save context space]';
+
+/**
+ * Truncate a tool call's arguments JSON, keeping only position/name metadata.
+ * Returns a shortened JSON string.
+ */
+const compressToolCallArgs = (argsJson: string): string => {
+  try {
+    const args = JSON.parse(argsJson);
+    const compressed: Record<string, unknown> = {};
+    const keepKeys = ['sheet_name', 'top_left_position', 'selection', 'table_name', 'language', 'position'];
+    for (const key of keepKeys) {
+      if (key in args) {
+        compressed[key] = args[key];
+      }
+    }
+    compressed._compressed = ARGS_COMPRESSED_MESSAGE;
+    return JSON.stringify(compressed);
+  } catch {
+    return `{"_compressed": "${ARGS_COMPRESSED_MESSAGE}"}`;
+  }
+};
+
+/**
+ * Compress old tool results and tool call arguments to manage context size.
+ *
+ * For each compressible tool type, keeps the last N occurrences in full and
+ * replaces older ones with a short summary. Also compresses large arguments
+ * on assistant messages for tools that send bulk data (code, cell values, etc.).
+ *
+ * Additionally removes plotly images from all old tool results.
+ */
+export const compressOldToolResults = (messages: ChatMessage[]): ChatMessage[] => {
+  // Build a map: toolCallId -> { toolName, messageIndex (of assistant msg) }
+  const toolCallInfo = new Map<string, { toolName: string; assistantMsgIndex: number }>();
+  messages.forEach((message, i) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
-      message.toolCalls.forEach((toolCall) => {
-        if (toolCall.name === 'get_cell_data' || toolCall.name === 'get_text_formats') {
-          getToolIds.add(toolCall.id);
-        }
-      });
+      for (const tc of message.toolCalls) {
+        toolCallInfo.set(tc.id, { toolName: tc.name, assistantMsgIndex: i });
+      }
     }
   });
 
-  // If we have multiple get_cell_data messages, keep only the tool call after a
-  // certain number of calls
-  return messages.map((message, i) => {
+  // For each compressible tool, find which tool call IDs should be compressed
+  // (i.e., all except the last N occurrences)
+  const toolOccurrences = new Map<string, string[]>(); // toolName -> [toolCallId, ...]
+  // Iterate in order so occurrences are oldest-first
+  for (const [id, info] of toolCallInfo) {
+    if (!(info.toolName in COMPRESSIBLE_TOOLS)) continue;
+    if (!toolOccurrences.has(info.toolName)) {
+      toolOccurrences.set(info.toolName, []);
+    }
+    toolOccurrences.get(info.toolName)!.push(id);
+  }
+
+  // Determine which tool call IDs should be compressed
+  const compressResultIds = new Set<string>();
+  const compressArgsIds = new Set<string>();
+  for (const [toolName, ids] of toolOccurrences) {
+    const config = COMPRESSIBLE_TOOLS[toolName];
+    if (!config) continue;
+    const cutoff = ids.length - config.keepLast;
+    for (let i = 0; i < cutoff; i++) {
+      compressResultIds.add(ids[i]);
+      if (config.compressArgs) {
+        compressArgsIds.add(ids[i]);
+      }
+    }
+  }
+
+  return messages.map((message) => {
+    // Compress tool call arguments on assistant messages
+    if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls) {
+      const hasCompressibleArgs = message.toolCalls.some((tc) => compressArgsIds.has(tc.id));
+      if (hasCompressibleArgs) {
+        return {
+          ...message,
+          toolCalls: message.toolCalls.map((tc) => {
+            if (compressArgsIds.has(tc.id)) {
+              return { ...tc, arguments: compressToolCallArgs(tc.arguments) };
+            }
+            return tc;
+          }),
+        };
+      }
+    }
+
+    // Compress tool results on user messages
     if (message.role === 'user' && message.contextType === 'toolResult') {
       return {
         ...message,
         content: message.content.map((toolResult) => {
-          if (getToolIds.has(toolResult.id)) {
-            if (i < messages.length - CLEAN_UP_TOOL_CALLS_AFTER) {
-              return {
-                id: toolResult.id,
-                content: [createTextContent(CLEAN_UP_MESSAGE)],
-              };
-            } else {
-              return toolResult;
-            }
-          } else {
-            // clean up plotly images in tool result
-            const content = toolResult.content.filter((content) => !isContentImage(content));
+          if (compressResultIds.has(toolResult.id)) {
             return {
               id: toolResult.id,
-              content:
-                content.length > 0
-                  ? content
-                  : [createTextContent('NOTE: the results from this tool call have been removed from the context.')],
+              content: [createTextContent(RESULT_COMPRESSED_MESSAGE)],
             };
           }
+          // Remove plotly images from tool results that are not compressed
+          const content = toolResult.content.filter((c) => !isContentImage(c));
+          return {
+            id: toolResult.id,
+            content: content.length > 0 ? content : [createTextContent(RESULT_COMPRESSED_MESSAGE)],
+          };
         }),
       };
-    } else {
-      return message;
     }
+
+    return message;
   });
 };

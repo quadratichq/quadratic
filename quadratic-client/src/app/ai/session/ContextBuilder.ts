@@ -1,4 +1,3 @@
-import { MAX_ROWS } from '@/app/ai/constants/context';
 import { getConnectionMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
 import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -25,16 +24,18 @@ import type { ContextOptions } from './types';
 
 const MAX_ERRORS_PER_SHEET = 10;
 const MAX_TRANSACTIONS = 20;
+const SUMMARY_MAX_ROWS = 3;
 
 /**
  * ContextBuilder builds AI context from various sources.
- * This is a pure class with no React dependencies.
+ *
+ * Provides a slim context with table structure and sample data rows (headers + a few rows)
+ * rather than full cell data. The agent can use get_cell_data to fetch more when needed.
  */
 export class ContextBuilder {
   /**
    * Build complete context for an AI request.
-   * Uses Promise.allSettled to handle partial failures gracefully - it's better
-   * for the AI to have some context than none if individual operations fail.
+   * Uses Promise.allSettled to handle partial failures gracefully.
    */
   async buildContext(options: ContextOptions): Promise<ChatMessage[]> {
     const results = await Promise.allSettled([
@@ -100,7 +101,6 @@ export class ContextBuilder {
               const connectionTableInfo = await getConnectionTableInfo(connection, teamUuid);
               return getConnectionMarkdown(connectionTableInfo);
             } catch (error) {
-              // Jotai store.set doesn't support functional updates; get current state then set new value
               const current = aiStore.get(failingSqlConnectionsAtom);
               if (!current.uuids.includes(connection.uuid)) {
                 aiStore.set(failingSqlConnectionsAtom, {
@@ -145,7 +145,7 @@ ${contextText}`),
         },
       ];
     } catch (error) {
-      console.error('[ContextBuilder] Error fetching SQL context:', error);
+      console.warn(`[ContextBuilder] Error fetching SQL context:`, error);
       return [];
     }
   }
@@ -225,7 +225,7 @@ How can I help you?`
   }
 
   /**
-   * Get visible area context
+   * Get visible area context with sample data rows
    */
   async getVisibleContext(): Promise<ChatMessage[]> {
     const sheetName = sheets.sheet.name;
@@ -238,7 +238,7 @@ How can I help you?`
       ? undefined
       : await quadraticCore.getAISelectionContexts({
           selections: [visibleRectSelection],
-          maxRows: undefined,
+          maxRows: SUMMARY_MAX_ROWS,
         });
     const sheetContext = visibleContext?.length === 1 ? visibleContext[0] : undefined;
 
@@ -325,7 +325,8 @@ How can I help you?`
   }
 
   /**
-   * Get file summary context
+   * Get file summary context with table structure and sample data rows.
+   * Includes headers + a few sample rows so the agent understands data shape.
    */
   async getSummaryContext(): Promise<ChatMessage[]> {
     if (!fileHasData()) {
@@ -341,7 +342,7 @@ How can I help you?`
     const selections = sheets.sheets.map((sheet) => sheets.stringToSelection('*', sheet.id).save());
     const sheetsContext = await quadraticCore.getAISelectionContexts({
       selections,
-      maxRows: MAX_ROWS,
+      maxRows: SUMMARY_MAX_ROWS,
     });
 
     if (!sheetsContext) {
@@ -394,94 +395,60 @@ File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({
       }
       text += '\n';
 
-      // Data Tables
       if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
-        text += `
-### '${sheetContext.sheet_name}' Data tables:
-    `;
+        text += `### '${sheetContext.sheet_name}' Data tables:\n`;
         for (const table of sheetContext.data_tables) {
-          text += `
-#### ${table.data_table_name}
-
-'${table.data_table_name}' has bounds of (${table.bounds}).
-`;
+          text += `- '${table.data_table_name}' at ${table.bounds}\n`;
           if (table.values) {
             text += getAICellSummaryToMarkdown(table.data_table_name, table.values);
           }
         }
       }
 
-      // Code Tables
       if (sheetContext.code_tables && sheetContext.code_tables.length > 0) {
-        text += `
-### '${sheet.name}' Code tables
-
-These are the code tables that output more than one cell on the sheet:
-        `;
+        text += `\n### '${sheet.name}' Code tables:\n`;
         for (const table of sheetContext.code_tables) {
-          text += `
-#### ${table.code_table_name}
-
-'${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}.
-`;
+          text += `- '${table.code_table_name}' (${table.language}) at ${table.bounds}\n`;
           if (table.values) {
             text += getAICellSummaryToMarkdown(table.code_table_name, table.values);
           }
         }
       }
 
-      // Connection Tables
       if (sheetContext.connections && sheetContext.connections.length > 0) {
-        text += `
-### '${sheet.name}' Connection tables
-
-These are the connection tables on the sheet:
-`;
+        text += `\n### '${sheet.name}' Connection tables:\n`;
         for (const table of sheetContext.connections) {
           if (typeof table.language !== 'object' || !table.language.Connection) {
             console.warn('Unexpected non-connection table in getSummaryContext');
             continue;
           }
-          text += `
-#### ${table.code_table_name}
-
-'${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}.
-`;
+          text += `- '${table.code_table_name}' (${table.language.Connection.kind}) at ${table.bounds}\n`;
           if (table.values) {
             text += getAICellSummaryToMarkdown(table.code_table_name, table.values);
           }
         }
       }
 
-      // Charts
       if (sheetContext.charts && sheetContext.charts.length > 0) {
-        text += `
-### '${sheet.name}' Charts
-
-These are the charts on the sheet:
-`;
+        text += `\n### '${sheet.name}' Charts:\n`;
         for (const chart of sheetContext.charts) {
-          text += `
-#### ${chart.chart_name}
-
-'${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}.
-    `;
+          text += `- '${chart.chart_name}' (${chart.language}) at ${chart.bounds}\n`;
         }
       }
 
-      // Flat Data
       if (sheetContext.data_rects && sheetContext.data_rects.length > 0) {
-        text += `
-### '${sheet.name}' Flat data
-
-This is the flat data on the sheet (limited to ${MAX_ROWS} rows each):
-`;
+        text += `\n### '${sheet.name}' Flat data (sample rows):\n`;
         for (const data of sheetContext.data_rects) {
+          text += `- data at ${data.total_range}\n`;
           text += getAICellSummaryToMarkdown(data.total_range, data);
         }
       }
       text += `\n`;
     }
+
+    text += `
+NOTE: The data above shows only a few sample rows. Use get_cell_data to fetch full data when needed.
+`;
 
     return [
       {
@@ -493,7 +460,7 @@ This is the flat data on the sheet (limited to ${MAX_ROWS} rows each):
         role: 'assistant',
         content: [
           createTextContent(
-            `I understand the file structure summary. If asked to solve a data problem, I will check this context, and if I'm missing data, use get_cell_data tool to view more data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`
+            `I see the file structure and sample data. When I need more data, I will use get_cell_data. How can I help you?`
           ),
         ],
         contextType: 'fileSummary',
@@ -744,7 +711,6 @@ This is the user's current sheet.
       case 'SetMergeCells':
         return `- set merge cells at ${operation.sheet_name}`;
       default: {
-        // This exhaustive check ensures all cases are handled
         const _exhaustiveCheck: never = operation;
         return `- unknown operation: ${(_exhaustiveCheck as TrackedOperation).type}`;
       }

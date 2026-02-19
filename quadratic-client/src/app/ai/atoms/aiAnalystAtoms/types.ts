@@ -1,11 +1,19 @@
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIUsage, Chat } from 'quadratic-shared/typesAndSchemasAI';
 import type { CategorizedEmptyChatPromptSuggestions } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
 
 /**
  * Type for prompt suggestions extracted from AI tool calls
  */
 export type PromptSuggestions = AIToolsArgs[AITool.UserPromptSuggestions]['prompt_suggestions'];
+
+/**
+ * State for tracking context usage from AI API responses
+ */
+export interface ContextUsageState {
+  /** The latest usage data from the most recent API response */
+  usage: AIUsage | undefined;
+}
 
 /**
  * State for empty chat suggestions (categorized prompts shown when chat is empty)

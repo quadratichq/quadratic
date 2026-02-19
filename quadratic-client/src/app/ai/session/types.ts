@@ -3,6 +3,7 @@ import type {
   AIResponseContent,
   AISource,
   AIToolCall,
+  AIUsage,
   ChatMessage,
   Content,
   Context,
@@ -107,6 +108,8 @@ export interface AIAPIResponse {
   content: AIResponseContent;
   /** Tool calls from the response */
   toolCalls: AIToolCall[];
+  /** Token usage from the API response */
+  usage?: AIUsage;
 }
 
 /**

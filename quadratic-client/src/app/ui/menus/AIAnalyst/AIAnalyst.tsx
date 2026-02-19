@@ -95,7 +95,7 @@ export const AIAnalyst = memo(() => {
     [setFilesImportProgressState]
   );
 
-  if (!showAIAnalyst || presentationMode) {
+  if ((!showAIAnalyst && !agentMode) || presentationMode) {
     return null;
   }
 

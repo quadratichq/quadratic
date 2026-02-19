@@ -1,7 +1,7 @@
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIToolCall, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { aiToolsActions } from '../tools/aiToolsActions';
+import type { AIToolCall, ToolResultContent, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { executeAIToolFromJson } from '../tools/executeAITool';
 import type { ToolExecutionOptions } from './types';
 
 /**
@@ -38,28 +38,19 @@ export class ToolExecutor {
   /**
    * Execute a single tool call
    */
-  async executeSingleTool(
-    toolCall: AIToolCall,
-    options: ToolExecutionOptions
-  ): Promise<ReturnType<(typeof aiToolsActions)[AITool]>> {
-    // Check if it's a valid AI tool
+  async executeSingleTool(toolCall: AIToolCall, options: ToolExecutionOptions): Promise<ToolResultContent> {
     if (!Object.values(AITool).includes(toolCall.name as AITool)) {
       return [createTextContent('Unknown tool')];
     }
 
-    try {
-      const aiTool = toolCall.name as AITool;
-      const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
-      const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+    const aiTool = toolCall.name as AITool;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await aiToolsActions[aiTool](args as any, {
+    try {
+      return await executeAIToolFromJson(aiTool, toolCall.arguments, {
         source: options.source,
         chatId: options.chatId,
         messageIndex: options.messageIndex,
       });
-
-      return result;
     } catch (error) {
       return [createTextContent(`Error parsing ${toolCall.name} tool's arguments: ${error}`)];
     }

@@ -29,7 +29,6 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIUsage,
   BedrockModelKey,
   Content,
@@ -38,7 +37,8 @@ import type {
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getAIToolsInOrder } from './tools';
+import { getOrphanFilterIds } from './filterOrphanedToolCalls';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content): ContentBlock[] {
   return content
@@ -111,10 +111,16 @@ export function getBedrockApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
+
+  const { validToolCallIds, existingToolResultIds } = getOrphanFilterIds(promptMessages);
+
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Filter out tool calls that don't have corresponding tool results
+      const validToolCalls = message.toolCalls.filter((toolCall) => existingToolResultIds.has(toolCall.id));
+
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -123,7 +129,7 @@ export function getBedrockApiArgs(
             .map((content) => ({
               text: content.text.trim(),
             })),
-          ...message.toolCalls.map((toolCall) => ({
+          ...validToolCalls.map((toolCall) => ({
             toolUse: {
               toolUseId: toolCall.id,
               name: toolCall.name,
@@ -134,10 +140,18 @@ export function getBedrockApiArgs(
       };
       return [...acc, bedrockMessage];
     } else if (isToolResultMessage(message)) {
+      // Filter out tool results that reference non-existent tool call IDs
+      const validToolResults = message.content.filter((toolResult) => validToolCallIds.has(toolResult.id));
+
+      // Skip entirely if no valid tool results remain
+      if (validToolResults.length === 0) {
+        return acc;
+      }
+
       const bedrockMessage: Message = {
         role: message.role,
         content: [
-          ...message.content.map((toolResult) => ({
+          ...validToolResults.map((toolResult) => ({
             toolResult: {
               toolUseId: toolResult.id,
               content: convertToolResultContent(toolResult.content),
@@ -168,16 +182,12 @@ export function getBedrockApiArgs(
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+function getBedrockTools(
+  source: AIRequestHelperArgs['source'],
+  aiModelMode: ModelMode,
+  toolName?: AITool
+): Tool[] | undefined {
+  const tools = getFilteredTools({ source, aiModelMode, toolName });
 
   if (tools.length === 0) {
     return undefined;
@@ -298,6 +308,9 @@ export async function parseBedrockStream(
     }));
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -342,14 +355,17 @@ export function parseBedrockResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const usage: AIUsage = {
     inputTokens: result.usage?.inputTokens ?? 0,
     outputTokens: result.usage?.outputTokens ?? 0,
     cacheReadTokens: 0,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }

@@ -5,6 +5,7 @@ import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIRequestBody, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { aiStore, contextUsageAtom } from '../atoms/aiAnalystAtoms';
 import type { AIAPIResponse, ExceededBillingLimitCallback, StreamingMessageCallback } from './types';
 
 const IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY = 'isOnPaidPlan';
@@ -110,10 +111,16 @@ export class AIAPIClient {
       onMessage?.(cloneMessageForCallback(responseMessage));
       onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
+      // Update context usage atom with the latest usage data
+      if (responseMessage.usage) {
+        aiStore.set(contextUsageAtom, { usage: responseMessage.usage });
+      }
+
       return {
         content: responseMessage.content,
         toolCalls: responseMessage.toolCalls,
         error: responseMessage.error,
+        usage: responseMessage.usage,
       };
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
@@ -188,14 +195,16 @@ export class AIAPIClient {
 
     const decoder = new TextDecoder();
     let responseMessage = initialMessage;
+    let buffer = '';
 
     try {
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -206,6 +215,18 @@ export class AIAPIClient {
             } catch (error) {
               console.warn('Error parsing AI response: ', { error, line });
             }
+          }
+        }
+      }
+
+      if (buffer.trim()) {
+        if (buffer.startsWith('data: ')) {
+          try {
+            const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(buffer.slice(6)));
+            onMessage?.(cloneMessageForCallback(newResponseMessage));
+            responseMessage = newResponseMessage;
+          } catch (error) {
+            console.warn('Error parsing AI response: ', { error, line: buffer });
           }
         }
       }

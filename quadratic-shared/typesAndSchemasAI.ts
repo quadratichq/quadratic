@@ -1,5 +1,7 @@
-import { AITool, AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { ConnectionType, ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { z } from 'zod';
 
 // ============================================================================
@@ -214,6 +216,8 @@ export interface AIModelConfig extends AIRates {
   top_k?: number;
   min_p?: number;
   repetition_penalty?: number;
+  /** Input context window size in tokens. Used for context usage indicator. */
+  contextLimit?: number;
 }
 
 // ----------------------------------------------------------------------------
@@ -790,6 +794,7 @@ export const AIModelConfigSchema = z
     top_k: z.number().optional(),
     min_p: z.number().optional(),
     repetition_penalty: z.number().optional(),
+    contextLimit: z.number().optional(),
   })
   .extend(AIRatesSchema.shape) satisfies z.ZodType<AIModelConfig>;
 
@@ -1205,7 +1210,7 @@ export const AIRequestBodySchema = z.object({
 // Usage and Response Schemas
 // ----------------------------------------------------------------------------
 
-const AIUsageSchema = z.object({
+export const AIUsageSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number(),
   cacheReadTokens: z.number(),

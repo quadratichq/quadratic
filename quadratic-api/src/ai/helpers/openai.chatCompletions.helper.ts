@@ -23,7 +23,6 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
-  AISource,
   AIUsage,
   AzureOpenAIModelKey,
   BasetenModelKey,
@@ -38,7 +37,8 @@ import type {
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
-import { getAIToolsInOrder } from './tools';
+import { getOrphanFilterIds } from './filterOrphanedToolCalls';
+import { getFilteredTools } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
@@ -88,29 +88,23 @@ export function getOpenAIChatCompletionsApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
-  // First pass: collect all valid tool call IDs from assistant messages
-  // This is needed to filter out orphaned tool results (e.g., when user aborts mid-tool-call)
-  const validToolCallIds = new Set<string>();
-  for (const message of promptMessages) {
-    if (isAIPromptMessage(message)) {
-      for (const toolCall of message.toolCalls) {
-        validToolCallIds.add(toolCall.id);
-      }
-    }
-  }
+  const { validToolCallIds, existingToolResultIds } = getOrphanFilterIds(promptMessages);
 
   const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
     } else if (isAIPromptMessage(message)) {
+      // Filter out tool calls that don't have corresponding tool results
+      const validToolCalls = message.toolCalls.filter((toolCall) => existingToolResultIds.has(toolCall.id));
+
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content
           .filter((content) => isContentText(content) && !!content.text.trim())
           .map((content) => createTextContent(content.text.trim())),
         tool_calls:
-          message.toolCalls.length > 0
-            ? message.toolCalls.map((toolCall) => ({
+          validToolCalls.length > 0
+            ? validToolCalls.map((toolCall) => ({
                 id: toolCall.id,
                 type: 'function' as const,
                 function: {
@@ -168,20 +162,12 @@ export function getOpenAIChatCompletionsApiArgs(
 }
 
 function getOpenAITools(
-  source: AISource,
+  source: AIRequestHelperArgs['source'],
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
   strictParams: boolean
 ): ChatCompletionTool[] | undefined {
-  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
-    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
-      return false;
-    }
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
-    }
-    return name === toolName;
-  });
+  const tools = getFilteredTools({ source, aiModelMode, toolName });
 
   if (tools.length === 0) {
     return undefined;
@@ -314,6 +300,9 @@ export async function parseOpenAIChatCompletionsStream(
     }));
   }
 
+  // Include usage in the final response
+  responseMessage.usage = usage;
+
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   if (!response?.writableEnded) {
     response?.end();
@@ -362,8 +351,6 @@ export function parseOpenAIChatCompletionsResponse(
     throw new Error('Empty response');
   }
 
-  response?.json(responseMessage);
-
   const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
   const usage: AIUsage = {
     inputTokens: (result.usage?.prompt_tokens ?? 0) - cacheReadTokens,
@@ -371,6 +358,11 @@ export function parseOpenAIChatCompletionsResponse(
     cacheReadTokens,
     cacheWriteTokens: 0,
   };
+
+  // Include usage in the response
+  responseMessage.usage = usage;
+
+  response?.json(responseMessage);
 
   return { responseMessage, usage };
 }
