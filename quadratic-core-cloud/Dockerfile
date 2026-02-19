@@ -59,6 +59,7 @@ RUN uv pip install --system --break-system-packages \
   openpyxl \
   xlsxwriter \
   plotly \
+  kaleido \
   scikit-learn \
   statsmodels \
   nltk \

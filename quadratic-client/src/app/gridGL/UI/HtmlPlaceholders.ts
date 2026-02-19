@@ -34,15 +34,53 @@ export class HtmlPlaceholders extends Graphics {
       return new Promise((resolve) => {
         const sprite = this.addChild(new Sprite(Texture.EMPTY));
         sprite.texture = Texture.from(dataUrl);
-        // need to adjust the width to account for the border
-        sprite.width = htmlCell.width - 2;
-        sprite.height = htmlCell.height - offsets.height;
-        sprite.x = offsets.x + 1;
-        sprite.y = offsets.y + offsets.height;
+
+        // Cell area dimensions (adjusted for border)
+        const cellAreaWidth = htmlCell.width - BORDER_WIDTH * 2;
+        const cellAreaHeight = htmlCell.height - offsets.height;
+
+        // Calculate dimensions that preserve aspect ratio
+        const fitToCell = () => {
+          const textureWidth = sprite.texture.width;
+          const textureHeight = sprite.texture.height;
+
+          if (textureWidth > 0 && textureHeight > 0) {
+            const imageAspect = textureWidth / textureHeight;
+            const cellAspect = cellAreaWidth / cellAreaHeight;
+
+            let renderWidth: number;
+            let renderHeight: number;
+
+            if (imageAspect > cellAspect) {
+              // Image is wider than cell area - fit to width
+              renderWidth = cellAreaWidth;
+              renderHeight = cellAreaWidth / imageAspect;
+            } else {
+              // Image is taller than cell area - fit to height
+              renderWidth = cellAreaHeight * imageAspect;
+              renderHeight = cellAreaHeight;
+            }
+
+            sprite.width = renderWidth;
+            sprite.height = renderHeight;
+            // Center the image within the cell area
+            sprite.x = offsets.x + 1 + (cellAreaWidth - renderWidth) / 2;
+            sprite.y = offsets.y + offsets.height + (cellAreaHeight - renderHeight) / 2;
+          } else {
+            // Fallback if texture dimensions not available
+            sprite.width = cellAreaWidth;
+            sprite.height = cellAreaHeight;
+            sprite.x = offsets.x + 1;
+            sprite.y = offsets.y + offsets.height;
+          }
+        };
+
         if (sprite.texture.valid) {
+          fitToCell();
           resolve(undefined);
         } else {
           sprite.texture.once('update', () => {
+            fitToCell();
             resolve(undefined);
           });
         }

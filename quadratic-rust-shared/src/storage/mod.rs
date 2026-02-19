@@ -11,6 +11,7 @@ use crate::{SharedError, error::Result, storage::error::Storage as StorageError}
 
 pub mod error;
 pub mod file_system;
+#[cfg(feature = "arrow")]
 pub mod object_store;
 pub mod s3;
 
@@ -35,7 +36,7 @@ impl From<&StorageContainer> for StorageConfig {
     }
 }
 
-#[derive(Deserialize, Debug, Display)]
+#[derive(Deserialize, Debug, Display, Clone, Copy)]
 #[serde(rename_all = "kebab-case")]
 pub enum StorageType {
     S3,
@@ -49,6 +50,7 @@ pub trait Storage {
     async fn read(&self, key: &str) -> Result<Bytes>;
     async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()>;
     async fn presigned_url(&self, key: &str) -> Result<String>;
+    async fn presigned_upload_url(&self, key: &str, content_type: &str) -> Result<String>;
     fn path(&self) -> &str;
     fn config(&self) -> Self::Config;
 
@@ -88,6 +90,13 @@ impl Storage for StorageContainer {
         match self {
             Self::S3(s3) => s3.presigned_url(data).await,
             Self::FileSystem(fs) => fs.presigned_url(data).await,
+        }
+    }
+
+    async fn presigned_upload_url(&self, key: &str, content_type: &str) -> Result<String> {
+        match self {
+            Self::S3(s3) => s3.presigned_upload_url(key, content_type).await,
+            Self::FileSystem(fs) => fs.presigned_upload_url(key, content_type).await,
         }
     }
 

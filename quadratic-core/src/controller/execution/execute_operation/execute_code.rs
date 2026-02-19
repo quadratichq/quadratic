@@ -418,6 +418,7 @@ impl GridController {
             borders: None,
             chart_pixel_output,
             chart_output,
+            chart_image: None,
         }
     }
 

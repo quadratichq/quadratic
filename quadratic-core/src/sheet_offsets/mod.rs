@@ -1,4 +1,7 @@
-use crate::{CopyFormats, Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
+use crate::{
+    CopyFormats, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MAX_COLUMN_WIDTH, MAX_ROW_HEIGHT,
+    MIN_COLUMN_WIDTH, MIN_ROW_HEIGHT, Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
+};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -25,8 +28,8 @@ pub struct SheetOffsets {
 impl Default for SheetOffsets {
     fn default() -> Self {
         let mut offsets = SheetOffsets {
-            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
-            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
+            column_widths: Offsets::new(DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(DEFAULT_ROW_HEIGHT),
             thumbnail: (0, 0),
             transient_resize: None,
         };
@@ -49,13 +52,52 @@ impl SheetOffsets {
     /// import offsets from a GridFile
     pub fn import(offsets: OffsetWidthHeight) -> Self {
         let mut offsets = SheetOffsets {
-            column_widths: Offsets::from_iter(crate::DEFAULT_COLUMN_WIDTH, offsets.0),
-            row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1),
+            column_widths: Offsets::from_iter(DEFAULT_COLUMN_WIDTH, offsets.0),
+            row_heights: Offsets::from_iter(DEFAULT_ROW_HEIGHT, offsets.1),
             thumbnail: (0, 0),
             transient_resize: None,
         };
         offsets.calculate_thumbnail();
         offsets
+    }
+
+    /// Import offsets with optional custom default column width and row height.
+    /// This supports the v1.13+ file format which persists custom defaults.
+    pub fn import_with_defaults(
+        offsets: OffsetWidthHeight,
+        default_column_width: Option<f64>,
+        default_row_height: Option<f64>,
+    ) -> Self {
+        let column_default = default_column_width.unwrap_or(DEFAULT_COLUMN_WIDTH);
+        let row_default = default_row_height.unwrap_or(DEFAULT_ROW_HEIGHT);
+        let mut offsets = SheetOffsets {
+            column_widths: Offsets::from_iter(column_default, offsets.0),
+            row_heights: Offsets::from_iter(row_default, offsets.1),
+            thumbnail: (0, 0),
+            transient_resize: None,
+        };
+        offsets.calculate_thumbnail();
+        offsets
+    }
+
+    /// Returns the default column width if it differs from the hardcoded default.
+    pub fn custom_default_column_width(&self) -> Option<f64> {
+        let default = self.defaults().0;
+        if (default - DEFAULT_COLUMN_WIDTH).abs() < f64::EPSILON {
+            None
+        } else {
+            Some(default)
+        }
+    }
+
+    /// Returns the default row height if it differs from the hardcoded default.
+    pub fn custom_default_row_height(&self) -> Option<f64> {
+        let default = self.defaults().1;
+        if (default - DEFAULT_ROW_HEIGHT).abs() < f64::EPSILON {
+            None
+        } else {
+            Some(default)
+        }
     }
 
     /// Returns the widths of a range of columns.
@@ -68,14 +110,18 @@ impl SheetOffsets {
     }
 
     /// Sets the width of a column and returns the old width.
+    /// The width is clamped to MIN_COLUMN_WIDTH..=MAX_COLUMN_WIDTH.
     pub fn set_column_width(&mut self, x: i64, width: f64) -> f64 {
-        let old = self.column_widths.set_size(x, width);
+        let clamped_width = width.clamp(MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
+        let old = self.column_widths.set_size(x, clamped_width);
         self.calculate_thumbnail();
         old
     }
     /// Sets the height of a row and returns the old height.
+    /// The height is clamped to MIN_ROW_HEIGHT..=MAX_ROW_HEIGHT.
     pub fn set_row_height(&mut self, y: i64, height: f64) -> f64 {
-        let old = self.row_heights.set_size(y, height);
+        let clamped_height = height.clamp(MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+        let old = self.row_heights.set_size(y, clamped_height);
         self.calculate_thumbnail();
         old
     }
@@ -315,14 +361,28 @@ impl SheetOffsets {
         (self.column_width(0), self.row_height(0))
     }
 
+    /// Returns the minimum and maximum allowed column width.
+    pub fn column_width_bounds() -> (f64, f64) {
+        (MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH)
+    }
+
+    /// Returns the minimum and maximum allowed row height.
+    pub fn row_height_bounds() -> (f64, f64) {
+        (MIN_ROW_HEIGHT, MAX_ROW_HEIGHT)
+    }
+
     /// Sets the default column widths. Does not change any set sizes.
+    /// The size is clamped to MIN_COLUMN_WIDTH..=MAX_COLUMN_WIDTH.
     pub fn set_default_width(&mut self, size: f64) -> f64 {
-        self.column_widths.set_default(size)
+        let clamped_size = size.clamp(MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
+        self.column_widths.set_default(clamped_size)
     }
 
     /// Sets the default row heights. Does not change any set sizes.
+    /// The size is clamped to MIN_ROW_HEIGHT..=MAX_ROW_HEIGHT.
     pub fn set_default_height(&mut self, size: f64) -> f64 {
-        self.row_heights.set_default(size)
+        let clamped_size = size.clamp(MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+        self.row_heights.set_default(clamped_size)
     }
 
     /// Clears all column widths and resets to the default.
@@ -358,9 +418,7 @@ impl SheetOffsets {
 mod test {
     use super::*;
 
-    use crate::Rect;
-
-    use crate::Pos;
+    use crate::{MAX_COLUMN_WIDTH, MAX_ROW_HEIGHT, MIN_COLUMN_WIDTH, MIN_ROW_HEIGHT, Pos, Rect};
 
     #[test]
     fn test_screen_rect_cell_offsets() {
@@ -534,5 +592,104 @@ mod test {
         assert!(cleared.contains(&(1, 30.0)));
         assert!(cleared.contains(&(2, 40.0)));
         assert!(cleared.contains(&(3, 50.0)));
+    }
+
+    #[test]
+    fn test_column_width_bounds() {
+        let (min, max) = SheetOffsets::column_width_bounds();
+        assert_eq!(min, MIN_COLUMN_WIDTH);
+        assert_eq!(max, MAX_COLUMN_WIDTH);
+    }
+
+    #[test]
+    fn test_row_height_bounds() {
+        let (min, max) = SheetOffsets::row_height_bounds();
+        assert_eq!(min, MIN_ROW_HEIGHT);
+        assert_eq!(max, MAX_ROW_HEIGHT);
+    }
+
+    #[test]
+    fn test_column_width_clamping() {
+        let mut sheet = SheetOffsets::default();
+
+        // Test clamping to minimum
+        sheet.set_column_width(1, 5.0);
+        assert_eq!(sheet.column_width(1), MIN_COLUMN_WIDTH);
+
+        // Test clamping to maximum
+        sheet.set_column_width(2, 5000.0);
+        assert_eq!(sheet.column_width(2), MAX_COLUMN_WIDTH);
+
+        // Test normal value within bounds
+        sheet.set_column_width(3, 150.0);
+        assert_eq!(sheet.column_width(3), 150.0);
+    }
+
+    #[test]
+    fn test_row_height_clamping() {
+        let mut sheet = SheetOffsets::default();
+
+        // Test clamping to minimum
+        sheet.set_row_height(1, 2.0);
+        assert_eq!(sheet.row_height(1), MIN_ROW_HEIGHT);
+
+        // Test clamping to maximum
+        sheet.set_row_height(2, 5000.0);
+        assert_eq!(sheet.row_height(2), MAX_ROW_HEIGHT);
+
+        // Test normal value within bounds
+        sheet.set_row_height(3, 50.0);
+        assert_eq!(sheet.row_height(3), 50.0);
+    }
+
+    #[test]
+    fn test_default_width_clamping() {
+        let mut sheet = SheetOffsets::default();
+
+        // Test clamping to minimum
+        sheet.set_default_width(5.0);
+        assert_eq!(sheet.defaults().0, MIN_COLUMN_WIDTH);
+
+        // Test clamping to maximum
+        sheet.set_default_width(5000.0);
+        assert_eq!(sheet.defaults().0, MAX_COLUMN_WIDTH);
+
+        // Test normal value within bounds
+        sheet.set_default_width(150.0);
+        assert_eq!(sheet.defaults().0, 150.0);
+    }
+
+    #[test]
+    fn test_default_height_clamping() {
+        let mut sheet = SheetOffsets::default();
+
+        // Test clamping to minimum
+        sheet.set_default_height(2.0);
+        assert_eq!(sheet.defaults().1, MIN_ROW_HEIGHT);
+
+        // Test clamping to maximum
+        sheet.set_default_height(5000.0);
+        assert_eq!(sheet.defaults().1, MAX_ROW_HEIGHT);
+
+        // Test normal value within bounds
+        sheet.set_default_height(50.0);
+        assert_eq!(sheet.defaults().1, 50.0);
+    }
+
+    #[test]
+    fn test_square_grid_cells() {
+        let mut sheet = SheetOffsets::default();
+
+        // Set both column width and row height to the same value for square cells
+        let square_size = 100.0;
+        sheet.set_default_width(square_size);
+        sheet.set_default_height(square_size);
+
+        assert_eq!(sheet.defaults().0, square_size);
+        assert_eq!(sheet.defaults().1, square_size);
+
+        // Verify individual cells are square
+        let screen_rect = sheet.screen_rect_cell_offsets(Rect::new(1, 1, 1, 1));
+        assert_eq!(screen_rect.w, screen_rect.h);
     }
 }

@@ -118,6 +118,12 @@ jobs:
           curl -fsSL https://deno.land/install.sh | sh
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
 
+      - name: Verify Deno for core-cloud and cloud-worker
+        if: matrix.package == 'core-cloud' || matrix.package == 'cloud-worker'
+        run: |
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version
+
       - name: Setup Python for core-cloud tests
         if: matrix.package == 'core-cloud'
         uses: useblacksmith/setup-python@v6
@@ -168,6 +174,9 @@ jobs:
           SSL_CERT_DIR: /etc/ssl/certs
           DATABASE_DSN: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
         run: |
+          if [ "${{ matrix.package }}" = "core-cloud" ] || [ "${{ matrix.package }}" = "cloud-worker" ]; then
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
 
@@ -431,6 +440,120 @@ jobs:
       - name: Run cargo clippy
         run: |
           npm run lint:clippy
+
+  lint_rust_renderer:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        run: |
+          cd quadratic-rust-renderer
+          rustup toolchain install
+
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
+        with:
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
+
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
+        with:
+          workspaces: |
+            quadratic-rust-renderer/core
+            quadratic-rust-renderer/native
+
+      - name: Run cargo clippy on rust-renderer
+        run: |
+          cd quadratic-rust-renderer
+          npm run lint
+
+  test_rust_renderer:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        run: |
+          cd quadratic-rust-renderer
+          rustup toolchain install
+
+      - name: Cache Protoc
+        id: cache-protoc
+        uses: useblacksmith/cache@v5
+        with:
+          path: ~/.local/protoc
+          key: protoc-25.0-linux-x86_64-v1
+
+      - name: Install Protoc
+        run: |
+          if [ -f "$HOME/.local/protoc/bin/protoc" ]; then
+            echo "Using cached protoc"
+          else
+            PROTOC_VERSION="25.0"
+            mkdir -p "$HOME/.local/protoc"
+            for i in {1..5}; do
+              curl -fsSL -o protoc.zip \
+                "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" && break
+              echo "Attempt $i failed, retrying in 10s..."
+              sleep 10
+            done
+            unzip -o protoc.zip -d "$HOME/.local/protoc"
+            rm protoc.zip
+          fi
+          echo "$HOME/.local/protoc/bin" >> $GITHUB_PATH
+
+      - name: Verify Protoc
+        run: protoc --version
+
+      - name: Rust Cache
+        uses: useblacksmith/rust-cache@v3
+        with:
+          workspaces: |
+            quadratic-rust-renderer/core
+            quadratic-rust-renderer/native
+
+      - name: Run cargo test on rust-renderer
+        run: |
+          cd quadratic-rust-renderer
+          npm run test
 
   lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2404

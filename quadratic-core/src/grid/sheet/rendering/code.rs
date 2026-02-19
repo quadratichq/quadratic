@@ -28,6 +28,7 @@ impl Sheet {
             html: Some(output.to_display()),
             name: dt.name().to_string(),
             show_name: dt.get_show_name(),
+            chart_image: dt.chart_image.clone(),
         })
     }
 
@@ -51,6 +52,7 @@ impl Sheet {
                     html: Some(output.to_display()),
                     name: dt.name().to_string(),
                     show_name: dt.get_show_name(),
+                    chart_image: dt.chart_image.clone(),
                 })
             })
             .collect()
@@ -152,17 +154,21 @@ impl Sheet {
         self.render_code_cell(pos, data_table)
     }
 
+    /// Returns all code cells for rendering.
+    pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
+        self.data_tables
+            .expensive_iter()
+            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
+            .collect()
+    }
+
     /// Sends all sheet code cells for rendering to client
     pub fn send_all_render_code_cells(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        let code = self
-            .data_tables
-            .expensive_iter()
-            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
-            .collect::<Vec<_>>();
+        let code = self.get_all_render_code_cells();
 
         if !code.is_empty()
             && let Ok(render_code_cells) = serde_json::to_vec(&code)
@@ -284,6 +290,7 @@ mod tests {
                 html: Some("<html></html>".to_string()),
                 show_name: true,
                 name: "Python1".to_string(),
+                chart_image: None,
             }
         );
         gc.set_chart_size(
@@ -311,6 +318,7 @@ mod tests {
                 html: Some("<html></html>".to_string()),
                 show_name: true,
                 name: "Python1".to_string(),
+                chart_image: None,
             }
         );
     }

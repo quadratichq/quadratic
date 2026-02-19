@@ -8,7 +8,12 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
-import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecialConstants';
+import {
+  EMOJI_ADVANCE_RATIO,
+  EMOJI_X_OFFSET_RATIO,
+  EMOJI_Y_OFFSET_RATIO,
+} from '@/app/gridGL/pixiApp/emojis/emojiConstants';
 import { emojiStrings } from '@/app/gridGL/pixiApp/emojis/emojiMap';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
@@ -714,16 +719,17 @@ export class CellLabel {
 
         if (isEmoji) {
           const emojiSize = this.lineHeight / scale;
-          // Small offset to align emoji with text. We use 15% (not 20%) to balance
-          // alignment with avoiding clipping issues from the AABB timing problem.
-          const baselineOffset = baseData.lineHeight * 0.15;
+          const emojiAdvance = emojiSize * EMOJI_ADVANCE_RATIO;
+          // Offsets to align emoji with inline editor positioning
+          const xOffset = emojiSize * EMOJI_X_OFFSET_RATIO;
+          const yOffset = baseData.lineHeight * EMOJI_Y_OFFSET_RATIO;
           charData = {
             specialEmoji: emojiToRender,
             textureUid: 0,
             textureHeight: emojiSize,
-            xAdvance: emojiSize,
-            xOffset: 0,
-            yOffset: baselineOffset,
+            xAdvance: emojiAdvance,
+            xOffset,
+            yOffset,
             origWidth: emojiSize,
             kerning: {},
             uvs: new Float32Array([]), // just placeholder
@@ -857,6 +863,7 @@ export class CellLabel {
     const scale = this.fontSize / data.size;
     // Emoji size uses lineHeight (matching processText)
     const emojiSize = this.lineHeight / scale;
+    const emojiAdvance = emojiSize * EMOJI_ADVANCE_RATIO;
 
     const charsInput = splitTextToCharacters(text);
     let prevCharCode = null;
@@ -892,8 +899,8 @@ export class CellLabel {
         }
 
         if (isEmoji) {
-          // Use emojiSize for width (matching processText)
-          curUnwrappedTextWidth += emojiSize + this.letterSpacing;
+          // Use emojiAdvance for width (matching processText and font metrics)
+          curUnwrappedTextWidth += emojiAdvance + this.letterSpacing;
           maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
           prevCharCode = null;
 

@@ -1,17 +1,14 @@
 use anyhow::Result;
 
-use crate::Pos;
 use crate::grid::file::serialize::contiguous_2d::import_contiguous_2d;
 use crate::grid::file::serialize::contiguous_2d::opt_fn;
 use crate::grid::file::v1_7::schema::OffsetsSchema;
 use crate::grid::file::v1_7_1 as current;
 use crate::grid::file::v1_8;
 use crate::grid::formatting::RenderSize;
+use crate::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH, Pos};
 
 use super::sheet_offsets::Offsets;
-
-const DEFAULT_HTML_WIDTH: f32 = 600.0;
-const DEFAULT_HTML_HEIGHT: f32 = 460.0;
 
 fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
     RenderSize {

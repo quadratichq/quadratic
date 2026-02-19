@@ -179,7 +179,6 @@ pub struct OutputSize {
     pub h: i64,
 }
 
-
 pub type RenderSize = v1_5::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow, bail};
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
@@ -33,9 +33,10 @@ impl Rgba {
         }
     }
 
-    pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
-        // TODO(jrice): serde
-        assert_eq!(&color_str[0..=0], "#");
+    pub fn color_from_str(color_str: &str) -> Result<Self> {
+        if !color_str.starts_with('#') {
+            bail!("Color string must start with '#'");
+        }
 
         // Check length of the string
         let len = color_str.len();
@@ -84,6 +85,27 @@ impl Rgba {
     pub fn as_rgb_hex(&self) -> String {
         let s = self.as_string();
         if s.len() < 8 { s } else { s[0..7].to_string() }
+    }
+
+    /// Convert to a normalized f32 array [r, g, b, a] with values in 0.0..1.0 range.
+    /// Useful for GPU rendering where colors are typically normalized floats.
+    pub fn to_f32_array(&self) -> [f32; 4] {
+        [
+            self.red as f32 / 255.0,
+            self.green as f32 / 255.0,
+            self.blue as f32 / 255.0,
+            self.alpha as f32 / 255.0,
+        ]
+    }
+
+    /// Create an Rgba from RGB values (alpha defaults to 255).
+    pub const fn rgb(red: u8, green: u8, blue: u8) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha: 255,
+        }
     }
 
     /// Compute the relative luminance of this color.
@@ -160,8 +182,8 @@ impl TryFrom<&str> for Rgba {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self> {
-        if value.starts_with("#") {
-            Self::color_from_str(value).map_err(|e| anyhow!("Invalid color string: {}", e))
+        if value.starts_with('#') {
+            Self::color_from_str(value)
         } else if value.starts_with("rgb(") {
             Self::from_css_str(value)
         } else {

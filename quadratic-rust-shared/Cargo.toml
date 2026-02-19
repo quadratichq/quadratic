@@ -52,6 +52,7 @@ httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-a
   "record",
 ], optional = true }
 jsonwebtoken = { version = "9.2.0", optional = true }
+rsa = { version = "0.9", features = ["pem"], optional = true }
 object_store = { version = "0.11.2", default-features = false, features = ["aws"], optional = true }
 parquet = { version = "54.2.1", default-features = false, features = [
   "arrow",
@@ -110,9 +111,9 @@ yup-oauth2 = { version = "11.0.0", optional = true }
 derivative = "2.2.0"
 
 [features]
-default = ["synced", "docker"]
+default = []
 arrow = ["dep:arrow", "arrow-array", "object_store", "parquet"]
-auth = ["http", "jsonwebtoken", "tokio", "reqwest"]
+auth = ["base64", "http", "jsonwebtoken", "rsa", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 cache = ["memory", "tokio"]
 crypto = ["aes", "rand_core"]
@@ -143,7 +144,7 @@ protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
 quadratic-api = ["bincode", "reqwest", "urlencoding"]
 quadratic-cloud = ["base64", "bincode", "quadratic-api"]
-quadratic-database = ["sqlx"]
+quadratic-database = ["dotenv", "sqlx"]
 record-request-mock = []
 sql = [
   "arrow",

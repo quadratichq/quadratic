@@ -1,12 +1,12 @@
+import { emptyChatSuggestionsAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { MAX_ROWS } from '@/app/ai/constants/context';
 import { useGetEmptyChatPromptSuggestions } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import { aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
-import { useRecoilState } from 'recoil';
 
 const DEBOUNCE_MS = 500;
 
@@ -132,7 +132,7 @@ const analyzeFileData = async (): Promise<DataAnalysis> => {
  * This should be mounted once at a high level in the component tree.
  */
 export function useEmptyChatSuggestionsSync() {
-  const [emptyChatSuggestions, setEmptyChatSuggestions] = useRecoilState(aiAnalystEmptyChatSuggestionsAtom);
+  const [emptyChatSuggestions, setEmptyChatSuggestions] = useAtom(emptyChatSuggestionsAtom);
   const { getCategorizedEmptyChatPromptSuggestions } = useGetEmptyChatPromptSuggestions();
 
   // Store refs to avoid stale closures in the debounced handler

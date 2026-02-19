@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type DeleteRowsResponse = z.infer<(typeof aiToolsSpec)[AITool.DeleteRows]['responseSchema']>;
+type DeleteRowsResponse = AIToolsArgs[AITool.DeleteRows];
 
 export const DeleteRows = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -19,7 +19,7 @@ export const DeleteRows = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.DeleteRows].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.DeleteRows].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[DeleteRows] Failed to parse args: ', error);

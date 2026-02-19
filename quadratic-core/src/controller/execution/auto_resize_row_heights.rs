@@ -586,7 +586,10 @@ mod tests {
 
         expect_js_call(
             "jsRunPython",
-            format!("{},{},{},{},{}", transaction_id, 1, 2, sheet_id, code),
+            format!(
+                "{},{},{},{},{},{},{}",
+                transaction_id, 1, 2, sheet_id, code, 600, 460
+            ),
             false,
         );
         expect_js_call(

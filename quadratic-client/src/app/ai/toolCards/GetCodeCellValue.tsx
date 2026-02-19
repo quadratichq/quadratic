@@ -1,10 +1,10 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type GetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.GetCodeCellValue]['responseSchema']>;
+type GetCodeCellValueResponse = AIToolsArgs[AITool.GetCodeCellValue];
 
 export const GetCodeCellValue = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -19,7 +19,7 @@ export const GetCodeCellValue = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.GetCodeCellValue].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.GetCodeCellValue].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[GetCodeCellValue] Failed to parse args: ', error);
