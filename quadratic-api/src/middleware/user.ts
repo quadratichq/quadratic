@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { trackEvent } from '../analytics/mixpanel';
 import dbClient from '../dbClient';
@@ -88,29 +89,33 @@ const getOrCreateUser = async (auth: Auth) => {
     return { user: null, userCreated: false };
   }
 
-  // If they don't exist yet, create them. Use upsert to avoid unique constraint
-  // errors from concurrent requests both trying to create the same user.
-  //
-  // In the rare case of a race, runFirstTimeUserLogic may run twice. This is
-  // acceptable — its side effects (analytics, email, invite processing) are
-  // effectively idempotent and the race window is extremely narrow.
-  const user = await dbClient.user.upsert({
-    where: {
-      auth0Id: auth.sub,
-    },
-    update: {},
-    create: {
-      auth0Id: auth.sub,
-      email: auth.email,
-      clientDataKv: {
-        lastSeenChangelogVersion: VERSION || undefined,
+  // Create the user. If a concurrent request already created them (P2002
+  // unique constraint violation), fetch the existing record instead. This
+  // ensures runFirstTimeUserLogic only runs for the request that actually
+  // created the user.
+  try {
+    const user = await dbClient.user.create({
+      data: {
+        auth0Id: auth.sub,
+        email: auth.email,
+        clientDataKv: {
+          lastSeenChangelogVersion: VERSION || undefined,
+        },
       },
-    },
-  });
+    });
 
-  await runFirstTimeUserLogic(user);
+    await runFirstTimeUserLogic(user);
 
-  return { user, userCreated: true };
+    return { user, userCreated: true };
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      const user = await dbClient.user.findUnique({
+        where: { auth0Id: auth.sub },
+      });
+      return { user, userCreated: false };
+    }
+    throw e;
+  }
 };
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {

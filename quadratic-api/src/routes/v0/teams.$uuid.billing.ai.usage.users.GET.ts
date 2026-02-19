@@ -1,12 +1,12 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { BillingAIUsageForCurrentMonth, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { BillingAIUsageForCurrentMonth, BillingAIUsageMonthlyForUsersInTeam } from '../../billing/AIUsageHelpers';
 import {
-  getCurrentMonthAiCostForUser,
+  getCurrentMonthAiCostsByUser,
   getMonthlyAiAllowancePerUser,
   getPlanType,
-  getUserBudgetLimit,
+  getUserBudgetLimitsForTeam,
   isFreePlan,
 } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
@@ -65,16 +65,15 @@ async function handler(
 
   const userIds = dbUsers.map((u) => u.userId);
 
-  // Get usage for each user
-  const userUsage = await Promise.all(
-    userIds.map(async (targetUserId) => {
-      if (isFree) {
-        // Free plan: use message limit
-        if (!isOnPaidPlan) {
-          const usage = await BillingAIUsageMonthlyForUserInTeam(targetUserId, team.id);
-          const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage) ?? 0;
-          const billingLimit = BILLING_AI_USAGE_LIMIT ?? 0;
+  if (isFree) {
+    if (!isOnPaidPlan) {
+      const usageByUser = await BillingAIUsageMonthlyForUsersInTeam(userIds, team.id);
+      const billingLimit = BILLING_AI_USAGE_LIMIT ?? 0;
 
+      return res.status(200).json({
+        users: userIds.map((targetUserId) => {
+          const usage = usageByUser.get(targetUserId) ?? [];
+          const currentPeriodUsage = BillingAIUsageForCurrentMonth(usage) ?? 0;
           return {
             userId: targetUserId,
             planType: 'FREE' as const,
@@ -84,37 +83,37 @@ async function handler(
             monthlyAiAllowance: null,
             userMonthlyBudgetLimit: null,
           };
-        } else {
-          // User is on paid plan but team is free - no usage tracking
-          return {
-            userId: targetUserId,
-            planType: 'FREE' as const,
-            currentPeriodUsage: null,
-            billingLimit: null,
-            currentMonthAiCost: null,
-            monthlyAiAllowance: null,
-            userMonthlyBudgetLimit: null,
-          };
-        }
-      } else {
-        // Pro/Business plan: use cost-based limits
-        const currentMonthAiCost = await getCurrentMonthAiCostForUser(team.id, targetUserId);
-        const userBudgetLimit = await getUserBudgetLimit(team.id, targetUserId);
-
-        return {
+        }),
+      });
+    } else {
+      return res.status(200).json({
+        users: userIds.map((targetUserId) => ({
           userId: targetUserId,
-          planType: planType as 'PRO' | 'BUSINESS',
+          planType: 'FREE' as const,
           currentPeriodUsage: null,
           billingLimit: null,
-          currentMonthAiCost,
-          monthlyAiAllowance: monthlyAiAllowancePerUser,
-          userMonthlyBudgetLimit: userBudgetLimit?.limit ?? null,
-        };
-      }
-    })
-  );
+          currentMonthAiCost: null,
+          monthlyAiAllowance: null,
+          userMonthlyBudgetLimit: null,
+        })),
+      });
+    }
+  }
+
+  const [costsByUser, budgetLimitsByUser] = await Promise.all([
+    getCurrentMonthAiCostsByUser(team.id),
+    getUserBudgetLimitsForTeam(team.id),
+  ]);
 
   return res.status(200).json({
-    users: userUsage,
+    users: userIds.map((targetUserId) => ({
+      userId: targetUserId,
+      planType: planType as 'PRO' | 'BUSINESS',
+      currentPeriodUsage: null,
+      billingLimit: null,
+      currentMonthAiCost: costsByUser.get(targetUserId) ?? 0,
+      monthlyAiAllowance: monthlyAiAllowancePerUser,
+      userMonthlyBudgetLimit: budgetLimitsByUser.get(targetUserId) ?? null,
+    })),
   });
 }

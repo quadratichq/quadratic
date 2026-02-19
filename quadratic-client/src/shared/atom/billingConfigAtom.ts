@@ -49,3 +49,14 @@ export const fetchBillingConfig = async (): Promise<void> => {
 
   return fetchPromise;
 };
+
+/**
+ * Reset cached state so the next fetchBillingConfig() call hits the API again.
+ * Useful after a plan change where pricing may have updated on the server.
+ */
+export const refetchBillingConfig = async (): Promise<void> => {
+  const store = getDefaultStore();
+  store.set(billingConfigAtom, defaultState);
+  fetchPromise = null;
+  return fetchBillingConfig();
+};

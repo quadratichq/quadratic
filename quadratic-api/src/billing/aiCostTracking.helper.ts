@@ -1,9 +1,27 @@
-import dbClient from '../dbClient';
+import { AIChatSource } from '@prisma/client';
+import type { AIModelKey, AISource, AIUsage } from 'quadratic-shared/typesAndSchemasAI';
 import { calculateUsage } from '../ai/helpers/usage.helper';
-import type { AIUsage } from 'quadratic-shared/typesAndSchemasAI';
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import type { AIChatSource } from '@prisma/client';
+import dbClient from '../dbClient';
 import logger from '../utils/logger';
+
+const aiSourceToAIChatSource: Record<AISource, AIChatSource> = {
+  AIAssistant: AIChatSource.AIAssistant,
+  AIAnalyst: AIChatSource.AIAnalyst,
+  AIResearcher: AIChatSource.AIResearcher,
+  GetChatName: AIChatSource.GetChatName,
+  GetFileName: AIChatSource.GetFileName,
+  CodeEditorCompletions: AIChatSource.CodeEditorCompletions,
+  GetUserPromptSuggestions: AIChatSource.GetUserPromptSuggestions,
+  GetEmptyChatPromptSuggestions: AIChatSource.GetEmptyChatPromptSuggestions,
+  PDFImport: AIChatSource.PDFImport,
+  ModelRouter: AIChatSource.ModelRouter,
+  WebSearch: AIChatSource.WebSearch,
+  OptimizePrompt: AIChatSource.OptimizePrompt,
+};
+
+export function toAIChatSource(source: AISource): AIChatSource {
+  return aiSourceToAIChatSource[source];
+}
 
 export interface TrackAICostParams {
   userId: number;

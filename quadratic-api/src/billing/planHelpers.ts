@@ -207,6 +207,52 @@ export const getUserBudgetLimit = async (teamId: number, userId: number): Promis
 };
 
 /**
+ * Get the current month's AI cost for all users in a team in a single query.
+ * Returns a Map from userId to cost.
+ */
+export const getCurrentMonthAiCostsByUser = async (teamId: number): Promise<Map<number, number>> => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const results = await dbClient.aICost.groupBy({
+    by: ['userId'],
+    where: {
+      teamId,
+      createdDate: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+    },
+    _sum: {
+      cost: true,
+    },
+  });
+
+  const costMap = new Map<number, number>();
+  for (const row of results) {
+    costMap.set(row.userId, row._sum.cost ?? 0);
+  }
+  return costMap;
+};
+
+/**
+ * Get all user budget limits for a team in a single query.
+ * Returns a Map from userId to their budget limit.
+ */
+export const getUserBudgetLimitsForTeam = async (teamId: number): Promise<Map<number, number>> => {
+  const budgetLimits = await dbClient.userBudgetLimit.findMany({
+    where: { teamId },
+  });
+
+  const limitMap = new Map<number, number>();
+  for (const bl of budgetLimits) {
+    limitMap.set(bl.userId, bl.monthlyBudgetLimit);
+  }
+  return limitMap;
+};
+
+/**
  * Check if a user has exceeded their monthly budget limit.
  * Returns false if no budget limit is set.
  * Budgets automatically reset on the 1st of each month since costs are filtered by calendar month.

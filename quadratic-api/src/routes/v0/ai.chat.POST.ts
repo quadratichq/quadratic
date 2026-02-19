@@ -1,4 +1,4 @@
-import type { AIChatSource, AnalyticsAIChat } from '@prisma/client';
+import type { AnalyticsAIChat } from '@prisma/client';
 import type { Response } from 'express';
 import {
   getLastAIPromptMessageIndex,
@@ -22,7 +22,7 @@ import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
-import { trackAICost } from '../../billing/aiCostTracking.helper';
+import { toAIChatSource, trackAICost } from '../../billing/aiCostTracking.helper';
 import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
@@ -91,10 +91,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const messageType = getLastUserMessageType(args.messages);
   const isFree = isFreePlan(ownerTeam);
 
-  // Check billing limits based on plan type
-  // Skip limit check for subagent messages (they are part of an already-approved turn)
-  const isSubagentMessage = messageSource?.startsWith('subagent:');
-  if (messageType === 'userPrompt' && !isSubagentMessage) {
+  if (messageType === 'userPrompt') {
     if (isFree) {
       // Free plan: use existing message limit check
       if (!isOnPaidPlan || !userTeamRole) {
@@ -215,7 +212,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       fileId,
       usage: parsedResponse.usage,
       modelKey,
-      source: source as AIChatSource,
+      source: toAIChatSource(source),
     });
   }
 

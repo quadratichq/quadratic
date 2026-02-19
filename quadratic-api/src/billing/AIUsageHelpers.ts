@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import dbClient from '../dbClient';
 import { BILLING_AI_USAGE_LIMIT } from '../env-vars';
 
@@ -63,6 +64,60 @@ export const BillingAIUsageForCurrentMonth = (monthlyUsage: AIMessageUsage[]) =>
  */
 export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]) => {
   return BillingAIUsageForCurrentMonth(monthlyUsage) >= (BILLING_AI_USAGE_LIMIT ?? Infinity);
+};
+
+/**
+ * Gets the AI message usage for multiple users in a team, aggregated by month for the last 6 months.
+ * Returns a Map from userId to their monthly usage array (sorted newest first).
+ */
+export const BillingAIUsageMonthlyForUsersInTeam = async (
+  userIds: number[],
+  teamId: number
+): Promise<Map<number, AIMessageUsage[]>> => {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await dbClient.$queryRaw<(AIMessageUsage & { user_id: number })[]>`
+WITH date_range AS (
+  SELECT
+    generate_series(
+      DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months'),
+      DATE_TRUNC('month', CURRENT_DATE),
+      '1 month'::interval
+    ) AS month
+),
+filtered_chats AS (
+  SELECT ac.id, ac.user_id, DATE_TRUNC('month', ac.created_date) AS month_date
+  FROM "AnalyticsAIChat" ac
+  JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
+  WHERE ac.user_id IN (${Prisma.join(userIds)})
+  AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
+),
+user_list AS (
+  SELECT unnest(${userIds}::int[]) AS user_id
+)
+SELECT
+  ul.user_id as user_id,
+  TO_CHAR(d.month, 'YYYY-MM') as month,
+  COUNT(acm.id)::integer as ai_messages
+FROM user_list ul
+CROSS JOIN date_range d
+LEFT JOIN filtered_chats fc ON fc.month_date = d.month AND fc.user_id = ul.user_id
+LEFT JOIN "AnalyticsAIChatMessage" acm ON
+  acm.chat_id = fc.id
+  AND acm.message_type = 'user_prompt'
+GROUP BY ul.user_id, d.month
+ORDER BY ul.user_id, d.month DESC;
+`;
+
+  const resultMap = new Map<number, AIMessageUsage[]>();
+  for (const row of rows) {
+    const existing = resultMap.get(row.user_id) ?? [];
+    existing.push({ month: row.month, ai_messages: row.ai_messages });
+    resultMap.set(row.user_id, existing);
+  }
+  return resultMap;
 };
 
 /**
