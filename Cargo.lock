@@ -6604,7 +6604,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-cloud-controller"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "anyhow",
  "axum 0.8.4",
@@ -6636,7 +6636,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-cloud-worker"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "anyhow",
  "envy",
@@ -6654,7 +6654,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-connection"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "arrow 54.2.1",
  "arrow-json",
@@ -6695,7 +6695,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "anyhow",
  "arrow-array 54.2.1",
@@ -6760,7 +6760,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core-cloud"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "bytes",
  "dotenv",
@@ -6783,7 +6783,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-files"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "axum 0.8.4",
  "axum-extra 0.10.1",
@@ -6820,7 +6820,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-multiplayer"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "axum 0.8.4",
  "axum-extra 0.10.1",
@@ -6858,7 +6858,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "aes",
  "arrow 54.2.1",
