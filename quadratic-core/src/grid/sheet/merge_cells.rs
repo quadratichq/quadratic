@@ -307,10 +307,12 @@ impl Sheet {
             &self.merge_cells,
         ) {
             Ok(merge_cells) => {
+                let empty_hashes: Vec<crate::Pos> = vec![];
+                let dirty_hashes_json = serde_json::to_vec(&empty_hashes).unwrap_or_default();
                 crate::wasm_bindings::js::jsMergeCells(
                     self.id.to_string(),
                     merge_cells,
-                    vec![],
+                    dirty_hashes_json,
                 );
             }
             Err(e) => {
