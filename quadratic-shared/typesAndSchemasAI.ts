@@ -249,12 +249,14 @@ export type InternalContextType =
 export type ToolResultContextType = 'toolResult';
 export type UserPromptContextType = 'userPrompt';
 
+export type ConnectionKind = ConnectionType | 'STOCKHISTORY';
+
 export type CodeCellLanguage =
   | 'Python'
   | 'Javascript'
   | 'Formula'
   | 'Import'
-  | { Connection: { kind: ConnectionType; id: string } };
+  | { Connection: { kind: ConnectionKind; id: string } };
 
 export interface ImportFile {
   name: string;
