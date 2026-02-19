@@ -4,7 +4,12 @@ use std::io::{Cursor, Read};
 
 use crate::error::{Result, SharedError};
 
+const MAX_DECOMPRESSED_SIZE: u64 = 500 * 1024 * 1024; // 500 MB
+
 /// Extract the first CSV file from a ZIP archive.
+///
+/// Rejects files that exceed `MAX_DECOMPRESSED_SIZE` when decompressed
+/// to guard against zip bombs.
 pub fn extract_csv_from_zip(zip_data: &[u8]) -> Result<Vec<u8>> {
     let cursor = Cursor::new(zip_data);
     let mut archive = zip::ZipArchive::new(cursor)
@@ -15,7 +20,15 @@ pub fn extract_csv_from_zip(zip_data: &[u8]) -> Result<Vec<u8>> {
             .by_index(i)
             .map_err(|e| SharedError::Generic(format!("Failed to read ZIP entry {}: {}", i, e)))?;
 
-        if file.name().ends_with(".csv") {
+        if file.name().to_lowercase().ends_with(".csv") {
+            if file.size() > MAX_DECOMPRESSED_SIZE {
+                return Err(SharedError::Generic(format!(
+                    "CSV file {} exceeds maximum allowed decompressed size of {} bytes",
+                    file.name(),
+                    MAX_DECOMPRESSED_SIZE
+                )));
+            }
+
             let mut csv_data = Vec::with_capacity(file.size() as usize);
             file.read_to_end(&mut csv_data).map_err(|e| {
                 SharedError::Generic(format!("Failed to extract CSV from ZIP: {}", e))
@@ -171,5 +184,15 @@ mod tests {
 
         let result = extract_csv_from_zip(&zip_data).unwrap();
         assert_eq!(result, first_csv);
+    }
+
+    #[test]
+    fn test_extract_csv_from_zip_case_insensitive_extension() {
+        let csv_content = b"col1,col2\nval1,val2\n";
+        let zip_data = create_zip_with_file("DATA.CSV", csv_content);
+
+        let result = extract_csv_from_zip(&zip_data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), csv_content);
     }
 }

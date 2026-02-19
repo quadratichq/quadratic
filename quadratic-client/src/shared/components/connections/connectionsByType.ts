@@ -172,8 +172,8 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     name: 'DataFusion',
     Logo: FinancialMarketDataLogo,
     // DataFusion connections are platform-managed and not user-editable
-    ConnectionForm: (() => null) as any,
-    useConnectionForm: (() => ({ form: {} })) as any,
+    ConnectionForm: () => null,
+    useConnectionForm: () => ({ form: {} as UseFormReturn<ConnectionFormValues> }),
   },
 };
 

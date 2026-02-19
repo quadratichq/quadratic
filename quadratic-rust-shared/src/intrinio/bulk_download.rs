@@ -67,7 +67,16 @@ pub fn s3_object_key(link_name: &str) -> String {
     )
 }
 
+/// Redact the API key from error messages to prevent leaking secrets in logs.
+#[cfg(feature = "reqwest")]
+fn sanitize_error(message: &str, api_key: &str) -> String {
+    message.replace(api_key, "[REDACTED]")
+}
+
 /// Fetch the bulk download links from the Intrinio API.
+///
+/// Note: pagination (`next_page`) is not followed because the current
+/// Intrinio bulk downloads endpoint returns all links in a single page.
 #[cfg(feature = "reqwest")]
 pub async fn fetch_bulk_download_links(api_key: &str) -> Result<BulkDownloadsResponse> {
     let url = bulk_downloads_url(api_key);
@@ -75,7 +84,10 @@ pub async fn fetch_bulk_download_links(api_key: &str) -> Result<BulkDownloadsRes
     let response = reqwest::get(&url).await.map_err(|e| {
         SharedError::Intrinio(IntrinioError::Endpoint(
             "bulk_downloads".to_string(),
-            format!("Failed to fetch bulk download links: {}", e),
+            sanitize_error(
+                &format!("Failed to fetch bulk download links: {}", e),
+                api_key,
+            ),
         ))
     })?;
 
@@ -91,12 +103,18 @@ pub async fn fetch_bulk_download_links(api_key: &str) -> Result<BulkDownloadsRes
         )));
     }
 
-    let body = response.json::<BulkDownloadsResponse>().await.map_err(|e| {
-        SharedError::Intrinio(IntrinioError::Endpoint(
-            "bulk_downloads".to_string(),
-            format!("Failed to parse bulk download response: {}", e),
-        ))
-    })?;
+    let body = response
+        .json::<BulkDownloadsResponse>()
+        .await
+        .map_err(|e| {
+            SharedError::Intrinio(IntrinioError::Endpoint(
+                "bulk_downloads".to_string(),
+                sanitize_error(
+                    &format!("Failed to parse bulk download response: {}", e),
+                    api_key,
+                ),
+            ))
+        })?;
 
     Ok(body)
 }
