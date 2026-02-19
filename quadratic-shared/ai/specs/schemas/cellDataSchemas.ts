@@ -243,7 +243,7 @@ Target position is the top left corner of the target position on the current ope
           description: 'The sheet name of the current sheet in the context',
         },
         moves: {
-          type: 'array',
+          type: ['array', 'null'],
           items: {
             type: 'object',
             properties: {
@@ -263,17 +263,17 @@ Target position is the top left corner of the target position on the current ope
           },
         },
         source_selection_rect: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The selection of cells, in a1 notation, to be moved in the current open sheet. This is string representation of the rectangular selection of cells to be moved. Use moves array for batch operations.',
         },
         target_top_left_position: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. Use moves array for batch operations.',
         },
       },
-      required: ['sheet_name'],
+      required: ['sheet_name', 'moves', 'source_selection_rect', 'target_top_left_position'],
       additionalProperties: false,
     },
     responseSchema: cellDataToolsArgsSchemas[AITool.MoveCells],

@@ -96,9 +96,8 @@ export function useAIRequestToAPI() {
                 text = 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
                 break;
               default:
-                text = data?.error
-                  ? `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`
-                  : `Looks like there was a problem. Status: ${response.status}`;
+                console.error('AI API error details:', data?.error ?? response.status);
+                text = 'Looks like there was a problem. Please try again.';
                 break;
             }
 

@@ -345,12 +345,10 @@ export const handleAIRequest = async ({
       });
     }
 
-    // Create user-friendly error message
+    // Create user-friendly error message (raw error details are already logged above)
     const userErrorMessage = isContextLengthError
       ? "Your conversation is too long for the AI model's context window."
-      : error instanceof Error
-        ? error.message
-        : 'An unexpected error occurred. Please try again.';
+      : 'An unexpected error occurred. Please try again.';
 
     const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
       role: 'assistant',
