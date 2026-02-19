@@ -153,6 +153,7 @@ Code cell (Python and Javascript) placement instructions:\n
 - If the sheet is empty, place the code cell at A1.\n
 
 Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
+IMPORTANT: Do not place code cells at non-anchor cells within merged regions. If a cell is inside a merged region, use the anchor (top-left) cell of the merge instead.\n
 `,
   },
   [AITool.SetFormulaCellValue]: {
@@ -235,6 +236,8 @@ Examples:
 - Basic arithmetic operations
 - Joining strings
 - Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
+
+IMPORTANT: Do not place formulas at non-anchor cells within merged regions. If a cell is inside a merged region, use the anchor (top-left) cell of the merge instead.\n
 `,
   },
   [AITool.UpdateCodeCell]: {

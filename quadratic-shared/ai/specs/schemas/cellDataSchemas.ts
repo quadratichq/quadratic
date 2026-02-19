@@ -24,11 +24,26 @@ export const cellDataToolsArgsSchemas = {
     sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
-  [AITool.MoveCells]: z.object({
-    sheet_name: stringNullableOptionalSchema,
-    source_selection_rect: stringSchema,
-    target_top_left_position: stringSchema,
-  }),
+  [AITool.MoveCells]: z
+    .object({
+      sheet_name: stringNullableOptionalSchema,
+      moves: z
+        .array(
+          z.object({
+            source_selection_rect: stringSchema,
+            target_top_left_position: stringSchema,
+          })
+        )
+        .optional(),
+      source_selection_rect: stringSchema.optional(),
+      target_top_left_position: stringSchema.optional(),
+    })
+    .refine(
+      (data) => (data.moves && data.moves.length > 0) || (data.source_selection_rect && data.target_top_left_position),
+      {
+        message: 'Either moves array or source_selection_rect and target_top_left_position must be provided',
+      }
+    ),
   [AITool.DeleteCells]: z.object({
     sheet_name: stringNullableOptionalSchema,
     selection: stringSchema,
@@ -150,6 +165,7 @@ This function requires the sheet name of the current sheet from the context, the
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
 Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
+IMPORTANT: If the target cells overlap with merged cell regions, you must place values at the anchor (top-left) cell of the merge. Writing to non-anchor cells inside a merged region will result in an error.\n
 `,
   },
   [AITool.GetCellData]: {
@@ -231,13 +247,12 @@ Use MUST use this tool before creating or moving tables, code, connections, or c
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max', 'others'],
     description: `
-Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
+Moves one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+You should use the move_cells function to move rectangular selections of cells from one location to another on the current open sheet.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
+Use the moves array to batch multiple moves in a single call, or use source_selection_rect and target_top_left_position for a single move.\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
-Target location is the top left corner of the target location on the current open sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -246,26 +261,46 @@ Target location is the top left corner of the target location on the current ope
           type: 'string',
           description: 'The sheet name of the current sheet in the context',
         },
+        moves: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              source_selection_rect: {
+                type: 'string',
+                description:
+                  'The selection of cells, in a1 notation, to be moved. This is a string representation of the rectangular selection of cells to be moved.',
+              },
+              target_top_left_position: {
+                type: 'string',
+                description:
+                  'The top left position of the target location, in a1 notation. This should be a single cell, not a range.',
+              },
+            },
+            required: ['source_selection_rect', 'target_top_left_position'],
+            additionalProperties: false,
+          },
+        },
         source_selection_rect: {
           type: 'string',
           description:
-            'The selection of cells, in a1 notation, to be moved in the current open sheet. This is string representation of the rectangular selection of cells to be moved',
+            'The selection of cells, in a1 notation, to be moved in the current open sheet. This is string representation of the rectangular selection of cells to be moved. Use moves array for batch operations.',
         },
         target_top_left_position: {
           type: 'string',
           description:
-            'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. This will be the top left corner of the source selection rectangle after moving.',
+            'The top left position of the target location on the current open sheet, in a1 notation. This should be a single cell, not a range. Use moves array for batch operations.',
         },
       },
-      required: ['sheet_name', 'source_selection_rect', 'target_top_left_position'],
+      required: ['sheet_name'],
       additionalProperties: false,
     },
     responseSchema: cellDataToolsArgsSchemas[AITool.MoveCells],
     prompt: `
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+You should use the move_cells function to move one or more rectangular selections of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
 When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
-move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
+move_cells function requires the current sheet name provided in the context. Use the moves array for batch operations, or source_selection_rect and target_top_left_position for a single move.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
   },

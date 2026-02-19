@@ -1,5 +1,5 @@
 import type { AIToolMessageMetaData } from '@/app/ai/tools/aiToolsHelpers';
-import { setCodeCellResult, waitForSetCodeCellValue } from '@/app/ai/tools/aiToolsHelpers';
+import { getMergeCellErrorContent, setCodeCellResult, waitForSetCodeCellValue } from '@/app/ai/tools/aiToolsHelpers';
 import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
@@ -92,6 +92,9 @@ export const codeToolsActions: CodeToolActions = {
 
       const { x, y } = selection.getCursor();
 
+      const mergeError = getMergeCellErrorContent(sheetId, x, y);
+      if (mergeError) return mergeError;
+
       // Move AI cursor to the code cell position
       try {
         const selectionString = selection.save();
@@ -147,6 +150,26 @@ export const codeToolsActions: CodeToolActions = {
   [AITool.SetFormulaCellValue]: async (args) => {
     try {
       const { formulas } = args;
+
+      for (const formula of formulas) {
+        const sheetId = formula.sheet_name
+          ? (sheets.getSheetByName(formula.sheet_name)?.id ?? sheets.current)
+          : sheets.current;
+        try {
+          const sel = sheets.stringToSelection(formula.code_cell_position, sheetId);
+          const rect = sel.getSingleRectangleOrCursor(sheets.jsA1Context);
+          if (rect) {
+            for (let y = Number(rect.min.y); y <= Number(rect.max.y); y++) {
+              for (let x = Number(rect.min.x); x <= Number(rect.max.x); x++) {
+                const mergeError = getMergeCellErrorContent(sheetId, x, y);
+                if (mergeError) return mergeError;
+              }
+            }
+          }
+        } catch {
+          // position parsing will be handled downstream
+        }
+      }
 
       // Group formulas by sheet
       const formulasBySheet = new Map<string, Array<{ selection: string; codeString: string }>>();
