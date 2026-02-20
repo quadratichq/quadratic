@@ -3,6 +3,7 @@ import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/edito
 import { events } from '@/app/events/events';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { ConnectionDemoDetail } from '@/shared/components/connections/ConnectionDemoDetail';
 import {
   ConnectionFormCreate,
   ConnectionFormEdit,
@@ -24,7 +25,7 @@ export function ConnectionsMenu() {
   const {
     team: { uuid: teamUuid, sshPublicKey },
   } = useFileRouteLoaderData();
-  const { staticIps } = useConnectionsFetcher();
+  const { connections, staticIps } = useConnectionsFetcher();
 
   const close = useCallback(() => {
     setShowConnectionsMenu(undefined);
@@ -47,8 +48,13 @@ export function ConnectionsMenu() {
     showConnectionsMenu && 'connectionUuid' in showConnectionsMenu ? showConnectionsMenu.connectionUuid : undefined;
   const isEdit = !!connectionUuid;
 
+  const isDemo = connectionUuid ? connections.find((c) => c.uuid === connectionUuid)?.isDemo : false;
   const connectionTypeInfo = connectionType ? connectionsByType[connectionType] : undefined;
-  const title = connectionTypeInfo ? `${isEdit ? 'Edit' : 'Create'} ${connectionTypeInfo.name} connection` : '';
+  const title = isDemo
+    ? 'Demo connection'
+    : connectionTypeInfo
+      ? `${isEdit ? 'Edit' : 'Create'} ${connectionTypeInfo.name} connection`
+      : '';
 
   return (
     <Dialog open={isOpen} onOpenChange={close}>
@@ -67,7 +73,9 @@ export function ConnectionsMenu() {
         </DialogHeader>
         {isOpen && connectionType && (
           <ConnectionsProvider sshPublicKey={sshPublicKey} staticIps={staticIps ?? []}>
-            {isEdit ? (
+            {isDemo ? (
+              <ConnectionDemoDetail teamUuid={teamUuid} onClose={close} />
+            ) : isEdit ? (
               <ConnectionFormEdit
                 connectionUuid={connectionUuid}
                 connectionType={connectionType}

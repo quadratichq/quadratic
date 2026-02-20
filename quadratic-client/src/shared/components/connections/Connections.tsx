@@ -6,6 +6,7 @@ import {
   type ToggleShowConnectionDemoAction,
   type UpdateConnectionAction,
 } from '@/routes/api.connections';
+import { ConnectionDemoDetail } from '@/shared/components/connections/ConnectionDemoDetail';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import {
   ConnectionFormCreate,
@@ -244,12 +245,16 @@ export const Connections = ({
                   ]}
                   Logo={connectionsByType[activeConnectionState.type].Logo}
                 />
-                <ConnectionFormEdit
-                  connectionUuid={activeConnectionState.uuid}
-                  connectionType={activeConnectionState.type}
-                  onClose={handleNavigateToListView}
-                  teamUuid={teamUuid}
-                />
+                {connections.find((c) => c.uuid === activeConnectionState.uuid)?.isDemo ? (
+                  <ConnectionDemoDetail teamUuid={teamUuid} onClose={handleNavigateToListView} />
+                ) : (
+                  <ConnectionFormEdit
+                    connectionUuid={activeConnectionState.uuid}
+                    connectionType={activeConnectionState.type}
+                    onClose={handleNavigateToListView}
+                    teamUuid={teamUuid}
+                  />
+                )}
               </>
             ) : activeConnectionState.view === 'details' ? (
               <>

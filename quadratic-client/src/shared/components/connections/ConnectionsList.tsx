@@ -1,9 +1,8 @@
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { CloseIcon, EditIcon } from '@/shared/components/Icons';
+import { EditIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import type {
   ConnectionsListConnection,
@@ -13,7 +12,6 @@ import type {
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
@@ -87,7 +85,6 @@ export const ConnectionsList = ({
             items={connections}
             teamUuid={teamUuid}
             handleNavigateToEditView={handleNavigateToEditView}
-            handleShowConnectionDemo={handleShowConnectionDemo}
             onConnectionSelected={onConnectionSelected}
           />
         ) : (
@@ -122,20 +119,16 @@ export const ConnectionsList = ({
 function ListItems({
   filterQuery,
   handleNavigateToEditView,
-  handleShowConnectionDemo,
   items,
   teamUuid,
   onConnectionSelected,
 }: {
   filterQuery: string;
   handleNavigateToEditView: Props['handleNavigateToEditView'];
-  handleShowConnectionDemo: Props['handleShowConnectionDemo'];
   items: ConnectionsListConnection[];
   teamUuid: string;
   onConnectionSelected?: Props['onConnectionSelected'];
 }) {
-  const confirmFn = useConfirmDialog('deleteDemoConnection', undefined);
-
   const filteredItems = filterQuery
     ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
@@ -159,10 +152,8 @@ function ListItems({
           },
           i
         ) => {
-          const isNavigable = !(disabled || isDemo);
-          const showIconHideDemo = !disabled && isDemo;
-          // On dashboard, show "Open in spreadsheet" and "Edit connection" buttons
-          const showDashboardActions = !isApp && !disabled && !isDemo;
+          const isNavigable = !disabled;
+          const showDashboardActions = !isApp && !disabled;
           const syncState = deriveSyncStateFromConnectionList({
             syncedConnectionPercentCompleted,
             syncedConnectionLatestLogStatus,
@@ -242,23 +233,6 @@ function ListItems({
                       </Button>
                     )}
                   </div>
-                )}
-
-                {showIconHideDemo && (
-                  <TooltipPopover label="Remove connection">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-2 flex items-center gap-1 text-muted-foreground hover:bg-background"
-                      onClick={async () => {
-                        if (await confirmFn()) {
-                          handleShowConnectionDemo(false);
-                        }
-                      }}
-                    >
-                      <CloseIcon />
-                    </Button>
-                  </TooltipPopover>
                 )}
               </div>
             </div>
