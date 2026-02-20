@@ -1,15 +1,16 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { SKIP_TEST_BUTTON_NAME } from '@/shared/components/connections/ConnectionForm';
-import { ErrorIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { ErrorIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { useSubmit } from 'react-router';
+import { useFetchers, useSubmit } from 'react-router';
 
 export function ConnectionFormActions({
   connectionType,
@@ -26,6 +27,13 @@ export function ConnectionFormActions({
   handleNavigateToListView: () => void;
   teamUuid: string;
 }) {
+  const fetchers = useFetchers();
+  const isCreatingOrUpdatingConnection = fetchers.some(
+    (fetcher) =>
+      isJsonObject(fetcher.json) &&
+      (fetcher.json.action === 'create-connection' || fetcher.json.action === 'update-connection') &&
+      fetcher.state !== 'idle'
+  );
   const submit = useSubmit();
   const confirmFn = useConfirmDialog('deleteConnection', undefined);
   const [formDataSnapshot, setFormDataSnapshot] = useState<{ [key: string]: any }>({});
@@ -41,7 +49,7 @@ export function ConnectionFormActions({
   }, [formData, formDataSnapshot]);
 
   const dbConnectionError = form.formState.errors.root;
-  const isSubmitting = form.formState.isSubmitting;
+  const isSubmitting = form.formState.isSubmitting || isCreatingOrUpdatingConnection;
 
   return (
     <div className="flex flex-col gap-4 pt-4">
@@ -69,12 +77,12 @@ export function ConnectionFormActions({
               </Button>
             )}
           </div>
-          {isSubmitting && <SpinnerIcon className="mr-2 text-primary" />}
+
           <Button variant="outline" onClick={handleCancelForm} type="button" disabled={isSubmitting}>
             Cancel
           </Button>
 
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
             {connectionUuid ? 'Save changes' : 'Create'}
           </Button>
         </div>
