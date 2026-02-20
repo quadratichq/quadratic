@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-cloud-worker"
-version = "0.24.0"
+version = "0.24.1"
 edition = "2024"
 authors = ["Quadratic"]
 description = "File processing worker for Quadratic Cloud"
@@ -14,7 +14,9 @@ quadratic-renderer-native = { path = "../quadratic-rust-renderer/native" }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "quadratic-cloud",
 ] }
+anyhow = "1.0"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+rustls = { version = "0.23", features = ["ring"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.108"
 thiserror = "2.0.12"
