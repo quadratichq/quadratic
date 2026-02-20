@@ -8,7 +8,14 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { focusAIAnalyst } from '@/app/helpers/focusGrid';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { ConnectionIcon } from '@/shared/components/ConnectionIcon';
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback } from 'react';
