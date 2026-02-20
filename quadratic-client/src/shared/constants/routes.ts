@@ -19,6 +19,28 @@ export const ROUTES = {
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
+  EMBED: ({
+    embedId,
+    importUrl,
+    readonly,
+    sheet,
+    preload,
+  }: {
+    embedId?: string;
+    importUrl?: string;
+    readonly?: boolean;
+    sheet?: string;
+    preload?: ('python' | 'js')[];
+  }) => {
+    const params = new URLSearchParams();
+    if (embedId) params.set('embedId', embedId);
+    if (importUrl) params.set('import', importUrl);
+    if (readonly) params.set('readonly', '');
+    if (sheet?.trim()) params.set('sheet', sheet.trim());
+    if (preload?.length) params.set('preload', preload.join(','));
+    return `/embed?${params.toString()}`;
+  },
+  EMBED_CLAIM: (token: string) => `/embed/claim/${token}`,
   FILES_CREATE: '/files/create',
   FILES_CREATE_AI: '/files/create/ai',
   // Team-based AI creation routes (these are the actual routes)
@@ -119,6 +141,7 @@ export const ROUTES = {
 export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
+  EMBED: 'embed',
   DASHBOARD: 'dashboard',
 } as const;
 

@@ -8,6 +8,7 @@ import {
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { isAiDisabled } from '@/app/helpers/isEmbed';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
@@ -73,7 +74,7 @@ export const QuadraticSidebar = () => {
       </div>
 
       <div className="mt-2 flex flex-col items-center gap-1">
-        {canEditFile && isAuthenticated && (
+        {canEditFile && isAuthenticated && !isAiDisabled && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
             <SidebarToggle
               pressed={showAIAnalyst || agentMode}

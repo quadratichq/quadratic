@@ -10,8 +10,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ExternalLinkIcon, MoveItemIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import {
   DropdownMenu,
@@ -19,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -70,7 +70,7 @@ function FileLocation() {
   const {
     team,
     userMakingRequest: { fileRole, teamRole, id: userId },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   // Use useTeamData for reactive team name updates
   const { teamData } = useTeamData();
   const teamName = teamData?.activeTeam?.team.name ?? team.name;

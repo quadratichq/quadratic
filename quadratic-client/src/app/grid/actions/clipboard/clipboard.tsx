@@ -5,12 +5,14 @@ import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
+import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import localforage from 'localforage';
+import type { JSX } from 'react';
 import { isSafari } from 'react-device-detect';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
@@ -31,6 +33,28 @@ const clipboardSendAnalyticsError = (from: string, error: Error | unknown) => {
   sendAnalyticsError('clipboard', from, error);
 };
 
+const isClipboardPermissionError = (error: unknown): boolean => {
+  if (error instanceof DOMException) {
+    return error.name === 'NotAllowedError' || error.name === 'SecurityError';
+  }
+  if (error instanceof Error) {
+    return error.name === 'NotAllowedError' || error.name === 'SecurityError';
+  }
+  return false;
+};
+
+const getEmbedClipboardErrorMessage = (): JSX.Element => {
+  return (
+    <div>
+      <div style={{ marginBottom: '4px' }}>Embedded spreadsheet does not support copying.</div>
+      <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+        To enable copying, add <code style={{ fontSize: '0.8em' }}>allow="clipboard-read; clipboard-write"</code> to the
+        iframe tag.
+      </div>
+    </div>
+  );
+};
+
 export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   try {
     if (!canvasIsTarget()) return;
@@ -41,7 +65,11 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboardEvent', error);
-    pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
+    if (isEmbed && isClipboardPermissionError(error)) {
+      pixiAppSettings.addGlobalSnackbar?.(getEmbedClipboardErrorMessage(), { severity: 'error' });
+    } else {
+      pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
+    }
   }
 };
 
@@ -55,7 +83,11 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
     debugTimeCheck('[Clipboard] cut to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('cutToClipboardEvent', error);
-    pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
+    if (isEmbed && isClipboardPermissionError(error)) {
+      pixiAppSettings.addGlobalSnackbar?.(getEmbedClipboardErrorMessage(), { severity: 'error' });
+    } else {
+      pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
+    }
   }
 };
 
@@ -185,7 +217,11 @@ export const cutToClipboard = async () => {
     debugTimeCheck('cut to clipboard (fallback)');
   } catch (error) {
     clipboardSendAnalyticsError('cutToClipboard', error);
-    pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
+    if (isEmbed && isClipboardPermissionError(error)) {
+      pixiAppSettings.addGlobalSnackbar?.(getEmbedClipboardErrorMessage(), { severity: 'error' });
+    } else {
+      pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
+    }
   }
 };
 
@@ -197,7 +233,11 @@ export const copyToClipboard = async () => {
     debugTimeCheck('copy to clipboard');
   } catch (error) {
     clipboardSendAnalyticsError('copyToClipboard', error);
-    pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
+    if (isEmbed && isClipboardPermissionError(error)) {
+      pixiAppSettings.addGlobalSnackbar?.(getEmbedClipboardErrorMessage(), { severity: 'error' });
+    } else {
+      pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
+    }
   }
 };
 

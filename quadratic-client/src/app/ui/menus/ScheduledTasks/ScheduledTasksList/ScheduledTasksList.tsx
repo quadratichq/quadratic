@@ -6,9 +6,9 @@ import { scheduledTasksAtom, useScheduledTasks } from '@/jotai/scheduledTasksAto
 import { ArrowRightIcon, ScheduledTasksIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_SCHEDULED_TASKS_URL } from '@/shared/constants/urls';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtomValue } from 'jotai';
 import { Link } from 'react-router';
 
@@ -24,7 +24,7 @@ const EmptyScheduledTasksList = () => {
   const {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const { newScheduledTask } = useScheduledTasks();
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 text-center">

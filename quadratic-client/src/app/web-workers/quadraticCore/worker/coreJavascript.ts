@@ -6,23 +6,46 @@ import type {
   JavascriptCoreMessage,
 } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
 
+interface PendingJavascriptRun {
+  transactionId: string;
+  x: number;
+  y: number;
+  sheetId: string;
+  code: string;
+}
+
 class CoreJavascript {
   private coreJavascriptPort?: MessagePort;
+  private pendingRun?: PendingJavascriptRun;
 
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
+  constructor() {
+    // Set up self.sendRunJavascript immediately so Rust can call it even before the JS worker is initialized
+    self.sendRunJavascript = this.sendRunJavascript;
+  }
+
   init = async (JavascriptPort: MessagePort) => {
     this.coreJavascriptPort = JavascriptPort;
     this.coreJavascriptPort.onmessage = this.handleMessage;
+    // Ensure self.sendRunJavascript is set (it should already be set in constructor, but ensure it's the right reference)
     self.sendRunJavascript = this.sendRunJavascript;
     if (await debugFlagWait('debugWebWorkers')) console.log('[coreJavascript] initialized');
+
+    // Retry pending run if there is one
+    if (this.pendingRun) {
+      const pending = this.pendingRun;
+      this.pendingRun = undefined;
+      this.sendRunJavascript(pending.transactionId, pending.x, pending.y, pending.sheetId, pending.code);
+    }
   };
 
   private handleMessage = (e: MessageEvent<JavascriptCoreMessage>) => {
@@ -55,6 +78,12 @@ class CoreJavascript {
     }
   }
 
+  private ensurePortInitialized() {
+    if (!this.coreJavascriptPort) {
+      coreClient.requestInitJavascript();
+    }
+  }
+
   private handleGetCellsA1Response = (id: number, transactionId: string, a1: string) => {
     let responseUint8Array: Uint8Array;
     try {
@@ -83,6 +112,17 @@ class CoreJavascript {
   };
 
   private sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+    if (!this.coreJavascriptPort) {
+      this.pendingRun = {
+        transactionId,
+        x,
+        y,
+        sheetId,
+        code,
+      };
+      this.ensurePortInitialized();
+      return;
+    }
     this.lastTransactionId = transactionId;
     this.send({
       type: 'coreJavascriptRun',

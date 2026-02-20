@@ -45,6 +45,7 @@ export interface ClientCoreLoad {
   id: number;
   fileId: string;
   teamUuid: string;
+  noMultiplayer: boolean;
 }
 
 export interface CoreClientLoad {
@@ -94,6 +95,14 @@ export interface ClientCoreInitJavascript {
   type: 'clientCoreInitJavascript';
 }
 
+export interface CoreClientRequestInitPython {
+  type: 'coreClientRequestInitPython';
+}
+
+export interface CoreClientRequestInitJavascript {
+  type: 'coreClientRequestInitJavascript';
+}
+
 export interface ClientCoreExport {
   type: 'clientCoreExport';
   id: number;
@@ -131,6 +140,17 @@ export interface CoreClientExportCsvSelection {
 export interface ClientCoreExportJson {
   type: 'clientCoreExportJson';
   id: number;
+}
+
+/**
+ * Viewport update from client to core worker.
+ * Used when SharedArrayBuffer is not available.
+ */
+export interface ClientCoreViewportUpdate {
+  type: 'clientCoreViewportUpdate';
+  topLeft: Pos;
+  bottomRight: Pos;
+  sheetId: string;
 }
 
 export interface CoreClientExportJson {
@@ -1833,7 +1853,8 @@ export type ClientCoreMessage =
   | ClientCoreRedo
   | ClientCoreSetFormula
   | ClientCoreSetFormulas
-  | ClientCoreExportJson;
+  | ClientCoreExportJson
+  | ClientCoreViewportUpdate;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1944,4 +1965,6 @@ export type CoreClientMessage =
   | CoreClientRedoResponse
   | CoreClientStartupTimer
   | CoreClientSetFormula
-  | CoreClientSetFormulas;
+  | CoreClientSetFormulas
+  | CoreClientRequestInitPython
+  | CoreClientRequestInitJavascript;

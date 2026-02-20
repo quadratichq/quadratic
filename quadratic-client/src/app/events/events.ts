@@ -103,6 +103,8 @@ interface EventTypes {
 
   pythonInit: (version: string) => void;
   javascriptInit: (version: string) => void;
+  pythonLoading: () => void;
+  javascriptLoading: () => void;
   codeRunningState: (current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
 
   updateCodeCells: (updateCodeCells: JsUpdateCodeCell[]) => void;

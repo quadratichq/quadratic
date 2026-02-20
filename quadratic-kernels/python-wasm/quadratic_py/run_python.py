@@ -9,6 +9,7 @@ from quadratic_py import code_trace, plotly_patch, process_output
 
 from .quadratic_api.quadratic import (getCell, getCells, q, rc, rel_cell,
                                       rel_cells)
+from .transform_async import add_await_to_cell_calls
 from .utils import attempt_fix_await
 
 
@@ -46,15 +47,29 @@ async def run_python(code: str, pos: Tuple[int, int]):
     output_value = None
     globals['q'] = q(pos)
 
+    # Check if SharedArrayBuffer is available
+    # If not, we need to transform q.cells() calls to add await
     try:
-        plotly_html = await plotly_patch.intercept_plotly_html(code)
+        import hasSharedArrayBuffer
+        has_sab = hasSharedArrayBuffer()
+    except:
+        # Fallback: assume SAB is available if module not found
+        has_sab = True
+
+    # Transform code to add await to q.cells() calls when SAB is not available
+    transformed_code = code
+    if not has_sab:
+        transformed_code = add_await_to_cell_calls(code)
+
+    try:
+        plotly_html = await plotly_patch.intercept_plotly_html(transformed_code)
 
         # Capture STDOut to sout
         with redirect_stdout(sout):
             with redirect_stderr(serr):
                 # preprocess and fix code
                 output_value = await pyodide.code.eval_code_async(
-                    attempt_fix_await(code),
+                    attempt_fix_await(transformed_code),
                     globals=globals,
                     return_mode="last_expr_or_assign",
                     quiet_trailing_semicolon=False,

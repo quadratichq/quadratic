@@ -2,6 +2,22 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
 use crate::controller::GridController;
+use crate::grid::{Grid, file};
+
+/// Creates a new blank grid file and returns its contents.
+/// This is used by the embed mode to create a new blank file without server interaction.
+#[wasm_bindgen(js_name = "createBlankFile")]
+pub fn js_create_blank_file() -> Result<Vec<u8>, JsValue> {
+    let grid = Grid::new();
+    file::export(grid)
+        .map_err(|e| JsValue::from_str(&format!("Failed to create blank file: {}", e)))
+}
+
+/// Returns the current file version.
+#[wasm_bindgen(js_name = "getCurrentFileVersion")]
+pub fn js_get_current_file_version() -> String {
+    file::CURRENT_VERSION.to_string()
+}
 
 #[wasm_bindgen]
 impl GridController {

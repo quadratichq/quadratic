@@ -407,6 +407,12 @@ impl DataTable {
             return false;
         }
 
+        // Must not have a spill error. CellValue::Code is only for single-value outputs (1x1),
+        // which cannot spill. Array outputs are stored as DataTable instead.
+        if self.has_spill() {
+            return false;
+        }
+
         // Must be 1x1 output
         let size = self.output_size();
         if size.w.get() != 1 || size.h.get() != 1 {

@@ -52,7 +52,7 @@ export const Component = () => {
   const iframeUrl = useMemo(
     () =>
       activeSequenceNum !== null
-        ? ROUTES.FILE({ uuid, searchParams: `${SEARCH_PARAMS.SEQUENCE_NUM.KEY}=${activeSequenceNum}&embed` })
+        ? ROUTES.FILE({ uuid, searchParams: `${SEARCH_PARAMS.SEQUENCE_NUM.KEY}=${activeSequenceNum}&embed&noAi` })
         : '',
     [activeSequenceNum, uuid]
   );

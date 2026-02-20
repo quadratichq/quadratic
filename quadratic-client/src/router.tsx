@@ -20,6 +20,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirec
  *  - *.quadratichq.com/education
  *  - *.quadratichq.com/onboarding
  *  - *.quadratichq.com/iframe-indexeddb
+ *  - *.quadratichq.com/embed*
  *
  *  To add a new route:
  *  1. go to the respective cloudflare account (QA / Prod)
@@ -53,6 +54,20 @@ export const router = createBrowserRouter(
           <Route index element={<Navigate to="/" replace />} />
           <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE} />
         </Route>
+
+        {/**
+         * --- Embed route
+         * Public route for embedding files with AI and multiplayer disabled.
+         * Supports ?embedId=xxx to load existing files or ?import=xxx to import from URL.
+         */}
+        <Route path="embed" lazy={() => import('./routes/embed')} id={ROUTE_LOADER_IDS.EMBED} />
+
+        {/**
+         * --- Embed claim route
+         * Protected route for claiming a file from embed mode after authentication.
+         * Shows a loading UI while the file is being imported.
+         */}
+        <Route path="embed/claim/:token" lazy={() => import('./routes/embed.claim.$token')} />
 
         {/**
          * ----------------------------------------------------------------
@@ -133,7 +148,13 @@ export const router = createBrowserRouter(
           <Route path="teams">
             <Route index element={<Navigate to="/" replace />} />
             <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
-              <Route index loader={() => redirect('./files')} />
+              <Route
+                index
+                loader={({ request }) => {
+                  const url = new URL(request.url);
+                  return redirect('./files' + url.search);
+                }}
+              />
               <Route path="files" lazy={() => import('./routes/teams.$teamUuid.files')} />
               <Route path="files/deleted" lazy={() => import('./routes/teams.$teamUuid.files.deleted')} />
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />

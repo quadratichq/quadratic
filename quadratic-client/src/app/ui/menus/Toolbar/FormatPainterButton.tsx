@@ -45,7 +45,7 @@ export const FormatPainterButton = memo(() => {
           variant="ghost"
           size="icon-sm"
           className={cn(
-            'mx-1.5 flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+            'ml-0 mr-1.5 flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
             (formatPainter.active || keyboardPressed) && 'bg-accent text-foreground'
           )}
           onClick={handleClick}

@@ -25,7 +25,7 @@ import textCommandGroup from '@/app/ui/menus/CommandPalette/commands/Text';
 import validationCommandGroup from '@/app/ui/menus/CommandPalette/commands/Validation';
 import viewCommandGroup from '@/app/ui/menus/CommandPalette/commands/View';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import fuzzysort from 'fuzzysort';
@@ -37,7 +37,7 @@ export const CommandPalette = memo(() => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setAnnotationState = useSetRecoilState(editorInteractionStateAnnotationStateAtom);

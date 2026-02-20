@@ -268,7 +268,9 @@ impl Sheet {
                 std_err: code_run.std_err.clone(),
                 std_out: code_run.std_out.clone(),
                 evaluation_result,
-                spill_error: None, // CellValue::Code never spills
+                // CellValue::Code is only used for single-value outputs (1x1), so it never spills.
+                // Array outputs are stored as DataTable instead, which can spill.
+                spill_error: None,
                 return_info,
                 cells_accessed: Some(code_run.cells_accessed.clone().into()),
                 last_modified: code_cell.last_modified.timestamp_millis(),

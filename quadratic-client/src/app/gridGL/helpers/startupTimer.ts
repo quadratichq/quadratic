@@ -12,6 +12,7 @@ const timerInfo = {
   'core.loadFile.newFromFile': { startTime: 0, endTime: 0 },
   'file.loader': { startTime: 0, endTime: 0 },
   'file.loader.files.get': { startTime: 0, endTime: 0 },
+  'file.loader.embeds.get': { startTime: 0, endTime: 0 },
   'file.loader.initCoreClient': { startTime: 0, endTime: 0 },
   'file.loader.loadPixi': { startTime: 0, endTime: 0 },
   'file.loader.quadraticCore.load': { startTime: 0, endTime: 0 },

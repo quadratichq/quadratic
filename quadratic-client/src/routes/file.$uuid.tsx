@@ -3,7 +3,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { startupTimer } from '@/app/gridGL/helpers/startupTimer';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
-import { isEmbed } from '@/app/helpers/isEmbed';
+import { isEmbed, isNoMultiplayer } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
@@ -140,6 +140,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     url: checkpoint.url,
     version: checkpoint.version,
     sequenceNumber: checkpoint.sequenceNumber,
+    noMultiplayer: isNoMultiplayer,
   });
   startupTimer.end('file.loader.quadraticCore.load');
   if (result.error) {
@@ -183,6 +184,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // Hot-modify permissions if its the version history, so it's read-only
   if (isVersionHistoryPreview) {
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
+  }
+
+  // When noMultiplayer is enabled, allow editing since changes are local only
+  if (isNoMultiplayer && !data.userMakingRequest.filePermissions.includes(FilePermissionSchema.enum.FILE_EDIT)) {
+    data.userMakingRequest.filePermissions = [
+      ...data.userMakingRequest.filePermissions,
+      FilePermissionSchema.enum.FILE_EDIT,
+    ];
   }
 
   registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });

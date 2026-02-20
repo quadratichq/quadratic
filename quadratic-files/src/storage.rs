@@ -25,9 +25,11 @@ pub(crate) async fn get_storage(
     Path(file_name): Path<String>,
     state: Extension<Arc<State>>,
 ) -> Result<impl IntoResponse> {
+    // Strip leading slash from wildcard path capture
+    let file_name = file_name.strip_prefix('/').unwrap_or(&file_name);
     tracing::trace!("Get file {}", file_name);
 
-    let file = state.settings.storage.read(&file_name).await?;
+    let file = state.settings.storage.read(file_name).await?;
     Ok(file.into_response())
 }
 
@@ -58,6 +60,8 @@ pub(crate) async fn upload_storage(
     state: Extension<Arc<State>>,
     request: Request,
 ) -> Result<Json<UploadStorageResponse>> {
+    // Strip leading slash from wildcard path capture
+    let file_name = file_name.strip_prefix('/').unwrap_or(&file_name).to_owned();
     tracing::trace!(
         "Uploading file {} to {}",
         file_name,

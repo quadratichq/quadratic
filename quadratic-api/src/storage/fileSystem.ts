@@ -58,6 +58,34 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
   }
 };
 
+// Download a file from the file service using a presigned URL.
+export const downloadFromFileService = async (key: string): Promise<Buffer> => {
+  // Use presigned URL for authentication-free download
+  const url = getPresignedStorageUrl(key);
+
+  try {
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+    });
+    return Buffer.from(response.data);
+  } catch (error) {
+    logger.error('Error downloading from file service', error);
+    throw new Error(`Failed to download file from ${url}`);
+  }
+};
+
+// Delete a file from the file service.
+export const deleteFromFileService = async (key: string): Promise<void> => {
+  const url = generateUrl(key, false);
+
+  try {
+    await axios.delete(url);
+  } catch (error) {
+    logger.error('Error deleting from file service', error);
+    throw new Error(`Failed to delete file from ${url}`);
+  }
+};
+
 // Collect a full stream and place in a byte array.
 function streamToByteArray(stream: Readable): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {

@@ -466,7 +466,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }})
+            ✅ Deploy images - ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }} - [Preview](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}) [Embed test](https://${{ steps.deploy-metadata.outputs.WEBSITE_URL }}/embed-test/)
             ⏳ Tests-E2E - [Previous Report](https://e2e.quadratic-preview.com/pr-${{ github.event.pull_request.number }})
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -625,7 +625,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }}) [Embed test](https://${{ env.e2e_url }}/embed-test/)
             ⏳ Tests-E2E running... - [Partial Report](https://e2e.quadratic-preview.com/pr-${{ github.event.pull_request.number }}) (updates as shards complete)
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
@@ -747,7 +747,7 @@ jobs:
 
               const body = `## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - ${deployTime} - [Preview](https://${e2eUrl})
+            ✅ Deploy images - ${deployTime} - [Preview](https://${e2eUrl}) [Embed test](https://${e2eUrl}/embed-test/)
             ${statusLine} - [Partial Report](https://${s3Bucket}/pr-${prNumber})
 
             🔍 [Workflow run](${workflowUrl})`;
@@ -1035,7 +1035,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }}) [Embed test](https://${{ env.e2e_url }}/embed-test/)
             ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }})
 
             🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -1050,7 +1050,7 @@ jobs:
           body: |
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
-            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }}) [Embed test](https://${{ env.e2e_url }}/embed-test/)
             🚫 Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
             🔍 [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

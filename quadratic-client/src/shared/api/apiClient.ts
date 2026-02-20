@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 // This should match the current version in quadratic-core/src/grid/file/mod.rs
-const FILE_VERSION = '1.12';
+export const FILE_VERSION = '1.12';
 
 export const apiClient = {
   teams: {
@@ -557,6 +557,50 @@ export const apiClient = {
         `/v0/ai/codeRunError`,
         { method: 'PATCH', body: JSON.stringify(body) },
         ApiSchemas['/v0/ai/codeRunError.PATCH.response']
+      );
+    },
+  },
+
+  embeds: {
+    get(embedUuid: string) {
+      return fetchFromApi(`/v0/embeds/${embedUuid}`, { method: 'GET' }, ApiSchemas['/v0/embeds/:uuid.GET.response']);
+    },
+    create(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/embeds`,
+        { method: 'POST' },
+        ApiSchemas['/v0/files/:uuid/embeds.POST.response']
+      );
+    },
+    list(fileUuid: string) {
+      return fetchFromApi(
+        `/v0/files/${fileUuid}/embeds`,
+        { method: 'GET' },
+        ApiSchemas['/v0/files/:uuid/embeds.GET.response']
+      );
+    },
+    delete(embedUuid: string) {
+      return fetchFromApi(
+        `/v0/embeds/${embedUuid}`,
+        { method: 'DELETE' },
+        ApiSchemas['/v0/embeds/:uuid.DELETE.response']
+      );
+    },
+  },
+
+  embed: {
+    uploadRequest(body: ApiTypes['/v0/embed/upload-request.POST.request']) {
+      return fetchFromApi(
+        `/v0/embed/upload-request`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/embed/upload-request.POST.response']
+      );
+    },
+    claim(body: ApiTypes['/v0/embed/claim.POST.request']) {
+      return fetchFromApi(
+        `/v0/embed/claim`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/embed/claim.POST.response']
       );
     },
   },

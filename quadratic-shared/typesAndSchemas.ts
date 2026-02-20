@@ -769,6 +769,64 @@ export const ApiSchemas = {
   '/v0/url-metadata.GET.response': z.object({
     title: z.string().optional(),
   }),
+
+  /**
+   * ===========================================================================
+   * Embed (Edit in Quadratic)
+   * ===========================================================================
+   */
+  /**
+   * Embeds (embed link indirection)
+   */
+  '/v0/embeds/:uuid.GET.response': z.object({
+    file: z.object({
+      lastCheckpointSequenceNumber: z.number(),
+      lastCheckpointVersion: z.string(),
+      lastCheckpointDataUrl: z.string().url(),
+    }),
+    team: z.object({
+      settings: TeamSettingsSchema,
+    }),
+    userMakingRequest: z.object({
+      filePermissions: z.array(FilePermissionSchema),
+    }),
+  }),
+  '/v0/files/:uuid/embeds.GET.response': z.array(
+    z.object({
+      uuid: z.string().uuid(),
+      createdDate: z.string().datetime(),
+    })
+  ),
+  '/v0/files/:uuid/embeds.POST.response': z.object({
+    uuid: z.string().uuid(),
+  }),
+  '/v0/embeds/:uuid.DELETE.response': z.object({
+    message: z.string(),
+  }),
+
+  /**
+   * Embed (Edit in Quadratic)
+   */
+  '/v0/embed/upload-request.POST.request': z.object({
+    version: z.string(),
+  }),
+  '/v0/embed/upload-request.POST.response': z.object({
+    uploadUrl: z.string().url(),
+    claimToken: z.string().uuid(),
+  }),
+  '/v0/embed/claim.POST.request': z.object({
+    claimToken: z.string(),
+  }),
+  '/v0/embed/claim.POST.response': z.object({
+    file: z.object({
+      uuid: z.string().uuid(),
+      name: z.string(),
+    }),
+    team: z.object({
+      uuid: z.string().uuid(),
+    }),
+    redirectUrl: z.string(),
+  }),
 };
 
 /**

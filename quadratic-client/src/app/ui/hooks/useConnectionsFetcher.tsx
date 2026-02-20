@@ -1,7 +1,7 @@
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
 import type { GetConnections } from '@/routes/api.connections';
 import { ROUTES } from '@/shared/constants/routes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useFileRouteLoaderDataRequired } from '@/shared/hooks/useFileRouteLoaderData';
 import { isSyncedConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFetcher } from 'react-router';
@@ -29,7 +29,7 @@ export const useConnectionsFetcher = () => {
   const {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+  } = useFileRouteLoaderDataRequired();
   const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const fetcherRef = useRef(fetcher);
 

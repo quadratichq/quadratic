@@ -1,7 +1,9 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { configureSABSupport } from '@/app/helpers/sharedArrayBufferSupport';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
   ClientPythonChartImage,
+  ClientPythonCoreChannel,
   ClientPythonGetJwt,
   ClientPythonMessage,
   PythonClientMessage,
@@ -41,9 +43,14 @@ class PythonClient {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[pythonClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
-      case 'clientPythonCoreChannel':
+      case 'clientPythonCoreChannel': {
+        const coreChannelData = e.data as ClientPythonCoreChannel;
+        // Configure SAB support based on embed mode from main thread
+        // This must happen before any Python code execution
+        configureSABSupport({ isEmbed: coreChannelData.isEmbedMode });
         pythonCore.init(e.ports[0]);
         break;
+      }
 
       case 'clientPythonInit':
         this._env = e.data.env;

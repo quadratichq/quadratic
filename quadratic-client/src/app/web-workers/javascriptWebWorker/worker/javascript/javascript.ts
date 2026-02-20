@@ -1,6 +1,7 @@
 // This file is the main entry point for the javascript worker. It handles
 // managing the Javascript runners, which is where the code is executed.
 
+import { getHasSharedArrayBuffer } from '@/app/helpers/sharedArrayBufferSupport';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -46,6 +47,7 @@ export class Javascript {
     });
 
     this.state = 'ready';
+    javascriptClient.sendInit(esbuild.version);
     return this.next();
   };
 
@@ -122,7 +124,15 @@ export class Javascript {
     try {
       const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
       const jwt = await javascriptClient.getJwt();
-      const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers, proxyUrl, jwt);
+      const code = prepareJavascriptCode(
+        transformedCode,
+        message.x,
+        message.y,
+        this.withLineNumbers,
+        proxyUrl,
+        jwt,
+        getHasSharedArrayBuffer()
+      );
       const objUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
       const runner = new Worker(objUrl, {
         type: 'module',
@@ -203,6 +213,26 @@ export class Javascript {
 
           Atomics.store(int32View, 0, 1);
           Atomics.notify(int32View, 0, 1);
+        } else if (e.data.type === 'getCellsA1Async') {
+          // Async cell request (used when SharedArrayBuffer is not available)
+          const { requestId, a1 } = e.data;
+          this.getCellsA1(message.transactionId, a1)
+            .then((cellsBuffer) => {
+              const decoder = new TextDecoder();
+              const resultsStringified = decoder.decode(new Uint8Array(cellsBuffer));
+              runner.postMessage({
+                type: 'getCellsA1AsyncResponse',
+                requestId,
+                resultsStringified,
+              });
+            })
+            .catch((error) => {
+              runner.postMessage({
+                type: 'getCellsA1AsyncResponse',
+                requestId,
+                error: error.message || 'Failed to get cells',
+              });
+            });
         } else if (e.data.type === 'error') {
           cleanup();
 

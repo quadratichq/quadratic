@@ -67,7 +67,7 @@ export const loader = async ({ request }: { request: Request }) => {
       return redirect(redirectTo);
     }
   } catch (e) {
-    console.error(e);
+    // Error handled by redirecting to home
   }
   return redirect('/');
 };

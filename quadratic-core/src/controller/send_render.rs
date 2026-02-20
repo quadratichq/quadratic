@@ -25,6 +25,13 @@ impl GridController {
             return;
         }
 
+        // Check if SharedArrayBuffer is available before trying to create one
+        if !crate::wasm_bindings::js::jsHasSharedArrayBuffer() {
+            // In embed mode without cross-origin isolation, SAB is not available.
+            // We'll rely on jsGetViewport() fallback for viewport info.
+            return;
+        }
+
         let viewport_buffer = ViewportBuffer::default();
         crate::wasm_bindings::js::jsSendViewportBuffer(viewport_buffer.get_buffer());
         self.viewport_buffer = Some(viewport_buffer);

@@ -51,9 +51,9 @@ export const FileMenubarMenu = () => {
   const user = useRecoilValue(editorInteractionStateUserAtom);
   const isAvailableArgs = useIsAvailableArgs();
   const { ownerUserId } = useFileLocation();
-  const {
-    userMakingRequest: { id: userId, filePermissions },
-  } = useFileRouteLoaderData();
+  const fileRouteData = useFileRouteLoaderData();
+  const userId = fileRouteData?.userMakingRequest?.id;
+  const filePermissions = fileRouteData?.userMakingRequest?.filePermissions ?? [];
 
   const canMoveFile = filePermissions.includes('FILE_MOVE');
   const { addGlobalSnackbar } = useGlobalSnackbar();
