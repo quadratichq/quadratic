@@ -1,49 +1,62 @@
 import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
-import {
-  editorInteractionStateShowAddConnectionMenuAtom,
-  editorInteractionStateShowCellTypeMenuAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { connectionPickerModeAtom } from '@/app/atoms/connectionPickerAtom';
+import { editorInteractionStateShowAddConnectionMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import type {
   CommandGroup,
   CommandPaletteListItemDynamicProps,
 } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
-import { AddIcon, DatabaseIcon } from '@/shared/components/Icons';
+import { AddIcon, CodeIcon, DatabaseIcon, PromptIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
 
-// TODO: change these to be 1 of 4 things:
-// 1. Query a connection
-// 2. Prompt a connection
-// 3. Manage connections (if there are some)
-// 4. Add a connection
 const commands: CommandGroup = {
   heading: 'Connections',
   commands: [
     {
-      label: 'Use a connection',
+      label: 'Query a connection',
+      keywords: ['connection', 'database', 'sql', 'query'],
       isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
-
-        return <CommandPaletteListItem {...props} action={() => setShowCellTypeMenu(true)} icon={<DatabaseIcon />} />;
+        const setConnectionPickerMode = useSetRecoilState(connectionPickerModeAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => setConnectionPickerMode('query')}
+            icon={<CodeIcon />}
+            shortcut="/"
+          />
+        );
       },
     },
     {
-      label: 'Add a connection',
-      isAvailable: ({ teamPermissions }) => !!teamPermissions && teamPermissions.includes('TEAM_EDIT'),
+      label: 'Prompt a connection',
+      keywords: ['connection', 'ai', 'analyst', 'prompt', 'chat'],
+      isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        const setShowAddConnectionMenu = useSetRecoilState(editorInteractionStateShowAddConnectionMenuAtom);
-
-        return <CommandPaletteListItem {...props} action={() => setShowAddConnectionMenu(true)} icon={<AddIcon />} />;
+        const setConnectionPickerMode = useSetRecoilState(connectionPickerModeAtom);
+        return (
+          <CommandPaletteListItem {...props} action={() => setConnectionPickerMode('prompt')} icon={<PromptIcon />} />
+        );
       },
     },
     {
       label: 'Manage connections',
+      keywords: ['connection', 'edit', 'settings', 'manage'],
       isAvailable: ({ teamPermissions }) => !!teamPermissions && teamPermissions.includes('TEAM_EDIT'),
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        // const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-
-        return <CommandPaletteListItem {...props} action={() => {}} icon={<DatabaseIcon />} />;
+        const setConnectionPickerMode = useSetRecoilState(connectionPickerModeAtom);
+        return (
+          <CommandPaletteListItem {...props} action={() => setConnectionPickerMode('manage')} icon={<DatabaseIcon />} />
+        );
+      },
+    },
+    {
+      label: 'Add a connection',
+      keywords: ['connection', 'new', 'create', 'add'],
+      isAvailable: ({ teamPermissions }) => !!teamPermissions && teamPermissions.includes('TEAM_EDIT'),
+      Component: (props: CommandPaletteListItemDynamicProps) => {
+        const setShowAddConnectionMenu = useSetRecoilState(editorInteractionStateShowAddConnectionMenuAtom);
+        return <CommandPaletteListItem {...props} action={() => setShowAddConnectionMenu(true)} icon={<AddIcon />} />;
       },
     },
   ],

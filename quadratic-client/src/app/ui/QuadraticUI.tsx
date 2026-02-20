@@ -2,6 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { useEmptyChatSuggestionsSync } from '@/app/ai/hooks/useEmptyChatSuggestionsSync';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { connectionPickerModeAtom } from '@/app/atoms/connectionPickerAtom';
 import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowAddConnectionMenuAtom,
@@ -25,6 +26,7 @@ import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import { PresentationModeHint } from '@/app/ui/components/PresentationModeHint';
 import { AddConnectionMenu } from '@/app/ui/menus/AddConnectionMenu/AddConnectionMenu';
 import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
+import { ConnectionPickerMenu } from '@/app/ui/menus/ConnectionPickerMenu/ConnectionPickerMenu';
 import { AIAnalystConnectionSchema } from '@/app/ui/menus/AIAnalyst/AIAnalystConnectionSchema';
 import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { CellTypeMenu } from '@/app/ui/menus/CellTypeMenu/CellTypeMenu';
@@ -96,6 +98,7 @@ export default function QuadraticUI() {
   const showAddConnectionMenu = useRecoilValue(editorInteractionStateShowAddConnectionMenuAtom);
   const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
+  const showConnectionPickerMenu = useRecoilValue(connectionPickerModeAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
   // See if the aiAnalyst is running
@@ -219,6 +222,7 @@ export default function QuadraticUI() {
       {showAddConnectionMenu && <AddConnectionMenu />}
       {showCellTypeMenu && <CellTypeMenu />}
       {showCommandPalette && <CommandPalette />}
+      {showConnectionPickerMenu && <ConnectionPickerMenu />}
       {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"
