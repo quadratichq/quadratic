@@ -26,9 +26,6 @@ class HTMLCellsHandler {
   };
 
   detach = () => {
-    this.cells.forEach((cell) => {
-      cell.destroy();
-    });
     this.cells.clear();
     this.div.remove();
     this.div = document.createElement('div');
