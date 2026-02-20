@@ -2080,9 +2080,9 @@ checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
 
 [[package]]
 name = "bytes"
-version = "1.10.1"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
+checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 dependencies = [
  "serde",
 ]
@@ -4213,7 +4213,7 @@ dependencies = [
  "google-cloud-metadata",
  "google-cloud-token",
  "home",
- "jsonwebtoken",
+ "jsonwebtoken 9.3.1",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -5345,6 +5345,22 @@ dependencies = [
  "ring 0.17.14",
  "serde",
  "serde_json",
+ "simple_asn1",
+]
+
+[[package]]
+name = "jsonwebtoken"
+version = "10.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0529410abe238729a60b108898784df8984c87f6054c9c4fcacc47e4803c1ce1"
+dependencies = [
+ "base64 0.22.1",
+ "getrandom 0.2.16",
+ "js-sys",
+ "pem",
+ "serde",
+ "serde_json",
+ "signature 2.2.0",
  "simple_asn1",
 ]
 
@@ -7156,7 +7172,7 @@ dependencies = [
  "futures",
  "futures-util",
  "httpmock 0.8.2",
- "jsonwebtoken",
+ "jsonwebtoken 10.3.0",
  "k8s-openapi",
  "kube",
  "quadratic-rust-shared",
@@ -7219,7 +7235,7 @@ dependencies = [
  "http-body-util",
  "hyper 1.6.0",
  "hyper-util",
- "jsonwebtoken",
+ "jsonwebtoken 10.3.0",
  "log",
  "parquet",
  "quadratic-rust-shared",
@@ -7343,7 +7359,7 @@ dependencies = [
  "headers",
  "http 1.3.1",
  "httpmock 0.8.2",
- "jsonwebtoken",
+ "jsonwebtoken 10.3.0",
  "quadratic-core",
  "quadratic-rust-shared",
  "rayon",
@@ -7380,7 +7396,7 @@ dependencies = [
  "futures",
  "futures-util",
  "headers",
- "jsonwebtoken",
+ "jsonwebtoken 10.3.0",
  "prost 0.13.5",
  "prost-reflect",
  "prost-types 0.13.5",
@@ -7482,7 +7498,7 @@ dependencies = [
  "hyper-rustls 0.27.7",
  "hyper-util",
  "intrinio-rs",
- "jsonwebtoken",
+ "jsonwebtoken 10.3.0",
  "object_store",
  "parquet",
  "plaid",
@@ -9187,7 +9203,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f1c0c8818bb7400e821b166075ec771c8e8a012af41a8982b34eefaad4739fd"
 dependencies = [
  "base64 0.22.1",
- "jsonwebtoken",
+ "jsonwebtoken 9.3.1",
  "rsa",
  "serde",
  "sha2",

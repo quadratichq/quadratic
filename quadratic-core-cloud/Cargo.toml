@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
-bytes = "1.6.1"
+bytes = "1.11.1"
 futures-util = "0.3.30"
 http = "1.1.0"
 # openssl = { version = "0.10.72", features = ["vendored"] }
