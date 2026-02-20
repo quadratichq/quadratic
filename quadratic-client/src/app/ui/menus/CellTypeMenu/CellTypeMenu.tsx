@@ -108,11 +108,6 @@ export const CellTypeMenu = memo(() => {
     setShowAddConnectionMenu(true);
   }, [setShowCellTypeMenu, setShowAddConnectionMenu]);
 
-  // const manageConnections = useCallback(() => {
-  //   setShowCellTypeMenu(false);
-  //   setShowConnectionsMenu(...);
-  // }, [setShowCellTypeMenu, setShowConnectionsMenu]);
-
   const selectConnection = useCallback(
     (connectionUuid: string, connectionType: ConnectionType, connectionName: string) => {
       trackEvent('[CellTypeMenu].selectConnection', { type: connectionType });
@@ -168,11 +163,6 @@ export const CellTypeMenu = memo(() => {
               icon={<AddIcon className="text-muted-foreground opacity-80" />}
               onSelect={addConnection}
             />
-            {/* TODO: remove if we like the other implementation <CommandItemWrapper
-              name="Manage connections"
-              icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
-              onSelect={manageConnections}
-            /> */}
           </CommandGroup>
         )}
       </CommandList>
