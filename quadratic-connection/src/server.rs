@@ -35,6 +35,7 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{ConnectionError, Result},
+    financial::stock_prices::stock_prices,
     health::{full_healthcheck, healthcheck},
     proxy::proxy,
     sql::{
@@ -161,6 +162,9 @@ pub(crate) fn app(state: Arc<State>) -> Result<Router> {
         .route("/plaid/test", post(test_plaid))
         .route("/plaid/query", post(query_datafusion))
         .route("/plaid/schema/:id", get(schema_datafusion))
+        //
+        // financial
+        .route("/financial/stock-prices", post(stock_prices))
         //
         // proxy
         .route("/proxy", any(proxy))

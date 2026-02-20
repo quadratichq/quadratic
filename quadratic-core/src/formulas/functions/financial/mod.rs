@@ -4,6 +4,7 @@ mod bond;
 mod investment;
 mod loan;
 mod securities;
+pub mod stock_history;
 mod treasury;
 
 use chrono::{Datelike, Months, NaiveDate};
@@ -27,6 +28,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         investment::get_functions(),
         treasury::get_functions(),
         securities::get_functions(),
+        stock_history::get_functions(),
     ]
     .into_iter()
     .flatten()

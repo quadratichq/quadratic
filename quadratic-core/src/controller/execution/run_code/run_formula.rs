@@ -3,7 +3,8 @@ use itertools::Itertools;
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    formulas::{Ctx, Formula, find_cell_references, parse_formula},
+    formulas::functions::financial::stock_history::StockHistoryParams,
+    formulas::{Ctx, Formula, ast::AstNodeContents, find_cell_references, parse_formula},
     grid::{
         CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
         data_table::DataTableTemplate,
@@ -57,6 +58,25 @@ impl GridController {
                 }
             }
         };
+
+        // Check if this is a STOCKHISTORY call at the AST level
+        // This properly handles cell references and expressions in arguments
+        if let AstNodeContents::FunctionCall { func, args } = &parsed.ast.inner
+            && func.inner.eq_ignore_ascii_case("STOCKHISTORY")
+        {
+            // Evaluate arguments to resolve cell refs, expressions, etc.
+            if let Some(params) = StockHistoryParams::from_evaluated_args(args, &mut eval_ctx) {
+                // Route to async connection infrastructure
+                self.run_connection(
+                    transaction,
+                    sheet_pos,
+                    code.clone(),
+                    crate::grid::ConnectionKind::StockHistory,
+                    params.to_query_json(),
+                );
+                return;
+            }
+        }
 
         let output = parsed.eval(&mut eval_ctx).into_non_tuple();
         let errors = output.inner.errors();

@@ -3,7 +3,9 @@ import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
   ClientPythonChartImage,
   ClientPythonGetJwt,
+  ClientPythonGetTeamUuid,
   ClientPythonMessage,
+  ClientPythonStockPrices,
   PythonClientMessage,
 } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
@@ -84,6 +86,28 @@ class PythonClient {
       const id = this.id++;
       this.waitingForResponse[id] = (message: ClientPythonGetJwt) => resolve(message.jwt);
       this.send({ type: 'pythonClientGetJwt', id });
+    });
+  }
+
+  getTeamUuid(): Promise<string | null> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: ClientPythonGetTeamUuid) => resolve(message.teamUuid);
+      this.send({ type: 'pythonClientGetTeamUuid', id });
+    });
+  }
+
+  getStockPrices(
+    identifier: string,
+    startDate: string | null,
+    endDate: string | null,
+    frequency: string | null
+  ): Promise<{ data: unknown; error: string | null }> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: ClientPythonStockPrices) =>
+        resolve({ data: message.data, error: message.error });
+      this.send({ type: 'pythonClientStockPrices', id, identifier, startDate, endDate, frequency });
     });
   }
 

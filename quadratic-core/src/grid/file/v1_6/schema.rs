@@ -276,6 +276,8 @@ pub enum ConnectionKind {
     #[serde(rename = "GOOGLE_ANALYTICS")]
     GoogleAnalytics,
     Plaid,
+    /// Financial data connection for STOCKHISTORY formula
+    StockHistory,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

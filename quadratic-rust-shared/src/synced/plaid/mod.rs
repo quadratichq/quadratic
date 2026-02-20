@@ -88,6 +88,7 @@ pub struct PlaidConfigFromEnv {
     pub client_id: String,
     pub secret: String,
 }
+
 pub async fn new_plaid_client(
     add_access_token: bool,
     products: Vec<plaid::model::Products>,
