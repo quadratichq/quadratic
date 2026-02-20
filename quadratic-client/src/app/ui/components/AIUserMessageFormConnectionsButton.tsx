@@ -51,6 +51,7 @@ export const AIUserMessageFormConnectionsButton = memo(
             actionsFirst
             onSelectConnection={handleSelectConnection}
             onAddConnection={handleAddConnection}
+            source="ai-prompt"
           />
         </DropdownMenuContent>
       </DropdownMenu>

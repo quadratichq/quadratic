@@ -197,6 +197,7 @@ const ConnectionCommandItem = memo(({ connection, index, onSelect }: ConnectionC
 
   const handleManageClick = useCallback(() => {
     manageClickedRef.current = true;
+    trackEvent('[CellTypeMenu].manageConnection', { type: connection.type });
     setShowCellTypeMenu(false);
     setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
   }, [setShowCellTypeMenu, setShowConnectionsMenu, connection.uuid, connection.type]);

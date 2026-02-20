@@ -14,6 +14,7 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo, useCallback, useMemo, useRef } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { connectionsByType } from './connectionsByType';
@@ -132,9 +133,10 @@ interface ConnectionMenuItemProps {
   connection: ConnectionList[number];
   isActive: boolean;
   onClick: () => void;
+  source: ConnectionsMenuContentProps['source'];
 }
 
-const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMenuItemProps) => {
+const ConnectionMenuItem = memo(({ connection, isActive, onClick, source }: ConnectionMenuItemProps) => {
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const { syncState, isReadyForUse } = getConnectionSyncInfo(connection);
   const manageClickedRef = useRef(false);
@@ -144,20 +146,22 @@ const ConnectionMenuItem = memo(({ connection, isActive, onClick }: ConnectionMe
       manageClickedRef.current = false;
       return;
     }
+    trackEvent('[ConnectionsMenuContent].select', { type: connection.type, source });
     if (isReadyForUse) {
       onClick();
     } else {
       setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
     }
-  }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick]);
+  }, [isReadyForUse, setShowConnectionsMenu, connection.uuid, connection.type, onClick, source]);
 
   const handleManageClick = useCallback(() => {
     // Don't use e.stopPropagation() here because we want to allow the click to
     // bubble up to the parent dropdown menu so it closes, and we'll handle the
     // manage connection in handleClick() instead.
     manageClickedRef.current = true;
+    trackEvent('[ConnectionsMenuContent].manage', { type: connection.type, source });
     setShowConnectionsMenu({ connectionUuid: connection.uuid, connectionType: connection.type });
-  }, [setShowConnectionsMenu, connection.uuid, connection.type]);
+  }, [setShowConnectionsMenu, connection.uuid, connection.type, source]);
 
   return (
     <DropdownMenuItem onClick={handleClick} className="group flex items-center gap-3">
@@ -190,6 +194,7 @@ export interface ConnectionsMenuContentProps {
   actionsFirst?: boolean;
   onSelectConnection: (uuid: string, type: ConnectionType, name: string) => void;
   onAddConnection: (type: ConnectionType) => void;
+  source: 'sidebar' | 'ai-prompt';
 }
 
 export const ConnectionsMenuContent = memo(
@@ -199,6 +204,7 @@ export const ConnectionsMenuContent = memo(
     actionsFirst = false,
     onSelectConnection,
     onAddConnection,
+    source,
   }: ConnectionsMenuContentProps) => {
     const connectionsList = connections.length > 0 && (
       <>
@@ -208,6 +214,7 @@ export const ConnectionsMenuContent = memo(
             connection={connection}
             isActive={activeConnectionId === connection.uuid}
             onClick={() => onSelectConnection(connection.uuid, connection.type, connection.name)}
+            source={source}
           />
         ))}
       </>

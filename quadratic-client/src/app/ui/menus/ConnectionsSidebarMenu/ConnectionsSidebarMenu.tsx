@@ -40,6 +40,7 @@ export const ConnectionsSidebarMenu = memo(({ 'data-walkthrough': dataWalkthroug
           activeConnectionId={activeConnectionId}
           onSelectConnection={handleSelectConnection}
           onAddConnection={handleAddConnection}
+          source="sidebar"
         />
       </DropdownMenuContent>
     </DropdownMenu>
