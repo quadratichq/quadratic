@@ -8,6 +8,7 @@ import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
+import { QuadraticAppErrorBoundary } from '@/app/ui/QuadraticAppErrorBoundary';
 import { QuadraticAppDebugSettings } from '@/app/ui/QuadraticAppDebugSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
@@ -288,7 +289,9 @@ export const Component = memo(() => {
 
   return (
     <RecoilRoot initializeState={initializeState}>
-      <QuadraticApp />
+      <QuadraticAppErrorBoundary>
+        <QuadraticApp />
+      </QuadraticAppErrorBoundary>
       <Outlet />
       <QuadraticAppDebugSettings />
       <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />
