@@ -179,7 +179,6 @@ pub struct OutputSize {
     pub h: i64,
 }
 
-
 pub type RenderSize = v1_5::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -277,6 +276,8 @@ pub enum ConnectionKind {
     #[serde(rename = "GOOGLE_ANALYTICS")]
     GoogleAnalytics,
     Plaid,
+    /// Financial data connection for STOCKHISTORY formula
+    StockHistory,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

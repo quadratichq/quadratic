@@ -7,6 +7,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
+use crate::formulas::functions::financial::stock_history::process_stock_history_json;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_array;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
@@ -247,27 +248,42 @@ impl GridController {
                             ConnectionKind::Mixpanel => "Mixpanel1",
                             ConnectionKind::GoogleAnalytics => "GoogleAnalytics1",
                             ConnectionKind::Plaid => "Plaid1",
+                            ConnectionKind::StockHistory => "StockHistory",
                         },
+                        // Formula-based connections (like STOCKHISTORY)
+                        CodeCellLanguage::Formula
+                            if crate::formulas::functions::financial::stock_history::is_stock_history_formula(&code.code) =>
+                        {
+                            "StockHistory"
+                        }
                         // this should not happen
-                        _ => "Connection 1",
+                        _ => "Connection1",
                     };
 
-                    let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
+                    // Handle StockHistory specially - it receives JSON, not Parquet
+                    let is_stock_history = name == "StockHistory";
+
                     let parse_error = |e: &String| {
-                        dbgjs!(format!("Error parsing Parquet file {}: {}", name, e));
+                        dbgjs!(format!("Error parsing data for {}: {}", name, e));
                         ("0x0 Array".to_string(), Value::default())
                     };
 
-                    let (mut return_type, value) = match (array, &std_err) {
-                        (Ok(array), None) => {
-                            // subtract 1 from the length to account for the header row
-                            let return_type =
-                                format!("{}×{} Array", array.width(), array.height() - 1);
+                    let (mut return_type, value) = if is_stock_history {
+                        parse_stock_history_data(&data, &std_err, &code.code, &parse_error)
+                    } else {
+                        // Standard connections receive Parquet data
+                        let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
+                        match (array, &std_err) {
+                            (Ok(array), None) => {
+                                // subtract 1 from the length to account for the header row
+                                let return_type =
+                                    format!("{}×{} Array", array.width(), array.height() - 1);
 
-                            (return_type, Value::Array(array))
+                                (return_type, Value::Array(array))
+                            }
+                            (Err(e), None) => parse_error(&e.to_string()),
+                            (_, Some(std_err)) => parse_error(std_err),
                         }
-                        (Err(e), None) => parse_error(&e.to_string()),
-                        (_, Some(std_err)) => parse_error(std_err),
                     };
 
                     if let Some(extra) = extra {
@@ -317,6 +333,38 @@ impl GridController {
         self.finalize_transaction(transaction);
 
         Ok(())
+    }
+}
+
+/// Parses StockHistory JSON data into a return type string and Value.
+fn parse_stock_history_data(
+    data: &[u8],
+    std_err: &Option<String>,
+    code: &str,
+    parse_error: &impl Fn(&String) -> (String, Value),
+) -> (String, Value) {
+    if let Some(err) = std_err {
+        parse_error(err)
+    } else {
+        let parse_json = || -> std::result::Result<crate::Array, String> {
+            let json_str = String::from_utf8(data.to_vec()).map_err(|e| e.to_string())?;
+            let json_data: serde_json::Value =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+
+            process_stock_history_json(&json_data, code)
+        };
+
+        match parse_json() {
+            Ok(array) => {
+                let return_type = format!(
+                    "{}×{} Array",
+                    array.width(),
+                    array.height().saturating_sub(1)
+                );
+                (return_type, Value::Array(array))
+            }
+            Err(e) => parse_error(&e),
+        }
     }
 }
 

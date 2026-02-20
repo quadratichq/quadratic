@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { AILanguagePreferencesSchema, AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
+import {
+  AILanguagePreferencesSchema,
+  AIMessagePromptSchema,
+  AIRequestBodySchema,
+  AIUsageSchema,
+} from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 import { ApiSchemasScheduledTasks } from './typesAndSchemasScheduledTasks';
 
@@ -596,6 +601,7 @@ export const ApiSchemas = {
       isOnPaidPlan: z.boolean(),
       exceededBillingLimit: z.boolean(),
       error: z.boolean().optional(),
+      usage: AIUsageSchema.optional(),
       errorType: z.enum(['context_length', 'general']).optional(),
     })
   ),

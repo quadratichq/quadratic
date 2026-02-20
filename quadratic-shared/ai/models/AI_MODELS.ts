@@ -722,7 +722,7 @@ export const MODELS_CONFIGURATION: {
   },
   'azure-openai:gpt-5.2': {
     model: 'gpt-5.2',
-    backupModelKey: 'openai:gpt-5.2-2025-12-12',
+    backupModelKey: 'openai:gpt-4.1-2025-04-14',
     displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,

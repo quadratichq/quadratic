@@ -240,7 +240,6 @@ export const debugFlagDescriptions: Record<DebugFlagKeys, DebugFlagDescription> 
     description: 'Change chat to edit mode. This allows you to edit the chat in real time.',
     group: 'AI',
   },
-
   debugShowTopLeftPosition: {
     initial: false,
     title: 'Show Top Left position in footer',

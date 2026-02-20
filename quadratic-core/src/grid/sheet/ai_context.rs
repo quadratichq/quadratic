@@ -29,6 +29,8 @@ impl Sheet {
         max_rows: Option<usize>,
         a1_context: &A1Context,
     ) -> JsSummaryContext {
+        let (default_column_width, default_row_height) = self.offsets.defaults();
+
         let merge_cells_list: Vec<String> = self
             .merge_cells
             .iter_merge_cells()
@@ -38,6 +40,8 @@ impl Sheet {
 
         let mut summary = JsSummaryContext {
             sheet_name: self.name.clone(),
+            default_column_width,
+            default_row_height,
             data_rects: self.get_data_rects_in_selection(&selection, max_rows, a1_context),
             errored_code_cells: self.get_errored_code_cells_in_selection(&selection, a1_context),
             data_tables: None,

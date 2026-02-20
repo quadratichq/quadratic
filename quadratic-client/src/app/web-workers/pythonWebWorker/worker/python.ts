@@ -19,6 +19,10 @@ function isEmpty(value: JsCellValueResult | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
 
+function isHtmlString(value: unknown): value is string {
+  return typeof value === 'string' && value.includes('<html');
+}
+
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
@@ -37,6 +41,15 @@ class Python {
       throw new Error('No transactionId in getCellsA1');
     }
     return pythonCore.sendGetCellsA1(this.transactionId, a1);
+  };
+
+  private getStockPrices = async (
+    identifier: string,
+    startDate: string | null = null,
+    endDate: string | null = null,
+    frequency: string | null = null
+  ): Promise<{ data: unknown; error: string | null }> => {
+    return pythonClient.getStockPrices(identifier, startDate, endDate, frequency);
   };
 
   private init = async (): Promise<void> => {
@@ -118,6 +131,7 @@ class Python {
     });
 
     this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
+    this.pyodide.registerJsModule('getStockPrices', this.getStockPrices);
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
@@ -160,6 +174,8 @@ class Python {
       transactionId: corePythonRun.transactionId,
       sheetPos: { x: corePythonRun.x, y: corePythonRun.y, sheetId: corePythonRun.sheetId },
       code: corePythonRun.code,
+      chartPixelWidth: corePythonRun.chartPixelWidth,
+      chartPixelHeight: corePythonRun.chartPixelHeight,
     };
   };
 
@@ -170,6 +186,8 @@ class Python {
     y: codeRun.sheetPos.y,
     sheetId: codeRun.sheetPos.sheetId,
     code: codeRun.code,
+    chartPixelWidth: codeRun.chartPixelWidth,
+    chartPixelHeight: codeRun.chartPixelHeight,
   });
 
   private next = () => {
@@ -300,6 +318,35 @@ class Python {
       pythonRun.array_output = [];
     }
 
+    // Capture chart image if output is a Plotly chart.
+    // The Python side explicitly sets output_type = "Chart" for Plotly figures,
+    // so we rely on that as the primary detection method.
+    let chartImage: string | null = null;
+    const isChart = pythonRun.output_type === 'Chart';
+
+    if (isChart && pythonRun.output) {
+      const outputTuple = pythonRun.output as unknown as [string, number | string];
+      let htmlString = outputTuple[0];
+
+      // If the first element isn't a string with HTML, try using the stringified output
+      if (!isHtmlString(htmlString)) {
+        const outputStr = String(pythonRun.output);
+        if (isHtmlString(outputStr)) {
+          htmlString = outputStr;
+        }
+      }
+
+      if (isHtmlString(htmlString)) {
+        try {
+          const width = Math.round(message.chartPixelWidth);
+          const height = Math.round(message.chartPixelHeight);
+          chartImage = await pythonClient.captureChartImage(htmlString, width, height);
+        } catch (e) {
+          console.error('[python.ts] Failed to capture chart image:', e);
+        }
+      }
+    }
+
     let codeResult: JsCodeResult | undefined = {
       transaction_id: this.transactionId,
       success: pythonRun.success,
@@ -310,6 +357,7 @@ class Python {
       line_number: pythonRun.lineno ?? null,
       output_display_type: pythonRun.output_type ?? null,
       chart_pixel_output: null,
+      chart_image: chartImage,
       has_headers: !!pythonRun.has_headers,
     };
 

@@ -1,5 +1,6 @@
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },
@@ -18,6 +19,8 @@ export const codeCellsById = {
   MIXPANEL: { id: 'MIXPANEL', label: 'Mixpanel', type: 'connection' },
   GOOGLE_ANALYTICS: { id: 'GOOGLE_ANALYTICS', label: 'Google Analytics', type: 'connection' },
   PLAID: { id: 'PLAID', label: 'Plaid', type: 'connection' },
+  // STOCKHISTORY is an internal connection type for the STOCKHISTORY formula (not user-manageable)
+  STOCKHISTORY: { id: 'STOCKHISTORY', label: 'Stock History', type: 'internal' },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];
@@ -97,11 +100,36 @@ export const getConnectionUuid = (language?: CodeCellLanguage): string | undefin
   return undefined;
 };
 
+// Internal connection types that are not user-manageable (no schemas, not editable in UI)
+const INTERNAL_CONNECTION_KINDS = ['STOCKHISTORY'] as const;
+
+/**
+ * Check if a connection kind is a user-manageable connection (has schemas, can be edited)
+ */
+export const isUserManageableConnection = (kind: string): boolean => {
+  return !INTERNAL_CONNECTION_KINDS.includes(kind as (typeof INTERNAL_CONNECTION_KINDS)[number]);
+};
+
 export const getConnectionInfo = (language?: CodeCellLanguage) => {
   if (typeof language === 'object' && language.Connection) {
     return language.Connection;
   }
 
+  return undefined;
+};
+
+/**
+ * Get connection info only for user-manageable connections (excludes internal types like STOCKHISTORY)
+ * Returns a narrowed type that excludes STOCKHISTORY from the kind union.
+ */
+export const getUserManageableConnectionInfo = (
+  language?: CodeCellLanguage
+): { kind: ConnectionType; id: string } | undefined => {
+  const connection = getConnectionInfo(language);
+  if (connection && isUserManageableConnection(connection.kind)) {
+    // Safe to cast since we've verified it's not an internal connection type
+    return connection as { kind: ConnectionType; id: string };
+  }
   return undefined;
 };
 

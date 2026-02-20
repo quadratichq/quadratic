@@ -458,6 +458,7 @@ impl GridController {
                     html: None,
                     name: "".to_string(),
                     show_name: true,
+                    chart_image: None,
                 });
 
                 match serde_json::to_vec(&html) {
@@ -911,6 +912,7 @@ mod test {
                     html: Some("<html></html>".to_string()),
                     show_name: true,
                     name: "Python1".to_string(),
+                    chart_image: None,
                 })
                 .unwrap()
             ),

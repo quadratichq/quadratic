@@ -1,10 +1,10 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
-type GetValidationsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetValidations]['responseSchema']>;
+type GetValidationsResponse = AIToolsArgs[AITool.GetValidations];
 
 export const GetValidations = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -18,7 +18,7 @@ export const GetValidations = memo(
 
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.GetValidations].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.GetValidations].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[GetValidations] Failed to parse args: ', error);

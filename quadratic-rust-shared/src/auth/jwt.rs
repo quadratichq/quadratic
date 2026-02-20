@@ -2,12 +2,18 @@
 //!
 //! Functions to interact with JWT tokens
 
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use http::HeaderMap;
-use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
+use jsonwebtoken::jwk::{
+    AlgorithmParameters, CommonParameters, Jwk, JwkSet, KeyAlgorithm, PublicKeyUse, RSAKeyParameters, RSAKeyType,
+};
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation, decode, decode_header,
     encode, jwk,
 };
+use rsa::pkcs1::DecodeRsaPrivateKey;
+use rsa::traits::PublicKeyParts;
+use rsa::RsaPrivateKey;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -109,6 +115,56 @@ pub fn parse_jwks(jwks_json: &str) -> Result<jwk::JwkSet> {
 
     serde_json::from_str(&jwks_unescaped)
         .map_err(|e| SharedError::Auth(Auth::Jwt(format!("Failed to parse JWKS: {}", e))))
+}
+
+/// Derive a JWKS from a private key PEM string.
+///
+/// This extracts the public key components (modulus n, exponent e) from the
+/// private key and constructs a JWK with the given key ID.
+///
+/// This allows configuring only the private key and automatically deriving
+/// the matching public key for JWT validation, eliminating key mismatch issues.
+pub fn jwks_from_private_key_pem(private_key_pem: &str, kid: &str) -> Result<JwkSet> {
+    // Normalize the PEM (handle escaped newlines)
+    let pem_normalized = private_key_pem.replace("\\n", "\n");
+
+    // Try parsing as PKCS#1 (RSA PRIVATE KEY) first, then PKCS#8 (PRIVATE KEY)
+    let private_key = RsaPrivateKey::from_pkcs1_pem(&pem_normalized)
+        .or_else(|_| {
+            use rsa::pkcs8::DecodePrivateKey;
+            RsaPrivateKey::from_pkcs8_pem(&pem_normalized)
+        })
+        .map_err(|e| SharedError::Auth(Auth::Jwt(format!("Failed to parse private key PEM: {}", e))))?;
+
+    // Extract public key components
+    let public_key = private_key.to_public_key();
+    let n_bytes = public_key.n().to_bytes_be();
+    let e_bytes = public_key.e().to_bytes_be();
+
+    // Base64url encode the components (no padding)
+    let n_base64 = URL_SAFE_NO_PAD.encode(&n_bytes);
+    let e_base64 = URL_SAFE_NO_PAD.encode(&e_bytes);
+
+    // Build the JWK
+    let jwk = Jwk {
+        common: CommonParameters {
+            public_key_use: Some(PublicKeyUse::Signature),
+            key_operations: None,
+            key_algorithm: Some(KeyAlgorithm::RS256),
+            key_id: Some(kid.to_string()),
+            x509_url: None,
+            x509_chain: None,
+            x509_sha1_fingerprint: None,
+            x509_sha256_fingerprint: None,
+        },
+        algorithm: AlgorithmParameters::RSA(RSAKeyParameters {
+            key_type: RSAKeyType::RSA,
+            n: n_base64,
+            e: e_base64,
+        }),
+    };
+
+    Ok(JwkSet { keys: vec![jwk] })
 }
 
 /// Merge multiple JWKS into one. Keys from later JWKS will be appended.
@@ -236,6 +292,32 @@ pub mod tests {
             generate_jwt(claims.clone(), TEST_KID, &encoding_key).expect("Failed to generate JWT");
         let decoded =
             authorize::<Claims>(&jwks, &token, false, true).expect("Failed to authorize JWT");
+
+        assert_eq!(decoded.claims, claims);
+    }
+
+    #[tokio::test]
+    async fn test_jwks_from_private_key_pem() {
+        use super::jwks_from_private_key_pem;
+
+        // Derive JWKS from the test private key
+        let derived_jwks = jwks_from_private_key_pem(TEST_PRIVATE_KEY, "derived_key")
+            .expect("Failed to derive JWKS from private key");
+
+        // Verify it has one key with the correct kid
+        assert_eq!(derived_jwks.keys.len(), 1);
+        assert_eq!(derived_jwks.keys[0].common.key_id, Some("derived_key".to_string()));
+
+        // Generate a JWT using the private key and derived kid
+        let encoding_key = EncodingKey::from_rsa_pem(TEST_PRIVATE_KEY.as_bytes())
+            .expect("Failed to create encoding key");
+        let claims = Claims::new("test@example.com".into(), 3600, None, None);
+        let token = generate_jwt(claims.clone(), "derived_key", &encoding_key)
+            .expect("Failed to generate JWT");
+
+        // Verify the JWT using the derived JWKS - this proves the keys match!
+        let decoded = authorize::<Claims>(&derived_jwks, &token, false, true)
+            .expect("Failed to authorize JWT with derived JWKS");
 
         assert_eq!(decoded.claims, claims);
     }

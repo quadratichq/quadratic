@@ -25,7 +25,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::file::{get_files_to_process, process};
 use crate::health::{full_healthcheck, healthcheck};
 use crate::state::stats::StatsResponse;
-use crate::storage::{get_presigned_storage, get_storage};
+use crate::storage::{get_presigned_storage, get_storage, upload_presigned_storage};
 use crate::synced_connection::background_workers::init_sync_workers;
 use crate::truncate::truncate_processed_transactions;
 use crate::{
@@ -53,7 +53,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     let path = state.settings.storage.path().to_owned();
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods([Method::GET, Method::POST, Method::PUT])
         .allow_origin(Any)
         .allow_headers(Any)
         .expose_headers(Any);
@@ -88,6 +88,12 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // presigned urls
         .route("/storage/presigned/{key}", get(get_presigned_storage))
+        //
+        // presigned upload (for local dev thumbnail uploads)
+        .route(
+            "/storage/upload/{key}",
+            axum::routing::put(upload_presigned_storage),
+        )
         //
         // state
         .layer(Extension(state))

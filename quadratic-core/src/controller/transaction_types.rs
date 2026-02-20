@@ -30,7 +30,10 @@ pub struct JsCodeResult {
     pub output_value: Option<JsCellValueResult>,
     pub output_array: Option<Vec<Vec<JsCellValueResult>>>,
     pub output_display_type: Option<String>,
+    // DEPRECATED: Use chart_output (cell dimensions) with sheet offsets to calculate pixels.
+    // Kept for backwards compatibility.
     pub chart_pixel_output: Option<(f32, f32)>,
+    pub chart_image: Option<String>,
     pub has_headers: bool,
 }
 

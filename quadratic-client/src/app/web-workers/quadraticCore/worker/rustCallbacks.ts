@@ -34,7 +34,15 @@ declare var self: WorkerGlobalScope &
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
-    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (
+      transactionId: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
+      chartPixelWidth: number,
+      chartPixelHeight: number
+    ) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
@@ -45,7 +53,7 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       code: string,
       connector_type: ConnectionKind,
-      connection_id: String
+      connection_id: string
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
@@ -166,8 +174,16 @@ export const jsTransactionEnd = (transaction_id: string, transaction_name: strin
   self.sendTransactionEndRender(transaction_id, transactionName);
 };
 
-export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
-  self.sendRunPython(transactionId, x, y, sheetId, code);
+export const jsRunPython = (
+  transactionId: string,
+  x: number,
+  y: number,
+  sheetId: string,
+  code: string,
+  chartPixelWidth: number,
+  chartPixelHeight: number
+) => {
+  self.sendRunPython(transactionId, x, y, sheetId, code, chartPixelWidth, chartPixelHeight);
 };
 
 export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
@@ -189,7 +205,7 @@ export const jsConnection = (
   sheetId: string,
   code: string,
   connector_type: ConnectionKind,
-  connection_id: String
+  connection_id: string
 ) => {
   self.sendConnection(transactionId, x, y, sheetId, code, connector_type, connection_id);
 };

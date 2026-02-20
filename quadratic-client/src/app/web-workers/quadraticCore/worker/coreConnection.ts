@@ -13,7 +13,7 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       code: string,
       connector_type: ConnectionKind,
-      connection_id: String
+      connection_id: string
     ) => void;
   };
 
@@ -35,9 +35,17 @@ class CoreConnection {
     sheetId: string,
     code: string,
     connector_type: ConnectionKind,
-    connection_id: String
+    connection_id: string
   ) => {
     this.lastTransactionId = transactionId;
+
+    // Handle StockHistory specially - it's an internal connection type for STOCKHISTORY formula
+    // that uses the financial API (not a user-manageable connection)
+    // Note: Rust serializes ConnectionKind with UPPERCASE (serde rename_all)
+    if ((connector_type as string) === 'STOCKHISTORY') {
+      await this.sendStockHistoryConnection(transactionId, code, connection_id);
+      return;
+    }
 
     const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const kind = connector_type.toLocaleLowerCase().replace(/_/g, '-');
@@ -56,6 +64,8 @@ class CoreConnection {
       transactionId,
       sheetPos: { x, y, sheetId },
       code,
+      chartPixelWidth: 0,
+      chartPixelHeight: 0,
     };
     let signal = this.controller.signal;
 
@@ -90,6 +100,72 @@ class CoreConnection {
       this.lastTransactionId = undefined;
     } catch (e) {
       console.error(`Error fetching ${url}`, e);
+    }
+  };
+
+  // Handle StockHistory connections - these use the financial API and return JSON
+  private sendStockHistoryConnection = async (transactionId: string, code: string, paramsJson: string) => {
+    const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
+    const url = `${base}/financial/stock-prices`;
+    const jwt = await coreClient.getJwt();
+    const signal = this.controller.signal;
+
+    let buffer = new ArrayBuffer(0);
+    let std_out = undefined;
+    let std_err = undefined;
+    let extra = undefined;
+
+    try {
+      // Parse the JSON params from the connection_id (contains stock request parameters)
+      const params = JSON.parse(paramsJson);
+
+      const body = {
+        identifier: params.identifier,
+        start_date: params.start_date,
+        end_date: params.end_date,
+        frequency: params.frequency || 'daily',
+      };
+
+      if (!core.teamUuid) {
+        std_err = 'Team UUID not available';
+        core.connectionComplete(transactionId, buffer, std_out, std_err, extra);
+        this.lastTransactionId = undefined;
+        return;
+      }
+
+      const response = await fetch(url, {
+        signal,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`,
+          'X-Team-Id': core.teamUuid,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        std_err = (await response.text()) + `\n\nFormula: ${code}`;
+        console.warn(std_err);
+      } else {
+        // StockHistory returns JSON, convert to bytes for the connection complete callback
+        const jsonData = await response.json();
+        const jsonString = JSON.stringify(jsonData);
+        const encoder = new TextEncoder();
+        buffer = encoder.encode(jsonString).buffer;
+
+        const headers = response.headers;
+        extra = headers.get('elapsed-total-ms') ? ` in ${headers.get('elapsed-total-ms')}ms` : '';
+      }
+
+      // Send the JSON bytes to core (it will parse as JSON, not Parquet)
+      core.connectionComplete(transactionId, buffer, std_out, std_err?.replace(/\\/g, '').replace(/"/g, ''), extra);
+      this.lastTransactionId = undefined;
+    } catch (e: any) {
+      console.error(`Error fetching stock history`, e);
+      std_err = `Error fetching stock data: ${e.message}`;
+      core.connectionComplete(transactionId, buffer, std_out, std_err, extra);
+      this.lastTransactionId = undefined;
     }
   };
 

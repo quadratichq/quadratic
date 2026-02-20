@@ -36,6 +36,7 @@ impl From<crate::Pos> for Pos {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SheetRect {
     pub min: Pos,

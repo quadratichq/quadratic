@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH, Pos, Rect, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
 };
 
@@ -15,16 +15,36 @@ impl GridController {
         transaction.waiting_for_async_code_cell = true;
         self.transactions.add_async_transaction(transaction);
 
-        if !transaction.is_server()
-            && let Some(f) = self.run_python_callback.as_mut()
-        {
-            f(
-                transaction.id.to_string(),
-                sheet_pos.x as i32,
-                sheet_pos.y as i32,
-                sheet_pos.sheet_id.to_string(),
-                code,
-            );
+        if !transaction.is_server() {
+            // Calculate chart pixel dimensions from cell size using sheet offsets
+            let (chart_pixel_width, chart_pixel_height) = self
+                .try_sheet(sheet_pos.sheet_id)
+                .and_then(|sheet| {
+                    let data_table = sheet.data_table_at(&sheet_pos.into())?;
+                    let (cols, rows) = data_table.chart_output?;
+                    let pos: Pos = sheet_pos.into();
+                    let rect = Rect::new(
+                        pos.x,
+                        pos.y,
+                        pos.x + cols as i64 - 1,
+                        pos.y + rows as i64 - 1,
+                    );
+                    let screen_rect = sheet.offsets.screen_rect_cell_offsets(rect);
+                    Some((screen_rect.w as f32, screen_rect.h as f32))
+                })
+                .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+
+            if let Some(f) = self.run_python_callback.as_mut() {
+                f(
+                    transaction.id.to_string(),
+                    sheet_pos.x as i32,
+                    sheet_pos.y as i32,
+                    sheet_pos.sheet_id.to_string(),
+                    code,
+                    chart_pixel_width,
+                    chart_pixel_height,
+                );
+            }
         }
     }
 }

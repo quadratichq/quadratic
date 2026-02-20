@@ -1,0 +1,51 @@
+[package]
+name = "quadratic-renderer-native"
+version = "0.1.0"
+edition = "2021"
+description = "Native headless rendering for Quadratic (thumbnails, exports, server-side)"
+
+[dependencies]
+# Core library with wgpu backend
+quadratic-renderer-core = { path = "../core", features = ["wgpu"] }
+
+# Quadratic core (for loading grid files and shared types)
+# The js feature is needed for wasm-bindgen and ts-rs types
+quadratic-core = { path = "../../quadratic-core", default-features = false, features = ["js"] }
+
+# wgpu for native GPU rendering (Vulkan, Metal, DX12)
+wgpu = { version = "23.0", features = [
+    "vulkan-portability",
+    "metal",
+    "dx12",
+    "wgsl",
+] }
+
+# Block on async for simple synchronous API
+pollster = "0.4"
+
+# Image encoding/decoding (PNG, JPEG, WebP for chart images)
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+
+# Base64 decoding for chart image data
+base64 = "0.22"
+
+# Math
+glam = "0.30"
+
+# Serialization (for loading sheet data)
+serde = { version = "1.0", features = ["derive"] }
+bincode = { version = "2.0.0", features = ["serde"] }
+
+# Utilities
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+# CLI for screenshot tool
+clap = { version = "4.5", features = ["derive"] }
+
+[[example]]
+name = "screenshot"
+path = "screenshot/screenshot.rs"

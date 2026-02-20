@@ -41,7 +41,7 @@ export const useBorders = (): UseBordersResults => {
               red: Math.floor(colorArray[0] * 255),
               green: Math.floor(colorArray[1] * 255),
               blue: Math.floor(colorArray[2] * 255),
-              alpha: 1,
+              alpha: 255,
             },
             line,
           };

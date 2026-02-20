@@ -15,11 +15,13 @@ use quadratic_core::{
 use uuid::Uuid;
 
 use crate::{
-    connection::{ConnectionParams, run_connection},
+    connection::{ConnectionParams, fetch_stock_prices, run_connection},
     error::{CoreCloudError, Result},
     javascript::{JavaScriptTcpServer, run_javascript},
-    python::execute::run_python,
+    python::{execute::run_python, quadratic::FetchStockPricesFn},
 };
+
+use quadratic_core::{DEFAULT_HTML_HEIGHT, DEFAULT_HTML_WIDTH, Pos, Rect};
 
 // from main
 // receive the transaction
@@ -101,6 +103,44 @@ pub async fn process_transaction(
         }
     };
 
+    // closure factory to create fetch_stock_prices callbacks for each iteration.
+    // The token/team_id/connection_url are captured here and never passed into
+    // the Python execution context, keeping auth credentials inaccessible to
+    // user-authored Python code.
+    let create_fetch_stock_prices = {
+        let token = token.clone();
+        let team_id = team_id.clone();
+        let connection_url = connection_url.clone();
+        move || -> FetchStockPricesFn {
+            let token = token.clone();
+            let team_id = team_id.clone();
+            let connection_url = connection_url.clone();
+            Box::new(
+                move |identifier: String,
+                      start_date: Option<String>,
+                      end_date: Option<String>,
+                      frequency: Option<String>|
+                      -> std::result::Result<serde_json::Value, String> {
+                    tokio::task::block_in_place(|| {
+                        Handle::current().block_on(async {
+                            fetch_stock_prices(
+                                &token,
+                                &team_id,
+                                &connection_url,
+                                &identifier,
+                                start_date.as_deref(),
+                                end_date.as_deref(),
+                                frequency.as_deref(),
+                            )
+                            .await
+                            .map_err(|e| e.to_string())
+                        })
+                    })
+                },
+            )
+        }
+    };
+
     // Start a persistent JavaScript TCP server for this transaction
     // This server will be reused across all JavaScript code executions
     let js_tcp_server = JavaScriptTcpServer::start(Box::new(create_get_cells())).await?;
@@ -133,11 +173,38 @@ pub async fn process_transaction(
             // run code
             match &code_run.language {
                 CodeCellLanguage::Python => {
+                    let (chart_pixel_width, chart_pixel_height) = if let Some(sheet_pos) =
+                        current_sheet_pos
+                    {
+                        let grid_lock = grid.lock().await;
+                        grid_lock
+                            .try_sheet(sheet_pos.sheet_id)
+                            .and_then(|sheet| {
+                                let data_table = sheet.data_table_at(&sheet_pos.into())?;
+                                let (cols, rows) = data_table.chart_output?;
+                                let pos: Pos = sheet_pos.into();
+                                let rect = Rect::new(
+                                    pos.x,
+                                    pos.y,
+                                    pos.x + cols as i64 - 1,
+                                    pos.y + rows as i64 - 1,
+                                );
+                                let screen_rect = sheet.offsets().screen_rect_cell_offsets(rect);
+                                Some((screen_rect.w as f32, screen_rect.h as f32))
+                            })
+                            .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT))
+                    } else {
+                        (DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT)
+                    };
+
                     run_python(
                         Arc::clone(&grid),
                         &code_run.code,
                         &transaction_id,
                         Box::new(create_get_cells()),
+                        create_fetch_stock_prices(),
+                        chart_pixel_width,
+                        chart_pixel_height,
                     )
                     .await?;
                 }

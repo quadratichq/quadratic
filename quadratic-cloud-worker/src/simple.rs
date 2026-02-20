@@ -15,8 +15,6 @@ const CONNECTION_URL: &str = "http://localhost:3003";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Install default crypto provider for rustls if not already installed
-    // Ignore error if already installed (happens in tests when multiple connections are created)
     let _ = default_provider().install_default();
 
     tracing_subscriber::fmt::init();
@@ -38,7 +36,7 @@ async fn main() -> Result<()> {
 
                         info!("Processing task for file: {file_id}");
 
-                        let result: Result<()> = async {
+                        let result: Result<(), Box<dyn std::error::Error + Send + Sync>> = async {
                             let file_init_data =
                                 get_file_init_data(API_URL, JWT, file_id).await?;
 
