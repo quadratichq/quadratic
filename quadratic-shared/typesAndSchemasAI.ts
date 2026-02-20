@@ -372,6 +372,7 @@ export interface AIToolCall {
   name: string;
   arguments: string;
   loading: boolean;
+  thoughtSignature?: string;
 }
 
 // ----------------------------------------------------------------------------
@@ -981,6 +982,7 @@ const AIToolCallSchema = z.object({
   name: z.string(),
   arguments: z.string(),
   loading: z.boolean(),
+  thoughtSignature: z.string().optional(),
 }) satisfies z.ZodType<AIToolCall>;
 
 // ----------------------------------------------------------------------------
