@@ -18,6 +18,7 @@ import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { OverageDialog } from '@/shared/components/OverageDialog';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -224,6 +225,7 @@ export const Component = memo(() => {
     userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
   const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
+  const canManageAIOverage = teamPermissions?.includes('TEAM_EDIT') ?? false;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -234,9 +236,10 @@ export const Component = memo(() => {
         fileUuid,
         teamUuid,
         canManageBilling,
+        canManageAIOverage,
       }));
     },
-    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, canManageBilling]
+    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, canManageBilling, canManageAIOverage]
   );
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -311,6 +314,7 @@ export const Component = memo(() => {
       <Outlet />
       <QuadraticAppDebugSettings />
       <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />
+      <OverageDialog />
     </RecoilRoot>
   );
 });

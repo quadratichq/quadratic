@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { reportAndTrackOverage } from '../../billing/aiCostTracking.helper';
 import { isBusinessPlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -32,9 +33,9 @@ async function handler(
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
-  // Only team owners can set budget limits
-  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
-    return res.status(403).json({ error: { message: 'Only team owners can set budget limits.' } });
+  // Team editors and owners can set budget limits
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    return res.status(403).json({ error: { message: 'You do not have permission to set budget limits.' } });
   }
 
   // Budget limits are only available for Business plan
@@ -45,12 +46,15 @@ async function handler(
     });
   }
 
-  await dbClient.team.update({
+  const updatedTeam = await dbClient.team.update({
     where: { uuid },
     data: {
       teamMonthlyBudgetLimit: teamMonthlyBudgetLimit,
     },
   });
+
+  // Bill any previously unbilled overage that now falls within the new limit
+  await reportAndTrackOverage(updatedTeam.id);
 
   const data: ApiTypes['/v0/teams/:uuid/billing/budget.PATCH.response'] = {
     teamMonthlyBudgetLimit,

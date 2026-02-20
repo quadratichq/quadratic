@@ -4,7 +4,11 @@ import { calculateUsage } from '../ai/helpers/usage.helper';
 import dbClient from '../dbClient';
 import { reportUsageToStripe } from '../stripe/stripe';
 import logger from '../utils/logger';
-import { getBillingPeriodAiCostForTeam, getBillingPeriodDates, getTeamMonthlyAiAllowance } from './planHelpers';
+import {
+  getBillingPeriodAiCostBreakdownForTeam,
+  getBillingPeriodDates,
+  getTeamMonthlyAiAllowance,
+} from './planHelpers';
 
 const aiSourceToAIChatSource: Record<AISource, AIChatSource> = {
   AIAssistant: AIChatSource.AIAssistant,
@@ -110,12 +114,19 @@ export async function reportAndTrackOverage(teamId: number): Promise<void> {
       if (!lockedTeam) return 0;
 
       const { start, end } = getBillingPeriodDates(lockedTeam);
-      const [teamAllowance, totalTeamCost] = await Promise.all([
+      const [teamAllowance, breakdown] = await Promise.all([
         getTeamMonthlyAiAllowance(lockedTeam),
-        getBillingPeriodAiCostForTeam(teamId, start, end),
+        getBillingPeriodAiCostBreakdownForTeam(teamId, start, end),
       ]);
 
-      const totalOverageCents = Math.round(Math.max(0, totalTeamCost - teamAllowance) * 100);
+      const totalOverage = Math.max(0, breakdown.totalCost - teamAllowance);
+      const billedOverage = Math.min(totalOverage, breakdown.overageEnabledCost);
+      let billedOverageCents = Math.round(billedOverage * 100);
+
+      if (lockedTeam.teamMonthlyBudgetLimit != null) {
+        const budgetLimitCents = Math.round(lockedTeam.teamMonthlyBudgetLimit * 100);
+        billedOverageCents = Math.min(billedOverageCents, budgetLimitCents);
+      }
 
       // Determine already-billed cents (resets on new billing period)
       const alreadyBilledCents =
@@ -123,14 +134,14 @@ export async function reportAndTrackOverage(teamId: number): Promise<void> {
           ? lockedTeam.stripeOverageBilledCents
           : 0;
 
-      const delta = totalOverageCents - alreadyBilledCents;
+      const delta = billedOverageCents - alreadyBilledCents;
       if (delta <= 0) return 0;
 
       // Update billed tracking before calling Stripe (safe direction)
       await tx.team.update({
         where: { id: teamId },
         data: {
-          stripeOverageBilledCents: totalOverageCents,
+          stripeOverageBilledCents: billedOverageCents,
           stripeOverageBilledPeriodStart: start,
         },
       });

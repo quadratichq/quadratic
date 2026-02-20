@@ -3,6 +3,8 @@ import type { AILanguagePreferences, AIModelKey, AISource, ChatMessage } from 'q
 import { allAILanguagePreferences } from 'quadratic-shared/typesAndSchemasAI';
 
 import { A1Docs } from '../docs/A1Docs';
+import { JavascriptDocs } from '../docs/JavascriptDocs';
+import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
 import { ValidationDocs } from '../docs/ValidationDocs';
 
@@ -45,6 +47,8 @@ Quadratic supports multiple programming languages:
 - **SQL Connections**: Query external databases (Postgres, MySQL, etc.). Use for fetching data from connected databases.
 
 ${['AIAnalyst', 'AIAssistant'].includes(source) ? A1Docs : ''}\n\n
+${['AIAnalyst', 'AIAssistant'].includes(source) ? PythonDocs : ''}\n\n
+${['AIAnalyst', 'AIAssistant'].includes(source) ? JavascriptDocs : ''}\n\n
 ${source === 'AIAnalyst' ? ValidationDocs : ''}
 `),
     ],

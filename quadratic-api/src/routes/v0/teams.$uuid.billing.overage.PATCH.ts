@@ -35,9 +35,9 @@ async function handler(
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
-  // Only team owners can toggle overage payments
-  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
-    return res.status(403).json({ error: { message: 'Only team owners can toggle overage payments.' } });
+  // Team editors and owners can toggle overage payments
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    return res.status(403).json({ error: { message: 'You do not have permission to toggle overage payments.' } });
   }
 
   // Overage payments are only available for Business plan

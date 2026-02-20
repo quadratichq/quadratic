@@ -60,7 +60,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
       if (canManageBilling) {
         return 'Your team has exceeded the monthly AI allowance. Enable on-demand usage to continue using AI features.';
       }
-      return 'Your team has exceeded the monthly AI allowance. Only team owners can enable on-demand usage.';
+      return 'Your team has exceeded the monthly AI allowance. Ask a team editor or owner to enable on-demand usage.';
     }
     if (targetPlan === 'BUSINESS') {
       return 'Your Pro plan AI allowance has been exceeded. Upgrade to Business for more AI usage and on-demand billing.';
@@ -122,7 +122,7 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Ask your team owner to enable on-demand usage in team settings, or view current usage there.
+                    Ask a team editor or owner to enable on-demand usage in team settings, or view current usage there.
                   </p>
                   <Button onClick={handleGoToTeamSettings} className="w-full" variant="secondary">
                     View usage

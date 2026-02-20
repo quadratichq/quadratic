@@ -23,7 +23,7 @@ export function TeamAIUsage() {
   const billing = activeTeam?.billing;
 
   const { planType: billingAtomPlanType, allowOveragePayments } = useAtomValue(teamBillingAtom);
-  const isOwner = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
+  const canViewTeamUsage = useMemo(() => teamPermissions?.includes('TEAM_EDIT') ?? false, [teamPermissions]);
   const isBusiness = billingAtomPlanType === 'BUSINESS';
 
   const [userUsageData, setUserUsageData] = useState<
@@ -168,7 +168,7 @@ export function TeamAIUsage() {
     return null;
   }
 
-  if (isOwner) {
+  if (canViewTeamUsage) {
     return (
       <div className="space-y-3">
         <h4 className="text-sm font-semibold">

@@ -651,6 +651,14 @@ describe('hasExceededUserBudget', () => {
       users: [{ userId: userId1, role: 'OWNER' }],
     });
 
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: { planType: 'BUSINESS' },
+    });
+
+    const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
+    if (!updatedTeam) throw new Error('Team not found');
+
     await dbClient.userBudgetLimit.create({
       data: {
         userId: userId1,
@@ -668,7 +676,7 @@ describe('hasExceededUserBudget', () => {
       },
     });
 
-    // Create cost above budget ($150 > $100)
+    // BUSINESS allowance $40/user. Cost $150, overage=$110 > $100 budget
     await dbClient.aICost.create({
       data: {
         userId: userId1,
@@ -682,10 +690,11 @@ describe('hasExceededUserBudget', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
-    const exceeded = await hasExceededUserBudget(team, userId1);
+    const exceeded = await hasExceededUserBudget(updatedTeam, userId1);
     expect(exceeded).toBe(true);
   });
 
@@ -788,6 +797,7 @@ describe('hasExceededTeamBudget', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -836,6 +846,7 @@ describe('hasExceededTeamBudget', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1041,6 +1052,7 @@ describe('canMakeAiRequest', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1092,6 +1104,7 @@ describe('canMakeAiRequest', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1643,6 +1656,7 @@ describe('canMakeAiRequest: Business user budget caps overage only', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1706,6 +1720,7 @@ describe('reportAndTrackOverage', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1737,6 +1752,7 @@ describe('reportAndTrackOverage', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1771,6 +1787,7 @@ describe('reportAndTrackOverage', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1791,6 +1808,7 @@ describe('reportAndTrackOverage', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1833,6 +1851,7 @@ describe('reportAndTrackOverage', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1864,6 +1883,7 @@ describe('reportAndTrackOverage', () => {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
         createdDate: new Date(),
+        overageEnabled: true,
       },
     });
 
@@ -1919,5 +1939,141 @@ describe('reportAndTrackOverage', () => {
     await reportAndTrackOverage(team.id);
 
     expect(mockReportUsageToStripe).not.toHaveBeenCalled();
+  });
+
+  it('only bills overageEnabled costs to Stripe, not costs incurred before overage was enabled', async () => {
+    const { team, file } = await setupBusinessTeamWithOverage(
+      '00000000-0000-0000-0000-000000000412',
+      '00000000-0000-0000-0000-000000000413'
+    );
+
+    // $45 incurred before overage was enabled (overageEnabled=false)
+    await dbClient.aICost.create({
+      data: {
+        userId: userId1,
+        teamId: team.id,
+        fileId: file.id,
+        cost: 45.0,
+        model: 'test-model',
+        source: 'AIAnalyst',
+        inputTokens: 100,
+        outputTokens: 100,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        createdDate: new Date(),
+        overageEnabled: false,
+      },
+    });
+
+    // $10 incurred after overage was enabled
+    await dbClient.aICost.create({
+      data: {
+        userId: userId1,
+        teamId: team.id,
+        fileId: file.id,
+        cost: 10.0,
+        model: 'test-model',
+        source: 'AIAnalyst',
+        inputTokens: 50,
+        outputTokens: 50,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        createdDate: new Date(),
+        overageEnabled: true,
+      },
+    });
+
+    // totalCost=$55, allowance=$40, totalOverage=$15, overageEnabledCost=$10
+    // billedOverage = min($15, $10) = $10 => 1000 cents
+    await reportAndTrackOverage(team.id);
+
+    expect(mockReportUsageToStripe).toHaveBeenCalledWith('cus_test_123', 1000);
+    const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
+    expect(updatedTeam?.stripeOverageBilledCents).toBe(1000);
+  });
+
+  it('caps Stripe billing at teamMonthlyBudgetLimit', async () => {
+    const { team, file } = await setupBusinessTeamWithOverage(
+      '00000000-0000-0000-0000-000000000414',
+      '00000000-0000-0000-0000-000000000415'
+    );
+
+    // Set a $5 budget limit
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: { teamMonthlyBudgetLimit: 5.0 },
+    });
+
+    // Cost $60 with overageEnabled => overage=$20 but limit=$5 => 500 cents
+    await dbClient.aICost.create({
+      data: {
+        userId: userId1,
+        teamId: team.id,
+        fileId: file.id,
+        cost: 60.0,
+        model: 'test-model',
+        source: 'AIAnalyst',
+        inputTokens: 100,
+        outputTokens: 100,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        createdDate: new Date(),
+        overageEnabled: true,
+      },
+    });
+
+    await reportAndTrackOverage(team.id);
+
+    expect(mockReportUsageToStripe).toHaveBeenCalledWith('cus_test_123', 500);
+    const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
+    expect(updatedTeam?.stripeOverageBilledCents).toBe(500);
+  });
+
+  it('bills previously unbilled overage when budget limit is raised', async () => {
+    const { team, file } = await setupBusinessTeamWithOverage(
+      '00000000-0000-0000-0000-000000000416',
+      '00000000-0000-0000-0000-000000000417'
+    );
+
+    // Set a $5 budget limit
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: { teamMonthlyBudgetLimit: 5.0 },
+    });
+
+    // Cost $60 => overage=$20 but capped at $5 => 500 cents
+    await dbClient.aICost.create({
+      data: {
+        userId: userId1,
+        teamId: team.id,
+        fileId: file.id,
+        cost: 60.0,
+        model: 'test-model',
+        source: 'AIAnalyst',
+        inputTokens: 100,
+        outputTokens: 100,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        createdDate: new Date(),
+        overageEnabled: true,
+      },
+    });
+
+    await reportAndTrackOverage(team.id);
+    expect(mockReportUsageToStripe).toHaveBeenCalledWith('cus_test_123', 500);
+
+    // Raise budget limit to $15
+    await dbClient.team.update({
+      where: { id: team.id },
+      data: { teamMonthlyBudgetLimit: 15.0 },
+    });
+
+    // Now capped at $15, already billed $5, delta = $10 => 1000 cents
+    mockReportUsageToStripe.mockClear();
+    await reportAndTrackOverage(team.id);
+    expect(mockReportUsageToStripe).toHaveBeenCalledWith('cus_test_123', 1000);
+
+    const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
+    expect(updatedTeam?.stripeOverageBilledCents).toBe(1500);
   });
 });

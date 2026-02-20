@@ -1,6 +1,6 @@
 import { waitingOnMessageIndexAtom } from '@/app/ai/atoms/aiAnalystAtoms';
-import { editorInteractionStateCanManageBillingAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
+import { editorInteractionStateCanManageAIOverageAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { showOverageDialog } from '@/shared/atom/overageDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { getNextPlanSuggestion, teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -13,7 +13,7 @@ export const AIUsageExceeded = memo(() => {
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
   const setWaitingOnMessageIndex = useSetAtom(waitingOnMessageIndexAtom);
   const { planType, allowOveragePayments, teamMonthlyBudgetLimit } = useAtomValue(teamBillingAtom);
-  const canManageBilling = useRecoilValue(editorInteractionStateCanManageBillingAtom);
+  const canManageAIOverage = useRecoilValue(editorInteractionStateCanManageAIOverageAtom);
 
   const suggestion = useMemo(
     () => getNextPlanSuggestion(planType, allowOveragePayments),
@@ -37,12 +37,12 @@ export const AIUsageExceeded = memo(() => {
       return {
         title: 'Monthly AI budget reached',
         description: 'Your team has reached its AI spending limit. Adjust your budget in team settings.',
-        buttonText: 'View usage',
+        buttonText: 'Increase usage',
       };
     }
 
     if (suggestion.type === 'enableOverage') {
-      if (canManageBilling) {
+      if (canManageAIOverage) {
         return {
           title: 'Team monthly AI allowance exceeded',
           description: 'Enable on-demand usage in team settings to continue using Quadratic AI.',
@@ -51,7 +51,7 @@ export const AIUsageExceeded = memo(() => {
       }
       return {
         title: 'Team monthly AI allowance exceeded',
-        description: 'Ask your team owner to enable on-demand usage, or view usage in team settings.',
+        description: 'Ask a team editor or owner to enable on-demand usage, or view usage in team settings.',
         buttonText: 'View usage',
       };
     }
@@ -70,31 +70,25 @@ export const AIUsageExceeded = memo(() => {
         buttonText: 'Upgrade to Business',
       };
     }
-  }, [suggestion, canManageBilling]);
+  }, [suggestion, canManageAIOverage]);
 
   const handleClick = useCallback(() => {
     trackEvent('[AI].UsageExceeded.clickUpgrade', { planType, suggestion: suggestion?.type ?? 'none' });
 
-    // No suggestion (Business + overage with budget hit) or enableOverage: open settings billing
+    // No suggestion (Business + overage with budget hit): open overage dialog
     if (!suggestion) {
-      showSettingsDialog('team');
+      showOverageDialog();
       return;
     }
 
-    // For enableOverage suggestions, open the settings dialog with team billing tab and highlight
+    // For enableOverage suggestions, open the overage dialog
     if (suggestion.type === 'enableOverage') {
       trackEvent('[UpgradeDialog].enableOverageClicked');
-      showSettingsDialog('team', { highlightOverage: true });
+      showOverageDialog();
       return;
     }
 
-    // For Upgrade to Business, open the settings billing pane for AI usage context
-    if (suggestion.targetPlan === 'BUSINESS') {
-      showSettingsDialog('team');
-      return;
-    }
-
-    // For other suggestions (e.g., Upgrade to Pro), open the upgrade dialog
+    // For upgrade suggestions (Pro or Business), open the upgrade dialog
     setShowUpgradeDialog({ open: true, eventSource: 'AIUsageExceeded', suggestion });
   }, [planType, suggestion, setShowUpgradeDialog]);
 
