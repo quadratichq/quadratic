@@ -152,9 +152,13 @@ model Team {
     stripeCustomerId                    String?             @unique @map("stripe_customer_id")
     stripeSubscriptionId                String?             @unique @map("stripe_subscription_id")
     stripeSubscriptionStatus            SubscriptionStatus? @map("stripe_subscription_status")
+    stripeCurrentPeriodStart            DateTime?           @map("stripe_current_period_start")
     stripeCurrentPeriodEnd              DateTime?           @map("stripe_current_period_end")
     stripeSubscriptionLastUpdated       DateTime?           @map("stripe_subscription_last_updated")
     stripeSubscriptionRetentionCouponId String?             @map("stripe_subscription_retention_coupon_id")
+    stripeOverageItemId                 String?             @map("stripe_overage_item_id")
+    stripeOverageBilledCents            Int                 @default(0) @map("stripe_overage_billed_cents")
+    stripeOverageBilledPeriodStart      DateTime?           @map("stripe_overage_billed_period_start")
 
     // Plan information
     planType                    PlanType?            @map("plan_type")
@@ -419,11 +423,12 @@ model AICost {
     outputTokens    Int            @default(0) @map("output_tokens")
     cacheReadTokens Int            @default(0) @map("cache_read_tokens")
     cacheWriteTokens Int           @default(0) @map("cache_write_tokens")
+    overageEnabled  Boolean        @default(false) @map("overage_enabled")
     createdDate     DateTime       @default(now()) @map("created_date")
 
     @@index([userId])
     @@index([teamId])
-    @@index([userId, teamId])
+    @@index([userId, teamId, createdDate])
     @@index([createdDate])
     @@index([teamId, createdDate])
 }

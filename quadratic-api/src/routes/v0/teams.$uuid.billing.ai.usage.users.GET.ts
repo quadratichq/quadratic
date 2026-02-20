@@ -3,7 +3,9 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { BillingAIUsageForCurrentMonth, BillingAIUsageMonthlyForUsersInTeam } from '../../billing/AIUsageHelpers';
 import {
-  getCurrentMonthAiCostsByUser,
+  getBilledOverageCostsByUser,
+  getBillingPeriodAiCostsByUser,
+  getBillingPeriodDates,
   getMonthlyAiAllowancePerUser,
   getPlanType,
   getUserBudgetLimitsForTeam,
@@ -82,6 +84,7 @@ async function handler(
             currentMonthAiCost: null,
             monthlyAiAllowance: null,
             userMonthlyBudgetLimit: null,
+            billedOverageCost: null,
           };
         }),
       });
@@ -95,14 +98,17 @@ async function handler(
           currentMonthAiCost: null,
           monthlyAiAllowance: null,
           userMonthlyBudgetLimit: null,
+          billedOverageCost: null,
         })),
       });
     }
   }
 
-  const [costsByUser, budgetLimitsByUser] = await Promise.all([
-    getCurrentMonthAiCostsByUser(team.id),
+  const { start, end } = getBillingPeriodDates(team);
+  const [costsByUser, budgetLimitsByUser, billedOverageByUser] = await Promise.all([
+    getBillingPeriodAiCostsByUser(team.id, start, end),
     getUserBudgetLimitsForTeam(team.id),
+    getBilledOverageCostsByUser(team.id, start, end, monthlyAiAllowancePerUser),
   ]);
 
   return res.status(200).json({
@@ -114,6 +120,7 @@ async function handler(
       currentMonthAiCost: costsByUser.get(targetUserId) ?? 0,
       monthlyAiAllowance: monthlyAiAllowancePerUser,
       userMonthlyBudgetLimit: budgetLimitsByUser.get(targetUserId) ?? null,
+      billedOverageCost: billedOverageByUser.get(targetUserId) ?? 0,
     })),
   });
 }

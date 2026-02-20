@@ -2,13 +2,14 @@ import { apiClient } from '@/shared/api/apiClient';
 import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import { WarningIcon } from '@/shared/components/Icons';
+import { TeamAIUsageChart } from '@/shared/components/SettingsTabs/TeamAIUsageChart';
 import { useTeamData } from '@/shared/hooks/useTeamData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/shadcn/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { useAtomValue } from 'jotai';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type UserUsage = ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response']['users'][0];
 
@@ -28,31 +29,37 @@ export function TeamAIUsage() {
   const [userUsageData, setUserUsageData] = useState<
     ApiTypes['/v0/teams/:uuid/billing/ai/usage/users.GET.response'] | null
   >(null);
+  const [dailyUsageData, setDailyUsageData] = useState<
+    ApiTypes['/v0/teams/:uuid/billing/ai/usage/daily.GET.response'] | null
+  >(null);
   const [monthlyAiAllowance, setMonthlyAiAllowance] = useState<number | null>(null);
+  const [billingPeriodStart, setBillingPeriodStart] = useState<string | null>(null);
+  const [billingPeriodEnd, setBillingPeriodEnd] = useState<string | null>(null);
   const [isLoadingUsage, setIsLoadingUsage] = useState(false);
+  const [isLoadingDaily, setIsLoadingDaily] = useState(false);
   const lastFetchedUuidRef = useRef<string | null>(null);
   const lastFetchedPlanTypeRef = useRef<string | null>(null);
+  const dailyFetchedRef = useRef(false);
 
   useEffect(() => {
-    // Fetch if we have a team uuid and haven't already fetched for this uuid+planType combo
     if (
       team?.uuid &&
       (team.uuid !== lastFetchedUuidRef.current || billingAtomPlanType !== lastFetchedPlanTypeRef.current)
     ) {
       lastFetchedUuidRef.current = team.uuid;
       lastFetchedPlanTypeRef.current = billingAtomPlanType;
+      dailyFetchedRef.current = false;
       setIsLoadingUsage(true);
 
-      // Fetch both user usage data and team AI usage (for monthlyAiAllowance)
-      // Owners can fetch all users, non-owners can fetch their own data
       Promise.all([apiClient.teams.billing.aiUsageUsers(team.uuid), apiClient.teams.billing.aiUsage(team.uuid)])
         .then(([usageData, aiUsageData]) => {
           setUserUsageData(usageData);
           setMonthlyAiAllowance(aiUsageData.monthlyAiAllowance ?? null);
+          setBillingPeriodStart(aiUsageData.billingPeriodStart ?? null);
+          setBillingPeriodEnd(aiUsageData.billingPeriodEnd ?? null);
         })
         .catch((error) => {
           console.error('[TeamAIUsage] Failed to fetch usage data:', error);
-          // Reset refs on error so we can retry
           lastFetchedUuidRef.current = null;
           lastFetchedPlanTypeRef.current = null;
         })
@@ -62,7 +69,33 @@ export function TeamAIUsage() {
     }
   }, [team?.uuid, billingAtomPlanType]);
 
-  // If not owner, show only their own usage
+  const fetchDailyData = useCallback(() => {
+    if (!team?.uuid || dailyFetchedRef.current) return;
+    dailyFetchedRef.current = true;
+    setIsLoadingDaily(true);
+    apiClient.teams.billing
+      .aiUsageDaily(team.uuid)
+      .then((data) => {
+        setDailyUsageData(data);
+      })
+      .catch((error) => {
+        console.error('[TeamAIUsage] Failed to fetch daily usage data:', error);
+        dailyFetchedRef.current = false;
+      })
+      .finally(() => {
+        setIsLoadingDaily(false);
+      });
+  }, [team?.uuid]);
+
+  const handleChartModeChange = useCallback(
+    (mode: 'daily' | 'monthly') => {
+      if (mode === 'daily') {
+        fetchDailyData();
+      }
+    },
+    [fetchDailyData]
+  );
+
   const loggedInUser = useMemo(
     () => users?.find((u) => u.id === userMakingRequest?.id),
     [users, userMakingRequest?.id]
@@ -72,39 +105,32 @@ export function TeamAIUsage() {
     return userUsageData.users.find((u) => u.userId === userMakingRequest.id);
   }, [userMakingRequest?.id, userUsageData]);
 
-  // Format included usage display for a user
   const formatIncludedUsage = (usage?: UserUsage): string => {
     if (isLoadingUsage) return '...';
-    if (!usage) return '—';
+    if (!usage) return '\u2014';
 
     if (billingAtomPlanType === 'FREE') {
-      // FREE plan: show per-user messages
       if (usage.currentPeriodUsage !== null && usage.billingLimit !== null) {
         return `${usage.currentPeriodUsage} / ${usage.billingLimit} messages`;
       }
-      return '—';
+      return '\u2014';
     } else {
-      // Pro/Business: show current cost / allowance (use team-level allowance)
       const currentCost = usage.currentMonthAiCost ?? 0;
       const allowance = monthlyAiAllowance ?? 0;
-      // Cap current cost at allowance for included usage display
       const includedUsage = Math.min(currentCost, allowance);
       return `$${includedUsage.toFixed(2)} / $${allowance.toFixed(2)}`;
     }
   };
 
-  // Check if user has hit their included usage limit (and has no on-demand available)
   const hasHitLimit = (usage?: UserUsage): boolean => {
     if (!usage) return false;
 
     if (billingAtomPlanType === 'FREE') {
-      // FREE plan: check per-user message limit
       if (usage.currentPeriodUsage !== null && usage.billingLimit !== null) {
         return usage.currentPeriodUsage >= usage.billingLimit;
       }
       return false;
     } else {
-      // Pro/Business: only show limit when over allowance and on-demand is not available
       const currentCost = usage.currentMonthAiCost ?? 0;
       const allowance = monthlyAiAllowance ?? 0;
       const overAllowance = currentCost >= allowance && allowance > 0;
@@ -113,39 +139,41 @@ export function TeamAIUsage() {
     }
   };
 
-  // Format on-demand usage for Business plan users
   const formatOnDemandUsage = (usage?: UserUsage): string => {
     if (isLoadingUsage) return '...';
-    if (!usage) return '—';
+    if (!usage) return '\u2014';
+    if (!isBusiness) return '\u2014';
 
-    if (!isBusiness) return '—';
+    const billedOverage = usage.billedOverageCost ?? 0;
 
-    const currentCost = usage.currentMonthAiCost ?? 0;
-    const allowance = monthlyAiAllowance ?? 0;
-    const onDemandUsage = Math.max(0, currentCost - allowance);
-
-    // If on-demand is disabled and they haven't spent any money, show N/A
-    if (!allowOveragePayments && onDemandUsage === 0) {
+    if (!allowOveragePayments && billedOverage === 0) {
       return 'N/A';
     }
 
     const budgetLimit = usage.userMonthlyBudgetLimit;
 
     if (budgetLimit !== null) {
-      return `$${onDemandUsage.toFixed(2)} / $${budgetLimit.toFixed(2)}`;
+      return `$${billedOverage.toFixed(2)} / $${budgetLimit.toFixed(2)}`;
     }
-    return `$${onDemandUsage.toFixed(2)}`;
+    return `$${billedOverage.toFixed(2)}`;
   };
+
+  const periodLabel = useMemo(() => {
+    if (!billingPeriodStart || !billingPeriodEnd) return null;
+    const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `${fmt(billingPeriodStart)} \u2013 ${fmt(billingPeriodEnd)}`;
+  }, [billingPeriodStart, billingPeriodEnd]);
 
   if (!team || !userMakingRequest || !users || !billing) {
     return null;
   }
 
-  // If owner, show all team members' usage in a table
   if (isOwner) {
     return (
       <div className="space-y-3">
-        <h4 className="text-sm font-semibold">Team AI monthly usage</h4>
+        <h4 className="text-sm font-semibold">
+          Team AI usage{periodLabel && <span className="ml-1 font-normal text-muted-foreground">{periodLabel}</span>}
+        </h4>
         <div className="rounded-lg border border-border">
           <Table>
             <TableHeader>
@@ -207,6 +235,20 @@ export function TeamAIUsage() {
             </TableBody>
           </Table>
         </div>
+        {!isLoadingUsage && userUsageData && (
+          <div className="rounded-lg border border-border p-4">
+            <TeamAIUsageChart
+              users={users}
+              userUsageData={userUsageData}
+              dailyUsageData={dailyUsageData}
+              monthlyAiAllowance={monthlyAiAllowance}
+              isBusiness={isBusiness}
+              planType={billingAtomPlanType}
+              isLoadingDaily={isLoadingDaily}
+              onModeChange={handleChartModeChange}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -215,10 +257,11 @@ export function TeamAIUsage() {
     return null;
   }
 
-  // Non-owner view: show only logged-in user's usage in a table with same format as owner view
   return (
     <div className="space-y-3">
-      <h4 className="text-sm font-semibold">Your AI monthly usage</h4>
+      <h4 className="text-sm font-semibold">
+        Your AI usage{periodLabel && <span className="ml-1 font-normal text-muted-foreground">{periodLabel}</span>}
+      </h4>
       <div className="rounded-lg border border-border">
         <Table>
           <TableHeader>
@@ -264,6 +307,20 @@ export function TeamAIUsage() {
           </TableBody>
         </Table>
       </div>
+      {!isLoadingUsage && userUsageData && (
+        <div className="rounded-lg border border-border p-4">
+          <TeamAIUsageChart
+            users={[loggedInUser]}
+            userUsageData={userUsageData}
+            dailyUsageData={dailyUsageData}
+            monthlyAiAllowance={monthlyAiAllowance}
+            isBusiness={isBusiness}
+            planType={billingAtomPlanType}
+            isLoadingDaily={isLoadingDaily}
+            onModeChange={handleChartModeChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

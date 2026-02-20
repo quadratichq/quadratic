@@ -24,7 +24,9 @@ import { getDecryptedTeam } from '../../utils/teams';
 // Statuses that indicate the subscription may need to be synced with Stripe:
 // - INCOMPLETE: checkout in progress, webhook may be delayed
 // - INCOMPLETE_EXPIRED: previous attempt failed, user may have retried with a new subscription
-const NEEDS_SYNC_STATUSES: SubscriptionStatus[] = ['INCOMPLETE', 'INCOMPLETE_EXPIRED'];
+// - CANCELED: webhook may have been missed; planType could be stale
+// - PAST_DUE: payment failed, subscription state may have changed
+const NEEDS_SYNC_STATUSES: SubscriptionStatus[] = ['INCOMPLETE', 'INCOMPLETE_EXPIRED', 'CANCELED', 'PAST_DUE'];
 
 export default [validateAccessToken, userMiddleware, handler];
 

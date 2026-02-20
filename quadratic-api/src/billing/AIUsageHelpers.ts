@@ -121,22 +121,49 @@ ORDER BY ul.user_id, d.month DESC;
 };
 
 /**
- * Gets the total AI message usage for all users in a team for the current month
- * @param teamId The ID of the team to get the usage for
- * @returns The total number of AI messages used by all users in the team in the current month
+ * Gets daily AI message usage per user in a team for the current calendar month.
+ * Returns flat array of { date, userId, messageCount }.
  */
-export const getCurrentMonthAiMessagesForTeam = async (teamId: number): Promise<number> => {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+export const getDailyAiMessagesByUser = async (
+  userIds: number[],
+  teamId: number
+): Promise<Array<{ date: string; userId: number; messageCount: number }>> => {
+  if (userIds.length === 0) return [];
 
+  const rows = await dbClient.$queryRaw<Array<{ day: Date; user_id: number; message_count: number }>>`
+    SELECT
+      DATE_TRUNC('day', ac.created_date) AS day,
+      ac.user_id,
+      COUNT(acm.id)::integer AS message_count
+    FROM "AnalyticsAIChat" ac
+    JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
+    JOIN "AnalyticsAIChatMessage" acm ON acm.chat_id = ac.id AND acm.message_type = 'user_prompt'
+    WHERE ac.user_id IN (${Prisma.join(userIds)})
+      AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
+      AND ac.created_date >= DATE_TRUNC('month', CURRENT_DATE)
+      AND ac.created_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+    GROUP BY DATE_TRUNC('day', ac.created_date), ac.user_id
+    ORDER BY day, ac.user_id
+  `;
+
+  return rows.map((row) => ({
+    date: row.day.toISOString().split('T')[0],
+    userId: row.user_id,
+    messageCount: row.message_count,
+  }));
+};
+
+/**
+ * Gets the total AI message usage for all users in a team within a date range.
+ */
+export const getBillingPeriodAiMessagesForTeam = async (teamId: number, start: Date, end: Date): Promise<number> => {
   const result = await dbClient.$queryRaw<[{ count: bigint }]>`
     SELECT COUNT(acm.id)::bigint as count
     FROM "AnalyticsAIChatMessage" acm
     JOIN "AnalyticsAIChat" ac ON ac.id = acm.chat_id
     JOIN "File" f ON f.id = ac.file_id AND f.owner_team_id = ${teamId}
-    WHERE ac.created_date >= ${startOfMonth}
-    AND ac.created_date <= ${endOfMonth}
+    WHERE ac.created_date >= ${start}
+    AND ac.created_date <= ${end}
     AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
     AND acm.message_type = 'user_prompt'
   `;

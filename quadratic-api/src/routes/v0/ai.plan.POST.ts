@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
-import { trackAICost } from '../../billing/aiCostTracking.helper';
+import { toAIChatSource, trackAICost } from '../../billing/aiCostTracking.helper';
 import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
@@ -88,9 +88,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
     throw new ApiError(403, 'User does not have permission to create files in this team');
   }
 
-  // Plan generation is always allowed, even if user has exceeded billing limit
-  // This encourages users to try the "Start with AI" flow without penalty
-  // However, we still check and track the limit status for reporting
   let exceededBillingLimit = false;
   const isFree = isFreePlan(team);
 
@@ -100,9 +97,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
       exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
     }
   } else {
-    // Pro/Business: check but don't block
     const canMakeRequest = await canMakeAiRequest(team, userId);
     exceededBillingLimit = !canMakeRequest.allowed;
+  }
+
+  if (exceededBillingLimit) {
+    res.status(200).json({
+      plan: '',
+      isOnPaidPlan,
+      exceededBillingLimit,
+    });
+    return;
   }
 
   // Abort the request if the client disconnects
@@ -181,8 +186,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
           teamId: team.id,
           usage: parsedResponse.usage,
           modelKey,
-          source: 'AIAnalyst',
+          source: toAIChatSource('AIAnalyst'),
           isFreePlan: isFree,
+          overageEnabled: team.allowOveragePayments,
         });
       }
 
@@ -215,8 +221,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
         teamId: team.id,
         usage: parsedResponse.usage,
         modelKey,
-        source: 'AIAnalyst',
+        source: toAIChatSource('AIAnalyst'),
         isFreePlan: isFree,
+        overageEnabled: team.allowOveragePayments,
       });
 
       const planText = parsedResponse.responseMessage.content

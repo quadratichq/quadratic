@@ -48,7 +48,16 @@ jest.mock('../../stripe/stripe', () => {
   const logger = jest.requireActual('../../utils/logger').default;
 
   // Subscription status priority (same as real implementation in stripe.ts)
-  const STATUS_PRIORITY = ['active', 'trialing', 'past_due', 'incomplete', 'unpaid', 'canceled', 'incomplete_expired', 'paused'];
+  const STATUS_PRIORITY = [
+    'active',
+    'trialing',
+    'past_due',
+    'incomplete',
+    'unpaid',
+    'canceled',
+    'incomplete_expired',
+    'paused',
+  ];
 
   const subscriptionsCancel = jest.fn().mockResolvedValue({});
   (global as any).__mockSubscriptionsCancel = subscriptionsCancel;
@@ -114,6 +123,7 @@ jest.mock('../../stripe/stripe', () => {
         data: {
           stripeSubscriptionId: subscription.id,
           stripeSubscriptionStatus: subscription.status.toUpperCase(),
+          stripeCurrentPeriodStart: new Date(subscription.current_period_start * 1000),
           stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
           stripeSubscriptionLastUpdated: new Date(),
         },
@@ -304,6 +314,7 @@ describe('GET /v0/teams/:uuid', () => {
             {
               id: 'sub_new_active',
               status: 'active',
+              current_period_start: Math.floor(Date.now() / 1000),
               current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
               created: Math.floor(Date.now() / 1000),
             },
@@ -346,12 +357,14 @@ describe('GET /v0/teams/:uuid', () => {
             {
               id: 'sub_incomplete',
               status: 'incomplete',
+              current_period_start: Math.floor(Date.now() / 1000) - 3600,
               current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
               created: Math.floor(Date.now() / 1000) - 3600,
             },
             {
               id: 'sub_active',
               status: 'active',
+              current_period_start: Math.floor(Date.now() / 1000),
               current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
               created: Math.floor(Date.now() / 1000),
             },
@@ -397,18 +410,21 @@ describe('GET /v0/teams/:uuid', () => {
             {
               id: 'sub_active',
               status: 'active',
+              current_period_start: Math.floor(Date.now() / 1000),
               current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
               created: Math.floor(Date.now() / 1000),
             },
             {
               id: 'sub_incomplete_1',
               status: 'incomplete',
+              current_period_start: Math.floor(Date.now() / 1000) - 3600,
               current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
               created: Math.floor(Date.now() / 1000) - 3600,
             },
             {
               id: 'sub_expired',
               status: 'incomplete_expired',
+              current_period_start: Math.floor(Date.now() / 1000) - 7200,
               current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
               created: Math.floor(Date.now() / 1000) - 7200,
             },
@@ -507,9 +523,7 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body.files).toHaveLength(7);
 
           // Count restricted vs unrestricted files
-          const restrictedFiles = res.body.files.filter(
-            (f: any) => f.userMakingRequest.requiresUpgradeToEdit === true
-          );
+          const restrictedFiles = res.body.files.filter((f: any) => f.userMakingRequest.requiresUpgradeToEdit === true);
           const unrestrictedFiles = res.body.files.filter(
             (f: any) => f.userMakingRequest.requiresUpgradeToEdit === false
           );

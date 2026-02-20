@@ -6,6 +6,8 @@ Data, variables, and imports are scoped to each code cell and must be imported/r
 
 ## Reference cells from Python
 
+\`q.cells()\` is the ONLY way to reference data from the sheet in Python. It returns a single value for single cell references (e.g., \`q.cells('A1')\` returns a number, string, or boolean). For ranges, tables, and multi-cell references, it ALWAYS returns a pandas DataFrame. You can use standard pandas operations (filtering, groupby, merge, etc.) directly on the result.
+
 ### Referencing tables
 
 \`\`\`python
@@ -82,7 +84,7 @@ Plotly is the ONLY charting library supported. For trendlines, you MUST import s
 ### Function outputs
 
 \`\`\`python
-def do_some_math(x): 
+def do_some_math(x):
     return x + 1
 
 do_some_math(5)  # Returns 6
@@ -93,13 +95,13 @@ do_some_math(5)  # Returns 6
 **Conditional returns don't work** - The last line must be an expression, not inside an if/else:
 \`\`\`python
 # WRONG: Returns nothing
-if x == 3: 
+if x == 3:
     y = True
 
 # CORRECT: Return variable after conditional
-if x == 3: 
+if x == 3:
     y = True
-else: 
+else:
     y = False
 y  # Returns the value
 \`\`\`

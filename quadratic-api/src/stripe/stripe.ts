@@ -15,6 +15,17 @@ export const stripe = new Stripe(STRIPE_SECRET_KEY, {
 const STRIPE_LOOKUP_KEY_PRO = 'team_monthly_ai';
 const STRIPE_LOOKUP_KEY_BUSINESS = 'team_monthly_business';
 
+/**
+ * Find the seat (licensed) subscription item, filtering out metered items like overage.
+ */
+export const findSeatItem = (items: Stripe.SubscriptionItem[]): Stripe.SubscriptionItem => {
+  const seatItem = items.find((item) => item.price.recurring?.usage_type !== 'metered');
+  if (!seatItem) {
+    throw new Error('Subscription does not have a seat item');
+  }
+  return seatItem;
+};
+
 const getTeamSeatQuantity = async (teamId: number) => {
   return dbClient.userTeamRole.count({
     where: {
@@ -36,19 +47,14 @@ export const updateSeatQuantity = async (teamId: number) => {
   // Get the number of users on the team
   const numUsersOnTeam = await getTeamSeatQuantity(teamId);
 
-  // Get the subscription item id
   const subscription = await stripe.subscriptions.retrieve(team.stripeSubscriptionId);
-  const subscriptionItems = subscription.items.data;
-
-  if (subscriptionItems.length !== 1) {
-    throw new Error('Subscription does not have exactly 1 item');
-  }
+  const seatItem = findSeatItem(subscription.items.data);
 
   // Update the stripe subscription
   return stripe.subscriptions.update(team.stripeSubscriptionId, {
     items: [
       {
-        id: subscriptionItems[0].id,
+        id: seatItem.id,
         quantity: numUsersOnTeam,
       },
     ],
@@ -70,13 +76,7 @@ export const upgradeSubscriptionPlan = async (
 
   // Get the current subscription
   const subscription = await stripe.subscriptions.retrieve(team.stripeSubscriptionId);
-  const subscriptionItems = subscription.items.data;
-
-  if (subscriptionItems.length !== 1) {
-    throw new Error('Subscription does not have exactly 1 item');
-  }
-
-  const currentItem = subscriptionItems[0];
+  const currentItem = findSeatItem(subscription.items.data);
   const previousPriceId = currentItem.price.id;
   const previousMetadataPlanType = subscription.metadata?.plan_type;
 
@@ -273,10 +273,46 @@ export const getMonthlyPriceId = async () => {
   return getProPriceId();
 };
 
+const STRIPE_LOOKUP_KEY_AI_OVERAGE = 'ai_overage_per_cent';
+const STRIPE_METER_EVENT_AI_OVERAGE = 'ai_overage_cents';
+
+export const addOverageSubscriptionItem = async (subscriptionId: string): Promise<string> => {
+  const prices = await stripe.prices.list({
+    lookup_keys: [STRIPE_LOOKUP_KEY_AI_OVERAGE],
+    active: true,
+  });
+
+  if (prices.data.length === 0) {
+    throw new Error(`No AI overage price found (lookup_key: ${STRIPE_LOOKUP_KEY_AI_OVERAGE})`);
+  }
+
+  const item = await stripe.subscriptionItems.create({
+    subscription: subscriptionId,
+    price: prices.data[0].id,
+  });
+  return item.id;
+};
+
+export const removeOverageSubscriptionItem = async (itemId: string): Promise<void> => {
+  await stripe.subscriptionItems.del(itemId);
+};
+
+export const reportUsageToStripe = async (stripeCustomerId: string, centsToReport: number): Promise<void> => {
+  await stripe.billing.meterEvents.create({
+    event_name: STRIPE_METER_EVENT_AI_OVERAGE,
+    timestamp: Math.floor(Date.now() / 1000),
+    payload: {
+      value: String(centsToReport),
+      stripe_customer_id: stripeCustomerId,
+    },
+  });
+};
+
 export const updateTeamStatus = async (
   stripeSubscriptionId: string,
   status: Stripe.Subscription.Status,
   customerId: string,
+  startDate: Date,
   endDate: Date
 ) => {
   // convert the status to SubscriptionStatus enum
@@ -372,6 +408,7 @@ export const updateTeamStatus = async (
       data: {
         stripeSubscriptionId,
         stripeSubscriptionStatus,
+        stripeCurrentPeriodStart: startDate,
         stripeCurrentPeriodEnd: endDate,
         stripeSubscriptionLastUpdated: new Date(),
         ...(planType !== null && { planType }),
@@ -411,7 +448,13 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
     return;
   }
 
-  updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
+  updateTeamStatus(
+    stripeSubscriptionId,
+    status,
+    customer,
+    new Date(event.current_period_start * 1000),
+    new Date(event.current_period_end * 1000)
+  );
 };
 
 export const getIsMonthlySubscription = async (stripeSubscriptionId: string): Promise<boolean> => {
@@ -534,6 +577,7 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
     subscription.id,
     subscription.status,
     team.stripeCustomerId,
+    new Date(subscription.current_period_start * 1000),
     new Date(subscription.current_period_end * 1000)
   );
 

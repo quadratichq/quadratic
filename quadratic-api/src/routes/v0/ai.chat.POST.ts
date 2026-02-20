@@ -161,7 +161,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     abortController.signal,
     userId,
     ownerTeam.id,
-    isFree
+    isFree,
+    ownerTeam.allowOveragePayments
   );
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
@@ -215,6 +216,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       modelKey,
       source: toAIChatSource(source),
       isFreePlan: isFree,
+      overageEnabled: ownerTeam.allowOveragePayments,
     });
   }
 

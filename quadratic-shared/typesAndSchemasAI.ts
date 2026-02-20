@@ -218,6 +218,8 @@ export interface AIModelConfig extends AIRates {
   repetition_penalty?: number;
   /** Input context window size in tokens. Used for context usage indicator. */
   contextLimit?: number;
+  /** Short description shown in the model cost panel. */
+  displayDescription?: string;
 }
 
 // ----------------------------------------------------------------------------

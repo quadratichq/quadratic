@@ -29,7 +29,8 @@ export const getModelKey = async (
   signal: AbortSignal,
   userId: number,
   teamId: number,
-  isFreePlan?: boolean
+  isFreePlan?: boolean,
+  overageEnabled?: boolean
 ): Promise<AIModelKey> => {
   try {
     if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
@@ -254,6 +255,7 @@ ${userTextPrompt}
         modelKey: DEFAULT_MODEL_ROUTER_MODEL,
         source: 'ModelRouter',
         isFreePlan,
+        overageEnabled,
       });
     }
 

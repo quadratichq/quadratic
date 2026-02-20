@@ -240,11 +240,12 @@ export function BusinessPlanSettings({ highlight }: BusinessPlanSettingsProps) {
                   )}
                 </div>
               </div>
-              {aiUsageData?.teamCurrentMonthCost !== null && aiUsageData?.teamCurrentMonthCost !== undefined && (
-                <p className="text-xs text-muted-foreground">
-                  Current team overage spend this month: ${aiUsageData.teamCurrentMonthCost.toFixed(2)}
-                </p>
-              )}
+              {aiUsageData?.teamCurrentMonthOverageCost !== null &&
+                aiUsageData?.teamCurrentMonthOverageCost !== undefined && (
+                  <p className="text-xs text-muted-foreground">
+                    Current team overage spend this period: ${aiUsageData.teamCurrentMonthOverageCost.toFixed(2)}
+                  </p>
+                )}
             </div>
           )}
         </div>

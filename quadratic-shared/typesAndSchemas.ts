@@ -696,12 +696,14 @@ export const ApiSchemas = {
     monthlyAiAllowance: z.number().nullable().optional(),
     remainingAllowance: z.number().nullable().optional(),
     teamMonthlyBudgetLimit: z.number().nullable().optional(),
-    teamCurrentMonthCost: z.number().nullable().optional(),
+    teamCurrentMonthOverageCost: z.number().nullable().optional(),
     teamCurrentMonthMessages: z.number().nullable().optional(),
     teamMessageLimit: z.number().nullable().optional(),
     userMonthlyBudgetLimit: z.number().nullable().optional(),
     userCurrentMonthCost: z.number().nullable().optional(),
     allowOveragePayments: z.boolean().optional(),
+    billingPeriodStart: z.string().nullable().optional(),
+    billingPeriodEnd: z.string().nullable().optional(),
   }),
 
   '/v0/teams/:uuid/billing/ai/usage/users.GET.response': z.object({
@@ -714,8 +716,24 @@ export const ApiSchemas = {
         currentMonthAiCost: z.number().nullable(),
         monthlyAiAllowance: z.number().nullable(),
         userMonthlyBudgetLimit: z.number().nullable(),
+        billedOverageCost: z.number().nullable(),
       })
     ),
+  }),
+
+  '/v0/teams/:uuid/billing/ai/usage/daily.GET.response': z.object({
+    dailyCosts: z.array(
+      z.object({
+        date: z.string(),
+        userId: z.number(),
+        value: z.number(),
+        billedOverageCost: z.number(),
+      })
+    ),
+    monthlyAiAllowance: z.number().nullable(),
+    billingPeriodStart: z.string(),
+    billingPeriodEnd: z.string(),
+    planType: z.string(),
   }),
 
   '/v0/teams/:uuid/billing/budget.PATCH.response': z.object({

@@ -57,7 +57,13 @@ beforeAll(async () => {
   teamUuid = team.uuid;
 });
 
-afterAll(clearDb);
+afterAll(async () => {
+  try {
+    await clearDb();
+  } catch {
+    // Ignore cleanup errors from Prisma engine disconnect race
+  }
+});
 
 describe('POST /v0/ai/plan', () => {
   describe('authentication', () => {
@@ -147,6 +153,63 @@ describe('POST /v0/ai/plan', () => {
         })
         .set('Authorization', `Bearer ValidToken user`)
         .expect(403);
+    });
+  });
+
+  describe('billing enforcement', () => {
+    it('returns empty plan when Pro user exceeds allowance', async () => {
+      await upgradeTeamToPro(teamId);
+
+      // Create cost exceeding $20 Pro allowance (no file needed for plan costs)
+      await dbClient.aICost.create({
+        data: {
+          userId,
+          teamId,
+          cost: 25.0,
+          model: 'test-model',
+          source: 'AIAnalyst',
+          inputTokens: 100,
+          outputTokens: 100,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          createdDate: new Date(),
+        },
+      });
+
+      await request(app)
+        .post('/v0/ai/plan')
+        .send({
+          teamUuid,
+          prompt: 'Create a sales tracker',
+          context: {},
+        })
+        .set('Authorization', `Bearer ValidToken user`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.plan).toBe('');
+          expect(body.exceededBillingLimit).toBe(true);
+        });
+
+      // Clean up costs so next test starts fresh
+      await dbClient.aICost.deleteMany({ where: { teamId } });
+    });
+
+    it('returns plan normally when within limits', async () => {
+      await upgradeTeamToPro(teamId);
+
+      await request(app)
+        .post('/v0/ai/plan')
+        .send({
+          teamUuid,
+          prompt: 'Create a budget tracker',
+          context: {},
+        })
+        .set('Authorization', `Bearer ValidToken user`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body).toHaveProperty('plan');
+          expect(body.exceededBillingLimit).toBe(false);
+        });
     });
   });
 });

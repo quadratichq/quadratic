@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
-import { trackAICost } from '../../billing/aiCostTracking.helper';
+import { toAIChatSource, trackAICost } from '../../billing/aiCostTracking.helper';
 import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
@@ -201,8 +201,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/sugg
       teamId: team.id,
       usage: parsedResponse.usage,
       modelKey: DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS,
-      source: 'AIAnalyst',
+      source: toAIChatSource('AIAnalyst'),
       isFreePlan: isFree,
+      overageEnabled: team.allowOveragePayments,
     });
 
     const responseText = parsedResponse.responseMessage.content

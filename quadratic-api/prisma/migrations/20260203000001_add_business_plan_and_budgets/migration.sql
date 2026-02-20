@@ -4,7 +4,11 @@ CREATE TYPE "PlanType" AS ENUM ('FREE', 'PRO', 'BUSINESS');
 -- AlterTable
 ALTER TABLE "Team" ADD COLUMN     "plan_type" "PlanType",
 ADD COLUMN     "allow_overage_payments" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "team_monthly_budget_limit" DOUBLE PRECISION;
+ADD COLUMN     "team_monthly_budget_limit" DOUBLE PRECISION,
+ADD COLUMN     "stripe_current_period_start" TIMESTAMP(3),
+ADD COLUMN     "stripe_overage_item_id" TEXT,
+ADD COLUMN     "stripe_overage_billed_cents" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "stripe_overage_billed_period_start" TIMESTAMP(3);
 
 -- CreateTable
 CREATE TABLE "UserBudgetLimit" (

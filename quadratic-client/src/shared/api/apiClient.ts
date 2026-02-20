@@ -104,6 +104,15 @@ export const apiClient = {
 
         return data;
       },
+      async aiUsageDaily(uuid: string) {
+        const data = await fetchFromApi(
+          `/v0/teams/${uuid}/billing/ai/usage/daily`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/ai/usage/daily.GET.response']
+        );
+
+        return data;
+      },
       async updateOverage(uuid: string, allowOveragePayments: boolean) {
         return fetchFromApi(
           `/v0/teams/${uuid}/billing/overage`,

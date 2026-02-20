@@ -1,4 +1,4 @@
-import { PlanType, type Team } from '@prisma/client';
+import { PlanType, SubscriptionStatus, type Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { AI_ALLOWANCE_BUSINESS, AI_ALLOWANCE_PRO } from '../env-vars';
 import type { DecryptedTeam } from '../utils/teams';
@@ -93,20 +93,30 @@ export const getTeamMonthlyAiAllowance = async (team: Team | DecryptedTeam): Pro
 };
 
 /**
- * Get the current month's AI cost for a team.
- * Sums all AICost records for the current calendar month.
+ * Get the billing period date range for a team.
+ * Uses Stripe billing period when available, falls back to calendar month.
  */
-export const getCurrentMonthAiCostForTeam = async (teamId: number): Promise<number> => {
+export const getBillingPeriodDates = (team: Team | DecryptedTeam): { start: Date; end: Date } => {
+  if (team.stripeCurrentPeriodStart && team.stripeCurrentPeriodEnd) {
+    return { start: team.stripeCurrentPeriodStart, end: team.stripeCurrentPeriodEnd };
+  }
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  return {
+    start: new Date(now.getFullYear(), now.getMonth(), 1),
+    end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+  };
+};
 
+/**
+ * Get the AI cost for a team within a date range.
+ */
+export const getBillingPeriodAiCostForTeam = async (teamId: number, start: Date, end: Date): Promise<number> => {
   const result = await dbClient.aICost.aggregate({
     where: {
       teamId,
       createdDate: {
-        gte: startOfMonth,
-        lte: endOfMonth,
+        gte: start,
+        lte: end,
       },
     },
     _sum: {
@@ -118,21 +128,21 @@ export const getCurrentMonthAiCostForTeam = async (teamId: number): Promise<numb
 };
 
 /**
- * Get the current month's AI cost for a specific user in a team.
- * Sums all AICost records for the current calendar month.
+ * Get the AI cost for a specific user in a team within a date range.
  */
-export const getCurrentMonthAiCostForUser = async (teamId: number, userId: number): Promise<number> => {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
+export const getBillingPeriodAiCostForUser = async (
+  teamId: number,
+  userId: number,
+  start: Date,
+  end: Date
+): Promise<number> => {
   const result = await dbClient.aICost.aggregate({
     where: {
       teamId,
       userId,
       createdDate: {
-        gte: startOfMonth,
-        lte: endOfMonth,
+        gte: start,
+        lte: end,
       },
     },
     _sum: {
@@ -141,6 +151,53 @@ export const getCurrentMonthAiCostForUser = async (teamId: number, userId: numbe
   });
 
   return result._sum.cost ?? 0;
+};
+
+/**
+ * Get total and overage-enabled AI costs for a team within a date range in one query.
+ */
+export const getBillingPeriodAiCostBreakdownForTeam = async (
+  teamId: number,
+  start: Date,
+  end: Date
+): Promise<{ totalCost: number; overageEnabledCost: number }> => {
+  const results = await dbClient.aICost.groupBy({
+    by: ['overageEnabled'],
+    where: { teamId, createdDate: { gte: start, lte: end } },
+    _sum: { cost: true },
+  });
+  let totalCost = 0;
+  let overageEnabledCost = 0;
+  for (const row of results) {
+    const cost = row._sum.cost ?? 0;
+    totalCost += cost;
+    if (row.overageEnabled) overageEnabledCost += cost;
+  }
+  return { totalCost, overageEnabledCost };
+};
+
+/**
+ * Get total and overage-enabled AI costs for a user in a team within a date range in one query.
+ */
+export const getBillingPeriodAiCostBreakdownForUser = async (
+  teamId: number,
+  userId: number,
+  start: Date,
+  end: Date
+): Promise<{ totalCost: number; overageEnabledCost: number }> => {
+  const results = await dbClient.aICost.groupBy({
+    by: ['overageEnabled'],
+    where: { teamId, userId, createdDate: { gte: start, lte: end } },
+    _sum: { cost: true },
+  });
+  let totalCost = 0;
+  let overageEnabledCost = 0;
+  for (const row of results) {
+    const cost = row._sum.cost ?? 0;
+    totalCost += cost;
+    if (row.overageEnabled) overageEnabledCost += cost;
+  }
+  return { totalCost, overageEnabledCost };
 };
 
 /**
@@ -158,7 +215,8 @@ export const hasExceededAllowance = async (team: Team | DecryptedTeam, userId: n
     return false;
   }
 
-  const currentCost = await getCurrentMonthAiCostForUser(team.id, userId);
+  const { start, end } = getBillingPeriodDates(team);
+  const currentCost = await getBillingPeriodAiCostForUser(team.id, userId, start, end);
   return currentCost >= allowancePerUser;
 };
 
@@ -176,7 +234,8 @@ export const hasTeamExceededAllowance = async (team: Team | DecryptedTeam): Prom
     return false;
   }
 
-  const currentCost = await getCurrentMonthAiCostForTeam(team.id);
+  const { start, end } = getBillingPeriodDates(team);
+  const currentCost = await getBillingPeriodAiCostForTeam(team.id, start, end);
   return currentCost >= teamAllowance;
 };
 
@@ -204,21 +263,21 @@ export const getUserBudgetLimit = async (teamId: number, userId: number): Promis
 };
 
 /**
- * Get the current month's AI cost for all users in a team in a single query.
+ * Get AI costs for all users in a team within a date range, in a single query.
  * Returns a Map from userId to cost.
  */
-export const getCurrentMonthAiCostsByUser = async (teamId: number): Promise<Map<number, number>> => {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
+export const getBillingPeriodAiCostsByUser = async (
+  teamId: number,
+  start: Date,
+  end: Date
+): Promise<Map<number, number>> => {
   const results = await dbClient.aICost.groupBy({
     by: ['userId'],
     where: {
       teamId,
       createdDate: {
-        gte: startOfMonth,
-        lte: endOfMonth,
+        gte: start,
+        lte: end,
       },
     },
     _sum: {
@@ -251,28 +310,53 @@ export const getUserBudgetLimitsForTeam = async (teamId: number): Promise<Map<nu
 
 /**
  * Check if a user has exceeded their monthly budget limit.
+ * Budget limits cap the user's billed overage (costs with overageEnabled=true beyond allowance).
  * Returns false if no budget limit is set.
- * Budgets automatically reset on the 1st of each month since costs are filtered by calendar month.
+ * Budgets reset each billing period since costs are filtered by the period dates.
  */
-export const hasExceededUserBudget = async (teamId: number, userId: number): Promise<boolean> => {
-  const budgetLimit = await getUserBudgetLimit(teamId, userId);
+export const hasExceededUserBudget = async (team: Team | DecryptedTeam, userId: number): Promise<boolean> => {
+  const budgetLimit = await getUserBudgetLimit(team.id, userId);
   if (!budgetLimit) {
-    return false; // No budget limit set
+    return false;
   }
 
-  // Costs are already filtered by current calendar month, so just compare
-  const currentCost = await getCurrentMonthAiCostForUser(teamId, userId);
-  return currentCost >= budgetLimit.limit;
+  const allowancePerUser = getMonthlyAiAllowancePerUser(team);
+  const { start, end } = getBillingPeriodDates(team);
+  const breakdown = await getBillingPeriodAiCostBreakdownForUser(team.id, userId, start, end);
+  const totalOverage = allowancePerUser > 0 ? Math.max(0, breakdown.totalCost - allowancePerUser) : 0;
+  const billedOverage = Math.min(totalOverage, breakdown.overageEnabledCost);
+  return billedOverage >= budgetLimit.limit;
 };
 
 /**
- * Get the current month's AI overage cost for a team (cost beyond included allowance).
- * Returns max(0, total cost − team monthly allowance).
+ * Get the billing period's billed overage cost for a team.
+ * Only counts costs from records where overageEnabled=true that exceed the team allowance.
  */
-export const getCurrentMonthOverageCostForTeam = async (team: Team | DecryptedTeam): Promise<number> => {
-  const totalCost = await getCurrentMonthAiCostForTeam(team.id);
+export const getBillingPeriodOverageCostForTeam = async (team: Team | DecryptedTeam): Promise<number> => {
+  const { start, end } = getBillingPeriodDates(team);
   const allowance = await getTeamMonthlyAiAllowance(team);
-  return Math.max(0, totalCost - allowance);
+
+  const results = await dbClient.aICost.groupBy({
+    by: ['overageEnabled'],
+    where: {
+      teamId: team.id,
+      createdDate: { gte: start, lte: end },
+    },
+    _sum: { cost: true },
+  });
+
+  let totalCost = 0;
+  let overageEnabledCost = 0;
+  for (const row of results) {
+    const cost = row._sum.cost ?? 0;
+    totalCost += cost;
+    if (row.overageEnabled) {
+      overageEnabledCost += cost;
+    }
+  }
+
+  const totalOverage = Math.max(0, totalCost - allowance);
+  return Math.min(totalOverage, overageEnabledCost);
 };
 
 /**
@@ -282,10 +366,10 @@ export const getCurrentMonthOverageCostForTeam = async (team: Team | DecryptedTe
  */
 export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise<boolean> => {
   if (!team.teamMonthlyBudgetLimit) {
-    return false; // No budget limit set
+    return false;
   }
 
-  const overageCost = await getCurrentMonthOverageCostForTeam(team);
+  const overageCost = await getBillingPeriodOverageCostForTeam(team);
   return overageCost >= team.teamMonthlyBudgetLimit;
 };
 
@@ -294,6 +378,10 @@ export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise
  * Returns { allowed: boolean, reason?: string }
  *
  * Fetches all billing data in parallel to minimize latency, since this runs on every AI request.
+ *
+ * Budget semantics (both user and team budgets cap overage spend only):
+ * - User budget limit: caps the user's overage spend (beyond included per-user allowance)
+ * - Team budget limit: caps the team's overage spend (beyond included team allowance)
  */
 export const canMakeAiRequest = async (
   team: Team | DecryptedTeam,
@@ -305,13 +393,20 @@ export const canMakeAiRequest = async (
     return { allowed: true };
   }
 
+  // Guard: if planType is non-FREE but subscription is not active (e.g., missed
+  // webhook left stale planType), treat as free so the message-limit path applies.
+  if (team.stripeSubscriptionStatus !== SubscriptionStatus.ACTIVE) {
+    return { allowed: true };
+  }
+
   const allowancePerUser = getMonthlyAiAllowancePerUser(team);
+  const { start, end } = getBillingPeriodDates(team);
 
   if (planType === PlanType.PRO) {
     if (allowancePerUser === 0) {
       return { allowed: true };
     }
-    const userCost = await getCurrentMonthAiCostForUser(team.id, userId);
+    const userCost = await getBillingPeriodAiCostForUser(team.id, userId, start, end);
     if (userCost >= allowancePerUser) {
       return { allowed: false, reason: 'Monthly AI allowance exceeded' };
     }
@@ -319,18 +414,25 @@ export const canMakeAiRequest = async (
   }
 
   // Business plan: fetch all billing data in parallel
-  const [userCost, budgetLimit, teamCost, userCount] = await Promise.all([
-    getCurrentMonthAiCostForUser(team.id, userId),
+  const [userBreakdown, budgetLimit, teamBreakdown, userCount] = await Promise.all([
+    getBillingPeriodAiCostBreakdownForUser(team.id, userId, start, end),
     getUserBudgetLimit(team.id, userId),
-    getCurrentMonthAiCostForTeam(team.id),
+    getBillingPeriodAiCostBreakdownForTeam(team.id, start, end),
     dbClient.userTeamRole.count({ where: { teamId: team.id } }),
   ]);
 
+  const userCost = userBreakdown.totalCost;
   const teamAllowance = allowancePerUser * userCount;
   const exceededUserAllowance = allowancePerUser > 0 && userCost >= allowancePerUser;
-  const exceededUserBudget = budgetLimit !== null && userCost >= budgetLimit.limit;
-  const overageCost = teamAllowance > 0 ? Math.max(0, teamCost - teamAllowance) : 0;
-  const exceededTeamBudget = team.teamMonthlyBudgetLimit != null && overageCost >= team.teamMonthlyBudgetLimit;
+
+  // Budget checks only count billed overage (costs incurred while on-demand was enabled)
+  const userTotalOverage = allowancePerUser > 0 ? Math.max(0, userCost - allowancePerUser) : 0;
+  const userBilledOverage = Math.min(userTotalOverage, userBreakdown.overageEnabledCost);
+  const exceededUserBudget = budgetLimit !== null && userBilledOverage >= budgetLimit.limit;
+
+  const teamTotalOverage = teamAllowance > 0 ? Math.max(0, teamBreakdown.totalCost - teamAllowance) : 0;
+  const teamBilledOverage = Math.min(teamTotalOverage, teamBreakdown.overageEnabledCost);
+  const exceededTeamBudget = team.teamMonthlyBudgetLimit != null && teamBilledOverage >= team.teamMonthlyBudgetLimit;
 
   if (exceededUserAllowance) {
     if (team.allowOveragePayments) {
@@ -353,4 +455,83 @@ export const canMakeAiRequest = async (
   }
 
   return { allowed: true };
+};
+
+/**
+ * Get billed overage cost per user in a team for a billing period.
+ * Only includes costs from records where overageEnabled=true that exceed the per-user allowance.
+ * Returns a Map from userId to their billed overage cost.
+ */
+export const getBilledOverageCostsByUser = async (
+  teamId: number,
+  start: Date,
+  end: Date,
+  monthlyAiAllowancePerUser: number
+): Promise<Map<number, number>> => {
+  const results = await dbClient.aICost.groupBy({
+    by: ['userId', 'overageEnabled'],
+    where: {
+      teamId,
+      createdDate: { gte: start, lte: end },
+    },
+    _sum: { cost: true },
+  });
+
+  const totalByUser = new Map<number, number>();
+  const overageEnabledByUser = new Map<number, number>();
+
+  for (const row of results) {
+    const userId = row.userId;
+    const cost = row._sum.cost ?? 0;
+    totalByUser.set(userId, (totalByUser.get(userId) ?? 0) + cost);
+    if (row.overageEnabled) {
+      overageEnabledByUser.set(userId, (overageEnabledByUser.get(userId) ?? 0) + cost);
+    }
+  }
+
+  const billedMap = new Map<number, number>();
+  for (const [userId, totalCost] of totalByUser) {
+    const overageEnabledCost = overageEnabledByUser.get(userId) ?? 0;
+    if (totalCost <= monthlyAiAllowancePerUser || overageEnabledCost === 0) {
+      billedMap.set(userId, 0);
+      continue;
+    }
+    const totalOverage = Math.max(0, totalCost - monthlyAiAllowancePerUser);
+    billedMap.set(userId, Math.min(totalOverage, overageEnabledCost));
+  }
+
+  return billedMap;
+};
+
+/**
+ * Get daily AI costs grouped by user and day for a billing period.
+ * Returns flat array of { date, userId, cost, overageEnabledCost }.
+ */
+export const getDailyAiCostsByUser = async (
+  teamId: number,
+  start: Date,
+  end: Date
+): Promise<Array<{ date: string; userId: number; cost: number; overageEnabledCost: number }>> => {
+  const rows = await dbClient.$queryRaw<
+    Array<{ day: Date; user_id: number; cost: number; overage_enabled_cost: number }>
+  >`
+    SELECT
+      DATE_TRUNC('day', created_date) AS day,
+      user_id,
+      SUM(cost)::double precision AS cost,
+      SUM(CASE WHEN overage_enabled THEN cost ELSE 0 END)::double precision AS overage_enabled_cost
+    FROM "AICost"
+    WHERE team_id = ${teamId}
+      AND created_date >= ${start}
+      AND created_date <= ${end}
+    GROUP BY DATE_TRUNC('day', created_date), user_id
+    ORDER BY day, user_id
+  `;
+
+  return rows.map((row) => ({
+    date: row.day.toISOString().split('T')[0],
+    userId: row.user_id,
+    cost: row.cost,
+    overageEnabledCost: row.overage_enabled_cost,
+  }));
 };

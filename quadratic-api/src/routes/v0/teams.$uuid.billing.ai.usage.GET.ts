@@ -5,14 +5,15 @@ import {
   BillingAIUsageForCurrentMonth,
   BillingAIUsageLimitExceeded,
   BillingAIUsageMonthlyForUserInTeam,
-  getCurrentMonthAiMessagesForTeam,
+  getBillingPeriodAiMessagesForTeam,
 } from '../../billing/AIUsageHelpers';
 import {
-  getCurrentMonthAiCostForUser,
-  getCurrentMonthOverageCostForTeam,
+  canMakeAiRequest,
+  getBillingPeriodAiCostForUser,
+  getBillingPeriodDates,
+  getBillingPeriodOverageCostForTeam,
   getMonthlyAiAllowancePerUser,
   getUserBudgetLimit,
-  hasExceededTeamBudget,
   isFreePlan,
 } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
@@ -77,8 +78,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       const exceededBillingLimit = BillingAIUsageLimitExceeded(freeUsage);
       const currentPeriodUsage = BillingAIUsageForCurrentMonth(freeUsage);
 
-      // Get team-level message usage and limit
-      const teamCurrentMonthMessages = await getCurrentMonthAiMessagesForTeam(team.id);
+      // Get team-level message usage and limit (free plan uses calendar month)
+      const now = new Date();
+      const calStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const calEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      const teamCurrentMonthMessages = await getBillingPeriodAiMessagesForTeam(team.id, calStart, calEnd);
       const userCount = await dbClient.userTeamRole.count({
         where: {
           teamId: team.id,
@@ -95,7 +99,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
         monthlyAiAllowance: null,
         remainingAllowance: null,
         teamMonthlyBudgetLimit: null,
-        teamCurrentMonthCost: null,
+        teamCurrentMonthOverageCost: null,
         teamCurrentMonthMessages: teamCurrentMonthMessages,
         teamMessageLimit: teamMessageLimit,
         userMonthlyBudgetLimit: null,
@@ -104,8 +108,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     }
   }
 
-  // Pro/Business plan: use cost-based limits
-  const currentMonthAiCost = await getCurrentMonthAiCostForUser(team.id, userId);
+  // Pro/Business plan: use cost-based limits with billing period dates
+  const { start: periodStart, end: periodEnd } = getBillingPeriodDates(team);
+  const currentMonthAiCost = await getBillingPeriodAiCostForUser(team.id, userId, periodStart, periodEnd);
   const monthlyAiAllowancePerUser = getMonthlyAiAllowancePerUser(team);
   const remainingAllowance = Math.max(0, monthlyAiAllowancePerUser - currentMonthAiCost);
 
@@ -113,28 +118,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const userBudgetLimit = await getUserBudgetLimit(team.id, userId);
   const teamMonthlyBudgetLimit = team.teamMonthlyBudgetLimit;
   const teamCurrentMonthOverageCost =
-    team.allowOveragePayments || teamMonthlyBudgetLimit != null ? await getCurrentMonthOverageCostForTeam(team) : null;
-  const teamExceededBudget = await hasExceededTeamBudget(team);
+    team.allowOveragePayments || teamMonthlyBudgetLimit != null ? await getBillingPeriodOverageCostForTeam(team) : null;
 
-  // Check if exceeded allowance
-  const exceededAllowance = currentMonthAiCost >= monthlyAiAllowancePerUser;
-  const exceededBillingLimit = exceededAllowance && !team.allowOveragePayments;
-
-  // If overage is allowed, check budget limits instead
-  let finalExceededBillingLimit = exceededBillingLimit;
-  if (exceededAllowance && team.allowOveragePayments) {
-    // Check user budget (costs are already filtered by calendar month)
-    if (userBudgetLimit) {
-      finalExceededBillingLimit = currentMonthAiCost >= userBudgetLimit.limit;
-    }
-    // Check team budget
-    if (!finalExceededBillingLimit && teamMonthlyBudgetLimit) {
-      finalExceededBillingLimit = teamExceededBudget;
-    }
-  }
+  // Delegate the exceeded decision to canMakeAiRequest (single source of truth)
+  const { allowed } = await canMakeAiRequest(team, userId);
 
   const data = {
-    exceededBillingLimit: finalExceededBillingLimit,
+    exceededBillingLimit: !allowed,
     billingLimit: null,
     currentPeriodUsage: null,
     planType: team.planType || 'PRO',
@@ -142,12 +132,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     monthlyAiAllowance: monthlyAiAllowancePerUser,
     remainingAllowance,
     teamMonthlyBudgetLimit,
-    teamCurrentMonthCost: teamCurrentMonthOverageCost,
+    teamCurrentMonthOverageCost: teamCurrentMonthOverageCost,
     teamCurrentMonthMessages: null,
     teamMessageLimit: null,
     userMonthlyBudgetLimit: userBudgetLimit?.limit ?? null,
     userCurrentMonthCost: userBudgetLimit ? currentMonthAiCost : null,
     allowOveragePayments: team.allowOveragePayments || false,
+    billingPeriodStart: periodStart.toISOString(),
+    billingPeriodEnd: periodEnd.toISOString(),
   };
 
   return res.status(200).json(data);

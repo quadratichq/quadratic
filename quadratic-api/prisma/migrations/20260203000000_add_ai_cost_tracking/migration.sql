@@ -23,7 +23,7 @@ CREATE INDEX "AICost_user_id_idx" ON "AICost"("user_id");
 CREATE INDEX "AICost_team_id_idx" ON "AICost"("team_id");
 
 -- CreateIndex
-CREATE INDEX "AICost_user_id_team_id_idx" ON "AICost"("user_id", "team_id");
+CREATE INDEX "AICost_user_id_team_id_created_date_idx" ON "AICost"("user_id", "team_id", "created_date");
 
 -- CreateIndex
 CREATE INDEX "AICost_created_date_idx" ON "AICost"("created_date");
