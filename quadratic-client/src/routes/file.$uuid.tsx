@@ -20,6 +20,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { clearInitialConnectionType, getInitialConnectionType } from '@/shared/features/initialConnectionType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { registerEventAnalyticsData, trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
@@ -28,6 +29,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
+
 import { memo, useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
@@ -213,6 +215,20 @@ export const Component = memo(() => {
     userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
   const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
+
+  const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read is a pure function (no side effects) so it's safe to call during
+  // render, even with React StrictMode's double-render in development.
+  // Clearing happens in a useEffect to avoid removing the value before the
+  // second render call has a chance to read it.
+  const initialConnectionType = getInitialConnectionType();
+  useEffect(() => {
+    clearInitialConnectionType();
+  }, []);
+
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -222,14 +238,11 @@ export const Component = memo(() => {
         user: loggedInUser,
         fileUuid,
         teamUuid,
+        ...(initialConnectionType ? { showConnectionsMenu: { initialConnectionType } } : {}),
       }));
     },
-    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid]
+    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, initialConnectionType]
   );
-
-  const { setIsOnPaidPlan } = useIsOnPaidPlan();
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     setIsOnPaidPlan(isOnPaidPlan);

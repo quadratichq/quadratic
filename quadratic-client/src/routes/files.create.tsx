@@ -1,15 +1,19 @@
 import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { storeInitialConnectionType } from '@/shared/features/initialConnectionType';
 import { ConnectionTypeSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect } from 'react-router';
 
 export const loader = async (loaderArgs: LoaderFunctionArgs) => {
-  const { activeTeamUuid } = await requireAuth(loaderArgs.request);
-
   const { request } = loaderArgs;
   const url = new URL(request.url);
+
+  // Do this _before_ auth so the value survives login/signup/onboarding redirects
+  storeInitialConnectionType(url);
+
+  const { activeTeamUuid } = await requireAuth(request);
 
   // Get the active team
   const { teams } = await apiClient.teams.list();
