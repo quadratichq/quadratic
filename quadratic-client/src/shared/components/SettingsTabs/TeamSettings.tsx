@@ -129,16 +129,16 @@ export function TeamSettings({ highlightOverage }: TeamSettingsProps) {
           {/* Plan Comparison */}
           <BillingPlans canManageBilling={canManageBilling} teamUuid={team.uuid} eventSource="SettingsDialog" />
 
-          {/* Current Usage */}
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Current usage</h4>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Team members</span>
-                <span className="text-sm font-medium">{users.length}</span>
-              </div>
-            </div>
-          </div>
+          <span className="text-sm">
+            Team members · <span className="font-medium">{users.length}</span>{' '}
+            <span className="text-muted-foreground">
+              (
+              <a href={ROUTES.TEAM_MEMBERS(team.uuid)} target="_blank" rel="noreferrer" className="underline">
+                manage
+              </a>
+              )
+            </span>
+          </span>
 
           {/* Business Plan Settings (on-demand usage and spending limit) */}
           <BusinessPlanSettings highlight={highlightOverage} />

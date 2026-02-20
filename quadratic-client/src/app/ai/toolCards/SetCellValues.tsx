@@ -9,21 +9,40 @@ import type { z } from 'zod';
 
 type SetCellValuesResponse = AIToolsArgs[AITool.SetCellValues];
 
+interface CompressedSetCellValues {
+  _compressed: string;
+  sheet_name?: string;
+  top_left_position?: string;
+  compressed_rows?: number;
+  compressed_cols?: number;
+}
+
 export const SetCellValues = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCellValuesResponse, SetCellValuesResponse>>();
+    const [compressedArgs, setCompressedArgs] = useState<CompressedSetCellValues>();
 
     useEffect(() => {
       if (loading) {
         setToolArgs(undefined);
+        setCompressedArgs(undefined);
         return;
       }
 
       try {
         const json = JSON.parse(args);
+
+        if ('_compressed' in json) {
+          setCompressedArgs(json as CompressedSetCellValues);
+          setToolArgs(undefined);
+          return;
+        }
+
         setToolArgs(AIToolsArgsSchema[AITool.SetCellValues].safeParse(json));
+        setCompressedArgs(undefined);
       } catch (error) {
         setToolArgs(undefined);
+        setCompressedArgs(undefined);
         console.error('[SetCellValues] Failed to parse args: ', error);
       }
     }, [args, loading]);
@@ -32,6 +51,19 @@ export const SetCellValues = memo(
     const label = loading ? 'Inserting data' : 'Inserted data';
 
     const handleClick = useCallback(() => {
+      if (compressedArgs?.top_left_position) {
+        try {
+          const sheetId = compressedArgs.sheet_name
+            ? (sheets.getSheetByName(compressedArgs.sheet_name)?.id ?? sheets.current)
+            : sheets.current;
+          const selection = sheets.stringToSelection(compressedArgs.top_left_position, sheetId);
+          sheets.changeSelection(selection);
+        } catch (e) {
+          console.warn('Failed to select range:', e);
+        }
+        return;
+      }
+
       if (!toolArgs?.success || !toolArgs.data) return;
       const { top_left_position, cell_values, sheet_name } = toolArgs.data;
       const rows = cell_values.length;
@@ -49,10 +81,30 @@ export const SetCellValues = memo(
       } catch (e) {
         console.warn('Failed to select range:', e);
       }
-    }, [toolArgs]);
+    }, [toolArgs, compressedArgs]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} compact />;
+    }
+
+    if (compressedArgs) {
+      const { top_left_position, compressed_rows: rows, compressed_cols: cols } = compressedArgs;
+      return (
+        <ToolCard
+          icon={icon}
+          label={label}
+          description={
+            rows != null && cols != null && top_left_position
+              ? `${getRowColSentence({ rows, cols })} at ${top_left_position}`
+              : top_left_position
+                ? `at ${top_left_position}`
+                : undefined
+          }
+          className={className}
+          compact
+          onClick={handleClick}
+        />
+      );
     }
 
     if (!!toolArgs && !toolArgs.success) {

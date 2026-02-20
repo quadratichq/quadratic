@@ -11,7 +11,6 @@ import {
   canMakeAiRequest,
   getBillingPeriodAiCostForUser,
   getBillingPeriodDates,
-  getBillingPeriodOverageCostForTeam,
   getMonthlyAiAllowancePerUser,
   getUserBudgetLimit,
   isFreePlan,
@@ -118,7 +117,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const userBudgetLimit = await getUserBudgetLimit(team.id, userId);
   const teamMonthlyBudgetLimit = team.teamMonthlyBudgetLimit;
   const teamCurrentMonthOverageCost =
-    team.allowOveragePayments || teamMonthlyBudgetLimit != null ? await getBillingPeriodOverageCostForTeam(team) : null;
+    team.allowOveragePayments || teamMonthlyBudgetLimit != null
+      ? (team.stripeOverageBilledPeriodStart?.getTime() === periodStart.getTime()
+          ? team.stripeOverageBilledCents / 100
+          : 0)
+      : null;
 
   // Delegate the exceeded decision to canMakeAiRequest (single source of truth)
   const { allowed } = await canMakeAiRequest(team, userId);

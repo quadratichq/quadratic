@@ -249,34 +249,45 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   }, []);
 
   const shouldAutoScroll = useRef(true);
+  // Tracks whether a programmatic scroll is in progress, so we can
+  // ignore intermediate scroll events that fire during smooth animations.
+  const isProgrammaticScroll = useRef(false);
+
   const handleScroll = useCallback((e: Event) => {
+    if (isProgrammaticScroll.current) return;
     const div = e.target as HTMLDivElement;
-    // Add a small buffer (5px) to account for rounding errors and tiny scroll differences
     const isScrolledToBottom = div.scrollHeight - div.scrollTop - div.clientHeight < 5;
     shouldAutoScroll.current = isScrolledToBottom;
   }, []);
 
+  const handleScrollEnd = useCallback(() => {
+    if (isProgrammaticScroll.current) {
+      isProgrammaticScroll.current = false;
+      if (div) {
+        const isScrolledToBottom = div.scrollHeight - div.scrollTop - div.clientHeight < 5;
+        shouldAutoScroll.current = isScrolledToBottom;
+      }
+    }
+  }, [div]);
+
   useEffect(() => {
-    // Use both scroll and scrollend events for better cross-browser support
     div?.addEventListener('scroll', handleScroll);
-    div?.addEventListener('scrollend', handleScroll);
+    div?.addEventListener('scrollend', handleScrollEnd);
     return () => {
       div?.removeEventListener('scroll', handleScroll);
-      div?.removeEventListener('scrollend', handleScroll);
+      div?.removeEventListener('scrollend', handleScrollEnd);
     };
-  }, [div, handleScroll]);
+  }, [div, handleScroll, handleScrollEnd]);
 
   const scrollToBottom = useCallback(
     (force = false) => {
       if (force || shouldAutoScroll.current) {
-        // Use requestAnimationFrame to ensure scrolling happens in the next frame
-        // This helps prevent race conditions with React re-renders
         requestAnimationFrame(() => {
           if (div) {
+            isProgrammaticScroll.current = true;
+            shouldAutoScroll.current = true;
             div.scrollTo({
               top: div.scrollHeight,
-              // Use auto for rapid text updates to avoid falling behind
-              // Smooth scrolling can't keep up with fast text generation
               behavior: force ? 'auto' : 'smooth',
             });
           }
@@ -320,12 +331,11 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     }
   }, [messagesCount]);
 
-  // Only scroll on message changes if we're loading and user was already at bottom
   useEffect(() => {
-    if (loading && shouldAutoScroll.current) {
-      scrollToBottom();
+    if (shouldAutoScroll.current) {
+      scrollToBottom(loading);
     }
-  }, [messages, scrollToBottom, loading, shouldAutoScroll]);
+  }, [messages, scrollToBottom, loading]);
 
   // Scroll to bottom when prompt suggestions are available
   useEffect(() => {

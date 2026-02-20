@@ -264,6 +264,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             remainingAllowance: 20,
             teamMonthlyBudgetLimit: null,
             teamCurrentMonthOverageCost: null,
+
             teamCurrentMonthMessages: null,
             teamMessageLimit: null,
             userMonthlyBudgetLimit: null,
@@ -330,6 +331,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             remainingAllowance: 20,
             teamMonthlyBudgetLimit: null,
             teamCurrentMonthOverageCost: null,
+
             teamCurrentMonthMessages: null,
             teamMessageLimit: null,
             userMonthlyBudgetLimit: null,
@@ -472,6 +474,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             remainingAllowance: 20,
             teamMonthlyBudgetLimit: null,
             teamCurrentMonthOverageCost: null,
+
             teamCurrentMonthMessages: null,
             teamMessageLimit: null,
             userMonthlyBudgetLimit: null,
@@ -541,6 +544,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             remainingAllowance: 10,
             teamMonthlyBudgetLimit: null,
             teamCurrentMonthOverageCost: null,
+
             teamCurrentMonthMessages: null,
             teamMessageLimit: null,
             userMonthlyBudgetLimit: null,
@@ -608,6 +612,7 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
             remainingAllowance: 40,
             teamMonthlyBudgetLimit: 50.0,
             teamCurrentMonthOverageCost: 0,
+
             teamCurrentMonthMessages: null,
             teamMessageLimit: null,
             userMonthlyBudgetLimit: 60.0,

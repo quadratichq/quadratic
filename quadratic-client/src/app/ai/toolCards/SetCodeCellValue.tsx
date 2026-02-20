@@ -10,6 +10,15 @@ import type { z } from 'zod';
 
 type SetCodeCellValueResponse = AIToolsArgs[AITool.SetCodeCellValue];
 
+interface CompressedSetCodeCellValue {
+  _compressed: string;
+  sheet_name?: string;
+  code_cell_name?: string;
+  code_cell_language?: string;
+  code_cell_position?: string;
+  compressed_line_count?: number;
+}
+
 export const SetCodeCellValue = memo(
   ({
     toolCall: { arguments: args, loading },
@@ -24,6 +33,7 @@ export const SetCodeCellValue = memo(
   }) => {
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
+    const [compressedArgs, setCompressedArgs] = useState<CompressedSetCodeCellValue>();
 
     useEffect(() => {
       // Try to parse position even while loading to move cursor early
@@ -50,39 +60,51 @@ export const SetCodeCellValue = memo(
           }
         }
         setToolArgs(undefined);
+        setCompressedArgs(undefined);
         return;
       }
 
       const fullJson = parseFullJson<SetCodeCellValueResponse>(args);
       if (!fullJson) {
         setToolArgs(undefined);
+        setCompressedArgs(undefined);
+        return;
+      }
+
+      if ('_compressed' in fullJson) {
+        setCompressedArgs(fullJson as unknown as CompressedSetCodeCellValue);
+        setToolArgs(undefined);
         return;
       }
 
       const parsed = AIToolsArgsSchema[AITool.SetCodeCellValue].safeParse(fullJson);
       setToolArgs(parsed);
+      setCompressedArgs(undefined);
     }, [args, loading]);
 
     const estimatedNumberOfLines = useMemo(() => {
+      if (compressedArgs?.compressed_line_count) {
+        return compressedArgs.compressed_line_count;
+      }
       if (toolArgs?.data) {
         return toolArgs.data.code_string.split('\n').length;
       } else {
         return args.split('\\n').length;
       }
-    }, [toolArgs, args]);
+    }, [toolArgs, compressedArgs, args]);
 
     const handleClick = useCallback(() => {
-      if (!toolArgs?.success || !toolArgs.data?.code_cell_position) return;
+      const position = compressedArgs?.code_cell_position ?? toolArgs?.data?.code_cell_position;
+      const sheetName = compressedArgs?.sheet_name ?? toolArgs?.data?.sheet_name;
+      if (!position) return;
       try {
-        const sheetId = toolArgs.data.sheet_name
-          ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
-          : sheets.current;
-        const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
+        const sheetId = sheetName ? (sheets.getSheetByName(sheetName)?.id ?? sheets.current) : sheets.current;
+        const selection = sheets.stringToSelection(position, sheetId);
         sheets.changeSelection(selection);
       } catch (e) {
         console.warn('Failed to select range:', e);
       }
-    }, [toolArgs]);
+    }, [toolArgs, compressedArgs]);
 
     if (loading && estimatedNumberOfLines) {
       const partialJson = parsePartialJson<SetCodeCellValueResponse>(args);
@@ -104,6 +126,25 @@ export const SetCodeCellValue = memo(
           />
         );
       }
+    }
+
+    if (compressedArgs) {
+      const { code_cell_name, code_cell_language, code_cell_position } = compressedArgs;
+      return (
+        <ToolCard
+          icon={<LanguageIcon language={code_cell_language ?? ''} />}
+          label={`${isUpdate ? 'Updated' : 'Wrote'} code ${code_cell_name || code_cell_language || ''}`}
+          description={
+            `${estimatedNumberOfLines} line` +
+            (estimatedNumberOfLines === 1 ? '' : 's') +
+            (code_cell_position ? ` at ${code_cell_position}` : '')
+          }
+          className={className}
+          compact
+          onClick={handleClick}
+          hideIcon={hideIcon}
+        />
+      );
     }
 
     if (!!toolArgs && !toolArgs.success) {

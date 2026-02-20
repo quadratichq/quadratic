@@ -1,5 +1,6 @@
 import { BillingPlans } from '@/dashboard/billing/BillingPlans';
 import { apiClient } from '@/shared/api/apiClient';
+import { showSettingsDialog } from '@/shared/atom/settingsDialogAtom';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
 import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { WarningIcon } from '@/shared/components/Icons';
@@ -11,8 +12,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useNavigation } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useLocation, useNavigate, useNavigation } from 'react-router';
 
 const SOLICIT_UPGRADE_INTERVAL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
@@ -25,6 +26,17 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
   const [state, setState] = useAtom(showUpgradeDialogAtom);
   const navigate = useNavigate();
   const navigation = useNavigation();
+  const location = useLocation();
+  const isInApp = location.pathname.startsWith('/file/');
+
+  const handleShowMoreDetail = useCallback(() => {
+    setState({ open: false, eventSource: null });
+    if (isInApp) {
+      showSettingsDialog('team');
+    } else {
+      navigate(ROUTES.TEAM_SETTINGS(teamUuid));
+    }
+  }, [setState, isInApp, navigate, teamUuid]);
 
   // Track when the dialog opens so we know where it came from
   useEffect(() => {
@@ -131,11 +143,16 @@ export function UpgradeDialog({ teamUuid, canManageBilling }: UpgradeDialogProps
               )}
             </div>
           ) : (
-            <BillingPlans
-              teamUuid={teamUuid}
-              canManageBilling={canManageBilling}
-              eventSource={`UpgradeDialog-${state.eventSource}`}
-            />
+            <>
+              <BillingPlans
+                teamUuid={teamUuid}
+                canManageBilling={canManageBilling}
+                eventSource={`UpgradeDialog-${state.eventSource}`}
+              />
+              <Button variant="link" onClick={handleShowMoreDetail} className="w-full">
+                Show more detail
+              </Button>
+            </>
           )}
         </div>
       </DialogContent>

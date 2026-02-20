@@ -93,7 +93,7 @@ export function OverageSettingsControls({ canManageAIOverage, idPrefix, overage 
             </div>
           </div>
           {aiUsageData?.teamCurrentMonthOverageCost != null && (
-            <div className="rounded-md bg-muted px-3 py-2">
+            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
               <p className="text-xs text-muted-foreground">Current overage spend this period</p>
               <p className="text-sm font-semibold">${aiUsageData.teamCurrentMonthOverageCost.toFixed(2)}</p>
             </div>
