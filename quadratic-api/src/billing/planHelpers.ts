@@ -65,15 +65,12 @@ export const getDefaultAllowanceForPlan = (planType: PlanType): number => {
 
 /**
  * Get the monthly AI allowance per user for a team.
+ * Derived from the team's plan type and env-var defaults.
  * - FREE: 0 (uses message limit instead)
- * - PRO: $20/user/month
- * - BUSINESS: $40/user/month
+ * - PRO: $20/user/month (AI_ALLOWANCE_PRO)
+ * - BUSINESS: $40/user/month (AI_ALLOWANCE_BUSINESS)
  */
 export const getMonthlyAiAllowancePerUser = (team: Team | DecryptedTeam): number => {
-  if (team.monthlyAiAllowancePerUser !== null && team.monthlyAiAllowancePerUser !== undefined) {
-    return team.monthlyAiAllowancePerUser;
-  }
-
   return getDefaultAllowanceForPlan(getPlanType(team));
 };
 

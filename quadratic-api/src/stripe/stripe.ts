@@ -2,7 +2,6 @@ import { PlanType, SubscriptionStatus, type Team } from '@prisma/client';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
 import { trackEvent } from '../analytics/mixpanel';
-import { getDefaultAllowanceForPlan } from '../billing/planHelpers';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';
@@ -98,11 +97,12 @@ export const upgradeSubscriptionPlan = async (
 
   // Update team's plan type in database. If this fails, revert the Stripe
   // change so the two systems don't get out of sync.
+  const newPlanType = planType === 'business' ? PlanType.BUSINESS : PlanType.PRO;
   try {
     await dbClient.team.update({
       where: { id: team.id },
       data: {
-        planType: planType === 'business' ? PlanType.BUSINESS : PlanType.PRO,
+        planType: newPlanType,
       },
     });
   } catch (dbError) {
@@ -329,8 +329,6 @@ export const updateTeamStatus = async (
     planType = PlanType.FREE;
   }
 
-  const monthlyAiAllowancePerUser = planType !== null ? getDefaultAllowanceForPlan(planType) : null;
-
   // Use a transaction to get old data and update atomically
   const result = await dbClient.$transaction(async (tx) => {
     // Get the team before updating
@@ -377,7 +375,6 @@ export const updateTeamStatus = async (
         stripeCurrentPeriodEnd: endDate,
         stripeSubscriptionLastUpdated: new Date(),
         ...(planType !== null && { planType }),
-        ...(monthlyAiAllowancePerUser !== null && { monthlyAiAllowancePerUser }),
       },
     });
 

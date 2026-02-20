@@ -107,7 +107,7 @@ export const AIUsageExceeded = memo(() => {
       <h3 className="font-semibold">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
 
-      <Button onClick={handleClick} className="mt-2 w-full" size="sm">
+      <Button onClick={handleClick} className="mx-auto mt-2 w-full max-w-xs" size="sm">
         {buttonText}
       </Button>
     </div>

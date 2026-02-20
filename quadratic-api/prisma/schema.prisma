@@ -158,7 +158,6 @@ model Team {
 
     // Plan information
     planType                    PlanType?            @map("plan_type")
-    monthlyAiAllowancePerUser   Float?               @map("monthly_ai_allowance_per_user") // In dollars
     allowOveragePayments        Boolean              @default(false) @map("allow_overage_payments") // Business plan only
     teamMonthlyBudgetLimit      Float?               @map("team_monthly_budget_limit") // Total team budget in dollars
 

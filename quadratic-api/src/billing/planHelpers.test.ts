@@ -21,7 +21,6 @@ import {
 
 let userId1: number;
 let userId2: number;
-let teamId: number;
 
 beforeEach(async () => {
   userId1 = (await createUser({ auth0Id: 'user1' })).id;
@@ -162,24 +161,6 @@ describe('getMonthlyAiAllowancePerUser', () => {
 
     const allowance = getMonthlyAiAllowancePerUser(updatedTeam);
     expect(allowance).toBe(40);
-  });
-
-  it('uses explicitly set monthlyAiAllowancePerUser when available', async () => {
-    const team = await createTeam({
-      team: { uuid: '00000000-0000-0000-0000-000000000023' },
-      users: [{ userId: userId1, role: 'OWNER' }],
-    });
-
-    await dbClient.team.update({
-      where: { id: team.id },
-      data: { monthlyAiAllowancePerUser: 50 },
-    });
-
-    const updatedTeam = await dbClient.team.findUnique({ where: { id: team.id } });
-    if (!updatedTeam) throw new Error('Team not found');
-
-    const allowance = getMonthlyAiAllowancePerUser(updatedTeam);
-    expect(allowance).toBe(50);
   });
 });
 
@@ -796,7 +777,6 @@ describe('hasExceededTeamBudget', () => {
       where: { id: team.id },
       data: {
         planType: 'BUSINESS',
-        monthlyAiAllowancePerUser: 50.0,
         teamMonthlyBudgetLimit: 60.0,
       },
     });
@@ -813,13 +793,14 @@ describe('hasExceededTeamBudget', () => {
       },
     });
 
-    // Total cost $100 (included $50 + overage $50). Limit $60 applies to overage only, so overage $50 < $60
+    // BUSINESS allowance is $40/user. Total cost $90 (included $40 + overage $50).
+    // Limit $60 applies to overage only, so overage $50 < $60
     await dbClient.aICost.create({
       data: {
         userId: userId1,
         teamId: team.id,
         fileId: file.id,
-        cost: 100.0,
+        cost: 90.0,
         model: 'test-model',
         source: 'AIAnalyst',
         inputTokens: 100,

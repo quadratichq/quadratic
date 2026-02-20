@@ -3,7 +3,6 @@ CREATE TYPE "PlanType" AS ENUM ('FREE', 'PRO', 'BUSINESS');
 
 -- AlterTable
 ALTER TABLE "Team" ADD COLUMN     "plan_type" "PlanType",
-ADD COLUMN     "monthly_ai_allowance_per_user" DOUBLE PRECISION,
 ADD COLUMN     "allow_overage_payments" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "team_monthly_budget_limit" DOUBLE PRECISION;
 
