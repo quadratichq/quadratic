@@ -115,6 +115,7 @@ export function getGenAIApiArgs(
               name: toolCall.name,
               args: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
             },
+            ...(toolCall.thoughtSignature ? { thoughtSignature: toolCall.thoughtSignature } : {}),
           })),
         ],
       };
@@ -373,6 +374,7 @@ export async function parseGenAIStream(
             name: part.functionCall.name,
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
+            thoughtSignature: part.thoughtSignature,
           });
         }
       }
@@ -442,6 +444,7 @@ export function parseGenAIResponse(
         name: message.functionCall.name,
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,
+        thoughtSignature: message.thoughtSignature,
       });
     }
   });

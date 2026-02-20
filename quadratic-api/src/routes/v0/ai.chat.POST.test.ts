@@ -11,7 +11,7 @@ const payload: AIRequestBody = {
   fileUuid: '11111111-1111-1111-1111-111111111111',
   source: 'AIAnalyst',
   messageSource: 'User',
-  modelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on',
+  modelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-6:thinking-toggle-on',
   messages: [
     {
       role: 'user',

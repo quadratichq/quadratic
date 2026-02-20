@@ -17,7 +17,7 @@ export const DEFAULT_BACKUP_MODEL: AIModelKey = 'azure-openai:gpt-4.1';
 // Start with AI models
 export const DEFAULT_MODEL_START_WITH_AI_SUGGESTIONS: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
 export const DEFAULT_MODEL_START_WITH_AI_PLAN: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
-export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'vertexai-anthropic:claude-sonnet-4-5@20250929';
+export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'vertexai-anthropic:claude-sonnet-4-6@20260217';
 
 // Internal tool call models
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-lite:thinking-toggle-off';
@@ -68,11 +68,11 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'claude-sonnet-4-5@20250929',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-off',
-    displayName: 'Sonnet 4.5',
+  'vertexai-anthropic:claude-sonnet-4-6@20260217:thinking-toggle-off': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'claude-sonnet-4-6',
+    backupModelKey: 'anthropic:claude-sonnet-4.6:thinking-toggle-off',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 0.1,
     max_tokens: 64000,
@@ -85,11 +85,11 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'claude-sonnet-4-5@20250929',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
-    displayName: 'Sonnet 4.5',
+  'vertexai-anthropic:claude-sonnet-4-6@20260217:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'claude-sonnet-4-6',
+    backupModelKey: 'anthropic:claude-sonnet-4.6:thinking-toggle-on',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
@@ -102,11 +102,11 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     imageSupport: true,
   },
-  'vertexai-anthropic:claude-sonnet-4-5@20250929': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'claude-sonnet-4-5@20250929',
-    backupModelKey: 'anthropic:claude-sonnet-4.5:thinking-toggle-on',
-    displayName: 'Sonnet 4.5',
+  'vertexai-anthropic:claude-sonnet-4-6@20260217': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'claude-sonnet-4-6',
+    backupModelKey: 'anthropic:claude-sonnet-4.6:thinking-toggle-on',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
@@ -350,10 +350,10 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     imageSupport: true,
   },
-  'vertexai:gemini-3-pro-preview': {
-    ...AI_RATES.gemini_3_pro_rate,
-    model: 'gemini-3-pro-preview',
-    displayName: '3 Pro',
+  'vertexai:gemini-3.1-pro-preview': {
+    ...AI_RATES.gemini_3_1_pro_rate,
+    model: 'gemini-3.1-pro-preview',
+    displayName: '3.1 Pro',
     displayProvider: 'Gemini',
     temperature: 0.1,
     max_tokens: 65535,
@@ -381,11 +381,11 @@ export const MODELS_CONFIGURATION: {
     thinkingBudget: 0,
     imageSupport: true,
   },
-  'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-off': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-6:thinking-toggle-off': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'us.anthropic.claude-sonnet-4-6',
     backupModelKey: 'azure-openai:gpt-5-codex',
-    displayName: 'Sonnet 4.5',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 0.1,
     max_tokens: 64000,
@@ -398,11 +398,11 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     imageSupport: true,
   },
-  'bedrock-anthropic:us.anthropic.claude-sonnet-4-5-20250929-v1:0:thinking-toggle-on': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-6:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'us.anthropic.claude-sonnet-4-6',
     backupModelKey: 'azure-openai:gpt-5-codex',
-    displayName: 'Sonnet 4.5',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
@@ -467,11 +467,11 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'anthropic:claude-sonnet-4.5:thinking-toggle-off': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'claude-sonnet-4-5-20250929',
+  'anthropic:claude-sonnet-4.6:thinking-toggle-off': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'claude-sonnet-4-6',
     backupModelKey: 'azure-openai:gpt-5.2',
-    displayName: 'Sonnet 4.5',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 0.1,
     max_tokens: 64000,
@@ -484,11 +484,11 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: false,
     imageSupport: true,
   },
-  'anthropic:claude-sonnet-4.5:thinking-toggle-on': {
-    ...AI_RATES.claude_sonnet_4_5_20250926_rate,
-    model: 'claude-sonnet-4-5-20250929',
+  'anthropic:claude-sonnet-4.6:thinking-toggle-on': {
+    ...AI_RATES.claude_sonnet_4_6_20260217_rate,
+    model: 'claude-sonnet-4-6',
     backupModelKey: 'azure-openai:gpt-5.2',
-    displayName: 'Sonnet 4.5',
+    displayName: 'Sonnet 4.6',
     displayProvider: 'Claude',
     temperature: 1,
     max_tokens: 64000,
@@ -536,7 +536,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-opus-4.5:thinking-toggle-off': {
     ...AI_RATES.claude_opus_4_5_20251101_rate,
     model: 'claude-opus-4-5-20251101',
-    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-off',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-6@20260217:thinking-toggle-off',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 0.1,
@@ -553,7 +553,7 @@ export const MODELS_CONFIGURATION: {
   'anthropic:claude-opus-4.5:thinking-toggle-on': {
     ...AI_RATES.claude_opus_4_5_20251101_rate,
     model: 'claude-opus-4-5-20251101',
-    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-5@20250929:thinking-toggle-on',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4-6@20260217:thinking-toggle-on',
     displayName: 'Opus 4.5',
     displayProvider: 'Claude',
     temperature: 1,
@@ -603,7 +603,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-codex': {
     model: 'gpt-5-codex',
-    backupModelKey: 'vertexai:gemini-3-pro-preview',
+    backupModelKey: 'vertexai:gemini-3.1-pro-preview',
     displayName: 'GPT-5-Codex',
     displayProvider: 'OpenAI',
     temperature: 1,
@@ -624,7 +624,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5.2-2025-12-12': {
     model: 'gpt-5.2-2025-12-12',
-    backupModelKey: 'vertexai:gemini-3-pro-preview',
+    backupModelKey: 'vertexai:gemini-3.1-pro-preview',
     displayName: 'GPT-5.2',
     displayProvider: 'OpenAI',
     temperature: 1,
