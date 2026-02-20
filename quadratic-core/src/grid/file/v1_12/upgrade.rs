@@ -172,6 +172,7 @@ fn upgrade_table(table: current::DataTableSchema) -> v1_13::DataTableSchema {
         borders: table.borders,
         chart_pixel_output: table.chart_pixel_output,
         chart_output: table.chart_output,
+        chart_image: None,
     }
 }
 
@@ -238,6 +239,9 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_13::SheetSchema {
         merge_cells: sheet.merge_cells,
         formats: sheet.formats,
         conditional_formats: sheet.conditional_formats,
+        // Old files don't have custom defaults, so they use the hardcoded defaults
+        default_column_width: None,
+        default_row_height: None,
     }
 }
 

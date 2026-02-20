@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { currentChatUserMessagesCountAtom } from '@/app/ai/atoms/aiAnalystAtoms';
+import { ContextSizeIndicator } from '@/app/ai/components/ContextSizeIndicator';
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
-import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
@@ -20,11 +21,10 @@ import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 type UIModels = 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
@@ -62,7 +62,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
 
   const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
-  const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+  const userMessagesCount = useAtomValue(currentChatUserMessagesCountAtom);
 
   // If they've already seen the popover, don't show it.
   // Otherwise, only show it to them when they've used the AI a bit.
@@ -77,8 +77,12 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={loading}
-          className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+          className={cn(
+            `mr-1 flex items-center gap-1 text-xs text-muted-foreground`,
+            !loading && 'hover:text-foreground'
+          )}
         >
+          <ContextSizeIndicator />
           {selectedModelConfig.displayName}
 
           <CaretDownIcon />
@@ -124,12 +128,13 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         {/* Needs a min-width or it shifts as the popover closes */}
         <PopoverTrigger
-          className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
+          className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-1 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
           onClick={(e) => {
             setKnowsAboutModelPicker(true);
             e.stopPropagation();
           }}
         >
+          <ContextSizeIndicator />
           {isOthers ? selectedModelConfig.displayName : 'Auto'}
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>

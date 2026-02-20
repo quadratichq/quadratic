@@ -9,6 +9,8 @@ members = [
   "quadratic-files",
   "quadratic-multiplayer",
   "quadratic-rust-shared",
+  "quadratic-rust-renderer/core",
+  "quadratic-rust-renderer/native",
 ]
 exclude = ["poc/number_type", "dev-rust"]
 
@@ -18,7 +20,7 @@ edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
-version = "0.24.0"
+version = "0.24.1"
 
 # TODO(ddimaria): add shared dependencies here
 [workspace.dependencies]
@@ -26,3 +28,5 @@ version = "0.24.0"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+# Enable thin LTO for better dead code elimination across crates
+lto = "thin"

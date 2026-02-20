@@ -1,9 +1,5 @@
+import { currentChatMessagesCountAtom, showAIAnalystAtom, showChatHistoryAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { agentModeAtom } from '@/app/atoms/agentModeAtom';
-import {
-  aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystShowChatHistoryAtom,
-  showAIAnalystAtom,
-} from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -20,14 +16,15 @@ import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnal
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { cn } from '@/shared/shadcn/utils';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const AIAnalyst = memo(() => {
-  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const showAIAnalyst = useAtomValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
-  const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
-  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const showChatHistory = useAtomValue(showChatHistoryAtom);
+  const messagesCount = useAtomValue(currentChatMessagesCountAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
@@ -98,7 +95,7 @@ export const AIAnalyst = memo(() => {
     [setFilesImportProgressState]
   );
 
-  if (!showAIAnalyst || presentationMode) {
+  if ((!showAIAnalyst && !agentMode) || presentationMode) {
     return null;
   }
 

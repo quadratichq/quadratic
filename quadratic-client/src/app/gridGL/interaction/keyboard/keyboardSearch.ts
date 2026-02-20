@@ -21,7 +21,7 @@ export function keyboardSearch(event: React.KeyboardEvent<HTMLElement>): boolean
       setEditorInteractionState((prev) => ({
         ...prev,
         showSearch: event.shiftKey
-          ? { sheet_id: null, whole_cell: null, search_code: null, case_sensitive: null }
+          ? { sheet_id: null, whole_cell: null, search_code: null, case_sensitive: null, regex: null }
           : true,
       }));
     }

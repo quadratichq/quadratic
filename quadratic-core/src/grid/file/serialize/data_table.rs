@@ -356,6 +356,7 @@ pub(crate) fn import_data_table_builder(
             borders: data_table.borders.map(import_borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
+            chart_image: data_table.chart_image,
         };
 
         let output_rect = data_table.output_rect(pos, true);
@@ -589,6 +590,7 @@ pub(crate) fn export_data_tables(
                 borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
+                chart_image: data_table.chart_image,
             };
 
             (current::PosSchema::from(pos), data_table)

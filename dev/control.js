@@ -466,6 +466,7 @@ export class Control {
         this.status.cloudController = false;
         this.ui.print("cloudController");
         await this.kill("cloudController");
+        await killPort(3004);
         this.signals.cloudController = new AbortController();
         if (this.cli.options.noRust) {
             this.cloudController = spawn("./quadratic-cloud-controller", [], {
@@ -528,7 +529,7 @@ export class Control {
             this.connection = spawn("./quadratic-connection", [], {
                 signal: this.signals.connection.signal,
                 cwd: "quadratic-connection/target/debug",
-                env: { ...process.env, RUST_LOG: "info" },
+                env: { ...process.env, RUST_LOG: "info,object_store=warn" },
             });
         }
         else {
@@ -537,7 +538,7 @@ export class Control {
                 : ["run", "-p", "quadratic-connection", "--target-dir=target"], {
                 signal: this.signals.connection.signal,
                 cwd: "quadratic-connection",
-                env: { ...process.env, RUST_LOG: "info" },
+                env: { ...process.env, RUST_LOG: "info,object_store=warn" },
             });
         }
         this.ui.printOutput("connection", (data) => {

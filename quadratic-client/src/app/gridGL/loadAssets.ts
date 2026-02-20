@@ -1,6 +1,7 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { createBorderTypes } from '@/app/gridGL/generateTextures';
+import { emojis } from '@/app/gridGL/pixiApp/emojis/emojis';
 import { FONT_VERSION } from '@/shared/constants/appConstants';
 import FontFaceObserver from 'fontfaceobserver';
 import { Assets, BitmapFont } from 'pixi.js';
@@ -64,6 +65,7 @@ export async function loadAssets() {
     openSansBoldItalicPromise,
     Assets.loadBundle('fontBundle'),
     Assets.loadBundle('iconBundle'),
+    emojis.preload(),
   ]);
 
   assetsLoaded = true;

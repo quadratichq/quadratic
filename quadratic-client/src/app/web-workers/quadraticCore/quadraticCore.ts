@@ -64,7 +64,6 @@ import type {
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
   CodeOperation,
-  JsEditCell,
   CoreClientAddSheetResponse,
   CoreClientBatchUpdateConditionalFormats,
   CoreClientCodeExecutionState,
@@ -132,6 +131,7 @@ import type {
   CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
+  JsEditCell,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
@@ -225,6 +225,8 @@ class QuadraticCore {
             transactionId: data.transactionId,
             sheetPos: { x: state.current.x, y: state.current.y, sheetId: state.current.sheet_id },
             code: '', // Code is not needed for display, can be retrieved from grid if needed
+            chartPixelWidth: 0,
+            chartPixelHeight: 0,
           };
         }
 
@@ -233,6 +235,8 @@ class QuadraticCore {
           transactionId: data.transactionId,
           sheetPos: { x: op.x, y: op.y, sheetId: op.sheet_id },
           code: '', // Code is not needed for display, can be retrieved from grid if needed
+          chartPixelWidth: 0,
+          chartPixelHeight: 0,
         }));
 
         // Emit unified code running state

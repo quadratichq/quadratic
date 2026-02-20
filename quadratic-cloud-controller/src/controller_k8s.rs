@@ -9,6 +9,7 @@ use kube::{
     api::{Api, DeleteParams, ListParams, PostParams},
 };
 use quadratic_rust_shared::quadratic_cloud::GetWorkerInitDataResponse;
+use quadratic_rust_shared::storage::Storage;
 use tracing::{error, info};
 use uuid::Uuid;
 
@@ -164,10 +165,29 @@ impl Controller {
             .files_presigned_url(&file_init_data.presigned_url)?
             .to_string();
 
+        // Generate the thumbnail upload presigned URL directly from S3/storage
+        let thumbnail_key = format!("{file_id}-thumbnail.png");
+        let thumbnail_upload_url = self
+            .state
+            .settings
+            .storage
+            .presigned_upload_url(&thumbnail_key, "image/png")
+            .await?;
+
+        // For filesystem storage, rewrite the URL to point to the files service
+        let thumbnail_upload_url = self
+            .state
+            .settings
+            .files_presigned_url(&thumbnail_upload_url)?
+            .to_string();
+
         let worker_init_data = GetWorkerInitDataResponse {
             team_id: file_init_data.team_id,
+            email: file_init_data.email,
             sequence_number: file_init_data.sequence_number,
             presigned_url: file_init_data.presigned_url,
+            thumbnail_upload_url,
+            thumbnail_key,
             timezone: file_init_data.timezone,
         };
 

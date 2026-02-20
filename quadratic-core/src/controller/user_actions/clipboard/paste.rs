@@ -859,6 +859,7 @@ mod test {
                 output_array: None,
                 output_display_type: None,
                 chart_pixel_output: None,
+                chart_image: None,
                 has_headers: false,
             };
             gc.calculation_complete(result).unwrap();

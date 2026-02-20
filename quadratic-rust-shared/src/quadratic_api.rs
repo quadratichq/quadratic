@@ -417,6 +417,27 @@ pub async fn get_file_init_data(
     Ok(file_init_data)
 }
 
+/// Update the file thumbnail key after a worker uploads the thumbnail to S3.
+pub async fn update_file_thumbnail(
+    base_url: &str,
+    jwt: &str,
+    file_id: Uuid,
+    thumbnail_key: &str,
+) -> Result<()> {
+    let url = format!("{base_url}/v0/internal/file/{file_id}/thumbnail");
+
+    let response = reqwest::Client::new()
+        .put(&url)
+        .header("Authorization", format!("Bearer {jwt}"))
+        .json(&serde_json::json!({ "thumbnailKey": thumbnail_key }))
+        .send()
+        .await?;
+
+    handle_response(response).await?;
+
+    Ok(())
+}
+
 #[derive(Debug, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {

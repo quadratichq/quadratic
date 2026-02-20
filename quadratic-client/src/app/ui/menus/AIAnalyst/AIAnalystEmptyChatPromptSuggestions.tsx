@@ -1,8 +1,9 @@
+import { emptyChatSuggestionsAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import type {
   CategorizedEmptyChatPromptSuggestions,
   SuggestionCategory,
 } from '@/app/ai/hooks/useGetEmptyChatPromptSuggestions';
-import { aiAnalystActiveSchemaConnectionUuidAtom, aiAnalystEmptyChatSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystActiveSchemaConnectionUuidAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionSyncInfo } from '@/app/atoms/useSyncedConnection';
 import { events } from '@/app/events/events';
@@ -21,9 +22,10 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useAtomValue } from 'jotai';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 // Default suggestions shown when the sheet is empty
 const defaultPromptSuggestions = [
@@ -44,6 +46,7 @@ const defaultPromptSuggestions = [
 interface AIAnalystEmptyChatPromptSuggestionsProps {
   submit: (prompt: string) => void;
 }
+
 const SUGGESTION_CATEGORIES: { key: SuggestionCategory; label: string }[] = [
   { key: 'enrich', label: 'Enrich' },
   { key: 'clean', label: 'Clean' },
@@ -113,7 +116,7 @@ export const AIAnalystEmptyChatPromptSuggestions = memo(({ submit }: AIAnalystEm
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
 
   // Get suggestions from centralized state (synced by useEmptyChatSuggestionsSync in QuadraticUI)
-  const emptyChatSuggestions = useRecoilValue(aiAnalystEmptyChatSuggestionsAtom);
+  const emptyChatSuggestions = useAtomValue(emptyChatSuggestionsAtom);
   const { suggestions: categorizedSuggestions, loading } = emptyChatSuggestions;
 
   // Pagination for connections (paginate if 5+, otherwise show all)

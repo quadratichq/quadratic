@@ -179,6 +179,8 @@ export class PointerTable {
     let tableDown = content.cellsSheet.tables.pointerDown(world);
     if (!tableDown) return false;
 
+    events.emit('contextMenu', {});
+
     if (tableDown.type === 'chart') {
       if (this.doubleClickTimeout) {
         clearTimeout(this.doubleClickTimeout);

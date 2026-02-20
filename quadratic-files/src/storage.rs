@@ -75,3 +75,35 @@ pub(crate) async fn upload_storage(
         key: file_name,
     }))
 }
+
+/// Upload a file to storage via presigned URL (encrypted key, no auth required)
+pub(crate) async fn upload_presigned_storage(
+    Path(encrypted_file_name): Path<String>,
+    state: Extension<Arc<State>>,
+    request: Request,
+) -> Result<Json<UploadStorageResponse>> {
+    tracing::trace!("Upload presigned file {}", encrypted_file_name);
+
+    match &state.settings.storage {
+        StorageContainer::FileSystem(fs) => {
+            let key = fs.first_key()?;
+            let file_name = decrypt_from_api(&key, &encrypted_file_name)?;
+
+            tracing::trace!("Uploading presigned file {} to {}", file_name, fs.path());
+
+            let bytes = to_bytes(request.into_body(), usize::MAX)
+                .await
+                .map_err(|e| FilesError::Storage(e.to_string()))?;
+
+            fs.write(&file_name, &bytes).await?;
+
+            Ok(Json(UploadStorageResponse {
+                bucket: fs.path().to_owned(),
+                key: file_name,
+            }))
+        }
+        _ => Err(FilesError::Storage(
+            "Presigned upload URLs only supported in FileSystem storage options".to_string(),
+        )),
+    }
+}

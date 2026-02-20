@@ -406,6 +406,7 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
               horizontal: 'hidden',
             },
             wordWrap: 'on',
+            fixedOverflowWidgets: true,
 
             // need to ignore unused b/c of the async wrapper around the code and import code
             showUnused: codeCell.language === 'Javascript' ? false : true,
