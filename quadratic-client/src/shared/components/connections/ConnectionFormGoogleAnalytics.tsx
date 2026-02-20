@@ -1,17 +1,20 @@
 import { deriveSyncStateFromConnectionList } from '@/app/atoms/useSyncedConnection';
+import { apiClient } from '@/shared/api/apiClient';
 import { ConnectionFormSemantic } from '@/shared/components/connections/ConnectionFormSemantic';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { SyncedConnectionStatus } from '@/shared/components/connections/SyncedConnection';
-import { DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
+import { SpinnerIcon } from '@/shared/components/Icons';
+import { CONTACT_URL, DOCUMENTATION_CONNECTIONS_GOOGLE_ANALYTICS_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ConnectionNameSchema,
   ConnectionSemanticDescriptionSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -20,7 +23,10 @@ const ConnectionFormGoogleAnalyticsSchema = z.object({
   semanticDescription: ConnectionSemanticDescriptionSchema,
   type: z.literal(ConnectionTypeSchema.enum.GOOGLE_ANALYTICS),
   property_id: z.string().min(1, { message: 'Required' }),
-  service_account_configuration: z.string().min(1, { message: 'Required' }),
+  // OAuth tokens — populated after successful Google OAuth flow
+  access_token: z.string().min(1, { message: 'You must connect your Google account' }),
+  refresh_token: z.string().min(1, { message: 'Required' }),
+  token_expires_at: z.string().min(1, { message: 'Required' }).datetime(),
   start_date: z.string().date(),
 });
 type FormValues = z.infer<typeof ConnectionFormGoogleAnalyticsSchema>;
@@ -35,7 +41,9 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     semanticDescription: String(connection?.semanticDescription || ''),
     type: 'GOOGLE_ANALYTICS',
     property_id: connection?.typeDetails?.property_id || '',
-    service_account_configuration: connection?.typeDetails?.service_account_configuration || '',
+    access_token: connection?.typeDetails?.access_token || '',
+    refresh_token: connection?.typeDetails?.refresh_token || '',
+    token_expires_at: connection?.typeDetails?.token_expires_at || '',
     start_date: connection?.typeDetails?.start_date || defaultStartDate,
   };
 
@@ -51,9 +59,151 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
   form,
   children,
   handleSubmitForm,
+  handleCancelForm,
   connection,
   teamUuid,
 }) => {
+  const [hasTokens, setHasTokens] = useState<boolean>(!!connection?.typeDetails?.access_token);
+  const [popupBlocked, setPopupBlocked] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  const openOAuthPopup = async () => {
+    try {
+      setPopupBlocked(false);
+      setOauthLoading(true);
+      form.clearErrors('root');
+
+      const data = await apiClient.connections.google.getAuthUrl({
+        teamUuid,
+      });
+
+      // Store nonce in sessionStorage for CSRF verification on callback
+      sessionStorage.setItem('google_oauth_nonce', data.nonce);
+
+      // Open popup with the auth URL
+      const width = 500;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      const popup = window.open(
+        `/google-oauth-callback.html?authUrl=${encodeURIComponent(data.authUrl)}`,
+        'google-oauth',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+
+      if (!popup) {
+        setPopupBlocked(true);
+        setOauthLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching Google auth URL:', error);
+      form.setError('root', { message: 'Failed to start Google authentication' });
+      setOauthLoading(false);
+    }
+  };
+
+  // Handle messages from Google OAuth popup via BroadcastChannel
+  useEffect(() => {
+    let isMounted = true;
+    const channel = new BroadcastChannel('google_oauth');
+
+    const handleMessage = async (event: MessageEvent) => {
+      if (!isMounted) return;
+
+      if (event.data.type === 'GOOGLE_SUCCESS') {
+        try {
+          // Verify CSRF nonce and team UUID from the OAuth state
+          const storedNonce = sessionStorage.getItem('google_oauth_nonce');
+          if (!storedNonce || event.data.nonce !== storedNonce) {
+            form.setError('root', { message: 'OAuth state verification failed. Please try again.' });
+            setOauthLoading(false);
+            return;
+          }
+          if (event.data.teamUuid !== teamUuid) {
+            form.setError('root', { message: 'OAuth state mismatch — possible security issue.' });
+            setOauthLoading(false);
+            return;
+          }
+          sessionStorage.removeItem('google_oauth_nonce');
+
+          // Exchange the authorization code for tokens (PKCE verifier is handled server-side)
+          const state = JSON.stringify({ teamUuid: event.data.teamUuid, nonce: event.data.nonce });
+          const tokens = await apiClient.connections.google.exchangeToken({
+            teamUuid,
+            code: event.data.code,
+            state,
+          });
+
+          if (!isMounted) return;
+
+          // Update form values with the tokens
+          form.setValue('access_token', tokens.accessToken);
+          form.setValue('refresh_token', tokens.refreshToken);
+          form.setValue('token_expires_at', tokens.expiresAt);
+          setHasTokens(true);
+        } catch (error) {
+          if (!isMounted) return;
+          console.error('Error exchanging Google OAuth code:', error);
+          form.setError('root', { message: 'Failed to complete Google authentication' });
+        } finally {
+          if (isMounted) setOauthLoading(false);
+        }
+      } else if (event.data.type === 'GOOGLE_ERROR') {
+        form.setError('root', { message: event.data.error || 'Google authentication failed' });
+        setOauthLoading(false);
+      }
+    };
+
+    channel.addEventListener('message', handleMessage);
+    return () => {
+      isMounted = false;
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+    };
+  }, [teamUuid, form]);
+
+  // Show connect / loading state while waiting for OAuth
+  if (!hasTokens) {
+    return (
+      <div className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center">
+        {oauthLoading ? (
+          <>
+            <SpinnerIcon className="text-muted-foreground" size="lg" />
+            <h4 className="mt-3 text-lg font-medium">Connecting to Google…</h4>
+            <p className="text-center text-sm text-muted-foreground">
+              Follow the instructions in the pop-up window. If you're having trouble connecting,{' '}
+              <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                contact us
+              </a>
+              .
+            </p>
+          </>
+        ) : (
+          <>
+            <h4 className="mt-3 text-lg font-medium">
+              {popupBlocked ? 'Pop-up blocked' : 'Connect your Google account'}
+            </h4>
+            <p className="text-center text-sm text-muted-foreground">
+              {popupBlocked
+                ? 'Your browser blocked the Google sign-in window. Click below to try again, or allow pop-ups for this site.'
+                : 'Click the button below to sign in with Google and authorize access to Google Analytics.'}
+            </p>
+            <Button className="mt-4" onClick={openOAuthPopup}>
+              Connect Google Account
+            </Button>
+          </>
+        )}
+        {form.formState.errors.root && (
+          <p className="mt-2 text-center text-sm text-destructive">{form.formState.errors.root.message}</p>
+        )}
+        <Button variant="outline" className="mt-4" onClick={handleCancelForm}>
+          Cancel
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
@@ -90,7 +240,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
               <FormItem className="col-span-2">
                 <FormLabel>Property ID</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" {...field} />
+                  <Input autoComplete="off" placeholder="e.g., 123456789" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,19 +260,10 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="service_account_configuration"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Service account configuration (JSON)</FormLabel>
-              <FormControl>
-                <Textarea autoComplete="off" {...field} className="h-48" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+        <div className="rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
+          <p className="text-sm text-green-700 dark:text-green-300">✓ Google account connected successfully</p>
+        </div>
 
         <ConnectionFormSemantic form={form} />
 

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect Google Analytics</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+
+    .container {
+      text-align: center;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+    }
+
+    .loading {
+      color: #666;
+    }
+
+    .success {
+      color: #059669;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .error {
+      color: #dc2626;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .close-btn {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    .close-btn:hover {
+      background: #047857;
+    }
+
+    #status {
+      display: none;
+    }
+
+    #error-status {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="loading" id="loading">Connecting to Google...</div>
+    <div id="status">
+      <p class="success">✓ Google Analytics connected successfully!</p>
+      <p style="color: #666; font-size: 14px; margin-bottom: 0;">You can close this window and return to the main page.
+      </p>
+      <button class="close-btn" onclick="window.close()">Close Window</button>
+    </div>
+    <div id="error-status">
+      <p class="error" id="error-message">✗ Failed to connect</p>
+      <p style="color: #666; font-size: 14px; margin-bottom: 0;">Please close this window and try again.</p>
+      <button class="close-btn" onclick="window.close()">Close Window</button>
+    </div>
+  </div>
+
+  <script>
+    // Use BroadcastChannel for cross-window communication
+    const channel = new BroadcastChannel('google_oauth');
+
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const authUrl = urlParams.get('authUrl');
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+    const stateRaw = urlParams.get('state'); // JSON-encoded { teamUuid, nonce }
+
+    // Parse the state parameter (contains teamUuid and CSRF nonce)
+    let parsedState = {};
+    try {
+      if (stateRaw) {
+        parsedState = JSON.parse(stateRaw);
+      }
+    } catch (e) {
+      console.warn('Failed to parse OAuth state parameter:', e);
+    }
+
+    if (error) {
+      // OAuth error from Google
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-status').style.display = 'block';
+      document.getElementById('error-message').textContent = `✗ ${error === 'access_denied' ? 'Access denied. Please grant permission to continue.' : 'Failed to connect: ' + error}`;
+
+      channel.postMessage({
+        type: 'GOOGLE_ERROR',
+        error: error
+      });
+    } else if (code) {
+      // We got redirected back from Google with an authorization code
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('status').style.display = 'block';
+
+      // Send the code and nonce to the parent window for CSRF verification
+      channel.postMessage({
+        type: 'GOOGLE_SUCCESS',
+        code: code,
+        nonce: parsedState.nonce || null,
+        teamUuid: parsedState.teamUuid || stateRaw
+      });
+
+      // Try to auto-close after a brief delay
+      setTimeout(() => {
+        window.close();
+      }, 1500);
+    } else if (authUrl) {
+      // Initial load — redirect to Google OAuth
+      // Validate the URL is a legitimate Google OAuth endpoint (strict allowlist)
+      const allowedHosts = ['accounts.google.com', 'www.googleapis.com'];
+      try {
+        const url = new URL(authUrl);
+        if (!allowedHosts.includes(url.hostname)) {
+          throw new Error('Invalid OAuth URL');
+        }
+        document.getElementById('loading').textContent = 'Redirecting to Google...';
+        window.location.href = authUrl;
+      } catch (e) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-status').style.display = 'block';
+        document.getElementById('error-message').textContent = '✗ Invalid authorization URL.';
+      }
+    } else {
+      // No parameters - show error
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-status').style.display = 'block';
+      document.getElementById('error-message').textContent = '✗ Missing parameters. Please try again.';
+    }
+  </script>
+</body>
+
+</html>

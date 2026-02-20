@@ -161,6 +161,11 @@ Resources:
           PLAID_SECRET=$(aws ssm get-parameter --name "/quadratic-development/PLAID_SECRET" --with-decryption --query "Parameter.Value" --output text)
           PLAID_ENVIRONMENT=$(aws ssm get-parameter --name "/quadratic-development/PLAID_ENVIRONMENT" --with-decryption --query "Parameter.Value" --output text)
 
+          # google oauth
+          GOOGLE_OAUTH_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/GOOGLE_OAUTH_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
+          GOOGLE_OAUTH_CLIENT_SECRET=$(aws ssm get-parameter --name "/quadratic-development/GOOGLE_OAUTH_CLIENT_SECRET" --with-decryption --query "Parameter.Value" --output text)
+          GOOGLE_OAUTH_REDIRECT_URI=https://${SubDomainName}.quadratic-preview.com/google-oauth-callback.html
+
           # misc
           CONNECTION_DEMO=$(aws ssm get-parameter --name "/quadratic-development/CONNECTION_DEMO" --with-decryption --query "Parameter.Value" --output text)
 

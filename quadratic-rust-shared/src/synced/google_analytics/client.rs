@@ -2,12 +2,16 @@
 //
 // Note: Universal Analytics (GA3) was deprecated on July 1, 2023.
 // This module uses the Google Analytics Data API v1beta (GA4).
+//
+// Supports two authentication methods:
+// 1. Service Account (legacy) - Uses service_account_configuration JSON
+// 2. OAuth (preferred) - Uses access_token and refresh_token
 
 use arrow::datatypes::{DataType, Date32Type, Field, Schema};
 use arrow_array::{Date32Array, Float64Array, RecordBatch, StringArray};
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::{NaiveDate, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use google_analyticsdata1_beta::{
     AnalyticsData,
     api::{DateRange, Dimension, Metric, RunReportRequest, RunReportResponse},
@@ -19,7 +23,7 @@ use rustls::crypto::ring::default_provider;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use yup_oauth2::{ServiceAccountAuthenticator, ServiceAccountKey};
+use yup_oauth2::{AccessTokenAuthenticator, ServiceAccountAuthenticator, ServiceAccountKey};
 
 use crate::{SharedError, synced::string_to_date};
 use crate::{
@@ -33,17 +37,156 @@ use crate::{parquet::utils::record_batch_to_parquet_bytes, synced::SyncedClient}
 pub struct GoogleAnalyticsConfig {
     // GA4 property ID (format: "properties/123456789")
     pub property_id: String,
+    // Service Account authentication (legacy)
     #[serde(default)]
-    pub service_account_configuration: String,
+    pub service_account_configuration: Option<String>,
+    // OAuth authentication (preferred)
+    #[serde(default)]
+    pub access_token: Option<String>,
+    #[serde(default)]
+    pub refresh_token: Option<String>,
+    #[serde(default)]
+    pub token_expires_at: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+/// Authentication method for Google Analytics
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum GoogleAnalyticsAuth {
+    /// Service Account authentication using JSON credentials
+    ServiceAccount { credentials: String },
+    /// OAuth authentication using access and refresh tokens
+    OAuth {
+        access_token: String,
+        refresh_token: String,
+        token_expires_at: DateTime<Utc>,
+    },
+}
+
+/// Internal struct for deserializing connection from JSON
+/// Supports both service account (legacy) and OAuth (new) formats
+#[derive(Deserialize)]
+struct GoogleAnalyticsConnectionRaw {
+    property_id: String,
+    start_date: NaiveDate,
+    // Service Account fields (legacy)
+    #[serde(default)]
+    service_account_configuration: Option<String>,
+    // OAuth fields (new)
+    #[serde(default)]
+    access_token: Option<String>,
+    #[serde(default)]
+    refresh_token: Option<String>,
+    #[serde(default)]
+    token_expires_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize)]
 pub struct GoogleAnalyticsConnection {
     pub property_id: String,
-    /// Service account JSON key. Defaults to empty if missing (e.g. legacy/invalid config).
-    #[serde(default)]
-    pub service_account_configuration: String,
+    pub auth: GoogleAnalyticsAuth,
     pub start_date: NaiveDate,
+}
+
+impl<'de> Deserialize<'de> for GoogleAnalyticsConnection {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = GoogleAnalyticsConnectionRaw::deserialize(deserializer)?;
+
+        // Determine auth method based on available fields
+        let auth = if let (Some(access_token), Some(refresh_token), Some(token_expires_at)) =
+            (raw.access_token, raw.refresh_token, raw.token_expires_at)
+        {
+            // OAuth authentication
+            GoogleAnalyticsAuth::OAuth {
+                access_token,
+                refresh_token,
+                token_expires_at,
+            }
+        } else if let Some(credentials) = raw.service_account_configuration {
+            // Service Account authentication (legacy)
+            GoogleAnalyticsAuth::ServiceAccount { credentials }
+        } else {
+            return Err(serde::de::Error::custom(
+                "Missing authentication: either service_account_configuration (legacy) or \
+                 access_token + refresh_token + token_expires_at (OAuth) required",
+            ));
+        };
+
+        Ok(GoogleAnalyticsConnection {
+            property_id: raw.property_id,
+            auth,
+            start_date: raw.start_date,
+        })
+    }
+}
+
+impl GoogleAnalyticsConnection {
+    /// Create a new connection using service account credentials (legacy)
+    pub fn with_service_account(
+        property_id: String,
+        service_account_configuration: String,
+        start_date: NaiveDate,
+    ) -> Self {
+        Self {
+            property_id,
+            auth: GoogleAnalyticsAuth::ServiceAccount {
+                credentials: service_account_configuration,
+            },
+            start_date,
+        }
+    }
+
+    /// Create a new connection using OAuth tokens (preferred)
+    pub fn with_oauth(
+        property_id: String,
+        access_token: String,
+        refresh_token: String,
+        token_expires_at: DateTime<Utc>,
+        start_date: NaiveDate,
+    ) -> Self {
+        Self {
+            property_id,
+            auth: GoogleAnalyticsAuth::OAuth {
+                access_token,
+                refresh_token,
+                token_expires_at,
+            },
+            start_date,
+        }
+    }
+
+    /// Check if this connection uses OAuth authentication
+    pub fn is_oauth(&self) -> bool {
+        matches!(self.auth, GoogleAnalyticsAuth::OAuth { .. })
+    }
+
+    /// Check if the OAuth token is expired or about to expire
+    /// Returns None for service account connections (they don't expire)
+    /// Returns Some(true) if expired, Some(false) if valid, for OAuth connections
+    pub fn is_token_expired(&self) -> Option<bool> {
+        match &self.auth {
+            GoogleAnalyticsAuth::ServiceAccount { .. } => None,
+            GoogleAnalyticsAuth::OAuth {
+                token_expires_at, ..
+            } => {
+                // Consider token expired if it expires within 5 minutes
+                let buffer = chrono::Duration::minutes(5);
+                Some(*token_expires_at <= Utc::now() + buffer)
+            }
+        }
+    }
+
+    /// Get the token expiration time for OAuth connections
+    pub fn token_expires_at(&self) -> Option<DateTime<Utc>> {
+        match &self.auth {
+            GoogleAnalyticsAuth::OAuth {
+                token_expires_at, ..
+            } => Some(*token_expires_at),
+            GoogleAnalyticsAuth::ServiceAccount { .. } => None,
+        }
+    }
 }
 
 #[async_trait]
@@ -65,25 +208,48 @@ impl SyncedConnection for GoogleAnalyticsConnection {
     }
 
     async fn to_client(&self, _environment: Environment) -> Result<Box<dyn SyncedClient>> {
-        if self.service_account_configuration.is_empty() {
-            return Err(SharedError::Synced(
-                "Google Analytics connection is missing service_account_configuration. \
-                Please update the connection in settings."
-                    .to_string(),
-            ));
+        // Check if OAuth token is expired before creating client
+        if let Some(true) = self.is_token_expired() {
+            let expires_at = self
+                .token_expires_at()
+                .map(|t| t.to_rfc3339())
+                .unwrap_or_else(|| "unknown".to_string());
+            return Err(SharedError::Synced(format!(
+                "Google Analytics OAuth token has expired (expired at {}). \
+                 Please re-authenticate in the Quadratic app to refresh your connection.",
+                expires_at
+            )));
         }
-        let client = GoogleAnalyticsClient::new(
-            self.service_account_configuration.clone(),
-            self.property_id.clone(),
-            self.start_date.format(DATE_FORMAT).to_string(),
-        )
-        .await?;
+
+        let client = match &self.auth {
+            GoogleAnalyticsAuth::ServiceAccount { credentials } => {
+                GoogleAnalyticsClient::with_service_account(
+                    credentials.clone(),
+                    self.property_id.clone(),
+                    self.start_date.format(DATE_FORMAT).to_string(),
+                )
+                .await?
+            }
+            GoogleAnalyticsAuth::OAuth {
+                access_token,
+                refresh_token: _,
+                token_expires_at,
+            } => {
+                GoogleAnalyticsClient::with_oauth(
+                    access_token.clone(),
+                    *token_expires_at,
+                    self.property_id.clone(),
+                    self.start_date.format(DATE_FORMAT).to_string(),
+                )
+                .await?
+            }
+        };
 
         Ok(Box::new(client))
     }
 }
 
-// #[derive(Serialize)]
+/// Google Analytics client that can use either service account or OAuth authentication
 pub struct GoogleAnalyticsClient {
     pub property_id: String,
     pub analytics: AnalyticsData<HttpsConnector<HttpConnector>>,
@@ -153,19 +319,8 @@ impl GoogleAnalyticsClient {
         }
     }
 
-    pub async fn new(
-        credentials: String,
-        mut property_id: String,
-        start_date: String,
-    ) -> Result<Self> {
-        // Install default crypto provider for rustls if not already installed
-        // Ignore error if already installed (happens in tests when multiple connections are created)
-        let _ = default_provider().install_default();
-
-        let start_date = NaiveDate::parse_from_str(&start_date, DATE_FORMAT)
-            .map_err(|e| SharedError::Synced(format!("Failed to parse start_date: {}", e)))?;
-
-        // Validate property_id format
+    /// Validate and normalize the property_id format
+    fn normalize_property_id(mut property_id: String) -> Result<String> {
         if !property_id.starts_with("properties/") {
             // Check if it's a numeric property ID (all digits)
             if property_id.chars().all(|c| c.is_ascii_digit()) {
@@ -178,6 +333,22 @@ impl GoogleAnalyticsClient {
                 )));
             }
         }
+        Ok(property_id)
+    }
+
+    /// Create a new client using service account credentials (legacy method)
+    pub async fn with_service_account(
+        credentials: String,
+        property_id: String,
+        start_date: String,
+    ) -> Result<Self> {
+        // Install default crypto provider for rustls if not already installed
+        let _ = default_provider().install_default();
+
+        let start_date = NaiveDate::parse_from_str(&start_date, DATE_FORMAT)
+            .map_err(|e| SharedError::Synced(format!("Failed to parse start_date: {}", e)))?;
+
+        let property_id = Self::normalize_property_id(property_id)?;
 
         // Parse the service account key from the credentials JSON
         let service_account_key: ServiceAccountKey =
@@ -206,6 +377,64 @@ impl GoogleAnalyticsClient {
             analytics,
             start_date,
         })
+    }
+
+    /// Create a new client using OAuth tokens (preferred method for end users)
+    ///
+    /// Note: If the access token is expired, the caller should refresh it before calling this.
+    /// Token refresh is handled at the API layer before creating the connection.
+    pub async fn with_oauth(
+        access_token: String,
+        token_expires_at: DateTime<Utc>,
+        property_id: String,
+        start_date: String,
+    ) -> Result<Self> {
+        // Install default crypto provider for rustls if not already installed
+        let _ = default_provider().install_default();
+
+        let start_date = NaiveDate::parse_from_str(&start_date, DATE_FORMAT)
+            .map_err(|e| SharedError::Synced(format!("Failed to parse start_date: {}", e)))?;
+
+        let property_id = Self::normalize_property_id(property_id)?;
+
+        // Check if the token is expired or about to expire (30 second buffer for network latency)
+        if token_expires_at <= Utc::now() + Duration::seconds(30) {
+            return Err(SharedError::Synced(
+                "OAuth access token has expired. Please refresh the token before connecting."
+                    .to_string(),
+            ));
+        }
+
+        // Create the OAuth authenticator with the pre-obtained access token
+        // AccessTokenAuthenticator is designed for use with tokens obtained from external OAuth flows
+        let auth = AccessTokenAuthenticator::builder(access_token)
+            .build()
+            .await
+            .map_err(|e| {
+                SharedError::Synced(format!("Failed to create OAuth authenticator: {}", e))
+            })?;
+
+        let https = hyper_rustls::HttpsConnectorBuilder::new()
+            .with_native_roots()
+            .map_err(|e| SharedError::Synced(format!("Failed to build HTTPS connector: {}", e)))?
+            .https_or_http()
+            .enable_http1()
+            .build();
+
+        let client = Client::builder(TokioExecutor::new()).build(https);
+        let analytics = AnalyticsData::new(client, auth);
+
+        Ok(Self {
+            property_id,
+            analytics,
+            start_date,
+        })
+    }
+
+    /// Legacy constructor for backward compatibility
+    /// Deprecated: Use with_service_account or with_oauth instead
+    pub async fn new(credentials: String, property_id: String, start_date: String) -> Result<Self> {
+        Self::with_service_account(credentials, property_id, start_date).await
     }
 
     /// Run reports for a date range and convert to Parquet files grouped by day

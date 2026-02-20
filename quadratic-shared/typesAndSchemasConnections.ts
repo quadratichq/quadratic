@@ -141,11 +141,30 @@ export const ConnectionTypeDetailsMixpanelSchema = z.object({
   start_date: z.string().date(),
 });
 
-export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.object({
+// Google Analytics connection - supports both Service Account (legacy) and OAuth authentication
+// Service Account: Uses service_account_configuration JSON
+// OAuth: Uses access_token, refresh_token, and token_expires_at
+const GoogleAnalyticsBaseSchema = z.object({
   property_id: z.string().min(1, { message: 'Required' }),
-  service_account_configuration: z.string().min(1, { message: 'Required' }),
   start_date: z.string().date(),
 });
+
+export const ConnectionTypeDetailsGoogleAnalyticsSchema = z.union([
+  // Service Account authentication (legacy)
+  GoogleAnalyticsBaseSchema.extend({
+    service_account_configuration: z.string().min(1),
+    access_token: z.undefined().optional(),
+    refresh_token: z.undefined().optional(),
+    token_expires_at: z.undefined().optional(),
+  }),
+  // OAuth authentication (preferred)
+  GoogleAnalyticsBaseSchema.extend({
+    service_account_configuration: z.undefined().optional(),
+    access_token: z.string().min(1),
+    refresh_token: z.string().min(1),
+    token_expires_at: z.string().datetime(),
+  }),
+]);
 
 export const ConnectionTypeDetailsPlaidSchema = z.object({
   access_token: z.string().min(1, { message: 'Required' }),
@@ -264,5 +283,21 @@ export const ApiSchemasConnections = {
   '/v0/teams/:uuid/plaid/exchange-token.POST.response': z.object({
     accessToken: z.string(),
     itemId: z.string(),
+  }),
+
+  // Google OAuth endpoints (for Google Analytics)
+  '/v0/teams/:uuid/google/auth-url.GET.response': z.object({
+    authUrl: z.string(),
+    nonce: z.string(),
+  }),
+
+  '/v0/teams/:uuid/google/exchange-token.POST.request': z.object({
+    code: z.string(),
+    state: z.string().min(1),
+  }),
+  '/v0/teams/:uuid/google/exchange-token.POST.response': z.object({
+    accessToken: z.string(),
+    refreshToken: z.string(),
+    expiresAt: z.string().datetime(),
   }),
 };
