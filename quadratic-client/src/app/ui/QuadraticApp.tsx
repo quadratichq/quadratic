@@ -1,3 +1,4 @@
+import { initializeAIAnalyst, resetAIAnalystInitialized } from '@/app/ai/atoms/aiAnalystAtoms';
 import {
   editorInteractionStateFileUuidAtom,
   editorInteractionStateUserAtom,
@@ -13,7 +14,7 @@ import { useLoadScheduledTasks } from '@/jotai/scheduledTasksAtom';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { preloadUserAILanguages } from '@/shared/hooks/useUserAILanguages';
 import { preloadUserAIRules } from '@/shared/hooks/useUserAIRules';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
@@ -25,7 +26,7 @@ preloadUserAILanguages();
 export const QuadraticApp = memo(() => {
   // Read gridSettings so its effect runs (localStorage) before any child reads aiAnalystAtom.
   // Otherwise aiAnalystAtom's effect can run first and see the default showAIAnalystOnStartup (true).
-  useRecoilValue(gridSettingsAtom);
+  const gridSettings = useRecoilValue(gridSettingsAtom);
 
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
@@ -38,6 +39,24 @@ export const QuadraticApp = memo(() => {
 
   // Load scheduled tasks
   useLoadScheduledTasks();
+
+  // Initialize AI Analyst with user and file info
+  const aiAnalystInitializedRef = useRef(false);
+  const previousFileUuidRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (previousFileUuidRef.current !== null && previousFileUuidRef.current !== fileUuid) {
+      resetAIAnalystInitialized();
+      aiAnalystInitializedRef.current = false;
+    }
+    previousFileUuidRef.current = fileUuid ?? null;
+  }, [fileUuid]);
+  useEffect(() => {
+    if (aiAnalystInitializedRef.current) return;
+    if (loggedInUser?.email && fileUuid) {
+      aiAnalystInitializedRef.current = true;
+      initializeAIAnalyst(loggedInUser.email, fileUuid, gridSettings.showAIAnalystOnStartup);
+    }
+  }, [loggedInUser?.email, fileUuid, gridSettings.showAIAnalystOnStartup]);
 
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {

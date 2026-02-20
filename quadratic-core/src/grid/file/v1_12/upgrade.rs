@@ -33,16 +33,43 @@ fn is_single_cell_code(table: &current::DataTableSchema) -> bool {
         current::OutputValueSchema::Single(_) => true,
         current::OutputValueSchema::Array(arr) => arr.size.w == 1 && arr.size.h == 1,
     };
+    if !is_1x1 {
+        return false;
+    }
+
+    // Must not be blank (placeholder before execution)
+    let is_blank = match &table.value {
+        current::OutputValueSchema::Single(current::CellValueSchema::Blank) => true,
+        current::OutputValueSchema::Array(arr) => {
+            arr.values.is_empty() || matches!(arr.values[0], current::CellValueSchema::Blank)
+        }
+        _ => false,
+    };
+    if is_blank {
+        return false;
+    }
+
+    // Must not be a chart (HTML/image) -- these need to stay as DataTables
+    // so the rendering code can find them and use chart_output dimensions
+    let is_html_or_image = matches!(
+        &table.value,
+        current::OutputValueSchema::Single(
+            current::CellValueSchema::Html(_) | current::CellValueSchema::Image(_)
+        )
+    );
+    if is_html_or_image {
+        return false;
+    }
+
+    if table.chart_output.is_some() {
+        return false;
+    }
 
     // Check if table UI is hidden
-    // For formulas, the default is no UI, so None means no UI
-    // For other languages, the default is to show UI, so None means show UI
-    // However, for single-cell output from any language with no explicit show settings,
-    // we treat it as single-cell code
     let no_name_ui = table.show_name != Some(true);
     let no_columns_ui = table.show_columns != Some(true);
 
-    is_1x1 && no_name_ui && no_columns_ui
+    no_name_ui && no_columns_ui
 }
 
 /// Gets the single output value from an OutputValueSchema.
@@ -145,6 +172,7 @@ fn upgrade_table(table: current::DataTableSchema) -> v1_13::DataTableSchema {
         borders: table.borders,
         chart_pixel_output: table.chart_pixel_output,
         chart_output: table.chart_output,
+        chart_image: None,
     }
 }
 
@@ -211,6 +239,9 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_13::SheetSchema {
         merge_cells: sheet.merge_cells,
         formats: sheet.formats,
         conditional_formats: sheet.conditional_formats,
+        // Old files don't have custom defaults, so they use the hardcoded defaults
+        default_column_width: None,
+        default_row_height: None,
     }
 }
 
@@ -481,5 +512,114 @@ mod tests {
         };
         // Should qualify because error is None (std_err contains warning, not error)
         assert!(is_single_cell_code(&table));
+    }
+
+    #[test]
+    fn test_is_not_single_cell_html_chart() {
+        // A Python chart (HTML output like Plotly) must stay as a DataTable
+        let table = current::DataTableSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
+                language: current::CodeCellLanguageSchema::Python,
+                code: "fig.show()".to_string(),
+                formula_ast: None,
+                std_out: None,
+                std_err: None,
+                cells_accessed: vec![],
+                error: None,
+                return_type: Some("chart".to_string()),
+                line_number: None,
+                output_type: None,
+            })),
+            name: "Python1".to_string(),
+            value: current::OutputValueSchema::Single(current::CellValueSchema::Html(
+                "<html>chart</html>".to_string(),
+            )),
+            last_modified: None,
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            columns: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            alternating_colors: false,
+            formats: None,
+            borders: None,
+            chart_pixel_output: Some((550.0, 400.0)),
+            chart_output: Some((7, 22)),
+        };
+        assert!(!is_single_cell_code(&table));
+    }
+
+    #[test]
+    fn test_is_not_single_cell_image_chart() {
+        // A JS chart (Image output) must stay as a DataTable
+        let table = current::DataTableSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
+                language: current::CodeCellLanguageSchema::Javascript,
+                code: "chart code".to_string(),
+                formula_ast: None,
+                std_out: None,
+                std_err: None,
+                cells_accessed: vec![],
+                error: None,
+                return_type: Some("image".to_string()),
+                line_number: None,
+                output_type: None,
+            })),
+            name: "JavaScript1".to_string(),
+            value: current::OutputValueSchema::Single(current::CellValueSchema::Image(
+                "data:image/png;base64,...".to_string(),
+            )),
+            last_modified: None,
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            columns: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            alternating_colors: false,
+            formats: None,
+            borders: None,
+            chart_pixel_output: Some((400.0, 300.0)),
+            chart_output: Some((5, 15)),
+        };
+        assert!(!is_single_cell_code(&table));
+    }
+
+    #[test]
+    fn test_is_not_single_cell_blank_output() {
+        // A code cell with blank output (placeholder) must not be converted
+        let table = current::DataTableSchema {
+            kind: current::DataTableKindSchema::CodeRun(Box::new(current::CodeRunSchema {
+                language: current::CodeCellLanguageSchema::Python,
+                code: "x = 1".to_string(),
+                formula_ast: None,
+                std_out: None,
+                std_err: None,
+                cells_accessed: vec![],
+                error: None,
+                return_type: None,
+                line_number: None,
+                output_type: None,
+            })),
+            name: "Python1".to_string(),
+            value: current::OutputValueSchema::Single(current::CellValueSchema::Blank),
+            last_modified: None,
+            header_is_first_row: false,
+            show_name: None,
+            show_columns: None,
+            columns: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            alternating_colors: false,
+            formats: None,
+            borders: None,
+            chart_pixel_output: None,
+            chart_output: None,
+        };
+        assert!(!is_single_cell_code(&table));
     }
 }

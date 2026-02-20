@@ -1,8 +1,9 @@
-import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
+import { currentChatAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { editorInteractionStateShowFeedbackMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { HelpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { useSetAtom } from 'jotai';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
@@ -10,7 +11,7 @@ import { ToolCard } from './ToolCard';
 
 export const ContactUs = memo(({ toolCall: { loading }, className }: { toolCall: AIToolCall; className: string }) => {
   const setShowFeedbackMenu = useSetRecoilState(editorInteractionStateShowFeedbackMenuAtom);
-  const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
+  const setCurrentChat = useSetAtom(currentChatAtom);
 
   const handleContactClick = useCallback(() => {
     trackEvent('[AI].ContactUsToolContact');

@@ -1,10 +1,10 @@
 {
   "name": "quadratic-api",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "export VERSION=$npm_package_version && dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start": "export VERSION=$npm_package_version && dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src,../quadratic-shared --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
     "start-no-watch": "export VERSION=$npm_package_version && dotenv -e .env -- ts-node --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
     "start:prod": "export VERSION=$npm_package_version && dotenv -e .env -- node dist/src/server.js --max-old-space-size=8192",
     "postinstall": "npm run prisma:generate",

@@ -842,4 +842,66 @@ mod tests {
         let exported_test = import_binary(exported).unwrap();
         assert_eq!(imported, exported_test);
     }
+
+    #[test]
+    fn test_default_column_width_persistence() {
+        // Test that custom default column widths are properly persisted and restored
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Change the default column width (simulates "select all" + resize)
+        gc.resize_all_columns(sheet_id, 150.0, None, false);
+
+        // Verify the default was changed
+        let (default_width, _) = gc.sheet(sheet_id).offsets.defaults();
+        assert_eq!(default_width, 150.0);
+
+        // Export and re-import
+        let exported = export(gc.grid().clone()).unwrap();
+        let imported = import(exported).unwrap();
+
+        // Verify the default column width was preserved
+        let imported_sheet = &imported.sheets.values().next().unwrap();
+        let (imported_default_width, _) = imported_sheet.offsets.defaults();
+        assert_eq!(imported_default_width, 150.0);
+    }
+
+    #[test]
+    fn test_default_row_height_persistence() {
+        // Test that custom default row heights are properly persisted and restored
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Change the default row height (simulates "select all" + resize)
+        gc.resize_all_rows(sheet_id, 30.0, None, false);
+
+        // Verify the default was changed
+        let (_, default_height) = gc.sheet(sheet_id).offsets.defaults();
+        assert_eq!(default_height, 30.0);
+
+        // Export and re-import
+        let exported = export(gc.grid().clone()).unwrap();
+        let imported = import(exported).unwrap();
+
+        // Verify the default row height was preserved
+        let imported_sheet = &imported.sheets.values().next().unwrap();
+        let (_, imported_default_height) = imported_sheet.offsets.defaults();
+        assert_eq!(imported_default_height, 30.0);
+    }
+
+    #[test]
+    fn test_default_column_width_not_saved_when_unchanged() {
+        // Test that we don't save default_column_width when it matches the hardcoded default
+        let gc = GridController::test();
+
+        // Verify the default matches the hardcoded default
+        let sheet_id = gc.sheet_ids()[0];
+        let (default_width, default_height) = gc.sheet(sheet_id).offsets.defaults();
+        assert_eq!(default_width, crate::DEFAULT_COLUMN_WIDTH);
+        assert_eq!(default_height, crate::DEFAULT_ROW_HEIGHT);
+
+        // custom_default methods should return None for unchanged defaults
+        assert!(gc.sheet(sheet_id).offsets.custom_default_column_width().is_none());
+        assert!(gc.sheet(sheet_id).offsets.custom_default_row_height().is_none());
+    }
 }

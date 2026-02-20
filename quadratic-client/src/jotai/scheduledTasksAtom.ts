@@ -5,10 +5,11 @@ import {
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { scheduledTasksAPI } from '@/shared/api/scheduledTasksClient';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { atom, getDefaultStore, useAtom } from 'jotai';
 import type { ScheduledTask, ScheduledTaskLog } from 'quadratic-shared/typesAndSchemasScheduledTasks';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const CREATE_TASK_ID = 'CREATE';
@@ -42,6 +43,7 @@ export const useLoadScheduledTasks = () => {
   const [scheduledTasks, setScheduledTasks] = useAtom(scheduledTasksAtom);
   const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
+  const hasCheckedUrlParam = useRef(false);
 
   useEffect(() => {
     if (fileUuid) {
@@ -55,6 +57,21 @@ export const useLoadScheduledTasks = () => {
           // This can happen due to network issues or if the file doesn't exist
           console.warn('Failed to load scheduled tasks:', error);
         });
+
+      // Check URL param regardless of API success (only once)
+      if (!hasCheckedUrlParam.current) {
+        hasCheckedUrlParam.current = true;
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has(SEARCH_PARAMS.SCHEDULED_TASKS.KEY)) {
+          setScheduledTasks((prev) => ({ ...prev, show: true }));
+
+          searchParams.delete(SEARCH_PARAMS.SCHEDULED_TASKS.KEY);
+          const newUrl = searchParams.toString()
+            ? `${window.location.pathname}?${searchParams.toString()}`
+            : window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
     }
   }, [fileUuid, setScheduledTasks]);
 

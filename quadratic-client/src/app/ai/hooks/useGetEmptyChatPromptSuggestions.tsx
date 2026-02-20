@@ -1,21 +1,20 @@
+import { aiStore, failingSqlConnectionsAtom } from '@/app/ai/atoms/aiAnalystAtoms';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import type { ImportFile } from '@/app/ai/hooks/useImportFilesToGrid';
 import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
 import { getConnectionSchemaMarkdown, getConnectionTableInfo } from '@/app/ai/utils/aiConnectionContext';
-import { aiAnalystFailingSqlConnectionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_EMPTY_CHAT_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
-import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, aiToolsSpec, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
-import type z from 'zod';
+import type { z } from 'zod';
 
-export type EmptyChatPromptSuggestions = z.infer<
-  (typeof AIToolsArgsSchema)[AITool.EmptyChatPromptSuggestions]
->['prompt_suggestions'];
+export type EmptyChatPromptSuggestions = AIToolsArgs[AITool.EmptyChatPromptSuggestions]['prompt_suggestions'];
 
 export type CategorizedEmptyChatPromptSuggestions = z.infer<
   (typeof AIToolsArgsSchema)[AITool.CategorizedEmptyChatPromptSuggestions]
@@ -56,7 +55,7 @@ export const useGetEmptyChatPromptSuggestions = () => {
           }
 
           let connectionSchemaMarkdown: string = '';
-          const failingSqlConnections = await snapshot.getPromise(aiAnalystFailingSqlConnectionsAtom);
+          const failingSqlConnections = aiStore.get(failingSqlConnectionsAtom);
           if (!!connection && !failingSqlConnections.uuids.includes(connection.uuid)) {
             try {
               const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
@@ -175,7 +174,7 @@ ${
 
 The four categories are:
 1. enrich - Add derived columns, combine fields, look up related data
-2. clean - Fix formatting, remove duplicates, standardize values  
+2. clean - Fix formatting, remove duplicates, standardize values
 3. visualize - Create charts and graphs
 4. analyze - Calculate statistics, find patterns, derive insights
 

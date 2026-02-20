@@ -132,6 +132,16 @@ pub struct SheetSchema {
 
     #[serde(default)]
     pub conditional_formats: ConditionalFormatsSchema,
+
+    /// Default column width for the sheet. If None, uses the hardcoded default (100.0).
+    /// This is set when the user selects all cells and changes column width.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub default_column_width: Option<f64>,
+
+    /// Default row height for the sheet. If None, uses the hardcoded default (21.0).
+    /// This is set when the user selects all cells and changes row height.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub default_row_height: Option<f64>,
 }
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -193,6 +203,9 @@ pub struct DataTableSchema {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub chart_image: Option<String>,
 }
 
 pub type DataTablesSchema = Vec<(PosSchema, DataTableSchema)>;

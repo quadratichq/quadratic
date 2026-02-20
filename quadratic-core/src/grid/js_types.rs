@@ -134,12 +134,15 @@ pub struct JsEditCell {
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsSummaryContext {
     pub sheet_name: String,
+    pub default_column_width: f64,
+    pub default_row_height: f64,
     pub data_rects: Vec<JsCellValueSummary>,
     pub errored_code_cells: Option<Vec<JsCodeCell>>,
     pub data_tables: Option<Vec<JsDataTableContext>>,
     pub code_tables: Option<Vec<JsCodeTableContext>>,
     pub connections: Option<Vec<JsCodeTableContext>>,
     pub charts: Option<Vec<JsChartContext>>,
+    pub merge_cells: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -442,6 +445,7 @@ pub struct JsHtmlOutput {
     pub html: Option<String>,
     pub name: String,
     pub show_name: bool,
+    pub chart_image: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]

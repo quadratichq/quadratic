@@ -40,6 +40,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
             (w - 1) as f32 * cell_width as f32,
             (h - 1) as f32 * cell_height as f32,
         )),
+        chart_image: None,
         has_headers: false,
     })
     .unwrap();
@@ -79,6 +80,7 @@ pub fn test_create_html_chart(
             (w - 1) as f32 * cell_width as f32,
             (h - 1) as f32 * cell_height as f32,
         )),
+        chart_image: None,
         has_headers: false,
     })
     .unwrap();

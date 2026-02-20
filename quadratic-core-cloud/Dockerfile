@@ -16,6 +16,7 @@ COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 RUN rustup component add rustfmt
 
 WORKDIR /quadratic/quadratic-core-cloud
+COPY Cargo.lock .
 
 RUN cargo build --release
 
@@ -58,6 +59,7 @@ RUN uv pip install --system --break-system-packages \
   openpyxl \
   xlsxwriter \
   plotly \
+  kaleido \
   scikit-learn \
   statsmodels \
   nltk \

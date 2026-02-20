@@ -199,7 +199,7 @@ export type JsCellValueResult = [string, number];
 export type JsChartContext = { sheet_name: string, chart_name: string, bounds: string, intended_bounds: string, language: CodeCellLanguage, code_string: string, spill: boolean, };
 export type JsClipboard = { plainText: string, html: string, };
 export type JsCodeCell = { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, last_modified: bigint, };
-export type JsCodeResult = { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, chart_pixel_output: [number, number] | null, has_headers: boolean, };
+export type JsCodeResult = { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, chart_pixel_output: [number, number] | null, chart_image: string | null, has_headers: boolean, };
 export type JsCodeErrorContext = { sheet_name: string, pos: string, name: string, language: CodeCellLanguage, error: string | null, is_spill: boolean, expected_bounds: string | null, };
 export type JsCodeTableContext = { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, values: JsCellValueSummary | null, bounds: string, intended_bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, };
 export type JsColumnWidth = { column: bigint, width: number, };
@@ -212,7 +212,7 @@ export type JsHashesDirty = { sheet_id: SheetId, hashes: Array<Pos>, };
 export type JsHashRenderCells = { sheet_id: SheetId, hash: Pos, cells: Array<JsRenderCell>, };
 export type JsHashRenderFills = { sheet_id: SheetId, hash: Pos, fills: Array<JsRenderFill>, };
 export type JsHashValidationWarnings = { sheet_id: SheetId, hash: Pos | null, warnings: Array<JsValidationWarning>, };
-export type JsHtmlOutput = { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, };
+export type JsHtmlOutput = { sheet_id: string, x: number, y: number, w: number, h: number, html: string | null, name: string, show_name: boolean, chart_image: string | null, };
 export type JsNumber = { decimals: number | null, commas: boolean | null, format: NumericFormat | null, };
 export type JsOffset = { column: number | null, row: number | null, size: number, };
 export type JsRenderCell = { x: bigint, y: bigint, value: string, 
@@ -257,7 +257,7 @@ export type JsSheetNameToColor = { sheet_name: string, color: string, };
 export type JsSheetPosText = { sheet_id: string, x: bigint, y: bigint, text: string | null, };
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export type JsSummarizeSelectionResult = { count: bigint, sum: number | null, average: number | null, };
-export type JsSummaryContext = { sheet_name: string, data_rects: Array<JsCellValueSummary>, errored_code_cells: Array<JsCodeCell> | null, data_tables: Array<JsDataTableContext> | null, code_tables: Array<JsCodeTableContext> | null, connections: Array<JsCodeTableContext> | null, charts: Array<JsChartContext> | null, };
+export type JsSummaryContext = { sheet_name: string, default_column_width: number, default_row_height: number, data_rects: Array<JsCellValueSummary>, errored_code_cells: Array<JsCodeCell> | null, data_tables: Array<JsDataTableContext> | null, code_tables: Array<JsCodeTableContext> | null, connections: Array<JsCodeTableContext> | null, charts: Array<JsChartContext> | null, merge_cells: Array<string> | null, };
 export type JsTableInfo = { name: string, sheet_id: string, chart: boolean, language: CodeCellLanguage, };
 export type JsUpdateCodeCell = { sheet_id: SheetId, pos: Pos, render_code_cell: JsRenderCodeCell | null, };
 export type JsValidationWarning = { pos: Pos, validation: string | null, style: ValidationStyle | null, };
@@ -295,7 +295,7 @@ span: Span | null,
  */
 msg: RunErrorMsg, };
 export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "NotAvailable" | "Name" | "Null" | "Num" | "Value" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NaN" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument" | "NotANumber" | "Infinity" | "FormulaTooComplex";
-export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, };
+export type SearchOptions = { case_sensitive: boolean | null, whole_cell: boolean | null, search_code: boolean | null, sheet_id: string | null, regex: boolean | null, };
 export type SheetBounds = { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };
 export type SheetId = { id: string, };
 export type SheetInfo = { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, format_bounds: GridBounds, };

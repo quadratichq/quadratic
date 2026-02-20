@@ -3,17 +3,26 @@ use quadratic_rust_shared::quadratic_api::TaskRun;
 use quadratic_rust_shared::quadratic_cloud::{
     GetWorkerInitDataResponse, ack_tasks, get_tasks, get_token, worker_shutdown,
 };
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info, trace, warn};
 use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::{Result, WorkerError};
+use crate::thumbnail::{self, ThumbnailAssetConfig};
 
 /// Maximum number of retry attempts for token refresh
 const TOKEN_REFRESH_MAX_RETRIES: u32 = 3;
 /// Initial delay in milliseconds for token refresh retry (doubles each attempt)
 const TOKEN_REFRESH_INITIAL_DELAY_MS: u64 = 100;
+
+/// Configuration for thumbnail rendering
+pub(crate) struct ThumbnailConfig {
+    pub fonts_dir: Option<String>,
+    pub icons_dir: Option<String>,
+    pub emojis_dir: Option<String>,
+}
 
 pub(crate) struct Worker {
     core: Core,
@@ -24,6 +33,10 @@ pub(crate) struct Worker {
     tasks: Vec<(String, TaskRun)>,
     /// Current JWT with JTI - used to authenticate with controller and rotated on each token request
     current_jwt: String,
+    /// Configuration for thumbnail rendering
+    thumbnail_config: ThumbnailConfig,
+    /// Thumbnail key if successfully uploaded (passed to controller on shutdown)
+    uploaded_thumbnail_key: Option<String>,
 }
 
 impl Worker {
@@ -47,7 +60,7 @@ impl Worker {
             Ok(worker) => Ok(worker),
             Err(e) => {
                 if let Err(shutdown_err) =
-                    worker_shutdown(&controller_url, container_id, file_id, &jwt).await
+                    worker_shutdown(&controller_url, container_id, file_id, None, &jwt).await
                 {
                     error!("Failed to shutdown worker: {}", shutdown_err);
                 }
@@ -71,6 +84,13 @@ impl Worker {
         let worker_init_data = config.worker_init_data;
         let controller_url = config.controller_url.to_owned();
         let tasks = config.tasks;
+
+        // Extract thumbnail config before consuming other fields
+        let thumbnail_config = ThumbnailConfig {
+            fonts_dir: config.thumbnail_fonts_dir,
+            icons_dir: config.thumbnail_icons_dir,
+            emojis_dir: config.thumbnail_emojis_dir,
+        };
 
         // Rotate the token immediately to invalidate the environment JWT.
         // This ensures the JWT passed via environment (visible in /proc/<pid>/environ)
@@ -110,6 +130,8 @@ impl Worker {
             controller_url,
             tasks,
             current_jwt,
+            thumbnail_config,
+            uploaded_thumbnail_key: None,
         })
     }
 
@@ -323,9 +345,14 @@ impl Worker {
 
     /// Shutdown the worker.
     ///
-    /// This will leave the multiplayer room and send a shutdown request to the controller.
+    /// This will render and upload a thumbnail, leave the multiplayer room,
+    /// and send a shutdown request to the controller.
     pub(crate) async fn shutdown(&mut self) -> Result<()> {
         info!("Worker shutting down");
+
+        // Render and upload thumbnail before leaving the room
+        // This is best-effort - don't fail shutdown if thumbnail fails
+        self.render_and_upload_thumbnail().await;
 
         // leave the multiplayer room
         match self.core.leave_room().await {
@@ -336,11 +363,12 @@ impl Worker {
             }
         }
 
-        // send worker shutdown request to the controller
+        // send worker shutdown request to the controller (with thumbnail_key if available)
         match worker_shutdown(
             &self.controller_url,
             self.container_id,
             self.file_id,
+            self.uploaded_thumbnail_key.clone(),
             &self.current_jwt,
         )
         .await
@@ -355,6 +383,34 @@ impl Worker {
         info!("Worker shutdown complete");
 
         Ok(())
+    }
+
+    /// Render and upload a thumbnail of the current grid state.
+    /// This is best-effort - errors are logged but don't fail the worker.
+    /// On success, stores the thumbnail_key to be passed to the controller on shutdown.
+    async fn render_and_upload_thumbnail(&mut self) {
+        info!("Rendering and uploading thumbnail");
+
+        let asset_config = ThumbnailAssetConfig {
+            fonts_dir: self.thumbnail_config.fonts_dir.clone(),
+            icons_dir: self.thumbnail_config.icons_dir.clone(),
+            emojis_dir: self.thumbnail_config.emojis_dir.clone(),
+        };
+
+        match thumbnail::render_and_upload_thumbnail(
+            Arc::clone(&self.core.file),
+            &asset_config,
+            &self.worker_init_data.thumbnail_upload_url,
+            &self.worker_init_data.thumbnail_key,
+        )
+        .await
+        {
+            Ok(thumbnail_key) => {
+                info!("Thumbnail rendered and uploaded successfully");
+                self.uploaded_thumbnail_key = Some(thumbnail_key);
+            }
+            Err(e) => error!("Failed to render/upload thumbnail: {}", e),
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { showAIAnalystAtom } from '@/app/ai/atoms/aiAnalystAtoms';
+import { agentModeAtom } from '@/app/atoms/agentModeAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCommandPaletteAtom,
@@ -38,7 +39,8 @@ const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
-  const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
+  const [showAIAnalyst, setShowAIAnalyst] = useAtom(showAIAnalystAtom);
+  const agentMode = useRecoilValue(agentModeAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const [showScheduledTasks, setShowScheduledTasks] = useAtom(scheduledTasksAtom);
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
@@ -74,7 +76,7 @@ export const QuadraticSidebar = () => {
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
             <SidebarToggle
-              pressed={showAIAnalyst}
+              pressed={showAIAnalyst || agentMode}
               onPressedChange={() => setShowAIAnalyst((prev) => !prev)}
               data-walkthrough="ai-assistant"
             >

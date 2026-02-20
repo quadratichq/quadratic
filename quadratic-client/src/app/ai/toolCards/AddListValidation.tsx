@@ -1,11 +1,11 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, AIToolsArgsSchema, type AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type AddListValidationResponse = z.infer<(typeof aiToolsSpec)[AITool.AddListValidation]['responseSchema']>;
+type AddListValidationResponse = AIToolsArgs[AITool.AddListValidation];
 
 export const AddListValidation = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
@@ -20,7 +20,7 @@ export const AddListValidation = memo(
 
       try {
         const json = args ? JSON.parse(args) : {};
-        setToolArgs(aiToolsSpec[AITool.AddListValidation].responseSchema.safeParse(json));
+        setToolArgs(AIToolsArgsSchema[AITool.AddListValidation].safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[AddListValidation] Failed to parse args: ', error);

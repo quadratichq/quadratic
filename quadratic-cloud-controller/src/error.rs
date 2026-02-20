@@ -121,6 +121,7 @@ impl From<SharedError> for ControllerError {
         match error {
             SharedError::PubSub(error) => ControllerError::PubSub(error),
             SharedError::Auth(error) => ControllerError::Auth(error.to_string()),
+            SharedError::Storage(error) => ControllerError::Settings(error.to_string()),
             _ => ControllerError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }
