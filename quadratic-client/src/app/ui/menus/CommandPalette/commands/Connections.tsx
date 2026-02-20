@@ -40,7 +40,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: 'Manage connections',
+      label: 'Manage a connection',
       keywords: ['connection', 'edit', 'settings', 'manage'],
       isAvailable: ({ teamPermissions }) => !!teamPermissions && teamPermissions.includes('TEAM_EDIT'),
       Component: (props: CommandPaletteListItemDynamicProps) => {
