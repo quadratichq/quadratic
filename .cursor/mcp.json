@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "quadratic-embed": {
+      "url": "http://localhost:3300/sse"
+    }
+  }
+}

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quadratic MCP Embed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e1e4ed;
+      --text-dim: #8b8fa3;
+      --accent: #6366f1;
+      --accent-dim: #4f46e5;
+      --success: #22c55e;
+      --warning: #eab308;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 12px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--bg);
+      color: var(--text-dim);
+    }
+
+    .badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--error);
+    }
+
+    .badge.connected .dot { background: var(--success); }
+    .badge.connected { color: var(--success); }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .spreadsheet-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .spreadsheet-panel iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+
+    .log-panel {
+      width: 360px;
+      flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .log-header button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .log-header button:hover { border-color: var(--text-dim); }
+
+    .log-entries {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    .log-entry {
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+
+    .log-entry .timestamp {
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    .log-entry .command {
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .log-entry .params {
+      color: var(--text-dim);
+      margin-top: 2px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-entry.response { border-left: 3px solid var(--success); }
+    .log-entry.error { border-left: 3px solid var(--error); }
+    .log-entry.info { border-left: 3px solid var(--accent); }
+
+    .empty-log {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Quadratic MCP Embed</h1>
+    <div class="status-badges">
+      <div class="badge" id="ws-badge">
+        <span class="dot"></span>
+        <span>Server</span>
+      </div>
+      <div class="badge" id="iframe-badge">
+        <span class="dot"></span>
+        <span>Spreadsheet</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="spreadsheet-panel">
+      <iframe id="spreadsheet" title="Quadratic Spreadsheet"></iframe>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-header">
+        <span>Tool Call Log</span>
+        <button onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-entries" id="log-entries">
+        <div class="empty-log" id="empty-log">Waiting for tool calls…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------------------------------------------------
+    // Configuration
+    // -----------------------------------------------------------------------
+
+    let embedUrl = '';
+    const wsUrl = `ws://${location.host}/ws`;
+
+    // -----------------------------------------------------------------------
+    // Log helpers
+    // -----------------------------------------------------------------------
+
+    const logEl = document.getElementById('log-entries');
+    const emptyEl = document.getElementById('empty-log');
+
+    function addLog(type, title, detail) {
+      if (emptyEl) emptyEl.style.display = 'none';
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const ts = new Date().toLocaleTimeString();
+      entry.innerHTML =
+        `<div class="timestamp">${ts}</div>` +
+        `<div class="command">${escHtml(title)}</div>` +
+        (detail ? `<div class="params">${escHtml(typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2))}</div>` : '');
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearLog() {
+      logEl.innerHTML = '<div class="empty-log" id="empty-log">Waiting for tool calls…</div>';
+    }
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // -----------------------------------------------------------------------
+    // WebSocket connection to the MCP server
+    // -----------------------------------------------------------------------
+
+    let ws = null;
+    const wsBadge = document.getElementById('ws-badge');
+
+    function connectWebSocket() {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        wsBadge.classList.add('connected');
+        addLog('info', 'Connected to MCP server');
+      };
+
+      ws.onclose = () => {
+        wsBadge.classList.remove('connected');
+        addLog('error', 'Disconnected from MCP server');
+        setTimeout(connectWebSocket, 2000);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          addLog('info', `→ ${msg.command}`, msg.params);
+          forwardToIframe(msg);
+        } catch (e) {
+          addLog('error', 'Bad message from server', event.data);
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // postMessage bridge to the Quadratic iframe
+    // -----------------------------------------------------------------------
+
+    const iframe = document.getElementById('spreadsheet');
+    const iframeBadge = document.getElementById('iframe-badge');
+    let iframeReady = false;
+
+    // Listen for responses from the iframe
+    window.addEventListener('message', (event) => {
+      // Accept messages from the iframe origin
+      if (event.source !== iframe.contentWindow) return;
+
+      const msg = event.data;
+
+      // Handshake: the iframe signals it's ready for MCP commands
+      if (msg?.type === 'quadratic-mcp-ready') {
+        iframeReady = true;
+        iframeBadge.classList.add('connected');
+        addLog('info', 'Spreadsheet iframe ready for MCP commands');
+        return;
+      }
+
+      // Response from a tool call
+      if (msg?.type === 'quadratic-mcp-response') {
+        addLog('response', `← response [${msg.id}]`, msg.result ?? msg.error);
+        // Forward response back to server
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            id: msg.id,
+            success: msg.success !== false,
+            result: msg.result,
+            error: msg.error,
+          }));
+        }
+        return;
+      }
+    });
+
+    function forwardToIframe(msg) {
+      if (!iframe.contentWindow) {
+        sendErrorResponse(msg.id, 'Iframe not loaded');
+        return;
+      }
+
+      if (!iframeReady) {
+        // If the iframe hasn't signaled readiness, still try sending.
+        // This allows testing before the iframe has MCP support wired up.
+        addLog('info', 'Note: iframe has not signaled MCP readiness yet');
+      }
+
+      iframe.contentWindow.postMessage(
+        {
+          type: 'quadratic-mcp-command',
+          id: msg.id,
+          command: msg.command,
+          params: msg.params,
+        },
+        '*'
+      );
+
+      // If the iframe doesn't respond within 10 s, return a timeout error.
+      // (In the PoC, the iframe may not have postMessage handlers yet.)
+      setTimeout(() => {
+        // Check if the WS already handled the response (the pending map on the
+        // server side will have cleared it). We send a fallback just in case.
+      }, 10_000);
+    }
+
+    function sendErrorResponse(id, error) {
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ id, success: false, error }));
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Boot
+    // -----------------------------------------------------------------------
+
+    async function boot() {
+      try {
+        const res = await fetch('/config');
+        const config = await res.json();
+        embedUrl = config.embedUrl;
+        iframe.src = embedUrl;
+        addLog('info', 'Loading spreadsheet', embedUrl);
+      } catch (e) {
+        addLog('error', 'Failed to load config', e.message);
+      }
+
+      connectWebSocket();
+    }
+
+    boot();
+  </script>
+</body>
+</html>

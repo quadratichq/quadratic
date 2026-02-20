@@ -1,0 +1,40 @@
+{
+  "name": "mcp-embed-server",
+  "version": "0.2.0",
+  "description": "MCP App server for AI-driven interaction with an embedded Quadratic spreadsheet",
+  "type": "module",
+  "scripts": {
+    "build:server": "tsc -p tsconfig.server.json",
+    "build:ui": "cross-env INPUT=app/mcp-app.html vite build",
+    "build": "npm run build:ui && npm run build:server",
+    "start": "node dist/main.js",
+    "start:stdio": "node dist/main.js --stdio",
+    "dev": "tsx src/index.ts",
+    "dev:stdio": "tsx main.ts --stdio"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ws": "^8.18.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/ws": "^8.5.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.0.0",
+    "cross-env": "^7.0.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.0.0"
+  }
+}

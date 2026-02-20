@@ -2,6 +2,7 @@ import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractio
 import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { EmbedUI } from '@/app/embed/EmbedUI';
 import { PixiAppEffectsEmbed } from '@/app/embed/PixiAppEffectsEmbed';
+import { useEmbedMcpPostMessage } from '@/app/embed/useEmbedMcpPostMessage';
 import { WorkerLoadingIndicator } from '@/app/embed/WorkerLoadingIndicator';
 import { Events } from '@/app/gridGL/Events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -18,6 +19,7 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 export const EmbedApp = memo(() => {
   // Ensure GridSettings are loaded before app starts
   useSetRecoilState(gridSettingsAtom);
+  useEmbedMcpPostMessage();
 
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [isReady, setIsReady] = useState(false);
