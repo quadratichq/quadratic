@@ -123,7 +123,7 @@ async function handler(
   // to prevent concurrent requests from creating duplicate customers.
   if (!team?.stripeCustomerId) {
     team.stripeCustomerId = await dbClient.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Team" WHERE uuid = ${uuid}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Team" WHERE uuid = ${uuid} FOR UPDATE`;
       const lockedTeam = await tx.team.findUnique({ where: { uuid } });
       if (lockedTeam?.stripeCustomerId) {
         return lockedTeam.stripeCustomerId;

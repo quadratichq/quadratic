@@ -35,9 +35,9 @@ export const AIUsageExceeded = memo(() => {
   const { title, description, buttonText } = useMemo(() => {
     if (!suggestion) {
       return {
-        title: 'Monthly AI budget reached',
+        title: 'Team monthly AI allowance exceeded',
         description: 'Your team has reached its AI spending limit. Adjust your budget in team settings.',
-        buttonText: 'Increase usage',
+        buttonText: 'Increase overage limit',
       };
     }
 
@@ -46,7 +46,7 @@ export const AIUsageExceeded = memo(() => {
         return {
           title: 'Team monthly AI allowance exceeded',
           description: 'Enable on-demand usage in team settings to continue using Quadratic AI.',
-          buttonText: 'Increase overage limit',
+          buttonText: 'Enable team overage',
         };
       }
       return {

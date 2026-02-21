@@ -1,8 +1,11 @@
+import { WarningIcon } from '@/shared/components/Icons';
 import type { useOverageSettings } from '@/shared/hooks/useOverageSettings';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 
 interface OverageSettingsControlsProps {
   canManageAIOverage: boolean;
@@ -52,6 +55,38 @@ export function OverageSettingsControls({ canManageAIOverage, idPrefix, overage 
         </div>
       </div>
 
+      {aiUsageData?.teamCurrentMonthOverageCost != null && aiUsageData.teamCurrentMonthOverageCost > 0 && (
+        <div className="flex flex-col gap-3 border-t border-border pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <span className="text-sm font-medium">Current billed overage this period</span>
+              <p className="text-sm text-muted-foreground">
+                The amount billed so far for on-demand usage beyond the included allowance.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {aiUsageData.teamMonthlyBudgetLimit != null &&
+                aiUsageData.teamCurrentMonthOverageCost >= aiUsageData.teamMonthlyBudgetLimit && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="destructive-secondary" className="gap-1">
+                          <WarningIcon size="sm" />
+                          Limit reached
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>The team spending limit has been reached</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              <p className="text-sm font-semibold">${aiUsageData.teamCurrentMonthOverageCost.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {onDemandUsage && (
         <div className="flex flex-col gap-3 border-t border-border pt-4">
           <div className="flex items-center justify-between gap-4">
@@ -92,12 +127,6 @@ export function OverageSettingsControls({ canManageAIOverage, idPrefix, overage 
               )}
             </div>
           </div>
-          {aiUsageData?.teamCurrentMonthOverageCost != null && (
-            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-              <p className="text-xs text-muted-foreground">Current overage spend this period</p>
-              <p className="text-sm font-semibold">${aiUsageData.teamCurrentMonthOverageCost.toFixed(2)}</p>
-            </div>
-          )}
         </div>
       )}
     </div>
