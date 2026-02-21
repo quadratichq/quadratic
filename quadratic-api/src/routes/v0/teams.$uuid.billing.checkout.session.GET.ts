@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
+import { CORS } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -42,14 +43,18 @@ async function handler(
     query: { 'redirect-success': redirectSuccess, 'redirect-cancel': redirectCancel, plan },
   } = parseRequest(req, schema);
 
-  // Validate redirect URLs match the request origin to prevent open redirects
-  const requestOrigin = req.headers.origin || req.headers.referer;
-  if (requestOrigin) {
-    const allowedOrigin = new URL(requestOrigin).origin;
-    const successOrigin = new URL(redirectSuccess).origin;
-    const cancelOrigin = new URL(redirectCancel).origin;
-    if (successOrigin !== allowedOrigin || cancelOrigin !== allowedOrigin) {
-      return res.status(400).json({ error: { message: 'Redirect URLs must match the application origin.' } });
+  // Validate redirect URLs against the configured CORS origin to prevent open redirects.
+  // Falls back to request origin/referer only if CORS is a wildcard.
+  const allowedOrigin = CORS && CORS !== '*' ? new URL(CORS).origin : null;
+  if (allowedOrigin) {
+    try {
+      const successOrigin = new URL(redirectSuccess).origin;
+      const cancelOrigin = new URL(redirectCancel).origin;
+      if (successOrigin !== allowedOrigin || cancelOrigin !== allowedOrigin) {
+        return res.status(400).json({ error: { message: 'Redirect URLs must match the application origin.' } });
+      }
+    } catch {
+      return res.status(400).json({ error: { message: 'Invalid redirect URL format.' } });
     }
   }
 

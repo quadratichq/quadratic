@@ -35,7 +35,7 @@ async function handler(
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
-  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
     return res.status(403).json({ error: { message: 'You do not have permission to toggle overage payments.' } });
   }
 
@@ -76,13 +76,41 @@ async function handler(
     }
   }
 
-  const updatedTeam = await dbClient.team.update({
-    where: { uuid },
-    data: {
+  let updatedTeam;
+  try {
+    updatedTeam = await dbClient.team.update({
+      where: { uuid },
+      data: {
+        allowOveragePayments,
+        stripeOverageItemId,
+      },
+    });
+  } catch (dbError) {
+    // DB update failed after Stripe was modified -- revert the Stripe change
+    logger.error('Database update failed after Stripe overage item change, attempting revert', {
+      error: dbError instanceof Error ? dbError.message : String(dbError),
+      teamUuid: uuid,
       allowOveragePayments,
-      stripeOverageItemId,
-    },
-  });
+    });
+
+    try {
+      if (allowOveragePayments && stripeOverageItemId) {
+        await removeOverageSubscriptionItem(stripeOverageItemId);
+      } else if (!allowOveragePayments && team.stripeOverageItemId) {
+        await addOverageSubscriptionItem(team.stripeSubscriptionId!);
+      }
+    } catch (revertError) {
+      logger.error('Failed to revert Stripe overage item after DB failure — manual intervention required', {
+        error: revertError instanceof Error ? revertError.message : String(revertError),
+        teamUuid: uuid,
+        stripeOverageItemId,
+      });
+    }
+
+    return res.status(500).json({
+      error: { message: 'Failed to update on-demand usage settings. Please try again later.' },
+    });
+  }
 
   // Report any existing overage when enabling on-demand usage
   if (allowOveragePayments) {

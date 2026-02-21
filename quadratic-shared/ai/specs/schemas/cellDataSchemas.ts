@@ -67,6 +67,7 @@ Don't use this tool to add data to a data table that already exists. Use set_cel
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
 Don't attempt to add formulas or code to data tables.\n
+NOTE: Results and arguments from this tool in previous conversation turns are automatically compressed to save context space.\n
 `,
     parameters: {
       type: 'object',
@@ -122,6 +123,7 @@ Values set using this function will replace the existing values in the cell and 
 To clear the values of a cell, set the value to an empty string.\n
 Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 IMPORTANT: If the target cells overlap with merged cell regions, you must place values at the anchor (top-left) cell of the merge. Writing to non-anchor cells inside a merged region will result in an error.\n
+NOTE: Results and arguments from this tool in previous conversation turns are automatically compressed to save context space.\n
 `,
     parameters: {
       type: 'object',
@@ -162,6 +164,7 @@ You should use the get_cell_data function to get the values of the cells when yo
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
+NOTE: Results from this tool in previous conversation turns are automatically compressed to save context space. If you need data that was fetched in a previous turn, call this tool again.\n
 `,
     parameters: {
       type: 'object',

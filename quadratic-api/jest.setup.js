@@ -66,5 +66,7 @@ jest.mock('./src/stripe/stripe', () => {
     updateSeatQuantity: jest.fn().mockImplementation(async () => {}),
     getIsMonthlySubscription: jest.fn().mockResolvedValue(false),
     reportUsageToStripe: jest.fn().mockImplementation(async () => {}),
+    addOverageSubscriptionItem: jest.fn().mockResolvedValue('si_test_overage_item'),
+    removeOverageSubscriptionItem: jest.fn().mockResolvedValue(undefined),
   };
 });

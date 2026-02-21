@@ -212,6 +212,7 @@ It returns a string representation of the formatting information of the cells in
 If too large, the results will include page information:\n
 - If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
 - Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
+NOTE: Results from this tool in previous conversation turns are automatically compressed to save context space. If you need data that was fetched in a previous turn, call this tool again.\n
 `,
     parameters: {
       type: 'object',

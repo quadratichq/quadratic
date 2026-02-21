@@ -17,6 +17,7 @@ import {
 } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
+import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
@@ -38,9 +39,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = parseRequest(req, schema);
   const { id: userId } = req.user;
 
-  const team = await dbClient.team.findUnique({ where: { uuid } });
-  if (!team) {
-    throw new ApiError(404, 'Team not found');
+  const { team, userMakingRequest } = await getTeam({ uuid, userId });
+  if (!userMakingRequest.permissions.includes('TEAM_VIEW')) {
+    throw new ApiError(403, 'User does not have permission to view AI usage for this team');
   }
 
   const isOnPaidPlan = await getIsOnPaidPlan(team);
@@ -98,9 +99,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   const teamMonthlyBudgetLimit = team.teamMonthlyBudgetLimit;
   const teamCurrentMonthOverageCost =
     team.allowOveragePayments || teamMonthlyBudgetLimit != null
-      ? (team.stripeOverageBilledPeriodStart?.getTime() === periodStart.getTime()
-          ? team.stripeOverageBilledCents / 100
-          : 0)
+      ? team.stripeOverageBilledPeriodStart?.getTime() === periodStart.getTime()
+        ? team.stripeOverageBilledCents / 100
+        : 0
       : null;
 
   // Delegate the exceeded decision to canMakeAiRequest (single source of truth)

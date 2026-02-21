@@ -28,7 +28,10 @@ export const GetCodeCellValue = memo(
 
     const label = useMemo(() => {
       const verb = loading ? 'Reading' : 'Read';
-      return `${verb} code cell ${toolArgs?.data?.sheet_name ? `in ${toolArgs?.data?.sheet_name}` : ''} from ${toolArgs?.data?.code_cell_name ?? toolArgs?.data?.code_cell_position}.`;
+      const sheetPart = toolArgs?.data?.sheet_name ? ` in ${toolArgs.data.sheet_name}` : '';
+      const codeCellRef = toolArgs?.data?.code_cell_name ?? toolArgs?.data?.code_cell_position;
+      const fromPart = codeCellRef ? ` from ${codeCellRef}` : '';
+      return `${verb} code cell${sheetPart}${fromPart}.`;
     }, [toolArgs?.data?.sheet_name, toolArgs?.data?.code_cell_name, toolArgs?.data?.code_cell_position, loading]);
 
     if (loading) {

@@ -120,28 +120,11 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
           });
         });
     });
-    it('responds with a 200 for a valid team uuid and user does not belong to this team', async () => {
+    it('responds with a 403 for a valid team uuid and user does not belong to this team', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
         .set('Authorization', `Bearer ValidToken userOwner1`)
-        .expect(200)
-        .expect(({ body }) => {
-          expect(body).toEqual({
-            billingLimit: 20,
-            currentPeriodUsage: 0,
-            exceededBillingLimit: false,
-            planType: 'FREE',
-            currentMonthAiCost: null,
-            monthlyAiAllowance: null,
-            remainingAllowance: null,
-            teamMonthlyBudgetLimit: null,
-            teamCurrentMonthOverageCost: null,
-            teamCurrentMonthMessages: 0,
-            teamMessageLimit: 20,
-            userMonthlyBudgetLimit: null,
-            allowOveragePayments: false,
-          });
-        });
+        .expect(403);
     });
   });
 
@@ -177,35 +160,11 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
         });
     });
 
-    it('check usage in foreign team', async () => {
-      const messages = Array.from({ length: 7 }, (_, index) => ({
-        messageIndex: index,
-        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
-        messageType: 'userPrompt' as const,
-      }));
-      await createAIChat({ userId: owner1Id, teamId: team2Id, messages });
-
+    it('responds with 403 for usage check in foreign team', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
         .set('Authorization', `Bearer ValidToken userOwner1`)
-        .expect(200)
-        .expect(({ body }) => {
-          expect(body).toEqual({
-            billingLimit: 20,
-            currentPeriodUsage: 7,
-            exceededBillingLimit: false,
-            planType: 'FREE',
-            currentMonthAiCost: null,
-            monthlyAiAllowance: null,
-            remainingAllowance: null,
-            teamMonthlyBudgetLimit: null,
-            teamCurrentMonthOverageCost: null,
-            teamCurrentMonthMessages: 7,
-            teamMessageLimit: 20,
-            userMonthlyBudgetLimit: null,
-            allowOveragePayments: false,
-          });
-        });
+        .expect(403);
     });
   });
 
@@ -275,72 +234,19 @@ describe('GET /v0/teams/:uuid/billing/ai/usage', () => {
           });
         });
     });
-    it('foreign free team', async () => {
-      const messages = Array.from({ length: 21 }, (_, index) => ({
-        messageIndex: index,
-        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
-        messageType: 'userPrompt' as const,
-      }));
-      await createAIChat({ userId: owner1Id, teamId: team2Id, messages });
-
+    it('responds with 403 for foreign free team (user not a member)', async () => {
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
         .set('Authorization', `Bearer ValidToken userOwner1`)
-        .expect(200)
-        .expect(({ body }) => {
-          expect(body).toEqual({
-            billingLimit: 20,
-            currentPeriodUsage: 21,
-            exceededBillingLimit: true,
-            planType: 'FREE',
-            currentMonthAiCost: null,
-            monthlyAiAllowance: null,
-            remainingAllowance: null,
-            teamMonthlyBudgetLimit: null,
-            teamCurrentMonthOverageCost: null,
-            teamCurrentMonthMessages: 21,
-            teamMessageLimit: 20,
-            userMonthlyBudgetLimit: null,
-            allowOveragePayments: false,
-          });
-        });
+        .expect(403);
     });
-    it('foreign paid team', async () => {
-      const messages = Array.from({ length: 23 }, (_, index) => ({
-        messageIndex: index,
-        model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
-        messageType: 'userPrompt' as const,
-      }));
-      await createAIChat({ userId: owner1Id, teamId: team2Id, messages });
+    it('responds with 403 for foreign paid team (user not a member)', async () => {
       await upgradeTeamToPro(team2Id);
 
       await request(app)
         .get('/v0/teams/00000000-0000-0000-0000-000000000001/billing/ai/usage')
         .set('Authorization', `Bearer ValidToken userOwner1`)
-        .expect(200)
-        .expect(({ body }) => {
-          // User is not a member of team2, so they see the paid team response
-          // with cost-based limits. No AICost records exist, so cost is 0.
-          expect(body).toEqual({
-            exceededBillingLimit: false,
-            billingLimit: null,
-            currentPeriodUsage: null,
-            planType: 'PRO',
-            currentMonthAiCost: 0,
-            monthlyAiAllowance: 20,
-            remainingAllowance: 20,
-            teamMonthlyBudgetLimit: null,
-            teamCurrentMonthOverageCost: null,
-
-            teamCurrentMonthMessages: null,
-            teamMessageLimit: null,
-            userMonthlyBudgetLimit: null,
-            userCurrentMonthCost: null,
-            allowOveragePayments: false,
-            billingPeriodStart: expect.any(String),
-            billingPeriodEnd: expect.any(String),
-          });
-        });
+        .expect(403);
     });
   });
 

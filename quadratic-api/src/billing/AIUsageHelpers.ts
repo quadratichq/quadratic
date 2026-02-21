@@ -23,8 +23,8 @@ export const BillingAIUsageMonthlyForUserInTeam = async (userId: number, teamId:
 WITH date_range AS (
   SELECT
     generate_series(
-      DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months'),
-      DATE_TRUNC('month', CURRENT_DATE),
+      DATE_TRUNC('month', (NOW() AT TIME ZONE 'UTC') - INTERVAL '5 months'),
+      DATE_TRUNC('month', NOW() AT TIME ZONE 'UTC'),
       '1 month'::interval
     ) AS month
 ),
@@ -82,8 +82,8 @@ export const BillingAIUsageMonthlyForUsersInTeam = async (
 WITH date_range AS (
   SELECT
     generate_series(
-      DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months'),
-      DATE_TRUNC('month', CURRENT_DATE),
+      DATE_TRUNC('month', (NOW() AT TIME ZONE 'UTC') - INTERVAL '5 months'),
+      DATE_TRUNC('month', NOW() AT TIME ZONE 'UTC'),
       '1 month'::interval
     ) AS month
 ),
@@ -140,8 +140,8 @@ export const getDailyAiMessagesByUser = async (
     JOIN "AnalyticsAIChatMessage" acm ON acm.chat_id = ac.id AND acm.message_type = 'user_prompt'
     WHERE ac.user_id IN (${Prisma.join(userIds)})
       AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
-      AND ac.created_date >= DATE_TRUNC('month', CURRENT_DATE)
-      AND ac.created_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+      AND ac.created_date >= DATE_TRUNC('month', NOW() AT TIME ZONE 'UTC')
+      AND ac.created_date < DATE_TRUNC('month', NOW() AT TIME ZONE 'UTC') + INTERVAL '1 month'
     GROUP BY DATE_TRUNC('day', ac.created_date), ac.user_id
     ORDER BY day, ac.user_id
   `;

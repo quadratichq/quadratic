@@ -407,6 +407,7 @@ Supports regex patterns for advanced matching when the regex option is enabled. 
 - "world$" to match cells ending with "world"\n
 - "[A-Z]+" to match uppercase letters\n
 - "foo|bar" to match either "foo" or "bar"\n
+NOTE: Results from this tool in previous conversation turns are automatically compressed to save context space. If you need data that was fetched in a previous turn, call this tool again.\n
 `,
     parameters: {
       type: 'object',

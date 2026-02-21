@@ -33,7 +33,7 @@ async function handler(
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
-  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
     return res.status(403).json({ error: { message: 'You do not have permission to set budget limits.' } });
   }
 

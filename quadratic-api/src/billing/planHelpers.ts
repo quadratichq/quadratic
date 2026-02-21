@@ -6,6 +6,13 @@ import type { DecryptedTeam } from '../utils/teams';
 export { PlanType };
 
 /**
+ * Round a dollar amount to cents precision to avoid floating-point comparison errors.
+ * AICost.cost uses DOUBLE PRECISION which can accumulate rounding errors when summed.
+ * Rounding to cents (2 decimal places) before comparisons keeps behavior predictable.
+ */
+const roundToCents = (dollars: number): number => Math.round(dollars * 100) / 100;
+
+/**
  * Get the plan type for a team.
  * If planType is set on the team, use that.
  * Otherwise, infer from subscription status:
@@ -217,7 +224,7 @@ export const hasExceededAllowance = async (team: Team | DecryptedTeam, userId: n
 
   const { start, end } = getBillingPeriodDates(team);
   const currentCost = await getBillingPeriodAiCostForUser(team.id, userId, start, end);
-  return currentCost >= allowancePerUser;
+  return roundToCents(currentCost) >= roundToCents(allowancePerUser);
 };
 
 /**
@@ -236,7 +243,7 @@ export const hasTeamExceededAllowance = async (team: Team | DecryptedTeam): Prom
 
   const { start, end } = getBillingPeriodDates(team);
   const currentCost = await getBillingPeriodAiCostForTeam(team.id, start, end);
-  return currentCost >= teamAllowance;
+  return roundToCents(currentCost) >= roundToCents(teamAllowance);
 };
 
 /**
@@ -323,9 +330,10 @@ export const hasExceededUserBudget = async (team: Team | DecryptedTeam, userId: 
   const allowancePerUser = getMonthlyAiAllowancePerUser(team);
   const { start, end } = getBillingPeriodDates(team);
   const breakdown = await getBillingPeriodAiCostBreakdownForUser(team.id, userId, start, end);
-  const totalOverage = allowancePerUser > 0 ? Math.max(0, breakdown.totalCost - allowancePerUser) : 0;
-  const billedOverage = Math.min(totalOverage, breakdown.overageEnabledCost);
-  return billedOverage >= budgetLimit.limit;
+  const totalOverage =
+    allowancePerUser > 0 ? Math.max(0, roundToCents(breakdown.totalCost) - roundToCents(allowancePerUser)) : 0;
+  const billedOverage = Math.min(totalOverage, roundToCents(breakdown.overageEnabledCost));
+  return roundToCents(billedOverage) >= roundToCents(budgetLimit.limit);
 };
 
 /**
@@ -355,8 +363,8 @@ export const getBillingPeriodOverageCostForTeam = async (team: Team | DecryptedT
     }
   }
 
-  const totalOverage = Math.max(0, totalCost - allowance);
-  return Math.min(totalOverage, overageEnabledCost);
+  const totalOverage = Math.max(0, roundToCents(totalCost) - roundToCents(allowance));
+  return Math.min(totalOverage, roundToCents(overageEnabledCost));
 };
 
 /**
@@ -370,7 +378,7 @@ export const hasExceededTeamBudget = async (team: Team | DecryptedTeam): Promise
   }
 
   const overageCost = await getBillingPeriodOverageCostForTeam(team);
-  return overageCost >= team.teamMonthlyBudgetLimit;
+  return roundToCents(overageCost) >= roundToCents(team.teamMonthlyBudgetLimit);
 };
 
 /**
@@ -407,7 +415,7 @@ export const canMakeAiRequest = async (
       return { allowed: true };
     }
     const userCost = await getBillingPeriodAiCostForUser(team.id, userId, start, end);
-    if (userCost >= allowancePerUser) {
+    if (roundToCents(userCost) >= roundToCents(allowancePerUser)) {
       return { allowed: false, reason: 'Monthly AI allowance exceeded' };
     }
     return { allowed: true };
@@ -421,18 +429,19 @@ export const canMakeAiRequest = async (
     dbClient.userTeamRole.count({ where: { teamId: team.id } }),
   ]);
 
-  const userCost = userBreakdown.totalCost;
-  const teamAllowance = allowancePerUser * userCount;
-  const exceededUserAllowance = allowancePerUser > 0 && userCost >= allowancePerUser;
+  const userCost = roundToCents(userBreakdown.totalCost);
+  const teamAllowance = roundToCents(allowancePerUser * userCount);
+  const exceededUserAllowance = allowancePerUser > 0 && userCost >= roundToCents(allowancePerUser);
 
   // Budget checks only count billed overage (costs incurred while on-demand was enabled)
-  const userTotalOverage = allowancePerUser > 0 ? Math.max(0, userCost - allowancePerUser) : 0;
-  const userBilledOverage = Math.min(userTotalOverage, userBreakdown.overageEnabledCost);
-  const exceededUserBudget = budgetLimit !== null && userBilledOverage >= budgetLimit.limit;
+  const userTotalOverage = allowancePerUser > 0 ? Math.max(0, userCost - roundToCents(allowancePerUser)) : 0;
+  const userBilledOverage = Math.min(userTotalOverage, roundToCents(userBreakdown.overageEnabledCost));
+  const exceededUserBudget = budgetLimit !== null && roundToCents(userBilledOverage) >= roundToCents(budgetLimit.limit);
 
-  const teamTotalOverage = teamAllowance > 0 ? Math.max(0, teamBreakdown.totalCost - teamAllowance) : 0;
-  const teamBilledOverage = Math.min(teamTotalOverage, teamBreakdown.overageEnabledCost);
-  const exceededTeamBudget = team.teamMonthlyBudgetLimit != null && teamBilledOverage >= team.teamMonthlyBudgetLimit;
+  const teamTotalOverage = teamAllowance > 0 ? Math.max(0, roundToCents(teamBreakdown.totalCost) - teamAllowance) : 0;
+  const teamBilledOverage = Math.min(teamTotalOverage, roundToCents(teamBreakdown.overageEnabledCost));
+  const exceededTeamBudget =
+    team.teamMonthlyBudgetLimit != null && roundToCents(teamBilledOverage) >= roundToCents(team.teamMonthlyBudgetLimit);
 
   if (exceededUserAllowance) {
     if (team.allowOveragePayments) {

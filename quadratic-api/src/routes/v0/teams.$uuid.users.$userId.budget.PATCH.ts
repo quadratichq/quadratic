@@ -33,9 +33,8 @@ async function handler(
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId: currentUserId });
 
-  // Only team owners can set user budget limits
-  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
-    return res.status(403).json({ error: { message: 'Only team owners can set user budget limits.' } });
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    return res.status(403).json({ error: { message: 'You do not have permission to set user budget limits.' } });
   }
 
   // Verify the user is a member of the team

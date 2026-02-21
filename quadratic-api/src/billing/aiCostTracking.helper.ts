@@ -118,9 +118,7 @@ export async function reportAndTrackOverage(teamId: number): Promise<void> {
 
       const allowancePerUser = getMonthlyAiAllowancePerUser(lockedTeam);
       const [userCount, costResults] = await Promise.all([
-        allowancePerUser > 0
-          ? tx.userTeamRole.count({ where: { teamId: lockedTeam.id } })
-          : Promise.resolve(0),
+        allowancePerUser > 0 ? tx.userTeamRole.count({ where: { teamId: lockedTeam.id } }) : Promise.resolve(0),
         tx.aICost.groupBy({
           by: ['overageEnabled'],
           where: { teamId, createdDate: { gte: start, lte: end } },
@@ -184,6 +182,10 @@ export async function reportAndTrackOverage(teamId: number): Promise<void> {
       error: error instanceof Error ? error.message : String(error),
       teamId,
       centsToReport,
+    });
+    Sentry.captureException(error, {
+      tags: { component: 'stripe-overage-reporting' },
+      extra: { teamId, centsToReport, stripeCustomerId },
     });
   }
 }

@@ -431,6 +431,7 @@ model AICost {
     @@index([userId, teamId, createdDate])
     @@index([createdDate])
     @@index([teamId, createdDate])
+    @@index([teamId, createdDate, overageEnabled])
 }
 
 // Scheduled Tasks

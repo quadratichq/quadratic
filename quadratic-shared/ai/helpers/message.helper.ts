@@ -382,9 +382,19 @@ const compressToolCallArgs = (argsJson: string, toolName: string): string => {
  * Additionally removes plotly images from all old tool results.
  */
 export const compressOldToolResults = (messages: ChatMessage[]): ChatMessage[] => {
+  // Find the boundary: only compress tool calls from previous user turns
+  let lastUserPromptIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user' && messages[i].contextType === 'userPrompt') {
+      lastUserPromptIndex = i;
+      break;
+    }
+  }
+
   // Build a map: toolCallId -> { toolName, messageIndex (of assistant msg) }
   const toolCallInfo = new Map<string, { toolName: string; assistantMsgIndex: number }>();
   messages.forEach((message, i) => {
+    if (i >= lastUserPromptIndex) return;
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       for (const tc of message.toolCalls) {
         toolCallInfo.set(tc.id, { toolName: tc.name, assistantMsgIndex: i });
