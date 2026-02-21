@@ -266,7 +266,8 @@ class RenderText {
       this.pendingMergeCells.set(sheetId, mergeCells);
       return;
     }
-    const dirtyHashes = fromUint8Array<{ x: number; y: number }[]>(dirtyHashesUint8Array);
+    const dirtyHashes =
+      dirtyHashesUint8Array.length > 0 ? fromUint8Array<{ x: number; y: number }[]>(dirtyHashesUint8Array) : [];
     cellsLabels.updateMergeCells(mergeCells, dirtyHashes);
   }
 
