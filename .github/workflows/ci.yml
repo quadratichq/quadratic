@@ -170,6 +170,7 @@ jobs:
           CARGO_BUILD_JOBS: 4
           BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
           PLAID_CREDENTIALS: "${{ secrets.PLAID_CREDENTIALS }}"
+          INTRINIO_API_KEY: "${{ secrets.INTRINIO_API_KEY }}"
           SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
           SSL_CERT_DIR: /etc/ssl/certs
           DATABASE_DSN: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"

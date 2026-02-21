@@ -251,12 +251,14 @@ export type InternalContextType =
 export type ToolResultContextType = 'toolResult';
 export type UserPromptContextType = 'userPrompt';
 
+export type ConnectionKind = ConnectionType | 'STOCKHISTORY';
+
 export type CodeCellLanguage =
   | 'Python'
   | 'Javascript'
   | 'Formula'
   | 'Import'
-  | { Connection: { kind: ConnectionType; id: string } };
+  | { Connection: { kind: ConnectionKind; id: string } };
 
 export interface ImportFile {
   name: string;
@@ -827,13 +829,16 @@ const InternalContextTypeSchema = z.enum([
   'aiLanguages',
 ]) satisfies z.ZodType<InternalContextType>;
 
+// ConnectionKind includes both user-manageable connections (ConnectionType) and internal ones (STOCKHISTORY)
+const ConnectionKindSchema = ConnectionTypeSchema.or(z.literal('STOCKHISTORY'));
+
 const ToolResultContextTypeSchema = z.literal('toolResult') satisfies z.ZodType<ToolResultContextType>;
 const UserPromptContextTypeSchema = z.literal('userPrompt') satisfies z.ZodType<UserPromptContextType>;
 
 const CodeCellLanguageSchema: z.ZodType<CodeCellLanguage> = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
     Connection: z.object({
-      kind: ConnectionTypeSchema,
+      kind: ConnectionKindSchema,
       id: z.string(),
     }),
   })

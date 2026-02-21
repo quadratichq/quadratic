@@ -166,6 +166,9 @@ Resources:
           PLAID_SECRET=$(aws ssm get-parameter --name "/quadratic-development/PLAID_SECRET" --with-decryption --query "Parameter.Value" --output text)
           PLAID_ENVIRONMENT=$(aws ssm get-parameter --name "/quadratic-development/PLAID_ENVIRONMENT" --with-decryption --query "Parameter.Value" --output text)
 
+          # intrinio
+          INTRINIO_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/INTRINIO_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+
           # misc
           CONNECTION_DEMO=$(aws ssm get-parameter --name "/quadratic-development/CONNECTION_DEMO" --with-decryption --query "Parameter.Value" --output text)
 

@@ -173,6 +173,8 @@ pub enum ConnectionKind {
     #[serde(rename = "GOOGLE_ANALYTICS")]
     GoogleAnalytics,
     Plaid,
+    /// Financial data connection for STOCKHISTORY formula
+    StockHistory,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

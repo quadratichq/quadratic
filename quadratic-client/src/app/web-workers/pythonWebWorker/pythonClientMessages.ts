@@ -39,6 +39,33 @@ export interface PythonClientGetJwt {
   id: number;
 }
 
+export interface ClientPythonGetTeamUuid {
+  type: 'clientPythonGetTeamUuid';
+  id: number;
+  teamUuid: string | null;
+}
+
+export interface PythonClientGetTeamUuid {
+  type: 'pythonClientGetTeamUuid';
+  id: number;
+}
+
+export interface ClientPythonStockPrices {
+  type: 'clientPythonStockPrices';
+  id: number;
+  data: unknown;
+  error: string | null;
+}
+
+export interface PythonClientStockPrices {
+  type: 'pythonClientStockPrices';
+  id: number;
+  identifier: string;
+  startDate: string | null;
+  endDate: string | null;
+  frequency: string | null;
+}
+
 export interface PythonClientCaptureChartImage {
   type: 'pythonClientCaptureChartImage';
   id: number;
@@ -58,10 +85,14 @@ export type PythonClientMessage =
   | PythonClientState
   | PythonClientInit
   | PythonClientGetJwt
+  | PythonClientGetTeamUuid
+  | PythonClientStockPrices
   | PythonClientCaptureChartImage;
 
 export type ClientPythonMessage =
   | ClientPythonInit
   | ClientPythonCoreChannel
   | ClientPythonGetJwt
+  | ClientPythonGetTeamUuid
+  | ClientPythonStockPrices
   | ClientPythonChartImage;
