@@ -77,7 +77,7 @@ async function handler(
   }
 
   const { start, end } = getBillingPeriodDates(team);
-  const dailyCosts = await getDailyAiCostsByUser(team.id, start, end);
+  const dailyCosts = await getDailyAiCostsByUser(team.id, userIds, start, end);
 
   const cumulativeByUser = new Map<number, number>();
 

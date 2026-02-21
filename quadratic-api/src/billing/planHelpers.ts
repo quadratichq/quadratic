@@ -1,4 +1,4 @@
-import { PlanType, SubscriptionStatus, type Team } from '@prisma/client';
+import { PlanType, Prisma, SubscriptionStatus, type Team } from '@prisma/client';
 import dbClient from '../dbClient';
 import { AI_ALLOWANCE_BUSINESS, AI_ALLOWANCE_PRO } from '../env-vars';
 import type { DecryptedTeam } from '../utils/teams';
@@ -514,13 +514,17 @@ export const getBilledOverageCostsByUser = async (
 
 /**
  * Get daily AI costs grouped by user and day for a billing period.
+ * Only includes costs for the specified userIds (current team members).
  * Returns flat array of { date, userId, cost, overageEnabledCost }.
  */
 export const getDailyAiCostsByUser = async (
   teamId: number,
+  userIds: number[],
   start: Date,
   end: Date
 ): Promise<Array<{ date: string; userId: number; cost: number; overageEnabledCost: number }>> => {
+  if (userIds.length === 0) return [];
+
   const rows = await dbClient.$queryRaw<
     Array<{ day: Date; user_id: number; cost: number; overage_enabled_cost: number }>
   >`
@@ -531,6 +535,7 @@ export const getDailyAiCostsByUser = async (
       SUM(CASE WHEN overage_enabled THEN cost ELSE 0 END)::double precision AS overage_enabled_cost
     FROM "AICost"
     WHERE team_id = ${teamId}
+      AND user_id IN (${Prisma.join(userIds)})
       AND created_date >= ${start}
       AND created_date <= ${end}
     GROUP BY DATE_TRUNC('day', created_date), user_id
