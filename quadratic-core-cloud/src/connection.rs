@@ -1,14 +1,27 @@
-use std::sync::Arc;
-
 use bytes::Bytes;
 use quadratic_core::{
     controller::{GridController, transaction_types::JsConnectionResult},
     grid::{ConnectionKind, SheetId},
 };
 use serde_json::json;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::error::{CoreCloudError, Result};
+
+pub(crate) fn build_request(
+    url: &str,
+    token: &str,
+    team_id: &str,
+    body: &serde_json::Value,
+) -> reqwest::RequestBuilder {
+    let client = reqwest::Client::new();
+    client
+        .post(url)
+        .header("Authorization", format!("Bearer {token}"))
+        .header("x-team-id", team_id)
+        .json(body)
+}
 
 /// Parameters for running a connection
 pub(crate) struct ConnectionParams<'a> {
@@ -104,15 +117,11 @@ pub(crate) async fn execute(
         "[Connection] Executing query to {url} (connection_id: {connection_id}, team_id: {team_id}, transaction_id: {transaction_id})",
     );
 
-    let client = reqwest::Client::new();
-    let request = client
-        .post(&url)
-        .header("Authorization", format!("Bearer {token}"))
-        .header("x-team-id", team_id)
-        .json(&json!({
-            "query": query,
-            "connection_id": connection_id,
-        }));
+    let body = json!({
+        "query": query,
+        "connection_id": connection_id,
+    });
+    let request = build_request(&url, token, team_id, &body);
 
     let (response, std_error) = match request.send().await {
         Ok(resp) => match resp.bytes().await {
@@ -139,6 +148,49 @@ pub(crate) async fn execute(
     };
 
     Ok((result, std_error))
+}
+
+/// Fetches stock prices from the connection service.
+pub(crate) async fn fetch_stock_prices(
+    token: &str,
+    team_id: &str,
+    connection_url: &str,
+    identifier: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
+    frequency: Option<&str>,
+) -> Result<serde_json::Value> {
+    let url = format!("{connection_url}/financial/stock-prices");
+
+    tracing::info!("[Connection] Fetching stock prices for {identifier} from {url}",);
+
+    let body = json!({
+        "identifier": identifier,
+        "start_date": start_date,
+        "end_date": end_date,
+        "frequency": frequency,
+    });
+    let request = build_request(&url, token, team_id, &body);
+    let response = request
+        .send()
+        .await
+        .map_err(|e| CoreCloudError::Connection(format!("HTTP request failed: {}", e)))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(CoreCloudError::Connection(format!(
+            "Stock prices request failed with status {}: {}",
+            status, body
+        )));
+    }
+
+    let json_value: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| CoreCloudError::Connection(format!("Failed to parse response: {}", e)))?;
+
+    Ok(json_value)
 }
 
 #[cfg(test)]

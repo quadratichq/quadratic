@@ -43,13 +43,18 @@ pub(crate) struct Config {
     pub(crate) plaid_client_id: String,
     pub(crate) plaid_secret: String,
     pub(crate) plaid_environment: PlaidEnvironment,
+
+    // Intrinio
+    pub(crate) intrinio_api_key: String,
 }
 
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
-    let filename = if cfg!(test) { ".env.test" } else { ".env" };
+    dotenv::from_filename(".env").ok();
 
-    dotenv::from_filename(filename).ok();
+    #[cfg(test)]
+    dotenv::from_filename(".env.test").ok();
+
     dotenv().ok();
 
     // Try prefixed first, fall back to non-prefixed if that fails

@@ -1,6 +1,6 @@
 import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { getConnectionKind, getUserManageableConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
@@ -19,7 +19,7 @@ export const codeCellToMarkdown = async (sheetId: string, x: number, y: number):
   };
 
   let schemaData: Awaited<ReturnType<typeof connectionClient.schemas.get>> = null;
-  const connection = getConnectionInfo(codeCellCore.language);
+  const connection = getUserManageableConnectionInfo(codeCellCore.language);
   const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
   if (connection) {
     try {

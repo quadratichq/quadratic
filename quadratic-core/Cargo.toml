@@ -140,6 +140,7 @@ rust_xlsxwriter = { version = "0.89.1", features = ["chrono"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "benchmark",
 ] }
+ureq = { version = "2.9", features = ["json"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", default-features = false, features = [

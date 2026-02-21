@@ -140,10 +140,15 @@ class QuadraticCore {
   private worker?: Worker;
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
+  private _teamUuid?: string;
 
   // This is a hack to get import files to properly show negative offsets dialog
   // after importing from dashboard. This can be removed in the future.
   receivedClientMessage = false;
+
+  getTeamUuid(): string | null {
+    return this._teamUuid ?? null;
+  }
 
   initWorker() {
     if (!this.worker) {
@@ -360,6 +365,9 @@ class QuadraticCore {
     version: string;
     sequenceNumber: number;
   }): Promise<{ version?: string; error?: string }> {
+    // Store teamUuid for use by Python worker and other components
+    this._teamUuid = teamUuid;
+
     // this is the channel between the core worker and the render worker
     const port = new MessageChannel();
     renderWebWorker.init(port.port2);

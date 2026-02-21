@@ -36,6 +36,7 @@ quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "auth",
   "cache",
   "environment",
+  "intrinio",
   "multiplayer",
   "net",
   "object_store",

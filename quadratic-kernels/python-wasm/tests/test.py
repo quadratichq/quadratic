@@ -87,6 +87,7 @@ async def mock_fetch_module(source: str):
 sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
 sys.modules["getCellsA1"] = mock_getCellsA1
+sys.modules["getStockPrices"] = MagicMock()
 sys.modules["micropip"] = AsyncMock()
 sys.modules["plotly"] = MagicMock()
 sys.modules["plotly.io"] = MagicMock()

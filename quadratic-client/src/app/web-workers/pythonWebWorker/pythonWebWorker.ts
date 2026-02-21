@@ -4,10 +4,13 @@ import type {
   ClientPythonMessage,
   PythonClientCaptureChartImage,
   PythonClientGetJwt,
+  PythonClientGetTeamUuid,
   PythonClientMessage,
+  PythonClientStockPrices,
 } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient } from '@/auth/auth';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 const CHART_IMAGE_TIMEOUT_MS = 10000;
@@ -43,6 +46,55 @@ class PythonWebWorker {
           const data = message.data as PythonClientGetJwt;
           this.send({ type: 'clientPythonGetJwt', id: data.id, jwt });
         });
+        break;
+
+      case 'pythonClientGetTeamUuid':
+        {
+          const data = message.data as PythonClientGetTeamUuid;
+          const teamUuid = quadraticCore.getTeamUuid();
+          this.send({ type: 'clientPythonGetTeamUuid', id: data.id, teamUuid });
+        }
+        break;
+
+      case 'pythonClientStockPrices':
+        {
+          const data = message.data as PythonClientStockPrices;
+          const teamUuid = quadraticCore.getTeamUuid();
+
+          if (!teamUuid) {
+            this.send({
+              type: 'clientPythonStockPrices',
+              id: data.id,
+              data: null,
+              error: 'Team UUID not available',
+            });
+            break;
+          }
+
+          connectionClient.financial
+            .stockPrices(teamUuid, {
+              identifier: data.identifier,
+              start_date: data.startDate,
+              end_date: data.endDate,
+              frequency: data.frequency,
+            })
+            .then((result) => {
+              this.send({
+                type: 'clientPythonStockPrices',
+                id: data.id,
+                data: result.data,
+                error: result.error,
+              });
+            })
+            .catch((error) => {
+              this.send({
+                type: 'clientPythonStockPrices',
+                id: data.id,
+                data: null,
+                error: error.message || 'Unknown error fetching stock prices',
+              });
+            });
+        }
         break;
 
       case 'pythonClientCaptureChartImage':

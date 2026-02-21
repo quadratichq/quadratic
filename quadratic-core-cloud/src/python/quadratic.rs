@@ -1,6 +1,6 @@
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyTuple};
 use quadratic_core::controller::execution::run_code::get_cells::{
     JsCellsA1Error, JsCellsA1Response,
 };
@@ -10,6 +10,40 @@ use std::ffi::CString;
 use crate::error::Result;
 
 static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
+
+/// Callback type for fetching stock prices. The callback is created in core.rs
+/// where the auth token is available, keeping the token out of the Python
+/// execution context.
+pub(crate) type FetchStockPricesFn = Box<
+    dyn FnMut(
+            String,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ) -> std::result::Result<serde_json::Value, String>
+        + Send
+        + 'static,
+>;
+
+/// Extract an optional string argument from positional args or kwargs
+fn extract_optional_arg(
+    args: &Bound<'_, PyTuple>,
+    kwargs: Option<&Bound<'_, PyDict>>,
+    index: usize,
+    name: &str,
+) -> Option<String> {
+    // Try positional arg first
+    if args.len() > index
+        && let Ok(item) = args.get_item(index)
+        && let Ok(value) = item.extract::<String>()
+    {
+        return Some(value);
+    }
+    // Fall back to kwargs
+    kwargs
+        .and_then(|kw| kw.get_item(name).ok().flatten())
+        .and_then(|v| v.extract().ok())
+}
 
 /// Rust function to handle q.pos() calls from Python  
 #[pyfunction]
@@ -112,6 +146,46 @@ pub(crate) fn create_get_cells_function(
     Ok(function.into())
 }
 
+/// Creates a Python function that fetches stock prices via an opaque callback.
+/// The callback is created in core.rs and handles authentication internally,
+/// so the auth token never enters the Python execution context.
+pub(crate) fn create_stock_prices_function(
+    py: Python,
+    fetch_stock_prices: FetchStockPricesFn,
+) -> PyResult<PyObject> {
+    let fetch_stock_prices = RefCell::new(fetch_stock_prices);
+
+    let function = pyo3::types::PyCFunction::new_closure(
+        py,
+        Some(c"rust_stock_prices"),
+        Some(c"Fetch stock prices from connection service"),
+        move |args, kwargs| -> PyResult<PyObject> {
+            // Extract identifier (required)
+            let identifier: String = args.get_item(0)?.extract()?;
+
+            // Extract optional arguments
+            let start_date = extract_optional_arg(args, kwargs, 1, "start_date");
+            let end_date = extract_optional_arg(args, kwargs, 2, "end_date");
+            let frequency = extract_optional_arg(args, kwargs, 3, "frequency");
+
+            let result =
+                fetch_stock_prices.borrow_mut()(identifier, start_date, end_date, frequency)
+                    .map_err(PyErr::new::<PyException, _>)?;
+
+            // Convert serde_json::Value to Python object
+            Python::with_gil(|py| {
+                let json_str = serde_json::to_string(&result)
+                    .map_err(|e| PyErr::new::<PyException, _>(format!("JSON error: {}", e)))?;
+                let json_module = py.import("json")?;
+                let py_obj = json_module.call_method1("loads", (json_str,))?;
+                Ok(py_obj.unbind())
+            })
+        },
+    )?;
+
+    Ok(function.into())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -200,6 +274,16 @@ mod tests {
 
             let result = convert_cells_response(py, error_response, false);
             assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn test_create_stock_prices_function() {
+        Python::with_gil(|py| {
+            let mock_fetch: FetchStockPricesFn =
+                Box::new(|_id, _start, _end, _freq| Ok(serde_json::json!({"test": true})));
+            let func = create_stock_prices_function(py, mock_fetch);
+            assert!(func.is_ok(), "Should create stock prices function");
         });
     }
 }

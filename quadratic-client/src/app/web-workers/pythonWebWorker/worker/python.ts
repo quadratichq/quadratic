@@ -43,6 +43,15 @@ class Python {
     return pythonCore.sendGetCellsA1(this.transactionId, a1);
   };
 
+  private getStockPrices = async (
+    identifier: string,
+    startDate: string | null = null,
+    endDate: string | null = null,
+    frequency: string | null = null
+  ): Promise<{ data: unknown; error: string | null }> => {
+    return pythonClient.getStockPrices(identifier, startDate, endDate, frequency);
+  };
+
   private init = async (): Promise<void> => {
     // Store reference to Python instance for use in XHR proxy
     const pythonInstance = this;
@@ -122,6 +131,7 @@ class Python {
     });
 
     this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
+    this.pyodide.registerJsModule('getStockPrices', this.getStockPrices);
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
