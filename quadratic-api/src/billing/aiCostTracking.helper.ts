@@ -1,14 +1,11 @@
 import { AIChatSource } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import type { AIModelKey, AISource, AIUsage } from 'quadratic-shared/typesAndSchemasAI';
 import { calculateUsage } from '../ai/helpers/usage.helper';
 import dbClient from '../dbClient';
 import { reportUsageToStripe } from '../stripe/stripe';
 import logger from '../utils/logger';
-import {
-  getBillingPeriodAiCostBreakdownForTeam,
-  getBillingPeriodDates,
-  getTeamMonthlyAiAllowance,
-} from './planHelpers';
+import { getBillingPeriodDates, getMonthlyAiAllowancePerUser } from './planHelpers';
 
 const aiSourceToAIChatSource: Record<AISource, AIChatSource> = {
   AIAssistant: AIChatSource.AIAssistant,
@@ -87,6 +84,10 @@ export async function trackAICost({
       modelKey,
       source,
     });
+    Sentry.captureException(error, {
+      tags: { component: 'ai-cost-tracking' },
+      extra: { userId, teamId, fileId, modelKey, source },
+    });
   }
 }
 
@@ -114,10 +115,28 @@ export async function reportAndTrackOverage(teamId: number): Promise<void> {
       if (!lockedTeam) return 0;
 
       const { start, end } = getBillingPeriodDates(lockedTeam);
-      const [teamAllowance, breakdown] = await Promise.all([
-        getTeamMonthlyAiAllowance(lockedTeam),
-        getBillingPeriodAiCostBreakdownForTeam(teamId, start, end),
+
+      const allowancePerUser = getMonthlyAiAllowancePerUser(lockedTeam);
+      const [userCount, costResults] = await Promise.all([
+        allowancePerUser > 0
+          ? tx.userTeamRole.count({ where: { teamId: lockedTeam.id } })
+          : Promise.resolve(0),
+        tx.aICost.groupBy({
+          by: ['overageEnabled'],
+          where: { teamId, createdDate: { gte: start, lte: end } },
+          _sum: { cost: true },
+        }),
       ]);
+
+      const teamAllowance = allowancePerUser * userCount;
+      let totalCost = 0;
+      let overageEnabledCost = 0;
+      for (const row of costResults) {
+        const cost = row._sum.cost ?? 0;
+        totalCost += cost;
+        if (row.overageEnabled) overageEnabledCost += cost;
+      }
+      const breakdown = { totalCost, overageEnabledCost };
 
       const totalOverage = Math.max(0, breakdown.totalCost - teamAllowance);
       const billedOverage = Math.min(totalOverage, breakdown.overageEnabledCost);

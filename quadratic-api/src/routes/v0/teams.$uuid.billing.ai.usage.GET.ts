@@ -19,49 +19,29 @@ import dbClient from '../../dbClient';
 import { BILLING_AI_USAGE_LIMIT } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-      }),
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+});
+
+export default [validateAccessToken, userMiddleware, handler];
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid/billing/ai/usage.GET.response']>) {
   const {
     params: { uuid },
-    user: { id: userId },
-  } = req;
+  } = parseRequest(req, schema);
+  const { id: userId } = req.user;
 
-  // Lookup the team
-  const team = await dbClient.team.findUnique({
-    where: {
-      uuid,
-    },
-  });
-  if (team === null) {
+  const team = await dbClient.team.findUnique({ where: { uuid } });
+  if (!team) {
     throw new ApiError(404, 'Team not found');
   }
-
-  // Get the user's role in this team
-  const userTeamRole = await dbClient.userTeamRole.findUnique({
-    where: {
-      userId_teamId: {
-        userId,
-        teamId: team.id,
-      },
-    },
-  });
 
   const isOnPaidPlan = await getIsOnPaidPlan(team);
   const isFree = isFreePlan(team);
@@ -73,14 +53,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     }
 
     const freeUsage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-    if (!userTeamRole || !isOnPaidPlan) {
+    if (!isOnPaidPlan) {
       const exceededBillingLimit = BillingAIUsageLimitExceeded(freeUsage);
       const currentPeriodUsage = BillingAIUsageForCurrentMonth(freeUsage);
 
       // Get team-level message usage and limit (free plan uses calendar month)
       const now = new Date();
-      const calStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const calEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      const calStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const calEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
       const teamCurrentMonthMessages = await getBillingPeriodAiMessagesForTeam(team.id, calStart, calEnd);
       const userCount = await dbClient.userTeamRole.count({
         where: {

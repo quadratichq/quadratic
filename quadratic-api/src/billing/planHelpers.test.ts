@@ -1445,10 +1445,10 @@ describe('getBillingPeriodDates', () => {
 
     const { start, end } = getBillingPeriodDates(team);
     const now = new Date();
-    expect(start.getFullYear()).toBe(now.getFullYear());
-    expect(start.getMonth()).toBe(now.getMonth());
-    expect(start.getDate()).toBe(1);
-    expect(end.getMonth()).toBe(now.getMonth());
+    expect(start.getUTCFullYear()).toBe(now.getUTCFullYear());
+    expect(start.getUTCMonth()).toBe(now.getUTCMonth());
+    expect(start.getUTCDate()).toBe(1);
+    expect(end.getUTCMonth()).toBe(now.getUTCMonth());
   });
 });
 

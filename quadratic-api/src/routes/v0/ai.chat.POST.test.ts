@@ -5,7 +5,7 @@ import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
-const auth0Id = 'user';
+const auth0Id = 'ai-chat-post-test-user';
 
 const payload: AIRequestBody = {
   chatId: '00000000-0000-0000-0000-000000000000',
@@ -75,7 +75,7 @@ describe('POST /v0/ai/chat', () => {
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000001' })
-        .set('Authorization', `Bearer InvalidToken user`)
+        .set('Authorization', `Bearer InvalidToken ${auth0Id}`)
         .expect(401);
     });
 
@@ -84,7 +84,7 @@ describe('POST /v0/ai/chat', () => {
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000002' })
-        .set('Authorization', `Bearer ValidToken user`)
+        .set('Authorization', `Bearer ValidToken ${auth0Id}`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -123,7 +123,7 @@ describe('POST /v0/ai/chat', () => {
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000003' })
-        .set('Authorization', `Bearer ValidToken user`)
+        .set('Authorization', `Bearer ValidToken ${auth0Id}`)
         .expect(200);
 
       // wait for cost tracking to complete

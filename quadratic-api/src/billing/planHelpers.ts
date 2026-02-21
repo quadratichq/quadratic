@@ -102,8 +102,8 @@ export const getBillingPeriodDates = (team: Team | DecryptedTeam): { start: Date
   }
   const now = new Date();
   return {
-    start: new Date(now.getFullYear(), now.getMonth(), 1),
-    end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+    start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+    end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999)),
   };
 };
 

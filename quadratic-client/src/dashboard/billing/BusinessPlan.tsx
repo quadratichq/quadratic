@@ -17,7 +17,7 @@ export const BusinessPlan = ({
   businessAiAllowance?: number;
 }) => {
   const billingConfig = useAtomValue(billingConfigAtom);
-  const displayAllowance = businessAiAllowance ?? billingConfig.businessAiAllowance;
+  const displayAllowance = businessAiAllowance ?? (billingConfig.isLoaded ? billingConfig.businessAiAllowance : null);
 
   useEffect(() => {
     fetchBillingConfig();
@@ -36,7 +36,9 @@ export const BusinessPlan = ({
         </div>
         <div className="flex items-center justify-between">
           <span>AI usage</span>
-          <span className="text-sm font-medium">${displayAllowance}/user/month allowance</span>
+          <span className="text-sm font-medium">
+            {displayAllowance != null ? `$${displayAllowance}/user/month allowance` : '\u2014'}
+          </span>
         </div>
         <div className="flex items-center justify-between">
           <span>Connections</span>

@@ -41,6 +41,18 @@ async function handler(
     params: { uuid },
     query: { 'redirect-success': redirectSuccess, 'redirect-cancel': redirectCancel, plan },
   } = parseRequest(req, schema);
+
+  // Validate redirect URLs match the request origin to prevent open redirects
+  const requestOrigin = req.headers.origin || req.headers.referer;
+  if (requestOrigin) {
+    const allowedOrigin = new URL(requestOrigin).origin;
+    const successOrigin = new URL(redirectSuccess).origin;
+    const cancelOrigin = new URL(redirectCancel).origin;
+    if (successOrigin !== allowedOrigin || cancelOrigin !== allowedOrigin) {
+      return res.status(400).json({ error: { message: 'Redirect URLs must match the application origin.' } });
+    }
+  }
+
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
   // Can the user even edit this team?
@@ -107,16 +119,22 @@ async function handler(
     }
   }
 
-  // create a stripe customer if one doesn't exist
+  // Create a Stripe customer if one doesn't exist, using a row-level lock
+  // to prevent concurrent requests from creating duplicate customers.
   if (!team?.stripeCustomerId) {
-    // create Stripe customer
-    const stripeCustomer = await createCustomer(team.name, email);
-    await dbClient.team.update({
-      where: { uuid },
-      data: { stripeCustomerId: stripeCustomer.id },
+    team.stripeCustomerId = await dbClient.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Team" WHERE uuid = ${uuid}::uuid FOR UPDATE`;
+      const lockedTeam = await tx.team.findUnique({ where: { uuid } });
+      if (lockedTeam?.stripeCustomerId) {
+        return lockedTeam.stripeCustomerId;
+      }
+      const stripeCustomer = await createCustomer(team.name, email);
+      await tx.team.update({
+        where: { uuid },
+        data: { stripeCustomerId: stripeCustomer.id },
+      });
+      return stripeCustomer.id;
     });
-
-    team.stripeCustomerId = stripeCustomer.id;
   }
 
   // Cancel any incomplete subscriptions from previous abandoned checkout attempts.

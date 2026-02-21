@@ -35,8 +35,7 @@ async function handler(
   } = parseRequest(req, schema);
   const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
-  // Team editors and owners can toggle overage payments
-  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
     return res.status(403).json({ error: { message: 'You do not have permission to toggle overage payments.' } });
   }
 
@@ -82,11 +81,6 @@ async function handler(
     data: {
       allowOveragePayments,
       stripeOverageItemId,
-      // Reset billed tracking when disabling overage
-      ...(!allowOveragePayments && {
-        stripeOverageBilledCents: 0,
-        stripeOverageBilledPeriodStart: null,
-      }),
     },
   });
 

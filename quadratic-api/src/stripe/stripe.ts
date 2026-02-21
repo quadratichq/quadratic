@@ -448,7 +448,7 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
     return;
   }
 
-  updateTeamStatus(
+  await updateTeamStatus(
     stripeSubscriptionId,
     status,
     customer,

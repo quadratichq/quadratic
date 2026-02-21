@@ -496,5 +496,4 @@ model UserBudgetLimit {
 
     @@unique([userId, teamId])
     @@index([teamId])
-    @@index([userId, teamId])
 }

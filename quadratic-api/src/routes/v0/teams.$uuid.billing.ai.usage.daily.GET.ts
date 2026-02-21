@@ -57,8 +57,8 @@ async function handler(
 
   if (isFree) {
     const now = new Date();
-    const calStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const calEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const calStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const calEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
     const dailyMessages = await getDailyAiMessagesByUser(userIds, team.id);
 
