@@ -304,19 +304,67 @@ const RESULT_COMPRESSED_MESSAGE =
 const ARGS_COMPRESSED_MESSAGE = '[content compressed to save context space]';
 
 /**
- * Truncate a tool call's arguments JSON, keeping only position/name metadata.
+ * Per-tool metadata keys to preserve when compressing arguments.
+ * Any key not listed here (the bulk data) is stripped.
+ */
+const TOOL_KEEP_KEYS: Record<string, string[]> = {
+  set_code_cell_value: ['sheet_name', 'code_cell_name', 'code_cell_language', 'code_cell_position'],
+  set_sql_code_cell_value: ['sheet_name', 'code_cell_name', 'connection_kind', 'code_cell_position', 'connection_id'],
+  set_cell_values: ['sheet_name', 'top_left_position'],
+  add_data_table: ['sheet_name', 'top_left_position', 'table_name'],
+};
+
+const DEFAULT_KEEP_KEYS = ['sheet_name', 'top_left_position', 'selection', 'table_name', 'language', 'position'];
+
+/**
+ * Truncate a tool call's arguments JSON, keeping card-essential metadata
+ * and computing summary fields for stripped bulk data.
  * Returns a shortened JSON string.
  */
-const compressToolCallArgs = (argsJson: string): string => {
+const compressToolCallArgs = (argsJson: string, toolName: string): string => {
   try {
     const args = JSON.parse(argsJson);
     const compressed: Record<string, unknown> = {};
-    const keepKeys = ['sheet_name', 'top_left_position', 'selection', 'table_name', 'language', 'position'];
+
+    // set_formula_cell_value needs special handling for its nested formulas array
+    if (toolName === 'set_formula_cell_value' && Array.isArray(args.formulas)) {
+      compressed.formulas = args.formulas.map((f: Record<string, unknown>) => ({
+        sheet_name: f.sheet_name,
+        code_cell_position: f.code_cell_position,
+      }));
+      compressed._compressed = ARGS_COMPRESSED_MESSAGE;
+      return JSON.stringify(compressed);
+    }
+
+    const keepKeys = TOOL_KEEP_KEYS[toolName] ?? DEFAULT_KEEP_KEYS;
     for (const key of keepKeys) {
       if (key in args) {
         compressed[key] = args[key];
       }
     }
+
+    // Compute summary fields for stripped bulk data
+    if (typeof args.code_string === 'string') {
+      compressed.compressed_line_count = args.code_string.split('\n').length;
+    }
+    if (typeof args.sql_code_string === 'string') {
+      compressed.compressed_line_count = args.sql_code_string.split('\n').length;
+    }
+    if (Array.isArray(args.cell_values)) {
+      compressed.compressed_rows = args.cell_values.length;
+      compressed.compressed_cols = args.cell_values.reduce(
+        (max: number, row: unknown[]) => Math.max(max, Array.isArray(row) ? row.length : 0),
+        0
+      );
+    }
+    if (Array.isArray(args.table_data)) {
+      compressed.compressed_rows = args.table_data.length;
+      compressed.compressed_cols = args.table_data.reduce(
+        (max: number, row: unknown[]) => Math.max(max, Array.isArray(row) ? row.length : 0),
+        0
+      );
+    }
+
     compressed._compressed = ARGS_COMPRESSED_MESSAGE;
     return JSON.stringify(compressed);
   } catch {
@@ -334,9 +382,19 @@ const compressToolCallArgs = (argsJson: string): string => {
  * Additionally removes plotly images from all old tool results.
  */
 export const compressOldToolResults = (messages: ChatMessage[]): ChatMessage[] => {
+  // Find the boundary: only compress tool calls from previous user turns
+  let lastUserPromptIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user' && messages[i].contextType === 'userPrompt') {
+      lastUserPromptIndex = i;
+      break;
+    }
+  }
+
   // Build a map: toolCallId -> { toolName, messageIndex (of assistant msg) }
   const toolCallInfo = new Map<string, { toolName: string; assistantMsgIndex: number }>();
   messages.forEach((message, i) => {
+    if (i >= lastUserPromptIndex) return;
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       for (const tc of message.toolCalls) {
         toolCallInfo.set(tc.id, { toolName: tc.name, assistantMsgIndex: i });
@@ -380,7 +438,7 @@ export const compressOldToolResults = (messages: ChatMessage[]): ChatMessage[] =
           ...message,
           toolCalls: message.toolCalls.map((tc) => {
             if (compressArgsIds.has(tc.id)) {
-              return { ...tc, arguments: compressToolCallArgs(tc.arguments) };
+              return { ...tc, arguments: compressToolCallArgs(tc.arguments, tc.name) };
             }
             return tc;
           }),

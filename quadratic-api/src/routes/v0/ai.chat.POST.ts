@@ -22,6 +22,8 @@ import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { raindrop } from '../../analytics/raindrop';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { toAIChatSource, trackAICost } from '../../billing/aiCostTracking.helper';
+import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -87,14 +89,32 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   let exceededBillingLimit = false;
 
   const messageType = getLastUserMessageType(args.messages);
+  const isFree = isFreePlan(ownerTeam);
 
-  // Either team is not on a paid plan or user is not a member of the team
-  // and the message is a user prompt, not a tool result
-  if ((!isOnPaidPlan || !userTeamRole) && messageType === 'userPrompt') {
-    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+  if (messageType === 'userPrompt') {
+    if (isFree) {
+      // Free plan: use existing message limit check
+      if (!isOnPaidPlan || !userTeamRole) {
+        const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
+        exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+      }
+    } else {
+      // Pro/Business plan: check allowance and budget limits
+      const canMakeRequest = await canMakeAiRequest(ownerTeam, userId);
+      if (!canMakeRequest.allowed) {
+        exceededBillingLimit = true;
+      }
+    }
 
     if (exceededBillingLimit) {
+      // Get plan type and overage settings for the response
+      const teamWithBilling = ownerTeam as typeof ownerTeam & {
+        planType?: string | null;
+        allowOveragePayments?: boolean;
+      };
+      const planType = (teamWithBilling.planType as 'FREE' | 'PRO' | 'BUSINESS') ?? (isFree ? 'FREE' : 'PRO');
+      const allowOveragePayments = teamWithBilling.allowOveragePayments ?? false;
+
       const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
         role: 'assistant',
         content: [],
@@ -103,6 +123,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         modelKey: clientModelKey,
         isOnPaidPlan,
         exceededBillingLimit,
+        planType,
+        allowOveragePayments,
       };
 
       const { stream } = getModelOptions(clientModelKey, args);
@@ -136,7 +158,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     isOnPaidPlan,
     exceededBillingLimit,
     restrictedCountry,
-    abortController.signal
+    abortController.signal,
+    userId,
+    ownerTeam.id,
+    isFree,
+    ownerTeam.allowOveragePayments
   );
   const userMessage = getLastUserMessage(args.messages);
   if (!userMessage) {
@@ -180,6 +206,18 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   if (parsedResponse) {
     modelKey = parsedResponse.responseMessage.modelKey as AIModelKey;
     args.messages.push(parsedResponse.responseMessage);
+
+    // Track cost for AI request
+    await trackAICost({
+      userId,
+      teamId: ownerTeam.id,
+      fileId,
+      usage: parsedResponse.usage,
+      modelKey,
+      source: toAIChatSource(source),
+      isFreePlan: isFree,
+      overageEnabled: ownerTeam.allowOveragePayments,
+    });
   }
 
   const model = getModelFromModelKey(modelKey);

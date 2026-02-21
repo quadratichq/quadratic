@@ -1,5 +1,7 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { teamBillingAtom, updateTeamBilling } from '@/shared/atom/teamBillingAtom';
+import { getDefaultStore } from 'jotai';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -7,8 +9,6 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIRequestBody, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { aiStore, contextUsageAtom } from '../atoms/aiAnalystAtoms';
 import type { AIAPIResponse, ExceededBillingLimitCallback, StreamingMessageCallback } from './types';
-
-const IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY = 'isOnPaidPlan';
 
 /**
  * Returns a deep clone of the message so callback consumers cannot mutate internal state.
@@ -23,14 +23,30 @@ function cloneMessageForCallback<T extends ChatMessage>(message: T): T {
  */
 export class AIAPIClient {
   /**
-   * Read paid plan status from localStorage (shared with useIsOnPaidPlan hook)
+   * Read paid plan status from the centralized billing atom
    */
   private getIsOnPaidPlan(): boolean {
-    try {
-      const stored = localStorage.getItem(IS_ON_PAID_PLAN_LOCAL_STORAGE_KEY);
-      return stored ? JSON.parse(stored) === true : false;
-    } catch {
-      return false;
+    return getDefaultStore().get(teamBillingAtom).isOnPaidPlan;
+  }
+
+  /**
+   * Update billing info from AI response using the centralized billing atom
+   */
+  private updateBillingInfoFromResponse(response: ApiTypes['/v0/ai/chat.POST.response']): void {
+    const updates: Parameters<typeof updateTeamBilling>[0] = {};
+
+    if (response.isOnPaidPlan !== undefined) {
+      updates.isOnPaidPlan = response.isOnPaidPlan;
+    }
+    if (response.planType) {
+      updates.planType = response.planType;
+    }
+    if (response.allowOveragePayments !== undefined) {
+      updates.allowOveragePayments = response.allowOveragePayments;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      updateTeamBilling(updates);
     }
   }
 
@@ -110,6 +126,9 @@ export class AIAPIClient {
 
       onMessage?.(cloneMessageForCallback(responseMessage));
       onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
+
+      // Update billing info from response (planType, allowOveragePayments)
+      this.updateBillingInfoFromResponse(responseMessage);
 
       // Update context usage atom with the latest usage data
       if (responseMessage.usage) {

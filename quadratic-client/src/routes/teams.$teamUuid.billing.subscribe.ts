@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { redirect, type LoaderFunctionArgs } from 'react-router';
 
 /**
@@ -15,14 +16,29 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
 
   try {
+    // Extract plan query parameter from URL
+    const url = new URL(request.url);
+    const plan = url.searchParams.get('plan') as 'pro' | 'business' | null;
+    // Default to 'pro' if no plan is specified
+    const planParam: 'pro' | 'business' = plan === 'business' ? 'business' : 'pro';
+
+    // Get returnTo parameter - this is where users go after checkout
+    // Validate that it starts with '/' to prevent open redirect attacks
+    const returnTo = url.searchParams.get('returnTo');
+    const safeReturnTo = returnTo && returnTo.startsWith('/') ? returnTo : ROUTES.TEAM_SETTINGS(teamUuid);
+
+    // Construct proper redirect URLs - use origin + path to ensure proper URL format
+    const redirectUrlSuccess = `${url.origin}${safeReturnTo}`;
+    const redirectUrlCancel = `${url.origin}${safeReturnTo}`;
+
     // Could throw because user doesn't have permission (unlikely but if the user knows the URL)
-    const url = await apiClient.teams.billing
-      .getCheckoutSessionUrl(teamUuid, window.location.href, window.location.href)
+    const checkoutUrl = await apiClient.teams.billing
+      .getCheckoutSessionUrl(teamUuid, redirectUrlSuccess, redirectUrlCancel, planParam)
       .then((data) => data.url);
     return new Response(null, {
       status: 302,
       headers: {
-        Location: url,
+        Location: checkoutUrl,
       },
     });
   } catch (e) {

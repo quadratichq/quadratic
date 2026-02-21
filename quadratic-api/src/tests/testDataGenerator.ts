@@ -261,6 +261,21 @@ export async function upgradeTeamToPro(teamId?: number) {
   });
 }
 
+export async function upgradeTeamToBusiness(teamId: number) {
+  const now = new Date();
+  await dbClient.team.update({
+    where: { id: teamId },
+    data: {
+      planType: 'BUSINESS',
+      stripeSubscriptionId: `sub_test_${teamId}`,
+      stripeSubscriptionStatus: 'ACTIVE',
+      stripeCurrentPeriodStart: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+      stripeCurrentPeriodEnd: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999)),
+      stripeSubscriptionLastUpdated: now,
+    },
+  });
+}
+
 export const scheduledTask = async (userId: number, fileId: number) =>
   await createScheduledTask({
     userId,
@@ -280,6 +295,8 @@ export async function clearDb() {
   await dbClient.$transaction([
     dbClient.analyticsAIChatMessage.deleteMany(),
     dbClient.analyticsAIChat.deleteMany(),
+    dbClient.aICost.deleteMany(),
+    dbClient.userBudgetLimit.deleteMany(),
     dbClient.scheduledTaskLog.deleteMany(),
     dbClient.scheduledTask.deleteMany(),
     dbClient.fileCheckpoint.deleteMany(),

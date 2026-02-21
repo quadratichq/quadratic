@@ -6,7 +6,6 @@ import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { QuadraticAppDebugSettings } from '@/app/ui/QuadraticAppDebugSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -15,8 +14,11 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/a
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { clearFileLocation, initFileLocation } from '@/shared/atom/fileLocationAtom';
+import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { OverageDialog } from '@/shared/components/OverageDialog';
 import { UpgradeDialog } from '@/shared/components/UpgradeDialog';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -27,8 +29,9 @@ import { handleSentryReplays } from '@/shared/utils/sentry';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
+import { useSetAtom } from 'jotai';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import {
   Link,
@@ -104,7 +107,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const isVersionHistoryPreview = sequenceNumParam !== null;
 
   // Check if we're checking for subscription updates (for verification)
-  const updateBilling = searchParams.get('subscription') === 'created';
+  // Handle both new subscriptions ('created') and plan upgrades ('upgraded')
+  const subscriptionStatus = searchParams.get('subscription');
+  const updateBilling = subscriptionStatus === 'created' || subscriptionStatus === 'upgraded';
 
   const [data] = await Promise.all([
     loadFileFromApi(uuid, isVersionHistoryPreview, updateBilling),
@@ -187,6 +192,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   registerEventAnalyticsData({ isOnPaidPlan: data.team.isOnPaidPlan });
 
+  // Initialize billing atom once in the loader so it's available before the component mounts.
+  // After this, the atom is the sole source of truth and is updated by AI responses and upgrade handlers.
+  updateTeamBilling({
+    isOnPaidPlan: data.team.isOnPaidPlan,
+    planType: data.team.planType ?? 'FREE',
+  });
+
   handleSentryReplays(data.team.settings.analyticsAi);
 
   // Fetch clientDataKv (team data is now loaded via useTeamData hook when needed)
@@ -209,10 +221,11 @@ export const Component = memo(() => {
   const loaderData = useLoaderData() as FileData;
   const {
     file: { uuid: fileUuid, timezone: fileTimezone, ownerUserId },
-    team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
+    team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions, teamPermissions },
   } = loaderData;
   const canManageBilling = teamPermissions?.includes('TEAM_MANAGE') ?? false;
+  const canManageAIOverage = teamPermissions?.includes('TEAM_EDIT') ?? false;
   const initializeState = useCallback(
     ({ set }: MutableSnapshot) => {
       set(editorInteractionStateAtom, (prevState) => ({
@@ -222,18 +235,17 @@ export const Component = memo(() => {
         user: loggedInUser,
         fileUuid,
         teamUuid,
+        canManageBilling,
+        canManageAIOverage,
       }));
     },
-    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid]
+    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid, canManageBilling, canManageAIOverage]
   );
 
-  const { setIsOnPaidPlan } = useIsOnPaidPlan();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  useEffect(() => {
-    setIsOnPaidPlan(isOnPaidPlan);
-  }, [isOnPaidPlan, setIsOnPaidPlan]);
+  const hasProcessedSubscriptionSuccess = useRef(false);
+  const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
 
   // Set timezone if not already set and user has editor rights
   useEffect(() => {
@@ -259,16 +271,26 @@ export const Component = memo(() => {
 
     setTimezoneIfNeeded();
   }, [fileTimezone, filePermissions, fileUuid]);
-  // Handle subscription success: show toast and clean up URL params
+  // Handle subscription success: show toast, close dialog, and clean up URL params.
+  // Billing state is already set correctly by the loader from the server response.
   useEffect(() => {
-    if (searchParams.get('subscription') === 'created') {
-      trackEvent('[Billing].success', { team_uuid: teamUuid });
-      addGlobalSnackbar('Thank you for subscribing! 🎉', { severity: 'success' });
+    const subscriptionStatus = searchParams.get('subscription');
+    if (
+      (subscriptionStatus === 'created' || subscriptionStatus === 'upgraded') &&
+      !hasProcessedSubscriptionSuccess.current
+    ) {
+      hasProcessedSubscriptionSuccess.current = true;
+      const isUpgrade = subscriptionStatus === 'upgraded';
+      trackEvent(isUpgrade ? '[Billing].upgradeSuccess' : '[Billing].success', { team_uuid: teamUuid });
+      addGlobalSnackbar(isUpgrade ? 'Your plan has been upgraded to Business! 🎉' : 'Thank you for subscribing! 🎉', {
+        severity: 'success',
+      });
+      setShowUpgradeDialog({ open: false, eventSource: null });
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('subscription');
       setSearchParams(newSearchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, addGlobalSnackbar, teamUuid]);
+  }, [searchParams, setSearchParams, addGlobalSnackbar, teamUuid, setShowUpgradeDialog]);
 
   // Initialize file location atom for syncing personal/team file state across components
   useEffect(() => {
@@ -292,6 +314,7 @@ export const Component = memo(() => {
       <Outlet />
       <QuadraticAppDebugSettings />
       <UpgradeDialog teamUuid={teamUuid} canManageBilling={canManageBilling} />
+      <OverageDialog />
     </RecoilRoot>
   );
 });

@@ -1,4 +1,5 @@
-import { FreePlan, ProPlan } from '@/dashboard/billing/BillingPlans';
+import { FreePlan } from '@/dashboard/billing/FreePlan';
+import { ProPlan } from '@/dashboard/billing/ProPlan';
 import {
   ControlCheckboxInputOther,
   // ControlCheckboxStacked,

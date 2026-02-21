@@ -24,10 +24,15 @@ const KEY = 'activeTeamUuid';
 
 /**
  * Use this function in places where we want to reset the active team, like
- * when a user is removed from a team.
+ * when a user is removed from a team. Pass an empty string to clear the
+ * active team so the app will resolve a new one (e.g. from the server).
  */
 export function setActiveTeam(teamUuid: string) {
-  localStorage.setItem(KEY, teamUuid);
+  if (teamUuid) {
+    localStorage.setItem(KEY, teamUuid);
+  } else {
+    localStorage.removeItem(KEY);
+  }
 }
 
 /**

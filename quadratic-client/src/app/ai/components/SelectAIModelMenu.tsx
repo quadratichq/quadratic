@@ -5,8 +5,8 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import {
@@ -24,7 +24,7 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 type UIModels = 'max' | 'others';
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<UIModels, { label: string; description: string }> = {
@@ -43,7 +43,7 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const restrictedModel = userMakingRequest.restrictedModel;
-  const { isOnPaidPlan } = useIsOnPaidPlan();
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const { debugFlags } = useDebugFlags();
   const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
@@ -60,6 +60,20 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
   );
 
   const othersModels = useMemo(() => modelConfigs.filter(([_, config]) => config.mode === 'others'), [modelConfigs]);
+
+  const [hoveredConfig, setHoveredConfig] = useState<AIModelConfig | null>(null);
+
+  const maxModelConfig = useMemo(() => {
+    const entry = (Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][]).find(
+      ([_, config]) => config.mode === 'max'
+    );
+    return entry ? entry[1] : selectedModelConfig;
+  }, [selectedModelConfig]);
+
+  const displayedConfig = hoveredConfig ?? selectedModelConfig;
+
+  const handleMouseEnter = useCallback((config: AIModelConfig) => setHoveredConfig(config), []);
+  const handleMouseLeave = useCallback(() => setHoveredConfig(null), []);
 
   const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
   const userMessagesCount = useAtomValue(currentChatUserMessagesCountAtom);
@@ -125,7 +139,13 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
       title="AI model choices"
       description="Auto uses Claude Opus 4.6, or choose from other available models."
     >
-      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+      <Popover
+        open={isPopoverOpen}
+        onOpenChange={(open) => {
+          setIsPopoverOpen(open);
+          if (!open) setHoveredConfig(null);
+        }}
+      >
         {/* Needs a min-width or it shifts as the popover closes */}
         <PopoverTrigger
           className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-1 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
@@ -139,17 +159,18 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
           <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
         </PopoverTrigger>
 
-        <PopoverContent className="flex w-80 flex-col gap-2 p-0" id="ai-model-popover-content">
-          <form>
+        <PopoverContent
+          className="flex w-auto items-start gap-2 border-0 bg-transparent p-0 shadow-none"
+          id="ai-model-popover-content"
+        >
+          <form className="w-80 rounded-md border bg-popover shadow-md">
             <RadioGroup
               value={radioGroupValue}
               className="flex flex-col gap-0"
               onValueChange={(value) => {
-                // Check if the value is the recommended model type ('max')
                 if (value === 'max') {
                   setModel(value, defaultOthersModelKey);
                 } else {
-                  // Otherwise set as an 'others' with the specific key
                   setModel('others', value as AIModelKey);
                 }
 
@@ -162,6 +183,8 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
                   value="max"
                   label={MODEL_MODES_LABELS_DESCRIPTIONS.max.label}
                   description={MODEL_MODES_LABELS_DESCRIPTIONS.max.description}
+                  onMouseEnter={() => handleMouseEnter(maxModelConfig)}
+                  onMouseLeave={handleMouseLeave}
                 />
               </div>
 
@@ -184,18 +207,21 @@ export const SelectAIModelMenu = memo(({ loading }: SelectAIModelMenuProps) => {
               </RadioGroupHeader>
 
               <div className="flex flex-col rounded text-sm">
-                {othersModels.map(([modelKey, modelConfig], i) => (
+                {othersModels.map(([modelKey, modelConfig]) => (
                   <RadioGroupLineItem
                     key={modelKey}
                     value={modelKey}
                     label={modelConfig.displayName}
                     description={modelConfig.displayProvider ?? 'C'}
                     disabled={!isOnPaidPlan}
+                    onMouseEnter={() => handleMouseEnter(modelConfig)}
+                    onMouseLeave={handleMouseLeave}
                   />
                 ))}
               </div>
             </RadioGroup>
           </form>
+          <ModelCostPanel config={displayedConfig} />
         </PopoverContent>
       </Popover>
     </DidYouKnowPopover>
@@ -211,11 +237,15 @@ function RadioGroupLineItem({
   label,
   description,
   disabled,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   value: string;
   label: string;
   description: string;
   disabled?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }) {
   return (
     <Label
@@ -224,10 +254,59 @@ function RadioGroupLineItem({
       }
       key={value}
       htmlFor={`radio-${value}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <RadioGroupItem disabled={disabled} value={value} className="mr-2" id={`radio-${value}`} />
       <strong className="font-medium">{label}</strong>
       <span className="ml-auto font-normal text-muted-foreground">{description}</span>
     </Label>
+  );
+}
+
+function formatRate(rate: number): string {
+  if (rate === 0) return '$0.00';
+  const fixed2 = rate.toFixed(2);
+  if (parseFloat(fixed2) === rate) return `$${fixed2}`;
+  return `$${rate.toFixed(3)}`;
+}
+
+function ModelCostPanel({ config }: { config: AIModelConfig }) {
+  return (
+    <div className="flex w-56 flex-col gap-3 rounded-md border bg-popover p-4 shadow-md">
+      <div>
+        <div className="text-sm font-semibold">{config.displayName}</div>
+        <div className="text-xs text-muted-foreground">{config.displayProvider}</div>
+      </div>
+
+      {config.displayDescription && <div className="text-xs text-muted-foreground">{config.displayDescription}</div>}
+
+      <div className="flex flex-col gap-1">
+        <div className="text-xs font-medium">Pricing per 1M tokens</div>
+        <CostRow label="Input" rate={config.rate_per_million_input_tokens} />
+        <CostRow label="Output" rate={config.rate_per_million_output_tokens} />
+
+        {(config.rate_per_million_cache_write_tokens > 0 || config.rate_per_million_cache_read_tokens > 0) && (
+          <>
+            <div className="mt-1" />
+            {config.rate_per_million_cache_write_tokens > 0 && (
+              <CostRow label="Cache write" rate={config.rate_per_million_cache_write_tokens} />
+            )}
+            {config.rate_per_million_cache_read_tokens > 0 && (
+              <CostRow label="Cache read" rate={config.rate_per_million_cache_read_tokens} />
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CostRow({ label, rate }: { label: string; rate: number }) {
+  return (
+    <div className="flex justify-between text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{formatRate(rate)}</span>
+    </div>
   );
 }

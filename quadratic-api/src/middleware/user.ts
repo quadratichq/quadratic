@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { trackEvent } from '../analytics/mixpanel';
 import dbClient from '../dbClient';
@@ -88,22 +89,33 @@ const getOrCreateUser = async (auth: Auth) => {
     return { user: null, userCreated: false };
   }
 
-  // If they don't exist yet, create them
-  const newUser = await dbClient.user.create({
-    data: {
-      auth0Id: auth.sub,
-      email: auth.email,
-      clientDataKv: {
-        lastSeenChangelogVersion: VERSION || undefined,
+  // Create the user. If a concurrent request already created them (P2002
+  // unique constraint violation), fetch the existing record instead. This
+  // ensures runFirstTimeUserLogic only runs for the request that actually
+  // created the user.
+  try {
+    const user = await dbClient.user.create({
+      data: {
+        auth0Id: auth.sub,
+        email: auth.email,
+        clientDataKv: {
+          lastSeenChangelogVersion: VERSION || undefined,
+        },
       },
-    },
-  });
+    });
 
-  // Do extra work since it's their first time logging in
-  await runFirstTimeUserLogic(newUser);
+    await runFirstTimeUserLogic(user);
 
-  // Return the user
-  return { user: newUser, userCreated: true };
+    return { user, userCreated: true };
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      const user = await dbClient.user.findUnique({
+        where: { auth0Id: auth.sub },
+      });
+      return { user, userCreated: false };
+    }
+    throw e;
+  }
 };
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {

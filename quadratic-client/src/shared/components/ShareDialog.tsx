@@ -211,7 +211,7 @@ export function ShareTeamDialog() {
   );
 }
 
-function ManageTeamUser({
+const ManageTeamUser = React.memo(function ManageTeamUser({
   action,
   numberOfOwners,
   user,
@@ -234,6 +234,7 @@ function ManageTeamUser({
     ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
     : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
   const confirmFn = useConfirmDialog('deleteUserFromTeam', { name: user.name ?? user.email, isLoggedInUser });
+
   return (
     <ManageUser
       key={user.id}
@@ -272,7 +273,7 @@ function ManageTeamUser({
       roles={roles}
     />
   );
-}
+});
 
 function ShareFileDialogBody({
   uuid,

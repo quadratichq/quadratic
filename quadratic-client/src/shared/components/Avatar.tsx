@@ -33,8 +33,8 @@ export const Avatar = memo(
             ref={ref}
             src={src}
             onError={handleError}
-            style={{ ...stylePreset, ...style }}
-            className={className}
+            style={{ ...stylePreset, objectFit: 'cover', ...style }}
+            className={cn('max-w-none shrink-0', className)}
             {...rest}
           />
         )}

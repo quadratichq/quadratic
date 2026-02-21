@@ -1,7 +1,8 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { teamBillingAtom, updateTeamBilling } from '@/shared/atom/teamBillingAtom';
+import { useAtomValue } from 'jotai';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -19,7 +20,7 @@ type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
 };
 
 export function useAIRequestToAPI() {
-  const { isOnPaidPlan, setIsOnPaidPlan } = useIsOnPaidPlan();
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
 
   const handleAIRequestToAPI = useRecoilCallback(
     ({ snapshot }) =>
@@ -216,7 +217,14 @@ export function useAIRequestToAPI() {
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
           responseMessage = newResponseMessage;
 
-          setIsOnPaidPlan(responseMessage.isOnPaidPlan);
+          // Update centralized billing state from AI response
+          updateTeamBilling({
+            isOnPaidPlan: responseMessage.isOnPaidPlan,
+            ...(responseMessage.planType && { planType: responseMessage.planType }),
+            ...(responseMessage.allowOveragePayments !== undefined && {
+              allowOveragePayments: responseMessage.allowOveragePayments,
+            }),
+          });
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
           return {
@@ -224,8 +232,8 @@ export function useAIRequestToAPI() {
             toolCalls: responseMessage.toolCalls,
             error: responseMessage.error,
           };
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') {
             return { error: false, content: [createTextContent('Aborted by user')], toolCalls: [] };
           } else {
             console.error('Error in AI prompt handling:', err);
@@ -238,7 +246,7 @@ export function useAIRequestToAPI() {
           }
         }
       },
-    [isOnPaidPlan, setIsOnPaidPlan]
+    [isOnPaidPlan]
   );
 
   return { handleAIRequestToAPI };

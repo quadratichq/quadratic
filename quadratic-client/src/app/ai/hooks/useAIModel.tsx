@@ -1,6 +1,7 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { useAtomValue } from 'jotai';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -26,7 +27,7 @@ interface UseAIModelReturn {
 }
 
 export const useAIModel = (): UseAIModelReturn => {
-  const { isOnPaidPlan } = useIsOnPaidPlan();
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const { debug } = useDebugFlags();
 
   const [modelType, setModelType] = useLocalStorage<MODEL_TYPE>(AI_MODEL_TYPE_KEY, 'max');

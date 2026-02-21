@@ -1,11 +1,11 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { labFeatures } from '@/routes/labs';
 import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { showUpgradeDialogAtom } from '@/shared/atom/showUpgradeDialogAtom';
+import { teamBillingAtom, updateTeamBilling } from '@/shared/atom/teamBillingAtom';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -53,9 +53,9 @@ import { setActiveTeam } from '@/shared/utils/activeTeam';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -84,12 +84,15 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
     },
   } = useDashboardRouteLoaderData();
   const setShowUpgradeDialog = useSetAtom(showUpgradeDialogAtom);
-  const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
 
-  const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  // Initialize team billing atom from dashboard loader data
   useEffect(() => {
-    setIsOnPaidPlan(isOnPaidPlan);
-  }, [isOnPaidPlan, setIsOnPaidPlan]);
+    updateTeamBilling({
+      isOnPaidPlan: billing.status === 'ACTIVE',
+      planType: billing.planType ?? 'FREE',
+    });
+  }, [billing.status, billing.planType]);
 
   const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
@@ -184,7 +187,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <div className="flex gap-2">
               <RocketIcon className="h-5 w-5 text-primary" />
               <div className="flex flex-col">
-                <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                <span className="font-semibold">Upgrade Plan</span>
                 <span className="text-muted-foreground">Get more AI messages, unlimited files, and more.</span>
               </div>
             </div>
@@ -198,7 +201,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                 setShowUpgradeDialog({ open: true, eventSource: 'DashboardSidebar' });
               }}
             >
-              Upgrade to Pro
+              Upgrade
             </Button>
           </div>
         )}

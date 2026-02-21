@@ -23,6 +23,8 @@ model User {
     UserTeamRole        UserTeamRole[]
     UserFileRole        UserFileRole[]
     AnalyticsAIChat     AnalyticsAIChat[]
+    AICost              AICost[]
+    UserBudgetLimit     UserBudgetLimit[]
 
     // JSON value used for key/value data storage about the user
     // We keep track of the shape of this object in typescript on the server & client
@@ -86,6 +88,7 @@ model File {
     UserFileRole     UserFileRole[]
     FileInvite       FileInvite[]
     AnalyticsAIChat  AnalyticsAIChat[]
+    AICost           AICost[]
     ScheduledTask    ScheduledTask[]
 
     @@index([uuid])
@@ -123,6 +126,12 @@ enum SubscriptionStatus {
     PAUSED
 }
 
+enum PlanType {
+    FREE
+    PRO
+    BUSINESS
+}
+
 model Team {
     id           Int            @id @default(autoincrement())
     uuid         String         @unique @default(uuid())
@@ -133,6 +142,7 @@ model Team {
     TeamInvite   TeamInvite[]
     File         File[]
     Connection   Connection[]
+    AICost       AICost[]
 
     // Onboarding
     onboardingComplete  Boolean? @default(false) @map("onboarding_complete") // null = legacy, do not gate, false = new, gate, true = completed
@@ -142,9 +152,20 @@ model Team {
     stripeCustomerId                    String?             @unique @map("stripe_customer_id")
     stripeSubscriptionId                String?             @unique @map("stripe_subscription_id")
     stripeSubscriptionStatus            SubscriptionStatus? @map("stripe_subscription_status")
+    stripeCurrentPeriodStart            DateTime?           @map("stripe_current_period_start")
     stripeCurrentPeriodEnd              DateTime?           @map("stripe_current_period_end")
     stripeSubscriptionLastUpdated       DateTime?           @map("stripe_subscription_last_updated")
     stripeSubscriptionRetentionCouponId String?             @map("stripe_subscription_retention_coupon_id")
+    stripeOverageItemId                 String?             @map("stripe_overage_item_id")
+    stripeOverageBilledCents            Int                 @default(0) @map("stripe_overage_billed_cents")
+    stripeOverageBilledPeriodStart      DateTime?           @map("stripe_overage_billed_period_start")
+
+    // Plan information
+    planType                    PlanType?            @map("plan_type")
+    allowOveragePayments        Boolean              @default(false) @map("allow_overage_payments") // Business plan only
+    teamMonthlyBudgetLimit      Float?               @map("team_monthly_budget_limit") // Total team budget in dollars
+
+    UserBudgetLimit             UserBudgetLimit[]
 
     // Key/value storage used by Quadratic client on the Team.
     // It remembers things like closing the onboarding banner.
@@ -387,6 +408,32 @@ model AnalyticsAIChatMessage {
     @@index([model])
 }
 
+model AICost {
+    id              Int            @id @default(autoincrement())
+    userId          Int            @map("user_id")
+    user            User           @relation(fields: [userId], references: [id])
+    teamId          Int            @map("team_id")
+    team            Team           @relation(fields: [teamId], references: [id])
+    fileId          Int?           @map("file_id")
+    file            File?          @relation(fields: [fileId], references: [id])
+    cost            Float          // Cost in dollars
+    model           String         // Model key (e.g., "gpt-4", "claude-3-5-sonnet")
+    source          AIChatSource  // Source of the AI request
+    inputTokens     Int            @default(0) @map("input_tokens")
+    outputTokens    Int            @default(0) @map("output_tokens")
+    cacheReadTokens Int            @default(0) @map("cache_read_tokens")
+    cacheWriteTokens Int           @default(0) @map("cache_write_tokens")
+    overageEnabled  Boolean        @default(false) @map("overage_enabled")
+    createdDate     DateTime       @default(now()) @map("created_date")
+
+    @@index([userId])
+    @@index([teamId])
+    @@index([userId, teamId, createdDate])
+    @@index([createdDate])
+    @@index([teamId, createdDate])
+    @@index([teamId, createdDate, overageEnabled])
+}
+
 // Scheduled Tasks
 
 enum ScheduledTaskStatus {
@@ -436,4 +483,18 @@ model ScheduledTaskLog {
     @@index([status])
     @@index([runId, createdDate(sort: Desc)])
     @@index([createdDate(sort: Desc)])
+}
+
+model UserBudgetLimit {
+    id                    Int      @id @default(autoincrement())
+    userId                Int      @map("user_id")
+    user                  User     @relation(fields: [userId], references: [id])
+    teamId                Int      @map("team_id")
+    team                  Team     @relation(fields: [teamId], references: [id])
+    monthlyBudgetLimit    Float    @map("monthly_budget_limit") // In dollars
+    createdDate           DateTime @default(now()) @map("created_date")
+    updatedDate           DateTime @default(now()) @map("updated_date")
+
+    @@unique([userId, teamId])
+    @@index([teamId])
 }

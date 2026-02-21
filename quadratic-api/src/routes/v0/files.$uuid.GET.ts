@@ -58,6 +58,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       ownerTeam.stripeSubscriptionStatus = updatedTeam.stripeSubscriptionStatus;
       ownerTeam.stripeCurrentPeriodEnd = updatedTeam.stripeCurrentPeriodEnd;
       ownerTeam.stripeSubscriptionId = updatedTeam.stripeSubscriptionId;
+      ownerTeam.planType = updatedTeam.planType;
     }
   }
 
@@ -137,6 +138,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<ApiTypes['/v0
       uuid: ownerTeam.uuid,
       name: ownerTeam.name,
       isOnPaidPlan,
+      planType: ownerTeam.planType ?? undefined,
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },

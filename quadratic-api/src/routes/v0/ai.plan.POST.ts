@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { toAIChatSource, trackAICost } from '../../billing/aiCostTracking.helper';
+import { canMakeAiRequest, isFreePlan } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -36,13 +38,13 @@ Data (include "being consumed" if data is being used from an existing source; in
 List the name of the data source as well as key columns/fields, one per line, only if data is relevant to answer the query. Data may sometimes not be relevant if it is a calculation or task that does not require data.
 
 Analysis:
-Key calculations and/or charts that will be created to answer the query. 
+Key calculations and/or charts that will be created to answer the query.
 
 Steps:
 1. First action
 2. Second action
 3. Third action
-Etc. 
+Etc.
 
 Be brief. No lengthy explanations. Plain text only.`;
 
@@ -86,12 +88,26 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
     throw new ApiError(403, 'User does not have permission to create files in this team');
   }
 
-  // Plan generation is always allowed, even if user has exceeded billing limit
-  // This encourages users to try the "Start with AI" flow without penalty
   let exceededBillingLimit = false;
-  if (!isOnPaidPlan) {
-    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
-    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+  const isFree = isFreePlan(team);
+
+  if (isFree) {
+    if (!isOnPaidPlan) {
+      const usage = await BillingAIUsageMonthlyForUserInTeam(userId, team.id);
+      exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+    }
+  } else {
+    const canMakeRequest = await canMakeAiRequest(team, userId);
+    exceededBillingLimit = !canMakeRequest.allowed;
+  }
+
+  if (exceededBillingLimit) {
+    res.status(200).json({
+      plan: '',
+      isOnPaidPlan,
+      exceededBillingLimit,
+    });
+    return;
   }
 
   // Abort the request if the client disconnects
@@ -147,7 +163,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
       res.setHeader('Connection', 'keep-alive');
 
       // handleAIRequest streams the response directly to res
-      await handleAIRequest({
+      const parsedResponse = await handleAIRequest({
         modelKey,
         args: {
           messages,
@@ -162,6 +178,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
         response: res,
         signal: abortController.signal,
       });
+
+      // Track cost for streaming response
+      if (parsedResponse) {
+        await trackAICost({
+          userId,
+          teamId: team.id,
+          usage: parsedResponse.usage,
+          modelKey,
+          source: toAIChatSource('AIAnalyst'),
+          isFreePlan: isFree,
+          overageEnabled: team.allowOveragePayments,
+        });
+      }
 
       return;
     } else {
@@ -185,6 +214,17 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/plan
       if (!parsedResponse) {
         throw new ApiError(500, 'Failed to generate plan');
       }
+
+      // Track cost for non-streaming response
+      await trackAICost({
+        userId,
+        teamId: team.id,
+        usage: parsedResponse.usage,
+        modelKey,
+        source: toAIChatSource('AIAnalyst'),
+        isFreePlan: isFree,
+        overageEnabled: team.allowOveragePayments,
+      });
 
       const planText = parsedResponse.responseMessage.content
         .filter((c): c is { type: 'text'; text: string } => c.type === 'text')

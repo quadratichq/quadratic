@@ -3,36 +3,39 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
+import { BusinessPlanSettings } from '@/shared/components/SettingsTabs/BusinessPlanSettings';
+import { TeamAIUsage } from '@/shared/components/SettingsTabs/TeamAIUsage';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI, PRICING_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { PieChartIcon } from '@radix-ui/react-icons';
+import { useAtomValue } from 'jotai';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useFetcher, useSubmit } from 'react-router';
+import { Link, Navigate, useFetcher, useLocation, useSubmit } from 'react-router';
 
 export const Component = () => {
   const {
     activeTeam: {
       team,
       userMakingRequest: { teamPermissions },
-      billing,
       users,
     },
   } = useDashboardRouteLoaderData();
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const location = useLocation();
+  const returnTo = location.pathname + location.search;
   const [value, setValue] = useState<string>(team.name);
   const disabled = useMemo(
     () => value === '' || value === team.name || fetcher.state !== 'idle',
@@ -95,8 +98,7 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  const latestUsage = useMemo(() => billing.usage[0] || { ai_messages: 0 }, [billing.usage]);
-  const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const canManageBilling = useMemo(() => teamPermissions.includes('TEAM_MANAGE'), [teamPermissions]);
 
   // If you don't have permission, you can't see this view
@@ -121,89 +123,40 @@ export const Component = () => {
         </SettingsRow>
 
         <>
-          <SettingsRow>
+          {/* Billing Section */}
+          <div className="flex flex-col gap-4 sm:max-w-5xl">
             <Type variant="body2" className="font-bold">
               Billing
             </Type>
-            <div>
-              <div className="flex flex-col gap-4">
-                {/* Plan Comparison */}
-                <BillingPlans
-                  isOnPaidPlan={isOnPaidPlan}
-                  canManageBilling={canManageBilling}
-                  teamUuid={team.uuid}
-                  eventSource="TeamSettings"
-                />
 
-                {/* Current Usage */}
-                <div>
-                  <h3 className="text-md mb-3 font-semibold">Current usage</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">
-                        Team members{' '}
-                        <span className="text-muted-foreground">
-                          (
-                          <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
-                            manage
-                          </Link>
-                          )
-                        </span>
-                      </span>
+            {/* Plan Comparison */}
+            <BillingPlans canManageBilling={canManageBilling} teamUuid={team.uuid} eventSource="TeamSettings" />
 
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-left font-medium">{users.length}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">Your AI messages</span>
-                        <Dialog>
-                          <DialogTrigger>
-                            <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                          </DialogTrigger>
-                          <DialogContent aria-describedby={undefined}>
-                            <DialogHeader>
-                              <DialogTitle>Usage history</DialogTitle>
-                            </DialogHeader>
-                            <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
-                            <div className="space-y-3">
-                              {billing.usage.map((usage) => (
-                                <div key={usage.month} className="flex justify-between">
-                                  <span>
-                                    {(function formatDate(dateStr: string) {
-                                      const [year, month] = dateStr.split('-');
-                                      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                      return date.toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        year: 'numeric',
-                                      });
-                                    })(usage.month)}
-                                  </span>
-                                  <span>{usage.ai_messages}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <span className="text-sm">
+              Team members · <span className="font-medium">{users.length}</span>{' '}
+              <span className="text-muted-foreground">
+                (
+                <Link to={ROUTES.TEAM_MEMBERS(team.uuid)} className="underline">
+                  manage
+                </Link>
+                )
+              </span>
+            </span>
 
-              <p className="pt-4 text-sm text-muted-foreground">
-                Learn more on our{' '}
-                <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-                  pricing page
-                  <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
-                </a>
-              </p>
-            </div>
-          </SettingsRow>
+            {/* AI Usage */}
+            <TeamAIUsage />
+
+            {/* On-demand usage and spending limit (Business plan) */}
+            <BusinessPlanSettings />
+
+            <p className="pt-2 text-sm text-muted-foreground">
+              Learn more on our{' '}
+              <a href={PRICING_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                pricing page
+                <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
+              </a>
+            </p>
+          </div>
           <SettingsRow>
             <Type variant="body2" className="font-bold">
               Privacy
@@ -235,7 +188,7 @@ export const Component = () => {
               >
                 {!isOnPaidPlan && (
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary">Exclusive to Pro</Badge>
+                    <Badge variant="secondary">Available in Pro and Business plans</Badge>
                     <Button
                       asChild
                       variant="link"
@@ -249,7 +202,7 @@ export const Component = () => {
                       className="h-6"
                       disabled={!canManageBilling}
                     >
-                      <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid)}>Upgrade now</Link>
+                      <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid, { returnTo })}>Upgrade now</Link>
                     </Button>
                   </div>
                 )}
@@ -307,7 +260,7 @@ function SettingsRow(props: { children: ReactNode[]; className?: string }) {
   }
 
   return (
-    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-3xl`, props.className)}>
+    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-5xl`, props.className)}>
       <div className="pt-2">{props.children[0]}</div>
       <div className="">{props.children[1]}</div>
     </div>

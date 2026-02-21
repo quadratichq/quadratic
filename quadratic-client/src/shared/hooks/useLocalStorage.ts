@@ -59,14 +59,15 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
             // Save to local storage
             window.localStorage.setItem(key, newValueString);
 
-            // We dispatch a custom event so every useLocalStorage hook are notified
-            window.dispatchEvent(
-              new StorageEvent('local-storage', {
-                key,
-                newValue: newValueString,
-                oldValue: oldValueString,
-              })
-            );
+            // Defer the event so other components' setState runs in a separate tick.
+            // Dispatching synchronously here would update other components (e.g. UpgradeDialog)
+            // while still inside this setState updater, causing a React "setState during render" warning.
+            const event = new StorageEvent('local-storage', {
+              key,
+              newValue: newValueString,
+              oldValue: oldValueString,
+            });
+            queueMicrotask(() => window.dispatchEvent(event));
           }
 
           return newValue;

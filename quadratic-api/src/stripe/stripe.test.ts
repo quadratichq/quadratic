@@ -2,13 +2,22 @@
 jest.unmock('./stripe');
 
 import type Stripe from 'stripe';
-import { cancelIncompleteSubscriptions, selectBestSubscription, stripe as stripeClient } from './stripe';
+import {
+  addOverageSubscriptionItem,
+  cancelIncompleteSubscriptions,
+  findSeatItem,
+  removeOverageSubscriptionItem,
+  reportUsageToStripe,
+  selectBestSubscription,
+  stripe as stripeClient,
+} from './stripe';
 
 // Helper to create a mock subscription with the minimum fields needed
 const mockSubscription = (
   overrides: Partial<Stripe.Subscription> & { id: string; status: Stripe.Subscription.Status }
 ): Stripe.Subscription =>
   ({
+    current_period_start: Math.floor(Date.now() / 1000),
     current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
     created: Math.floor(Date.now() / 1000),
     ...overrides,
@@ -171,5 +180,149 @@ describe('cancelIncompleteSubscriptions', () => {
     expect(mockCancel).toHaveBeenCalledTimes(2);
     expect(mockCancel).toHaveBeenCalledWith('sub_incomplete_1');
     expect(mockCancel).toHaveBeenCalledWith('sub_incomplete_2');
+  });
+});
+
+const mockSubscriptionItem = (overrides: Partial<Stripe.SubscriptionItem> & { id: string }): Stripe.SubscriptionItem =>
+  ({
+    price: {
+      recurring: { usage_type: 'licensed' },
+    },
+    quantity: 3,
+    ...overrides,
+  }) as Stripe.SubscriptionItem;
+
+describe('findSeatItem', () => {
+  it('returns the licensed item when it is the only item', () => {
+    const seat = mockSubscriptionItem({ id: 'si_seat' });
+    expect(findSeatItem([seat])).toBe(seat);
+  });
+
+  it('returns the licensed item when mixed with a metered overage item', () => {
+    const seat = mockSubscriptionItem({ id: 'si_seat' });
+    const overage = mockSubscriptionItem({
+      id: 'si_overage',
+      price: { recurring: { usage_type: 'metered' } } as Stripe.Price,
+    });
+    expect(findSeatItem([overage, seat]).id).toBe('si_seat');
+  });
+
+  it('returns the first licensed item when there are multiple non-metered items', () => {
+    const seat1 = mockSubscriptionItem({ id: 'si_seat_1' });
+    const seat2 = mockSubscriptionItem({ id: 'si_seat_2' });
+    expect(findSeatItem([seat1, seat2]).id).toBe('si_seat_1');
+  });
+
+  it('throws when all items are metered', () => {
+    const metered = mockSubscriptionItem({
+      id: 'si_metered',
+      price: { recurring: { usage_type: 'metered' } } as Stripe.Price,
+    });
+    expect(() => findSeatItem([metered])).toThrow('Subscription does not have a seat item');
+  });
+
+  it('throws when given an empty array', () => {
+    expect(() => findSeatItem([])).toThrow('Subscription does not have a seat item');
+  });
+
+  it('treats items without recurring info as seat items', () => {
+    const noRecurring = mockSubscriptionItem({
+      id: 'si_no_recurring',
+      price: { recurring: null } as unknown as Stripe.Price,
+    });
+    expect(findSeatItem([noRecurring]).id).toBe('si_no_recurring');
+  });
+});
+
+describe('addOverageSubscriptionItem', () => {
+  let mockPricesList: jest.SpyInstance;
+  let mockItemCreate: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockPricesList = jest.spyOn(stripeClient.prices, 'list');
+    mockItemCreate = jest.spyOn(stripeClient.subscriptionItems, 'create');
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('creates a subscription item with the overage price', async () => {
+    mockPricesList.mockResolvedValue({ data: [{ id: 'price_overage_123' }] });
+    mockItemCreate.mockResolvedValue({ id: 'si_overage_456' });
+
+    const itemId = await addOverageSubscriptionItem('sub_abc');
+
+    expect(itemId).toBe('si_overage_456');
+    expect(mockPricesList).toHaveBeenCalledWith({
+      lookup_keys: ['ai_overage_per_cent'],
+      active: true,
+    });
+    expect(mockItemCreate).toHaveBeenCalledWith({
+      subscription: 'sub_abc',
+      price: 'price_overage_123',
+    });
+  });
+
+  it('throws when no overage price exists', async () => {
+    mockPricesList.mockResolvedValue({ data: [] });
+
+    await expect(addOverageSubscriptionItem('sub_abc')).rejects.toThrow(
+      'No AI overage price found (lookup_key: ai_overage_per_cent)'
+    );
+    expect(mockItemCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe('removeOverageSubscriptionItem', () => {
+  let mockItemDel: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockItemDel = jest.spyOn(stripeClient.subscriptionItems, 'del').mockResolvedValue({} as any);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('deletes the subscription item', async () => {
+    await removeOverageSubscriptionItem('si_overage_456');
+    expect(mockItemDel).toHaveBeenCalledWith('si_overage_456');
+  });
+});
+
+describe('reportUsageToStripe', () => {
+  let mockMeterEventsCreate: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockMeterEventsCreate = jest.spyOn(stripeClient.billing.meterEvents, 'create').mockResolvedValue({} as any);
+    jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('creates a meter event with correct parameters', async () => {
+    await reportUsageToStripe('cus_abc', 347);
+
+    expect(mockMeterEventsCreate).toHaveBeenCalledWith({
+      event_name: 'ai_overage_cents',
+      timestamp: 1700000000,
+      payload: {
+        value: '347',
+        stripe_customer_id: 'cus_abc',
+      },
+    });
+  });
+
+  it('converts cents to string in payload', async () => {
+    await reportUsageToStripe('cus_abc', 1);
+
+    expect(mockMeterEventsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ value: '1' }),
+      })
+    );
   });
 });

@@ -17,6 +17,16 @@ import type { z } from 'zod';
 
 type SetFormulaCellValueResponse = AIToolsArgs[AITool.SetFormulaCellValue];
 
+interface CompressedFormula {
+  sheet_name?: string | null;
+  code_cell_position: string;
+}
+
+interface CompressedSetFormulaCellValue {
+  _compressed: string;
+  formulas: CompressedFormula[];
+}
+
 export const SetFormulaCellValue = memo(
   ({
     toolCall: { arguments: args, loading },
@@ -29,19 +39,30 @@ export const SetFormulaCellValue = memo(
   }) => {
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
+    const [compressedArgs, setCompressedArgs] = useState<CompressedSetFormulaCellValue>();
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
     const [isExpanded, setIsExpanded] = useState(false);
 
     useEffect(() => {
       if (loading) {
         setToolArgs(undefined);
+        setCompressedArgs(undefined);
         return;
       }
 
       try {
         const json = JSON.parse(args);
+
+        if ('_compressed' in json && Array.isArray(json.formulas)) {
+          setCompressedArgs(json as CompressedSetFormulaCellValue);
+          setToolArgs(undefined);
+          setCodeCellPos(undefined);
+          return;
+        }
+
         const parsed = AIToolsArgsSchema[AITool.SetFormulaCellValue].safeParse(json);
         setToolArgs(parsed);
+        setCompressedArgs(undefined);
 
         // Set code cell position to the first formula's position (for single formula actions)
         if (parsed.success && parsed.data.formulas.length > 0) {
@@ -61,6 +82,7 @@ export const SetFormulaCellValue = memo(
         }
       } catch (error) {
         setToolArgs(undefined);
+        setCompressedArgs(undefined);
         console.error('[SetFormulaCellValue] Failed to parse args: ', error);
       }
     }, [args, loading]);
@@ -148,7 +170,11 @@ export const SetFormulaCellValue = memo(
       }
     }, []);
 
-    const formulaCount = toolArgs?.success ? toolArgs.data.formulas.length : 0;
+    const formulaCount = compressedArgs
+      ? compressedArgs.formulas.length
+      : toolArgs?.success
+        ? toolArgs.data.formulas.length
+        : 0;
     const label = loading
       ? formulaCount > 1
         ? 'Writing formulas'
@@ -158,19 +184,18 @@ export const SetFormulaCellValue = memo(
         : 'Wrote formula';
 
     const handleClick = useCallback(() => {
-      if (!toolArgs?.success || !toolArgs.data?.formulas.length) return;
+      const firstFormula = compressedArgs?.formulas[0] ?? (toolArgs?.success ? toolArgs.data.formulas[0] : undefined);
+      if (!firstFormula) return;
       try {
-        const firstFormula = toolArgs.data.formulas[0];
         const sheetId = firstFormula.sheet_name
           ? (sheets.getSheetByName(firstFormula.sheet_name)?.id ?? sheets.current)
           : sheets.current;
-        // Select the first formula's position
         const selection = sheets.stringToSelection(firstFormula.code_cell_position, sheetId);
         sheets.changeSelection(selection);
       } catch (e) {
         console.warn('Failed to select range:', e);
       }
-    }, [toolArgs]);
+    }, [toolArgs, compressedArgs]);
 
     if (loading) {
       return (
@@ -182,6 +207,56 @@ export const SetFormulaCellValue = memo(
           compact
           hideIcon={hideIcon}
         />
+      );
+    }
+
+    if (compressedArgs) {
+      const { formulas } = compressedArgs;
+      const isSingleFormula = formulas.length === 1;
+
+      if (isSingleFormula) {
+        return (
+          <ToolCard
+            icon={<LanguageIcon language="Formula" />}
+            label={label}
+            description={`at ${formulas[0].code_cell_position}`}
+            className={className}
+            compact
+            onClick={handleClick}
+            hideIcon={hideIcon}
+          />
+        );
+      }
+
+      return (
+        <div className={cn('flex flex-col', className)}>
+          <div
+            className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {!hideIcon && <LanguageIcon language="Formula" />}
+            <span>{label}</span>
+            {isExpanded ? (
+              <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+
+          {isExpanded && (
+            <div className="ml-[7px] mt-1 flex flex-col gap-1 border-l-2 border-muted-foreground/20 pl-3">
+              {formulas.map((formula) => (
+                <div
+                  key={`${formula.sheet_name ?? 'default'}-${formula.code_cell_position}`}
+                  className="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground hover:text-muted-foreground/80"
+                  onClick={() => handleFormulaClick(formula)}
+                >
+                  <span className="font-medium">{formula.code_cell_position}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
 

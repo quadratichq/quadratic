@@ -81,7 +81,18 @@ export const ROUTES = {
   TEAMS: `/teams`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_BILLING_MANAGE: (teamUuid: string) => `/teams/${teamUuid}/billing/manage`,
-  TEAM_BILLING_SUBSCRIBE: (teamUuid: string) => `/teams/${teamUuid}/billing/subscribe`,
+  TEAM_BILLING_SUBSCRIBE: (teamUuid: string, options?: { returnTo?: string; plan?: 'pro' | 'business' }) => {
+    const base = `/teams/${teamUuid}/billing/subscribe`;
+    const params = new URLSearchParams();
+    if (options?.returnTo) {
+      params.set('returnTo', options.returnTo);
+    }
+    if (options?.plan) {
+      params.set('plan', options.plan);
+    }
+    const queryString = params.toString();
+    return queryString ? `${base}?${queryString}` : base;
+  },
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTIONS_NEW: (teamUuid: string) => `/teams/${teamUuid}/connections?view=new`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>

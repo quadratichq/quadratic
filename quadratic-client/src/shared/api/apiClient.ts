@@ -51,9 +51,21 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
         );
       },
-      getCheckoutSessionUrl(uuid: string, redirectUrlSuccess: string, redirectUrlCancel: string) {
+      getCheckoutSessionUrl(
+        uuid: string,
+        redirectUrlSuccess: string,
+        redirectUrlCancel: string,
+        plan?: 'pro' | 'business'
+      ) {
+        const queryParams = new URLSearchParams({
+          'redirect-success': redirectUrlSuccess,
+          'redirect-cancel': redirectUrlCancel,
+        });
+        if (plan) {
+          queryParams.set('plan', plan);
+        }
         return fetchFromApi(
-          `/v0/teams/${uuid}/billing/checkout/session?redirect-success=${encodeURIComponent(redirectUrlSuccess)}&redirect-cancel=${encodeURIComponent(redirectUrlCancel)}`,
+          `/v0/teams/${uuid}/billing/checkout/session?${queryParams.toString()}`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
@@ -82,6 +94,38 @@ export const apiClient = {
         );
 
         return data;
+      },
+      async aiUsageUsers(uuid: string) {
+        const data = await fetchFromApi(
+          `/v0/teams/${uuid}/billing/ai/usage/users`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/ai/usage/users.GET.response']
+        );
+
+        return data;
+      },
+      async aiUsageDaily(uuid: string) {
+        const data = await fetchFromApi(
+          `/v0/teams/${uuid}/billing/ai/usage/daily`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/ai/usage/daily.GET.response']
+        );
+
+        return data;
+      },
+      async updateOverage(uuid: string, allowOveragePayments: boolean) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/overage`,
+          { method: 'PATCH', body: JSON.stringify({ allowOveragePayments }) },
+          ApiSchemas['/v0/teams/:uuid/billing/overage.PATCH.response']
+        );
+      },
+      async updateBudget(uuid: string, teamMonthlyBudgetLimit: number | null) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/budget`,
+          { method: 'PATCH', body: JSON.stringify({ teamMonthlyBudgetLimit }) },
+          ApiSchemas['/v0/teams/:uuid/billing/budget.PATCH.response']
+        );
       },
     },
     files: {
@@ -138,6 +182,12 @@ export const apiClient = {
         { method: 'GET' },
         ApiSchemas['/v0/teams/:uuid/file-limit.GET.response']
       );
+    },
+  },
+
+  billing: {
+    config() {
+      return fetchFromApi(`/v0/billing/config`, { method: 'GET' }, ApiSchemas['/v0/billing/config.GET.response']);
     },
   },
 

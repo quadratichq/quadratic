@@ -2,9 +2,10 @@ import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
+import dbClient from '../../dbClient';
 import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
-const auth0Id = 'user';
+const auth0Id = 'ai-chat-post-test-user';
 
 const payload: AIRequestBody = {
   chatId: '00000000-0000-0000-0000-000000000000',
@@ -74,7 +75,7 @@ describe('POST /v0/ai/chat', () => {
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000001' })
-        .set('Authorization', `Bearer InvalidToken user`)
+        .set('Authorization', `Bearer InvalidToken ${auth0Id}`)
         .expect(401);
     });
 
@@ -83,7 +84,7 @@ describe('POST /v0/ai/chat', () => {
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000002' })
-        .set('Authorization', `Bearer ValidToken user`)
+        .set('Authorization', `Bearer ValidToken ${auth0Id}`)
         .expect(200)
         .expect(({ body }) => {
           expect(body).toEqual({
@@ -112,6 +113,40 @@ describe('POST /v0/ai/chat', () => {
 
       // wait for the chat to be saved
       await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+
+    it('tracks AI cost in database after successful request', async () => {
+      await upgradeTeamToPro(teamId);
+      const user = await dbClient.user.findUnique({ where: { auth0Id } });
+      if (!user) throw new Error('User not found');
+
+      await request(app)
+        .post('/v0/ai/chat')
+        .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000003' })
+        .set('Authorization', `Bearer ValidToken ${auth0Id}`)
+        .expect(200);
+
+      // wait for cost tracking to complete
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      // Verify cost was tracked
+      const costs = await dbClient.aICost.findMany({
+        where: {
+          userId: user.id,
+          teamId: teamId,
+        },
+      });
+
+      expect(costs.length).toBeGreaterThan(0);
+      const cost = costs[costs.length - 1]; // Get the most recent cost
+      expect(cost.userId).toBe(user.id);
+      expect(cost.teamId).toBe(teamId);
+      expect(cost.fileId).toBeDefined();
+      expect(cost.cost).toBeGreaterThan(0);
+      expect(cost.model).toBe(payload.modelKey);
+      expect(cost.source).toBe('AIAnalyst');
+      expect(cost.inputTokens).toBe(100);
+      expect(cost.outputTokens).toBe(100);
     });
   });
 });

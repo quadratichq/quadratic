@@ -73,6 +73,7 @@ SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - If the sheet is empty, place the code cell at A1.\n
 - Use the existing SQL cell location if editing existing SQL code cell. Queries that are on a table that already exists in the sheet should be edits to existing code tables, not new tables unless the user specifically asks for a new table.\n
+NOTE: Results and arguments from this tool in previous conversation turns are automatically compressed to save context space.\n
 `,
     parameters: {
       type: 'object',

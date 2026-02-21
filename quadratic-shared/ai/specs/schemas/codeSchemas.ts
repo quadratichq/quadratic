@@ -47,7 +47,8 @@ export const codeToolsSpecs: { [K in keyof typeof codeToolsArgsSchemas]: AIToolS
     description: `
 This tool gets the full code for a Python, JavaScript, Formula, or connection cell.\n
 Use this tool to view the code in an existing code cell so you can fix errors or make improvements. Once you've read the code, you can improve it using the set_code_cell_value tool call.\n
-This tool should be used when users want to make updates to an existing code cell that isn't already in context.\n`,
+This tool should be used when users want to make updates to an existing code cell that isn't already in context.\n
+NOTE: Results from this tool in previous conversation turns are automatically compressed to save context space. If you need code that was fetched in a previous turn, call this tool again.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -100,6 +101,7 @@ Code cell (Python and Javascript) placement instructions:\n
 - If the sheet is empty, place the code cell at A1.\n
 Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
 IMPORTANT: Do not place code cells at non-anchor cells within merged regions. If a cell is inside a merged region, use the anchor (top-left) cell of the merge instead.\n
+NOTE: Results and arguments from this tool in previous conversation turns are automatically compressed to save context space.\n
 `,
     parameters: {
       type: 'object',
@@ -176,6 +178,7 @@ Examples:
 - Applying formulas to multiple cells with relative references (e.g., calculating percentages for a column of data)
 
 IMPORTANT: Do not place formulas at non-anchor cells within merged regions. If a cell is inside a merged region, use the anchor (top-left) cell of the merge instead.\n
+NOTE: Results and arguments from this tool in previous conversation turns are automatically compressed to save context space.\n
 `,
     parameters: {
       type: 'object',

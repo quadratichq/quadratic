@@ -241,6 +241,10 @@ For update action, id is required plus any fields you want to change.`,
                   'For color scale formats only. When true, automatically switches text color between black and white based on the background color luminance to ensure readability. Useful when using dark colors in the scale.',
               },
             },
+            // OpenAI strict mode requires all properties to be in `required` when
+            // `additionalProperties: false`. Fields are made optional by using
+            // nullable types (e.g., `type: ['string', 'null']`), allowing the AI
+            // to pass `null` for fields that don't apply to the current action.
             required: [
               'id',
               'action',

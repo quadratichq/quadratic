@@ -1,5 +1,6 @@
 import { SettingControl } from '@/dashboard/components/SettingControl';
 import { getActionUpdateTeam } from '@/routes/teams.$teamUuid';
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
@@ -9,20 +10,22 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
+import { useAtomValue } from 'jotai';
 import type { TeamSettings as TeamSettingsType } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useEffect, useMemo } from 'react';
-import { Link, useFetcher, useSubmit } from 'react-router';
+import { Link, useFetcher, useLocation, useSubmit } from 'react-router';
 
 export function TeamPrivacySettings() {
   const { teamData } = useTeamData();
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const location = useLocation();
+  const returnTo = location.pathname + location.search;
 
   const activeTeam = teamData?.activeTeam;
   const team = activeTeam?.team;
   const teamPermissions = activeTeam?.userMakingRequest?.teamPermissions;
-  const billing = activeTeam?.billing;
 
   // Optimistic UI
   const optimisticSettings = useMemo(() => {
@@ -67,10 +70,10 @@ export function TeamPrivacySettings() {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  const isOnPaidPlan = useMemo(() => billing?.status === 'ACTIVE', [billing?.status]);
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
   const canManageBilling = useMemo(() => teamPermissions?.includes('TEAM_MANAGE') ?? false, [teamPermissions]);
 
-  if (!activeTeam || !team || !teamPermissions || !billing || !optimisticSettings) {
+  if (!activeTeam || !team || !teamPermissions || !optimisticSettings) {
     return (
       <div className="space-y-6">
         <div className="space-y-4">
@@ -130,7 +133,7 @@ export function TeamPrivacySettings() {
         >
           {!isOnPaidPlan && (
             <div className="flex items-center gap-1">
-              <Badge variant="secondary">Exclusive to Pro</Badge>
+              <Badge variant="secondary">Available in Pro and Business plans</Badge>
               <Button
                 asChild
                 variant="link"
@@ -144,7 +147,7 @@ export function TeamPrivacySettings() {
                 className="h-6"
                 disabled={!canManageBilling}
               >
-                <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid)}>Upgrade now</Link>
+                <Link to={ROUTES.TEAM_BILLING_SUBSCRIBE(team.uuid, { returnTo })}>Upgrade now</Link>
               </Button>
             </div>
           )}

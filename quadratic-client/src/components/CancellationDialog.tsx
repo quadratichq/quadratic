@@ -16,12 +16,18 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 type CancellationStep = 'loading-eligibility' | 'offer-discount' | 'get-feedback' | 'applying-discount';
 
-export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
+type CancellationDialogProps = {
+  teamUuid: string;
+  trigger?: ReactNode;
+};
+
+export function CancellationDialog({ teamUuid, trigger }: CancellationDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<CancellationStep>('loading-eligibility');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,16 +39,33 @@ export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
   // Load eligibility for retention discount when the dialog opens
   useEffect(() => {
     if (isOpen && currentStep === 'loading-eligibility') {
+      let isCancelled = false;
+
       const checkEligibility = async () => {
         try {
-          const { isEligible } = await apiClient.teams.billing.retentionDiscount.get(teamUuid);
-          setCurrentStep(isEligible ? 'offer-discount' : 'get-feedback');
+          // Add timeout to prevent hanging indefinitely
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 10000);
+          });
+
+          const result = await Promise.race([apiClient.teams.billing.retentionDiscount.get(teamUuid), timeoutPromise]);
+
+          if (!isCancelled) {
+            setCurrentStep(result.isEligible ? 'offer-discount' : 'get-feedback');
+          }
         } catch (error) {
-          console.error('Error checking eligibility:', error);
-          setCurrentStep('get-feedback');
+          console.error('[CancellationDialog] Error checking eligibility:', error);
+          if (!isCancelled) {
+            setCurrentStep('get-feedback');
+          }
         }
       };
+
       checkEligibility();
+
+      return () => {
+        isCancelled = true;
+      };
     }
   }, [isOpen, currentStep, teamUuid]);
 
@@ -54,9 +77,12 @@ export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
     }
   }, [isOpen]);
 
-  const handleOpenDialog = useCallback(() => {
-    trackEvent('[CancellationFlow].opened');
-    setIsOpen(true);
+  // Track when the dialog opens
+  const handleOpenChange = useCallback((open: boolean) => {
+    if (open) {
+      trackEvent('[CancellationFlow].opened');
+    }
+    setIsOpen(open);
   }, []);
 
   const handleAcceptOffer = useCallback(async () => {
@@ -106,19 +132,15 @@ export function CancellationDialog({ teamUuid }: { teamUuid: string }) {
     }
   }, [addGlobalSnackbar, feedback, navigate, loggedInUser?.email, teamUuid]);
 
+  const defaultTrigger = (
+    <Button variant="ghost" size="sm" className="w-full" data-testid="cancel-subscription">
+      Cancel subscription
+    </Button>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full"
-          onClick={handleOpenDialog}
-          data-testid="cancel-subscription"
-        >
-          Cancel subscription
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Cancel subscription</DialogTitle>

@@ -6,27 +6,69 @@ Data, variables, and imports are scoped to each code cell and must be imported/r
 
 ## Reference cells from Python
 
+\`q.cells()\` is the ONLY way to reference data from the sheet in Python.
+
+### Return types
+
+- **Single cell** (e.g., \`q.cells('A1')\`): returns a single Python value — \`int\`, \`float\`, \`str\`, \`bool\`, or \`None\`.
+- **Range** (e.g., \`q.cells('A1:C7')\`): ALWAYS returns a **pandas DataFrame**.
+- **Entire column** (e.g., \`q.cells('A')\`): ALWAYS returns a **pandas DataFrame**.
+- **Table reference** (e.g., \`q.cells("Table1")\`): ALWAYS returns a **pandas DataFrame** (with column headers from the table).
+- **Table column** (e.g., \`q.cells("Table1[Name]")\`): ALWAYS returns a **pandas DataFrame** (single-column DataFrame, NOT a list or Series).
+
+Any reference that covers more than one cell returns a pandas DataFrame. You can use standard pandas operations (filtering, groupby, merge, etc.) directly on the result.
+
+### Common DataFrame patterns
+
+\`\`\`python
+df = q.cells('A1:C10', first_row_header=True)
+
+# Extract a single column as a Python list
+names = df['Name'].tolist()
+# Or by position: first column as a list
+values = df.iloc[:, 0].tolist()
+
+# Filter rows
+filtered = df[df['Age'] > 30]
+
+# Get a single value from a DataFrame
+first_name = df['Name'].iloc[0]
+
+# Iterate over rows
+for _, row in df.iterrows():
+    print(row['Name'], row['Age'])
+
+# Aggregate
+total = df['Amount'].sum()
+avg = df['Score'].mean()
+\`\`\`
+
 ### Referencing tables
 
 \`\`\`python
-df = q.cells("Table1")  # Full table as DataFrame
-df_column = q.cells("Table1[column_name]")  # Single column
+df = q.cells("Table1")  # Full table as DataFrame (headers are column names)
+df_column = q.cells("Table1[column_name]")  # Single column as DataFrame
 df_headers = q.cells("Table1[#HEADERS]")  # Headers only
 df_columns = q.cells("Table1[[Column 1]:[Column 3]]")  # Range of columns
+
+# Working with table data
+names = df['Name'].tolist()  # Extract column as list
+filtered = df[df['Status'] == 'Active']  # Filter rows
 \`\`\`
 
 ### Referencing cells and ranges
 
 \`\`\`python
-x = q.cells('A1')  # Single cell
-q.cells('A1:C7')  # Range as DataFrame
-q.cells('A')  # Entire column
-q.cells('A5:A')  # Column from A5 down to next blank
+x = q.cells('A1')  # Single cell — returns a value (int, float, str, bool, or None)
+df = q.cells('A1:C7')  # Range — returns a DataFrame
+df = q.cells('A')  # Entire column — returns a DataFrame
+df = q.cells('A5:A')  # Column from A5 down to next blank — returns a DataFrame
 \`\`\`
 
 Use \`first_row_header=True\` when the first row contains column headers:
 \`\`\`python
-q.cells('A1:B9', first_row_header=True)
+df = q.cells('A1:B9', first_row_header=True)
+# Now df.columns are the values from row 1 (e.g., 'Name', 'Age')
 \`\`\`
 
 ### Referencing another sheet
@@ -134,7 +176,7 @@ Plotly is the ONLY charting library supported. For trendlines, you MUST import s
 ### Function outputs
 
 \`\`\`python
-def do_some_math(x): 
+def do_some_math(x):
     return x + 1
 
 do_some_math(5)  # Returns 6
@@ -145,13 +187,13 @@ do_some_math(5)  # Returns 6
 **Conditional returns don't work** - The last line must be an expression, not inside an if/else:
 \`\`\`python
 # WRONG: Returns nothing
-if x == 3: 
+if x == 3:
     y = True
 
 # CORRECT: Return variable after conditional
-if x == 3: 
+if x == 3:
     y = True
-else: 
+else:
     y = False
 y  # Returns the value
 \`\`\`

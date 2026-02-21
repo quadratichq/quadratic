@@ -39,6 +39,7 @@ export const setCodeCellResult = async (
     ? await quadraticCore.getCodeCell(sheetId, tableCodeCell.x, tableCodeCell.y)
     : undefined;
   if (!tableCodeCell || !codeCell) {
+    console.error(`[setCodeCellResult] Code cell not found at (${x}, ${y})`);
     return [createTextContent('Error executing set code cell value tool')];
   }
 
@@ -63,6 +64,7 @@ export const setCodeCellResult = async (
   const consoleOutput = codeCell.std_out ? `Console output:\n\`\`\`\n${codeCell.std_out}\n\`\`\`\n\n` : '';
 
   if (codeCell.std_err) {
+    console.warn(`[setCodeCellResult] Runtime error:`, codeCell.std_err);
     return [
       createTextContent(
         `${consoleOutput}The code cell run has resulted in an error:
@@ -76,6 +78,9 @@ Think and reason about the error and try to fix it. Do not attempt the same fix 
   }
 
   if (codeCell.spill_error) {
+    console.warn(
+      `[setCodeCellResult] Spill error: output ${tableCodeCell.w}x${tableCodeCell.h} at (${tableCodeCell.x}, ${tableCodeCell.y})`
+    );
     return [
       createTextContent(
         `${consoleOutput}The code cell has spilled, because the output overlaps with existing data on the sheet.

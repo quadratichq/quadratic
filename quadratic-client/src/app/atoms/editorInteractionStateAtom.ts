@@ -34,6 +34,8 @@ export interface EditorInteractionState {
   user?: User;
   fileUuid: string;
   teamUuid: string;
+  canManageBilling: boolean;
+  canManageAIOverage: boolean;
   connectionUuid: string;
   follow?: string;
   undo: boolean;
@@ -63,6 +65,8 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   user: undefined, // when we call <RecoilRoot> we initialize this with the value from the server
   fileUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   teamUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
+  canManageBilling: false,
+  canManageAIOverage: false,
   connectionUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   follow: undefined,
   undo: false,
@@ -198,6 +202,8 @@ export const editorInteractionStateSettingsAtom = createSelector('settings');
 export const editorInteractionStateUserAtom = createSelector('user');
 export const editorInteractionStateFileUuidAtom = createSelector('fileUuid');
 export const editorInteractionStateTeamUuidAtom = createSelector('teamUuid');
+export const editorInteractionStateCanManageBillingAtom = createSelector('canManageBilling');
+export const editorInteractionStateCanManageAIOverageAtom = createSelector('canManageAIOverage');
 export const editorInteractionStateConnectionUuidAtom = createSelector('connectionUuid');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateUndoAtom = createSelector('undo');

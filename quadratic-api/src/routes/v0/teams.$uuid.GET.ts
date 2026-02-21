@@ -4,6 +4,7 @@ import type { ApiTypes, FilePermission } from 'quadratic-shared/typesAndSchemas'
 import { z } from 'zod';
 import { getUsers } from '../../auth/providers/auth';
 import { BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
+import { getPlanType } from '../../billing/planHelpers';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
@@ -23,7 +24,9 @@ import { getDecryptedTeam } from '../../utils/teams';
 // Statuses that indicate the subscription may need to be synced with Stripe:
 // - INCOMPLETE: checkout in progress, webhook may be delayed
 // - INCOMPLETE_EXPIRED: previous attempt failed, user may have retried with a new subscription
-const NEEDS_SYNC_STATUSES: SubscriptionStatus[] = ['INCOMPLETE', 'INCOMPLETE_EXPIRED'];
+// - CANCELED: webhook may have been missed; planType could be stale
+// - PAST_DUE: payment failed, subscription state may have changed
+const NEEDS_SYNC_STATUSES: SubscriptionStatus[] = ['INCOMPLETE', 'INCOMPLETE_EXPIRED', 'CANCELED', 'PAST_DUE'];
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -173,6 +176,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const usage = await BillingAIUsageMonthlyForUserInTeam(userMakingRequestId, team.id);
 
+  // Get plan type from the re-fetched team to reflect any updateBilling changes
+  const planType = getPlanType(dbTeam);
+
   // Get file limit info (includes editable file IDs and whether team is over limit)
   // For free teams, only the N most recently created files are editable
   // Use dbTeam (re-fetched after potential updateBilling) to avoid stale billing data
@@ -203,6 +209,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,
       currentPeriodEnd: dbTeam.stripeCurrentPeriodEnd?.toISOString(),
+      planType,
       usage,
     },
     userMakingRequest: {

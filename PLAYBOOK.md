@@ -104,7 +104,7 @@
 1. Hit the back button on the browser twice to go back to the `Instance Summary` page
 1. Click on the `Connect` button in the upper right corner
 1. Make sure the `Connect using a Private IP` option is selected and hit the orange `Connect` button
-1. Wait a few momemnts for the SSH UI to load
+1. Wait a few moments for the SSH UI to load
 1. Enter `sudo docker ps` to see the running docker containers
 1. There will be a container for every service, note the `CONTAINER ID` for each
 1. Commands:

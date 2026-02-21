@@ -1,9 +1,12 @@
+import { teamBillingAtom } from '@/shared/atom/teamBillingAtom';
 import { ShareTeamDialog } from '@/shared/components/ShareDialog';
 import { useTeamData } from '@/shared/hooks/useTeamData';
+import { useAtomValue } from 'jotai';
 
 export function TeamMembersSettings() {
   const { teamData } = useTeamData();
   const activeTeam = teamData?.activeTeam;
+  const { isOnPaidPlan } = useAtomValue(teamBillingAtom);
 
   if (!activeTeam) {
     return (
@@ -17,7 +20,7 @@ export function TeamMembersSettings() {
     );
   }
 
-  const { billing, users } = activeTeam;
+  const { users } = activeTeam;
 
   return (
     <div className="space-y-6">
@@ -31,7 +34,7 @@ export function TeamMembersSettings() {
         <ShareTeamDialog />
       </div>
 
-      {billing?.status === 'ACTIVE' && (
+      {isOnPaidPlan && (
         <div className="rounded-lg border border-border bg-muted/50 p-4">
           <p className="text-sm text-muted-foreground">
             <strong>Note on pricing:</strong> each user is billed at the per-seat rate set for your team. You currently
