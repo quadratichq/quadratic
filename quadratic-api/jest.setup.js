@@ -68,5 +68,11 @@ jest.mock('./src/stripe/stripe', () => {
     reportUsageToStripe: jest.fn().mockImplementation(async () => {}),
     addOverageSubscriptionItem: jest.fn().mockResolvedValue('si_test_overage_item'),
     removeOverageSubscriptionItem: jest.fn().mockResolvedValue(undefined),
+    createCustomer: jest.fn().mockResolvedValue({ id: 'cus_test123' }),
+    createCheckoutSession: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/test-session' }),
+    getProPriceId: jest.fn().mockResolvedValue('price_pro_test'),
+    getBusinessPriceId: jest.fn().mockResolvedValue('price_business_test'),
+    cancelIncompleteSubscriptions: jest.fn().mockResolvedValue(undefined),
+    upgradeSubscriptionPlan: jest.fn().mockResolvedValue(undefined),
   };
 });
